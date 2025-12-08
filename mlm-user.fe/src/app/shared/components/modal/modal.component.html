@@ -1,0 +1,62 @@
+@if (modalService.modalState().isOpen) {
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+  (click)="close()"
+>
+  <div
+    class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-center justify-between mb-4">
+      <h3
+        class="text-lg font-medium leading-6"
+        [ngClass]="{
+          'text-mlm-success': modalService.modalState().type === 'success',
+          'text-mlm-error': modalService.modalState().type === 'error'
+        }"
+      >
+        {{ modalService.modalState().title }}
+      </h3>
+      <button
+        (click)="close()"
+        class="text-gray-400 hover:text-gray-500 focus:outline-none"
+      >
+        <span class="sr-only">Close</span>
+        <svg
+          class="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
+    </div>
+    <div class="mt-2">
+      <p class="text-sm text-mlm-secondary">
+        {{ modalService.modalState().message }}
+      </p>
+    </div>
+    <div class="mt-6 flex justify-end">
+      <button
+        type="button"
+        class="inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
+        [ngClass]="{
+          'bg-mlm-success hover:opacity-90 focus-visible:ring-mlm-success':
+            modalService.modalState().type === 'success',
+          'bg-mlm-error hover:opacity-90 focus-visible:ring-mlm-error':
+            modalService.modalState().type === 'error'
+        }"
+        (click)="close()"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+}
