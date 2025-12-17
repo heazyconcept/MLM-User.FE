@@ -1,7 +1,7 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
-import { ModalService } from '../services/modal.service';
+import { ModalService } from '../../services/modal.service';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const modalService = inject(ModalService);

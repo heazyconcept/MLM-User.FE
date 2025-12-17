@@ -1,0 +1,264 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10 lg:pl-72">
+    <div class="px-4 sm:px-6 lg:px-8">
+      <div class="mb-6 flex items-center justify-between">
+        <h1 class="text-3xl font-bold text-mlm-text">Profile</h1>
+        @if (!isEditMode()) {
+          <p-button 
+            label="Edit Profile" 
+            icon="pi pi-pencil" 
+            (onClick)="enterEditMode()"
+            [outlined]="true">
+          </p-button>
+        }
+      </div>
+
+      @if (!isEditMode()) {
+        <!-- View Mode -->
+        @if (currentUser(); as user) {
+          <div class="space-y-6">
+            <!-- Personal Information -->
+            <p-card>
+              <ng-template pTemplate="header">
+                <div class="px-6 py-4 border-b border-gray-200">
+                  <h2 class="text-xl font-semibold text-mlm-text">Personal Information</h2>
+                </div>
+              </ng-template>
+              <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-1">Full Name</label>
+                    <p class="text-mlm-text">{{ user.firstName }} {{ user.lastName }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-1">Email</label>
+                    <p class="text-mlm-text">{{ user.email }}</p>
+                  </div>
+                </div>
+              </div>
+            </p-card>
+
+            <!-- Contact Information -->
+            <p-card>
+              <ng-template pTemplate="header">
+                <div class="px-6 py-4 border-b border-gray-200">
+                  <h2 class="text-xl font-semibold text-mlm-text">Contact Information</h2>
+                </div>
+              </ng-template>
+              <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-1">Phone Number</label>
+                    <p class="text-mlm-text">{{ user.phoneNumber || 'Not provided' }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-1">Address</label>
+                    <p class="text-mlm-text">{{ user.address || 'Not provided' }}</p>
+                  </div>
+                </div>
+              </div>
+            </p-card>
+
+            <!-- Bank Details -->
+            <p-card>
+              <ng-template pTemplate="header">
+                <div class="px-6 py-4 border-b border-gray-200">
+                  <h2 class="text-xl font-semibold text-mlm-text">Bank Details</h2>
+                </div>
+              </ng-template>
+              <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-1">Bank Name</label>
+                    <p class="text-mlm-text">{{ user.bankName || 'Not provided' }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-1">Account Number</label>
+                    <p class="text-mlm-text">{{ user.accountNumber || 'Not provided' }}</p>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-1">Account Name</label>
+                    <p class="text-mlm-text">{{ user.accountName || 'Not provided' }}</p>
+                  </div>
+                </div>
+              </div>
+            </p-card>
+
+            <!-- Status Section -->
+            <p-card>
+              <ng-template pTemplate="header">
+                <div class="px-6 py-4 border-b border-gray-200">
+                  <h2 class="text-xl font-semibold text-mlm-text">Account Status</h2>
+                </div>
+              </ng-template>
+              <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-2">KYC Status</label>
+                    @if (user.kycStatus === 'VERIFIED') {
+                      <p-badge value="VERIFIED" severity="success"></p-badge>
+                    } @else if (user.kycStatus === 'REJECTED') {
+                      <p-badge value="REJECTED" severity="danger"></p-badge>
+                    } @else {
+                      <p-badge value="PENDING" severity="warn"></p-badge>
+                    }
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-2">Account Status</label>
+                    @if (user.paymentStatus === 'PAID') {
+                      <p-badge value="PAID" severity="success"></p-badge>
+                    } @else {
+                      <p-badge value="UNPAID" severity="warn"></p-badge>
+                    }
+                  </div>
+                </div>
+              </div>
+            </p-card>
+          </div>
+        }
+      } @else {
+        <!-- Edit Mode -->
+        <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
+          <div class="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
+            <div class="px-4 sm:px-0">
+              <h2 class="text-base font-semibold text-mlm-text">Edit Profile</h2>
+              <p class="mt-1 text-sm text-mlm-secondary">Update your personal information and contact details.</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm md:col-span-2">
+              <div class="px-4 py-6 sm:p-8">
+                <div class="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                  <!-- First Name -->
+                  <div class="sm:col-span-3">
+                    <label for="firstName" class="block text-sm font-medium text-mlm-text mb-2">
+                      First Name <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                      pInputText 
+                      id="firstName" 
+                      type="text" 
+                      formControlName="firstName"
+                      class="w-full"
+                      [class.ng-invalid]="profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched" />
+                    @if (profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched) {
+                      <small class="text-red-500 text-sm mt-1 block">First Name is required.</small>
+                    }
+                  </div>
+
+                  <!-- Last Name -->
+                  <div class="sm:col-span-3">
+                    <label for="lastName" class="block text-sm font-medium text-mlm-text mb-2">
+                      Last Name <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                      pInputText 
+                      id="lastName" 
+                      type="text" 
+                      formControlName="lastName"
+                      class="w-full"
+                      [class.ng-invalid]="profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched" />
+                    @if (profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched) {
+                      <small class="text-red-500 text-sm mt-1 block">Last Name is required.</small>
+                    }
+                  </div>
+
+                  <!-- Email (Read-only) -->
+                  <div class="sm:col-span-4">
+                    <label for="email" class="block text-sm font-medium text-mlm-text mb-2">Email</label>
+                    <input 
+                      pInputText 
+                      id="email" 
+                      type="email" 
+                      formControlName="email"
+                      [disabled]="true"
+                      class="w-full" />
+                    <p class="mt-1 text-sm text-mlm-secondary">Email cannot be changed.</p>
+                  </div>
+
+                  <!-- Phone Number -->
+                  <div class="sm:col-span-3">
+                    <label for="phoneNumber" class="block text-sm font-medium text-mlm-text mb-2">
+                      Phone Number <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                      pInputText 
+                      id="phoneNumber" 
+                      type="text" 
+                      formControlName="phoneNumber"
+                      class="w-full"
+                      [class.ng-invalid]="profileForm.get('phoneNumber')?.invalid && profileForm.get('phoneNumber')?.touched" />
+                    @if (profileForm.get('phoneNumber')?.invalid && profileForm.get('phoneNumber')?.touched) {
+                      <small class="text-red-500 text-sm mt-1 block">Phone Number is required.</small>
+                    }
+                  </div>
+
+                  <!-- Address -->
+                  <div class="col-span-full">
+                    <label for="address" class="block text-sm font-medium text-mlm-text mb-2">Address</label>
+                    <textarea 
+                      pTextarea 
+                      id="address" 
+                      formControlName="address"
+                      rows="3"
+                      class="w-full"
+                      [autoResize]="true">
+                    </textarea>
+                  </div>
+
+                  <!-- Bank Name -->
+                  <div class="sm:col-span-3">
+                    <label for="bankName" class="block text-sm font-medium text-mlm-text mb-2">Bank Name</label>
+                    <input 
+                      pInputText 
+                      id="bankName" 
+                      type="text" 
+                      formControlName="bankName"
+                      class="w-full" />
+                  </div>
+
+                  <!-- Account Number -->
+                  <div class="sm:col-span-3">
+                    <label for="accountNumber" class="block text-sm font-medium text-mlm-text mb-2">Account Number</label>
+                    <input 
+                      pInputText 
+                      id="accountNumber" 
+                      type="text" 
+                      formControlName="accountNumber"
+                      class="w-full" />
+                  </div>
+
+                  <!-- Account Name -->
+                  <div class="sm:col-span-4">
+                    <label for="accountName" class="block text-sm font-medium text-mlm-text mb-2">Account Name</label>
+                    <input 
+                      pInputText 
+                      id="accountName" 
+                      type="text" 
+                      formControlName="accountName"
+                      class="w-full" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Form Actions -->
+              <div class="flex items-center justify-end gap-x-6 border-t border-gray-200 px-4 py-4 sm:px-8">
+                <p-button 
+                  label="Cancel" 
+                  [outlined]="true"
+                  (onClick)="cancelEdit()"
+                  type="button">
+                </p-button>
+                <p-button 
+                  label="Save Changes" 
+                  type="submit"
+                  [loading]="isSaving()">
+                </p-button>
+              </div>
+            </div>
+          </div>
+        </form>
+      }
+    </div>
+  </main>
+</div>
+

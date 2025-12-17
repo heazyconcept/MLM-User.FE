@@ -1,0 +1,77 @@
+<div class="flex items-center justify-center min-h-screen w-full py-12 overflow-x-hidden">
+    <div class="flex flex-col items-center justify-center w-full max-w-4xl px-4">
+        <div class="w-full" style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
+            <div class="w-full bg-white py-20 px-8 sm:px-16" style="border-radius: 53px">
+                <div class="text-center mb-8">
+                    <div class="text-mlm-text text-3xl font-medium mb-4">Create Account</div>
+                    <span class="text-mlm-secondary font-medium">Join us today!</span>
+                </div>
+
+                <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- First Name -->
+                        <div>
+                            <label for="firstName" class="block text-mlm-text text-base font-medium mb-2">First Name <span class="text-red-500">*</span></label>
+                            <input pInputText id="firstName" type="text" placeholder="First Name" class="w-full" formControlName="firstName" />
+                            <small class="text-red-500" *ngIf="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched">First Name is required.</small>
+                        </div>
+                        <!-- Last Name -->
+                        <div>
+                            <label for="lastName" class="block text-mlm-text text-base font-medium mb-2">Last Name <span class="text-red-500">*</span></label>
+                            <input pInputText id="lastName" type="text" placeholder="Last Name" class="w-full" formControlName="lastName" />
+                            <small class="text-red-500" *ngIf="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched">Last Name is required.</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <!-- Email -->
+                        <label for="email" class="block text-mlm-text text-base font-medium mb-2">Email <span class="text-red-500">*</span></label>
+                        <input pInputText id="email" type="email" placeholder="Email address" class="w-full" formControlName="email" />
+                        <small class="text-red-500" *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">Valid email is required.</small>
+                    </div>
+
+                    <div class="mb-6">
+                        <!-- Phone Number -->
+                        <label for="phoneNumber" class="block text-mlm-text text-base font-medium mb-2">Phone Number <span class="text-red-500">*</span></label>
+                        <input pInputText id="phoneNumber" type="text" placeholder="Phone Number" class="w-full" formControlName="phoneNumber" />
+                        <small class="text-red-500" *ngIf="registerForm.get('phoneNumber')?.invalid && registerForm.get('phoneNumber')?.touched">Phone Number is required.</small>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- Password -->
+                        <div>
+                            <label for="password" class="block text-mlm-text text-base font-medium mb-2">Password <span class="text-red-500">*</span></label>
+                            <p-password id="password" formControlName="password" placeholder="Password" [toggleMask]="true" styleClass="w-full" [fluid]="true" [feedback]="true"></p-password>
+                            <small class="text-red-500" *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">Password is required (min 8 chars).</small>
+                        </div>
+                        <!-- Confirm Password -->
+                        <div>
+                            <label for="confirmPassword" class="block text-mlm-text text-base font-medium mb-2">Confirm Password <span class="text-red-500">*</span></label>
+                            <p-password id="confirmPassword" formControlName="confirmPassword" placeholder="Confirm Password" [toggleMask]="true" styleClass="w-full" [fluid]="true" [feedback]="false"></p-password>
+                            <small class="text-red-500" *ngIf="registerForm.get('confirmPassword')?.hasError('passwordMismatch') && registerForm.get('confirmPassword')?.touched">Passwords do not match.</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                         <!-- Referral Code -->
+                         <label for="referralCode" class="block text-mlm-text text-base font-medium mb-2">Referral Code (Optional)</label>
+                         <input pInputText id="referralCode" type="text" placeholder="Referral Code" class="w-full" formControlName="referralCode" />
+                    </div>
+
+                    <div class="flex items-start mb-8">
+                        <p-checkbox formControlName="acceptTerms" id="acceptTerms" binary class="mr-2"></p-checkbox>
+                        <label for="acceptTerms" class="text-mlm-text text-sm">I have read and agree to the <a href="#" class="text-mlm-primary hover:underline">Terms & Conditions</a></label>
+                    </div>
+                    <small class="block text-red-500 mb-4" *ngIf="registerForm.get('acceptTerms')?.invalid && registerForm.get('acceptTerms')?.touched">You must accept the terms.</small>
+
+                    <p-button label="Create Account" styleClass="w-full !bg-mlm-primary !border-mlm-primary" type="submit"></p-button>
+
+                    <div class="mt-6 text-center">
+                        <span class="text-mlm-secondary">Already have an account? </span>
+                        <a routerLink="/login" class="text-mlm-primary font-medium hover:underline cursor-pointer">Log in</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

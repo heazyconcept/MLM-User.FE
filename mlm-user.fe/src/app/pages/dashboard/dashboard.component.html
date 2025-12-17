@@ -1,0 +1,220 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10 lg:pl-72">
+    <div class="px-4 sm:px-6 lg:px-8">
+      @if (!isPaid()) {
+        <!-- Restricted Dashboard (UNPAID) -->
+        <div class="space-y-6">
+          <!-- Banner -->
+          <p-message
+            severity="warn"
+            [closable]="false"
+            class="w-full">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-exclamation-triangle text-xl"></i>
+              <span class="font-semibold">Complete Registration to Unlock Full Access</span>
+            </div>
+          </p-message>
+
+          <!-- Widgets Grid -->
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <!-- Profile Completion Status -->
+            <p-card class="w-full">
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-lg font-semibold text-mlm-text">Profile Completion</h3>
+                  <div class="flex items-center justify-center bg-mlm-blue-100 rounded-lg" style="width: 2.5rem; height: 2.5rem">
+                    <i class="pi pi-user text-mlm-blue-500 text-xl"></i>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-mlm-secondary">{{ profileCompletion() }}% Complete</span>
+                    <span class="text-mlm-text font-medium">{{ profileCompletion() }}%</span>
+                  </div>
+                  <p-progressBar [value]="profileCompletion()" [showValue]="false"></p-progressBar>
+                </div>
+                <p class="text-sm text-mlm-secondary">
+                  Complete your profile to unlock additional features
+                </p>
+              </div>
+            </p-card>
+
+            <!-- Registration Fee Status -->
+            <p-card class="w-full">
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-lg font-semibold text-mlm-text">Registration Fee</h3>
+                  <div class="flex items-center justify-center bg-mlm-warning/10 rounded-lg" style="width: 2.5rem; height: 2.5rem">
+                    <i class="pi pi-dollar text-mlm-warning text-xl"></i>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-2xl font-bold text-mlm-text">Unpaid</span>
+                    <p-badge severity="danger" value="Pending"></p-badge>
+                  </div>
+                  <p class="text-sm text-mlm-secondary">
+                    Pay your registration fee to access all features
+                  </p>
+                </div>
+              </div>
+            </p-card>
+
+            <!-- Pay Registration Fee CTA -->
+            <p-card class="w-full md:col-span-2 lg:col-span-1">
+              <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-lg font-semibold text-mlm-text">Get Started</h3>
+                  <div class="flex items-center justify-center bg-mlm-success/10 rounded-lg" style="width: 2.5rem; height: 2.5rem">
+                    <i class="pi pi-check-circle text-mlm-success text-xl"></i>
+                  </div>
+                </div>
+                <p class="text-sm text-mlm-secondary">
+                  Complete your registration by paying the registration fee
+                </p>
+                <p-button
+                  label="Pay Registration Fee"
+                  icon="pi pi-credit-card"
+                  (onClick)="navigateToPayment()"
+                  [style]="{ width: '100%' }">
+                </p-button>
+              </div>
+            </p-card>
+          </div>
+        </div>
+      } @else {
+        <!-- Full Dashboard (PAID) -->
+        <div class="space-y-6">
+          <!-- Welcome Message -->
+          @if (currentUser(); as user) {
+            <div class="mb-6">
+              <h1 class="text-3xl font-bold text-mlm-text">
+                Welcome back, {{ user.firstName }}!
+              </h1>
+              <p class="mt-2 text-mlm-secondary">
+                Here's an overview of your account
+              </p>
+            </div>
+          }
+
+          <!-- Stats Grid -->
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <!-- Wallet Summary -->
+            <p-card class="w-full">
+              <div class="flex justify-between mb-4">
+                <div class="flex-1">
+                  <span class="block text-mlm-secondary font-medium mb-4">Wallet Balance</span>
+                  <div class="text-mlm-text font-medium text-xl">$0.00</div>
+                </div>
+                <div class="flex items-center justify-center bg-mlm-blue-100 rounded-lg" style="width: 2.5rem; height: 2.5rem">
+                  <i class="pi pi-wallet text-mlm-blue-500 text-xl"></i>
+                </div>
+              </div>
+              <span class="text-mlm-primary font-medium">View Wallet </span>
+              <span class="text-mlm-secondary">for details</span>
+            </p-card>
+
+            <!-- Referral Summary -->
+            <p-card class="w-full">
+              <div class="flex justify-between mb-4">
+                <div class="flex-1">
+                  <span class="block text-mlm-secondary font-medium mb-4">Total Referrals</span>
+                  <div class="text-mlm-text font-medium text-xl">0</div>
+                </div>
+                <div class="flex items-center justify-center bg-mlm-blue-100 rounded-lg" style="width: 2.5rem; height: 2.5rem">
+                  <i class="pi pi-users text-mlm-blue-500 text-xl"></i>
+                </div>
+              </div>
+              <span class="text-mlm-primary font-medium">0 </span>
+              <span class="text-mlm-secondary">active this month</span>
+            </p-card>
+
+            <!-- Commissions -->
+            <p-card class="w-full">
+              <div class="flex justify-between mb-4">
+                <div class="flex-1">
+                  <span class="block text-mlm-secondary font-medium mb-4">Commissions</span>
+                  <div class="text-mlm-text font-medium text-xl">$0.00</div>
+                </div>
+                <div class="flex items-center justify-center bg-mlm-success/10 rounded-lg" style="width: 2.5rem; height: 2.5rem">
+                  <i class="pi pi-dollar text-mlm-success text-xl"></i>
+                </div>
+              </div>
+              <span class="text-mlm-primary font-medium">Pending </span>
+              <span class="text-mlm-secondary">commissions</span>
+            </p-card>
+
+            <!-- Orders -->
+            <p-card class="w-full">
+              <div class="flex justify-between mb-4">
+                <div class="flex-1">
+                  <span class="block text-mlm-secondary font-medium mb-4">Orders</span>
+                  <div class="text-mlm-text font-medium text-xl">0</div>
+                </div>
+                <div class="flex items-center justify-center bg-mlm-blue-100 rounded-lg" style="width: 2.5rem; height: 2.5rem">
+                  <i class="pi pi-shopping-bag text-mlm-blue-500 text-xl"></i>
+                </div>
+              </div>
+              <span class="text-mlm-primary font-medium">0 </span>
+              <span class="text-mlm-secondary">this month</span>
+            </p-card>
+          </div>
+
+          <!-- Quick Links and Notifications -->
+          <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <!-- Quick Links -->
+            <p-card header="Quick Links" class="w-full">
+              <div class="grid grid-cols-2 gap-4">
+                <p-button
+                  label="Shop"
+                  icon="pi pi-shopping-cart"
+                  [outlined]="true"
+                  [style]="{ width: '100%' }"
+                  (onClick)="navigateTo('/shop')">
+                </p-button>
+                <p-button
+                  label="Wallet"
+                  icon="pi pi-wallet"
+                  [outlined]="true"
+                  [style]="{ width: '100%' }"
+                  (onClick)="navigateTo('/wallet')">
+                </p-button>
+                <p-button
+                  label="Network"
+                  icon="pi pi-users"
+                  [outlined]="true"
+                  [style]="{ width: '100%' }"
+                  (onClick)="navigateTo('/network')">
+                </p-button>
+                <p-button
+                  label="Commissions"
+                  icon="pi pi-dollar"
+                  [outlined]="true"
+                  [style]="{ width: '100%' }"
+                  (onClick)="navigateTo('/commissions')">
+                </p-button>
+              </div>
+            </p-card>
+
+            <!-- Notifications -->
+            <p-card header="Recent Notifications" class="w-full">
+              <div class="space-y-4">
+                <div class="flex items-start gap-3 p-3 rounded-lg bg-mlm-blue-50">
+                  <i class="pi pi-info-circle text-mlm-blue-500 mt-1"></i>
+                  <div class="flex-1">
+                    <p class="text-sm font-medium text-mlm-text">Welcome!</p>
+                    <p class="text-xs text-mlm-secondary">Your account has been activated successfully.</p>
+                  </div>
+                </div>
+                <div class="text-center py-4 text-sm text-mlm-secondary">
+                  No new notifications
+                </div>
+              </div>
+            </p-card>
+          </div>
+        </div>
+      }
+    </div>
+  </main>
+</div>
+

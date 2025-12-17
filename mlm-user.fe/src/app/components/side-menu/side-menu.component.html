@@ -1,0 +1,179 @@
+<!-- Mobile Menu Button -->
+<div class="sticky top-0 z-40 flex items-center gap-x-6 bg-white px-4 py-4 border-b border-mlm-blue-200 sm:px-6 lg:hidden shadow-sm">
+  <button
+    type="button"
+    (click)="toggleMobileMenu()"
+    class="-m-2.5 p-2.5 text-mlm-secondary hover:text-mlm-text"
+    [attr.aria-label]="mobileMenuOpen() ? 'Close sidebar' : 'Open sidebar'"
+    [attr.aria-expanded]="mobileMenuOpen()">
+    <span class="sr-only">Open sidebar</span>
+    <i class="pi pi-bars text-xl"></i>
+  </button>
+  <div class="flex-1 text-sm font-semibold text-mlm-text">Dashboard</div>
+  @if (currentUser(); as user) {
+    <div class="flex items-center gap-x-2">
+      <span class="text-sm text-mlm-secondary">{{ user.firstName }}</span>
+      <div class="w-8 h-8 rounded-full bg-mlm-blue-100 flex items-center justify-center border border-mlm-blue-200">
+        <span class="text-xs text-mlm-blue-700">{{ user.firstName.charAt(0) }}</span>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Mobile Menu Overlay -->
+@if (mobileMenuOpen()) {
+  <div
+    class="fixed inset-0 z-50 lg:hidden"
+    (click)="closeMobileMenu()"
+    role="button"
+    tabindex="0"
+    [attr.aria-label]="'Close menu'">
+    <div class="fixed inset-0 bg-mlm-text/80 transition-opacity"></div>
+  </div>
+}
+
+<!-- Mobile Sidebar -->
+<div
+  class="fixed inset-y-0 left-0 z-50 w-full max-w-xs transform transition-transform duration-300 ease-in-out lg:hidden"
+  [class.translate-x-0]="mobileMenuOpen()"
+  [class.-translate-x-full]="!mobileMenuOpen()"
+  role="navigation"
+  [attr.aria-label]="'Main navigation'"
+  style="overflow: visible;">
+  <div class="relative flex h-full flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-2 ring-1 ring-mlm-blue-200 shadow-lg" style="overflow-x: visible;">
+    <div class="flex h-16 shrink-0 items-center justify-between">
+      <div class="text-xl font-bold text-mlm-primary">MLM</div>
+      <button
+        type="button"
+        (click)="closeMobileMenu()"
+        class="-m-2.5 p-2.5 text-mlm-secondary hover:text-mlm-text"
+        aria-label="Close sidebar">
+        <i class="pi pi-times text-xl"></i>
+      </button>
+    </div>
+    <nav class="flex flex-1 flex-col">
+      <ul role="list" class="flex flex-1 flex-col gap-y-7">
+        <li>
+          <ul role="list" class="-mx-2 space-y-1 overflow-visible">
+            @for (item of menuItems(); track item.route) {
+              <li class="relative">
+                <a
+                  (click)="navigate(item.route, item)"
+                  (mouseenter)="isItemDisabled(item) && updateTooltipPosition($event)"
+                  [class.bg-mlm-blue-50]="isActiveRoute(item.route) && !isItemDisabled(item)"
+                  [class.text-mlm-primary]="isActiveRoute(item.route) && !isItemDisabled(item)"
+                  [class.text-mlm-secondary]="!isActiveRoute(item.route) && !isItemDisabled(item)"
+                  [class.opacity-50]="isItemDisabled(item)"
+                  [class.cursor-not-allowed]="isItemDisabled(item)"
+                  [class.cursor-pointer]="!isItemDisabled(item)"
+                  [class.hover:bg-mlm-blue-50]="!isItemDisabled(item)"
+                  [class.hover:text-mlm-primary]="!isItemDisabled(item)"
+                  class="group flex whitespace-nowrap gap-x-3 rounded-md p-2 text-xs font-semibold relative"
+                  [attr.aria-current]="isActiveRoute(item.route) && !isItemDisabled(item) ? 'page' : null"
+                  [attr.aria-disabled]="isItemDisabled(item)">
+                  <i [class]="item.icon + ' w-6 h-6 shrink-0'"></i>
+                  {{ item.label }}
+                  @if (isItemDisabled(item)) {
+                    <span 
+                      data-tooltip
+                      class="fixed px-3 py-1.5 bg-mlm-text text-white text-xs font-medium rounded whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible pointer-events-none transition-all duration-200 z-[100] shadow-lg -translate-y-1/2"
+                      style="left: calc(18rem + 0.5rem); top: var(--tooltip-top, 0);">
+                      Complete registration
+                      <span class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-mlm-text"></span>
+                    </span>
+                  }
+                </a>
+              </li>
+            }
+          </ul>
+        </li>
+        <li class="mt-auto -mx-6">
+          @if (currentUser(); as user) {
+            <div class="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold text-mlm-text">
+              <div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-mlm-blue-100 border border-mlm-blue-200 text-xs text-mlm-blue-700">
+                {{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="truncate">{{ user.firstName }} {{ user.lastName }}</p>
+                <p class="text-xs text-mlm-secondary truncate">{{ user.email }}</p>
+              </div>
+            </div>
+          }
+          <button
+            (click)="logout()"
+            class="w-full flex items-center gap-x-3 rounded-md px-6 py-3 text-sm font-semibold text-mlm-secondary hover:bg-mlm-blue-50 hover:text-mlm-text">
+            <i class="pi pi-sign-out w-6 h-6 shrink-0"></i>
+            Logout
+          </button>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<!-- Desktop Sidebar -->
+<div class="hidden bg-white lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col shadow-sm" style="overflow: visible;">
+  <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-mlm-blue-200 px-6" style="overflow-x: visible;">
+    <div class="flex h-16 shrink-0 items-center">
+      <div class="text-xl font-bold text-mlm-primary">MLM</div>
+    </div>
+    <nav class="flex flex-1 flex-col">
+      <ul role="list" class="flex flex-1 flex-col gap-y-7">
+        <li>
+          <ul role="list" class="-mx-2 space-y-1 overflow-visible">
+            @for (item of menuItems(); track item.route) {
+              <li class="relative">
+                <a
+                  (click)="navigate(item.route, item)"
+                  (mouseenter)="isItemDisabled(item) && updateTooltipPosition($event)"
+                  [class.bg-mlm-blue-50]="isActiveRoute(item.route) && !isItemDisabled(item)"
+                  [class.text-mlm-primary]="isActiveRoute(item.route) && !isItemDisabled(item)"
+                  [class.text-mlm-secondary]="!isActiveRoute(item.route) && !isItemDisabled(item)"
+                  [class.opacity-50]="isItemDisabled(item)"
+                  [class.cursor-not-allowed]="isItemDisabled(item)"
+                  [class.cursor-pointer]="!isItemDisabled(item)"
+                  [class.hover:bg-mlm-blue-50]="!isItemDisabled(item)"
+                  [class.hover:text-mlm-primary]="!isItemDisabled(item)"
+                  class="group flex gap-x-3 whitespace-nowrap rounded-md p-2 text-sm font-semibold relative"
+                  [attr.aria-current]="isActiveRoute(item.route) && !isItemDisabled(item) ? 'page' : null"
+                  [attr.aria-disabled]="isItemDisabled(item)">
+                  <i [class]="item.icon + ' w-6 h-6 shrink-0'"></i>
+                  {{ item.label }}
+                  @if (isItemDisabled(item)) {
+                    <span 
+                      data-tooltip
+                      class="fixed px-3 py-1.5 bg-mlm-text text-white text-xs font-medium rounded whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible pointer-events-none transition-all duration-200 z-[100] shadow-lg -translate-y-1/2"
+                      style="left: calc(18rem + 0.5rem); top: var(--tooltip-top, 0);">
+                      Complete registration
+                      <span class="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-mlm-text"></span>
+                    </span>
+                  }
+                </a>
+              </li>
+            }
+          </ul>
+        </li>
+        <li class="mt-auto -mx-6">
+          @if (currentUser(); as user) {
+            <div class="flex items-center gap-x-4 px-6 py-3 text-sm font-semibold text-mlm-text hover:bg-mlm-blue-50 cursor-pointer">
+              <div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-mlm-blue-100 border border-mlm-blue-200 text-xs text-mlm-blue-700">
+                {{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="truncate">{{ user.firstName }} {{ user.lastName }}</p>
+                <p class="text-xs text-mlm-secondary truncate">{{ user.email }}</p>
+              </div>
+            </div>
+          }
+          <button
+            (click)="logout()"
+            class="w-full flex items-center gap-x-3 rounded-md px-6 py-3 text-sm font-semibold text-mlm-secondary hover:bg-mlm-blue-50 hover:text-mlm-text">
+            <i class="pi pi-sign-out w-6 h-6 shrink-0"></i>
+            Logout
+          </button>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>
+

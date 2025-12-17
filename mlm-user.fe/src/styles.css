@@ -1,4 +1,12 @@
-@import "tailwindcss";
+/* You can add global styles to this file, and also import other style files */
+@layer tailwind-base, primeng, tailwind-utilities;
+
+@layer tailwind-base {
+  @import "tailwindcss";
+}
+
+@import "tailwindcss-primeui";
+@import "primeicons/primeicons.css";
 
 @theme {
   --color-mlm-primary: #3b82f6;
