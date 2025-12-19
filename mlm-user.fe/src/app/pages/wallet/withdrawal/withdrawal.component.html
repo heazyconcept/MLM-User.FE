@@ -1,0 +1,109 @@
+<div class="px-2 pb-2">
+  <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+
+  <div class="space-y-6">
+      <div class="grid grid-cols-2 gap-4">
+          <!-- Current Balance -->
+          <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+              <span class="text-[10px] text-mlm-secondary font-bold uppercase tracking-wider">Available Balance</span>
+              <div class="mt-1 flex items-baseline gap-1">
+                  <span class="text-2xl font-black text-mlm-text">
+                      {{ currency() === 'NGN' ? '₦' : '$' }}{{ (wallet()?.balance ?? 0) | number:'1.2-2' }}
+                  </span>
+              </div>
+          </div>
+
+          <!-- Bank Details (Read-only) -->
+          <div class="bg-mlm-blue-50/30 rounded-2xl p-5 border border-mlm-blue-100/50">
+              <span class="text-[10px] text-mlm-secondary font-bold uppercase tracking-wider">Receiving Bank</span>
+              @if (hasBankDetails()) {
+                  <div class="mt-1">
+                      <div class="text-sm font-bold text-mlm-text truncate">{{ bankDetails().bankName }}</div>
+                      <div class="text-[10px] text-mlm-secondary font-medium">{{ bankDetails().accountNumber }}</div>
+                  </div>
+              } @else {
+                  <div class="mt-2 flex items-center gap-1.5 text-mlm-error">
+                      <i class="pi pi-exclamation-circle text-xs"></i>
+                      <span class="text-[10px] font-bold">No bank details found</span>
+                  </div>
+              }
+          </div>
+      </div>
+
+      @if (!hasBankDetails()) {
+          <div class="p-3 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
+              <i class="pi pi-exclamation-triangle text-mlm-error mt-0.5"></i>
+              <div>
+                  <p class="text-[10px] font-bold text-red-800">Bank Details Required</p>
+                  <p class="text-[10px] text-red-600 leading-tight">Please update your bank details in your profile before requesting a withdrawal.</p>
+              </div>
+          </div>
+      }
+
+      <form [formGroup]="withdrawalForm" (ngSubmit)="onSubmit()" class="space-y-6">
+          <div class="flex flex-col gap-2">
+              <label for="amount" class="text-xs font-bold text-mlm-text uppercase tracking-tight">Amount to Withdraw</label>
+              <p-inputNumber 
+                  formControlName="amount" 
+                  inputId="amount" 
+                  [mode]="'currency'" 
+                  [currency]="currency() === 'NGN' ? 'NGN' : 'USD'" 
+                  [currencyDisplay]="'symbol'"
+                  [min]="100"
+                  [max]="wallet()?.balance ?? 0"
+                  fluid="true"
+                  placeholder="0.00">
+              </p-inputNumber>
+              <div class="flex items-center justify-between text-[10px]">
+                <span class="text-mlm-secondary font-medium italic">Min: {{ currency() === 'NGN' ? '₦100' : '$100' }}</span>
+                @if (wallet()) {
+                  <button type="button" (click)="withdrawalForm.patchValue({amount: wallet()?.balance})" class="text-mlm-primary font-bold hover:underline">MAX</button>
+                }
+              </div>
+              
+              @if (withdrawalForm.get('amount')?.invalid && (withdrawalForm.get('amount')?.dirty || withdrawalForm.get('amount')?.touched)) {
+                  <div class="mt-1">
+                      @if (withdrawalForm.get('amount')?.errors?.['required']) {
+                          <small class="text-mlm-error text-[10px] font-bold">Amount is required.</small>
+                      }
+                      @if (withdrawalForm.get('amount')?.errors?.['min']) {
+                          <small class="text-mlm-error text-[10px] font-bold">Minimum withdrawal amount is 100.</small>
+                      }
+                      @if (withdrawalForm.get('amount')?.errors?.['max']) {
+                          <small class="text-mlm-error text-[10px] font-bold">Amount exceeds available balance.</small>
+                      }
+                  </div>
+              }
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+            <p-button 
+                type="button"
+                label="Cancel"
+                [outlined]="true"
+                severity="secondary"
+                (onClick)="cancel()"
+                [disabled]="isSubmitting()"
+                [style]="{ 'padding-left': '1.5rem', 'padding-right': '1.5rem' }">
+            </p-button>
+            <p-button 
+                type="submit" 
+                label="Confirm" 
+                [disabled]="withdrawalForm.invalid || isSubmitting() || !hasBankDetails()"
+                [loading]="isSubmitting()"
+                [style]="{ 'padding-left': '2rem', 'padding-right': '2rem' }">
+            </p-button>
+          </div>
+
+          <div class="flex items-start gap-3 p-3 bg-mlm-blue-50/50 rounded-xl border border-mlm-blue-100/50">
+              <i class="pi pi-info-circle text-mlm-blue-500 mt-0.5 text-xs"></i>
+              <p class="text-[6px] text-mlm-blue-800 leading-normal font-medium">
+                  Withdrawals take up to 48 hours to process. Ensure your bank details are correct in your profile.
+              </p>
+          </div>
+      </form>
+  </div>
+
+</div>
+
+

@@ -12,13 +12,19 @@ module.exports = {
         'poppins': ['Poppins', 'sans-serif'],
       },
       colors: {
-        'mlm-primary': '#3b82f6',
-        'mlm-secondary': '#64748b',
+        'mlm-primary': '#49A321', // Brand Primary Green
+        'mlm-secondary': '#64748b', // Grey for secondary text
+        'brand': {
+          'green-light': '#DCEDC8',
+          'green-primary': '#49A321',
+          'green-dark': '#1B5E20',
+          'gold': '#F9A825',
+        },
         'mlm-success': '#22c55e',
         'mlm-error': '#ef4444',
         'mlm-warning': '#f59e0b',
         'mlm-background': '#f8fafc',
-        'mlm-text': '#0f172a',
+        'mlm-text': '#000000', // Black for main text
         'mlm-blue': {
           50: '#eff6ff',
           100: '#dbeafe',

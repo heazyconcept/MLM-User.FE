@@ -1,0 +1,92 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+
+    <div class="px-4 sm:px-6 lg:px-8">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-mlm-text">My Wallet</h1>
+        <p class="mt-2 text-mlm-secondary">Manage your balances and withdraw your earnings.</p>
+      </div>
+
+      @if (!isPaid()) {
+        <div class="max-w-3xl">
+          <p-card header="Access Restricted" class="border-t-4 border-mlm-warning">
+            <div class="flex flex-col items-center text-center py-8 space-y-6">
+              <div class="w-20 h-20 bg-mlm-warning/10 rounded-full flex items-center justify-center">
+                <i class="pi pi-lock text-4xl text-mlm-warning"></i>
+              </div>
+              <div class="space-y-2">
+                <h3 class="text-xl font-semibold text-mlm-text">Complete Registration</h3>
+                <p class="text-mlm-secondary max-w-md">
+                  You need to pay your registration fee to access your wallet features, view transactions, and make withdrawals.
+                </p>
+              </div>
+              <p-button 
+                label="Pay Registration Fee" 
+                icon="pi pi-credit-card" 
+                (onClick)="navigateToPayment()"
+                class="p-button-lg">
+              </p-button>
+            </div>
+          </p-card>
+        </div>
+      } @else {
+      @if (isLoading()) {
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <p-card *ngFor="let i of [1, 2]">
+              <div class="space-y-4">
+                <div class="flex justify-between items-start">
+                  <div class="space-y-2">
+                    <p-skeleton width="4rem" height="1rem"></p-skeleton>
+                    <p-skeleton width="8rem" height="2rem"></p-skeleton>
+                  </div>
+                  <p-skeleton shape="circle" size="3rem"></p-skeleton>
+                </div>
+                <div class="flex gap-4 pt-4">
+                  <p-skeleton width="100%" height="2.5rem"></p-skeleton>
+                  <p-skeleton width="100%" height="2.5rem"></p-skeleton>
+                </div>
+              </div>
+            </p-card>
+          </div>
+        } @else {
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+            @for (wallet of wallets(); track wallet.id) {
+              <app-wallet-card [wallet]="wallet"></app-wallet-card>
+            }
+          </div>
+
+          <!-- Quick Info / Business Rules -->
+          <div class="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-3">
+             <div class="bg-white p-6 rounded-xl shadow-sm border border-mlm-blue-100 flex items-start gap-4">
+               <div class="bg-mlm-blue-50 p-3 rounded-lg">
+                 <i class="pi pi-info-circle text-mlm-blue-500"></i>
+               </div>
+               <div>
+                 <h4 class="font-semibold text-mlm-text">Currency Locked</h4>
+                 <p class="text-sm text-mlm-secondary mt-1">Earnings stay in their original currency. No internal conversion is supported.</p>
+               </div>
+             </div>
+             <div class="bg-white p-6 rounded-xl shadow-sm border border-mlm-blue-100 flex items-start gap-4">
+               <div class="bg-mlm-blue-50 p-3 rounded-lg">
+                 <i class="pi pi-clock text-mlm-blue-500"></i>
+               </div>
+               <div>
+                 <h4 class="font-semibold text-mlm-text">Processing Time</h4>
+                 <p class="text-sm text-mlm-secondary mt-1">Withdrawals are processed within 24-48 business hours.</p>
+               </div>
+             </div>
+             <div class="bg-white p-6 rounded-xl shadow-sm border border-mlm-blue-100 flex items-start gap-4">
+               <div class="bg-mlm-blue-50 p-3 rounded-lg">
+                 <i class="pi pi-shield text-mlm-blue-500"></i>
+               </div>
+               <div>
+                 <h4 class="font-semibold text-mlm-text">Secure Transactions</h4>
+                 <p class="text-sm text-mlm-secondary mt-1">All transactions are encrypted and audited for your security.</p>
+               </div>
+             </div>
+          </div>
+        }
+      }
+    </div>
+  </main>
+</div>

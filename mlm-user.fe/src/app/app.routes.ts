@@ -50,11 +50,16 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/placeholder/placeholder.component').then(m => m.PlaceholderComponent),
-        data: { title: 'Wallet' }
+        loadComponent: () => import('./pages/wallet/wallet.component').then(m => m.WalletComponent)
+      },
+      {
+        path: 'transactions/:currency',
+        loadComponent: () => import('./pages/wallet/transactions/transaction-history.component').then(m => m.TransactionHistoryComponent)
       }
     ]
   },
+
+
   {
     path: 'network',
     component: DashboardLayoutComponent,
@@ -83,7 +88,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/placeholder/placeholder.component').then(m => m.PlaceholderComponent),
+        loadComponent: () => import('./pages/wallet/withdrawals/withdrawal-history.component').then(m => m.WithdrawalHistoryComponent),
         data: { title: 'Withdrawals' }
       }
     ]

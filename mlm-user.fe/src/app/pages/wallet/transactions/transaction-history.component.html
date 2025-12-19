@@ -1,0 +1,144 @@
+<div class="min-h-screen bg-mlm-background">
+  <div class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <!-- Header Area -->
+      <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-7">
+        <div class="space-y-2">
+          <button (click)="goBack()" class="flex items-center gap-2 text-mlm-primary hover:text-mlm-blue-600 font-semibold transition-colors group mb-2">
+            <i class="pi pi-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
+            Back to Wallet
+          </button>
+          <h1 class="text-2xl font-extrabold text-mlm-text tracking-tight">Transaction History</h1>
+          <p class="text-lg text-mlm-secondary">Track every movement in your <span class="text-mlm-text font-bold">{{ currency() }}</span> wallet.</p>
+        </div>
+
+        <div class="flex items-center gap-2.5 px-4 py-2 rounded-full bg-mlm-primary/5 border border-mlm-primary/10 h-fit">
+          <div [class]="'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ' + (currency() === 'NGN' ? 'bg-mlm-blue-100 text-mlm-blue-600' : 'bg-mlm-success/10 text-mlm-success')">
+             {{ currency() === 'NGN' ? '₦' : '$' }}
+          </div>
+          <span class="text-sm font-bold text-mlm-text tracking-tight">{{ currency() }} Wallet</span>
+        </div>
+
+      </div>
+
+      <!-- Main Content: Centralized Table Card -->
+      <div class="bg-white rounded-xl border border-mlm-blue-100 overflow-hidden">
+        <p-table 
+          [value]="isLoading() ? skeletonRows : transactions()" 
+          [paginator]="true" 
+          [rows]="10"
+          [responsiveLayout]="'stack'"
+          [breakpoint]="'960px'"
+          styleClass="p-datatable-lg custom-table">
+
+          <ng-template #header>
+            <tr>
+              <th class="bg-gray-50/50 px-8 py-6 text-sm font-bold text-mlm-text border-b border-gray-100 uppercase tracking-wider">
+                <div class="flex items-center gap-3">
+                  <i class="pi pi-calendar text-mlm-primary"></i>
+                  <span>Date & Time</span>
+                </div>
+              </th>
+              <th class="bg-gray-50/50 px-8 py-6 text-sm font-bold text-mlm-text border-b border-gray-100 uppercase tracking-wider">
+                <div class="flex items-center gap-3">
+                  <i class="pi pi-tag text-mlm-primary"></i>
+                  <span>Activity Type</span>
+                </div>
+              </th>
+              <th class="bg-gray-50/50 px-8 py-6 text-sm font-bold text-mlm-text border-b border-gray-100 uppercase tracking-wider">
+                <div class="flex items-center gap-3">
+                  <i class="pi pi-align-left text-mlm-primary"></i>
+                  <span>Description</span>
+                </div>
+              </th>
+              <th class="bg-gray-50/50 px-8 py-6 text-sm font-bold text-mlm-text border-b border-gray-100 uppercase tracking-wider">
+                <div class="flex items-center gap-3">
+                  <i class="pi pi-wallet text-mlm-primary"></i>
+                  <span>Amount</span>
+                </div>
+              </th>
+              <th class="bg-gray-50/50 px-8 py-6 text-sm font-bold text-mlm-text border-b border-gray-100 uppercase tracking-wider">
+                <div class="flex items-center gap-3">
+                  <i class="pi pi-check-circle text-mlm-primary"></i>
+                  <span>Payment Status</span>
+                </div>
+              </th>
+            </tr>
+          </ng-template>
+          
+          <ng-template #body let-tx>
+            @if (isLoading()) {
+              <tr class="animate-pulse">
+                <td class="px-8 py-6 border-b border-gray-50"><p-skeleton width="80%" height="1.25rem"></p-skeleton></td>
+                <td class="px-8 py-6 border-b border-gray-50"><p-skeleton width="70%" height="2rem" borderRadius="10px"></p-skeleton></td>
+                <td class="px-8 py-6 border-b border-gray-50"><p-skeleton width="90%" height="1.25rem"></p-skeleton></td>
+                <td class="px-8 py-6 border-b border-gray-50"><p-skeleton width="60%" height="1.5rem"></p-skeleton></td>
+                <td class="px-8 py-6 border-b border-gray-50"><p-skeleton width="100px" height="1.5rem" borderRadius="20px"></p-skeleton></td>
+              </tr>
+            } @else {
+              <tr class="hover:bg-mlm-blue-50/30 transition-all cursor-default">
+                <td class="px-8 py-6 border-b border-gray-50">
+                  <span class="p-column-title font-bold md:hidden text-mlm-secondary uppercase text-[10px] tracking-widest mb-1 block">Date & Time</span>
+                  <div class="flex flex-col">
+                      <span class="text-sm font-bold text-mlm-text">{{ tx.date | date:'mediumDate' }}</span>
+                      <span class="text-xs text-mlm-secondary font-medium">{{ tx.date | date:'shortTime' }}</span>
+                  </div>
+                </td>
+                <td class="px-8 py-6 border-b border-gray-50">
+                  <span class="p-column-title font-bold md:hidden text-mlm-secondary uppercase text-[10px] tracking-widest mb-1 block">Activity Type</span>
+                  <div class="flex items-center gap-3 bg-gray-50 w-fit px-3 py-1.5 rounded-xl border border-gray-100">
+                    <i [class]="getTypeIcon(tx.type) + ' text-sm'"></i>
+                    <span class="text-sm font-bold text-mlm-text tracking-tight">{{ tx.type }}</span>
+                  </div>
+                </td>
+                <td class="px-8 py-6 border-b border-gray-50">
+                  <span class="p-column-title font-bold md:hidden text-mlm-secondary uppercase text-[10px] tracking-widest mb-1 block">Description</span>
+                  <span class="text-sm font-medium text-mlm-secondary line-clamp-1">{{ tx.description || 'No description provided' }}</span>
+                </td>
+                <td class="px-8 py-6 border-b border-gray-50">
+                  <span class="p-column-title font-bold md:hidden text-mlm-secondary uppercase text-[10px] tracking-widest mb-1 block">Amount</span>
+                  <div class="flex items-center gap-1">
+                      <span [class]="'text-base font-black ' + (tx.type === 'Withdrawal' ? 'text-mlm-error' : 'text-mlm-success')">
+                        {{ tx.type === 'Withdrawal' ? '-' : '+' }}{{ currency() === 'NGN' ? '₦' : '$' }}{{ tx.amount | number:'1.2-2' }}
+                      </span>
+                  </div>
+                </td>
+                <td class="px-8 py-6 border-b border-gray-50">
+                  <span class="p-column-title font-bold md:hidden text-mlm-secondary uppercase text-[10px] tracking-widest mb-1 block">Payment Status</span>
+                  <app-status-badge [status]="tx.status"></app-status-badge>
+                </td>
+              </tr>
+            }
+          </ng-template>
+
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="5" class="py-24 text-center">
+                <div class="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <div class="relative w-64 h-64 mb-8">
+                    <img src="assets/images/empty state.png" alt="No transactions" class="w-full h-full object-contain">
+                  </div>
+                  <h3 class="text-xl font-bold text-mlm-text mb-2">No Transactions Found</h3>
+                  <p class="text-mlm-secondary mx-auto leading-relaxed">
+                    It looks like you haven't made any transactions yet.
+                  </p>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+
+        </p-table>
+      </div>
+
+
+      <!-- Footer Help -->
+      <!-- <div class="mt-8 text-center">
+        <p class="text-sm text-mlm-secondary flex items-center justify-center gap-2">
+            <i class="pi pi-question-circle"></i>
+            Need help with a transaction? <a href="#" class="text-mlm-primary font-bold hover:underline">Contact Support</a>
+        </p>
+      </div> -->
+    </div>
+  </div>
+</div>
+
