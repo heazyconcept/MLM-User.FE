@@ -16,10 +16,6 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent)
-      },
-      {
-        path: 'registration-payment',
-        loadComponent: () => import('./pages/dashboard/registration-payment/registration-payment.component').then(m => m.RegistrationPaymentComponent)
       }
     ]
   },
@@ -77,8 +73,11 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/placeholder/placeholder.component').then(m => m.PlaceholderComponent),
-        data: { title: 'Commissions' }
+        loadComponent: () => import('./pages/commissions/earnings-overview.component').then(m => m.EarningsOverviewComponent)
+      },
+      {
+        path: 'breakdown',
+        loadComponent: () => import('./pages/commissions/commission-breakdown.component').then(m => m.CommissionBreakdownComponent)
       }
     ]
   },

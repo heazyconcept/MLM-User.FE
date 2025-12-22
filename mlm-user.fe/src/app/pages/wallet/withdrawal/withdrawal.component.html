@@ -5,7 +5,7 @@
       <div class="grid grid-cols-2 gap-4">
           <!-- Current Balance -->
           <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-              <span class="text-[10px] text-mlm-secondary font-bold uppercase tracking-wider">Available Balance</span>
+              <span class="text-[15px] text-mlm-secondary font-bold uppercase tracking-wider">Available Balance</span>
               <div class="mt-1 flex items-baseline gap-1">
                   <span class="text-2xl font-black text-mlm-text">
                       {{ currency() === 'NGN' ? '₦' : '$' }}{{ (wallet()?.balance ?? 0) | number:'1.2-2' }}
@@ -15,7 +15,7 @@
 
           <!-- Bank Details (Read-only) -->
           <div class="bg-mlm-blue-50/30 rounded-2xl p-5 border border-mlm-blue-100/50">
-              <span class="text-[10px] text-mlm-secondary font-bold uppercase tracking-wider">Receiving Bank</span>
+              <span class="text-[15px] text-mlm-secondary font-bold uppercase tracking-wider">Receiving Bank</span>
               @if (hasBankDetails()) {
                   <div class="mt-1">
                       <div class="text-sm font-bold text-mlm-text truncate">{{ bankDetails().bankName }}</div>
@@ -97,7 +97,7 @@
 
           <div class="flex items-start gap-3 p-3 bg-mlm-blue-50/50 rounded-xl border border-mlm-blue-100/50">
               <i class="pi pi-info-circle text-mlm-blue-500 mt-0.5 text-xs"></i>
-              <p class="text-[6px] text-mlm-blue-800 leading-normal font-medium">
+              <p class="text-[15px] text-mlm-blue-800 leading-normal font-medium">
                   Withdrawals take up to 48 hours to process. Ensure your bank details are correct in your profile.
               </p>
           </div>
