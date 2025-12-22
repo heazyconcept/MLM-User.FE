@@ -44,3 +44,9 @@ __screenshots__/
 Thumbs.db
 
 /cursor
+
+# User Documentation & Examples
+uiexamples/
+best-practices.md
+dashboard.md
+"Earnings & Commissions user flow.md"
