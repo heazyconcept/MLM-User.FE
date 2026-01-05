@@ -9,13 +9,17 @@
 @import "primeicons/primeicons.css";
 
 @theme {
-  --color-mlm-primary: #3b82f6;
+  --color-mlm-primary: #49A321;
   --color-mlm-secondary: #64748b;
+  --color-brand-green-light: #DCEDC8;
+  --color-brand-green-primary: #49A321;
+  --color-brand-green-dark: #1B5E20;
+  --color-brand-gold: #F9A825;
   --color-mlm-success: #22c55e;
   --color-mlm-error: #ef4444;
   --color-mlm-warning: #f59e0b;
   --color-mlm-background: #f8fafc;
-  --color-mlm-text: #0f172a;
+  --color-mlm-text: #000000;
   
   --color-mlm-blue-50: #eff6ff;
   --color-mlm-blue-100: #dbeafe;
@@ -41,13 +45,17 @@
 }
 
 :root {
-  --primary-color: #3b82f6;
+  --primary-color: #49A321;
   --secondary-color: #64748b;
+  --brand-green-light: #DCEDC8;
+  --brand-green-primary: #49A321;
+  --brand-green-dark: #1B5E20;
+  --brand-gold: #F9A825;
   --success-color: #22c55e;
   --error-color: #ef4444;
   --warning-color: #f59e0b;
   --background-color: #f8fafc;
-  --text-color: #0f172a;
+  --text-color: #000000;
   
   --mlm-blue-50: #eff6ff;
   --mlm-blue-100: #dbeafe;

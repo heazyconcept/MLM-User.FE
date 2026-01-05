@@ -32,8 +32,23 @@ export class UserService {
     const persistedUser = this.getPersistedUserData();
     if (persistedUser) {
       this.user.set(persistedUser);
+    } else {
+      // Default mock user for testing with bank details
+      this.user.set({
+        id: '1',
+        email: 'pelumi123@gmail.com',
+        firstName: 'Pelumi',
+        lastName: 'Doe',
+        paymentStatus: 'PAID',
+        profileCompletionPercentage: 85,
+        bankName: 'GTBank',
+        accountNumber: '0123456789',
+        accountName: 'PELUMI DOE',
+        kycStatus: 'VERIFIED'
+      });
     }
   }
+
 
   paymentStatus = computed(() => this.user()?.paymentStatus ?? this.getPersistedPaymentStatus());
   isPaid = computed(() => this.paymentStatus() === 'PAID');

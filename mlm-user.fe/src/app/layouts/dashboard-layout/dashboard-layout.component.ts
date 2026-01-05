@@ -2,10 +2,13 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { SideMenuComponent } from '../../components/side-menu/side-menu.component';
+import { DashboardHeaderComponent } from '../../components/dashboard-header/dashboard-header.component';
+
 
 @Component({
   selector: 'app-dashboard-layout',
-  imports: [CommonModule, RouterOutlet, SideMenuComponent],
+  imports: [CommonModule, RouterOutlet, SideMenuComponent, DashboardHeaderComponent],
+
   templateUrl: './dashboard-layout.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })

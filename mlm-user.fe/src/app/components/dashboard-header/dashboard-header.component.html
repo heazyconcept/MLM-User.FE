@@ -1,0 +1,114 @@
+<header class="sticky top-0 z-40 flex h-16 shrink-0 items-center border-b border-gray-200 bg-white px-4 shadow-sm sm:px-6 lg:px-8">
+    <!-- Mobile menu toggle -->
+    <button type="button" class="-m-2.5 p-2.5 text-gray-400 lg:hidden" (click)="toggleMobileMenu()">
+        <span class="sr-only">Open sidebar</span>
+        <i class="pi pi-bars text-xl"></i>
+    </button>
+
+    <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+
+        <div class="flex-1"></div>
+        <div class="flex items-center gap-x-4 lg:gap-x-6">
+            <!-- Notifications -->
+            <button type="button" 
+                    class="-m-2.5 p-2.5 text-gray-400 hover:text-mlm-primary transition-colors relative"
+                    (click)="op.toggle($event)">
+                <span class="sr-only">View notifications</span>
+                <i class="pi pi-bell text-xl"></i>
+                @if (unreadCount() > 0) {
+                    <p-badge [value]="unreadCount().toString()" severity="danger" styleClass="absolute border-2 border-white" [style]="{ 'top': '4px', 'right': '4px', 'min-width': '1.2rem', 'height': '1.2rem', 'font-size': '10px' }"></p-badge>
+                }
+            </button>
+
+            <p-popover #op [style]="{ width: '380px' }" styleClass="shadow-2xl border-0 rounded-2xl overflow-hidden mt-2 p-0">
+                <div class="flex flex-col max-h-[500px]">
+                    <!-- Header -->
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10">
+                        <div class="flex items-center gap-2">
+                             <h3 class="text-sm font-black text-mlm-text">Notifications</h3>
+                             @if (unreadCount() > 0) {
+                                <span class="bg-mlm-error/10 text-mlm-error text-[10px] font-extrabold px-2 py-0.5 rounded-full">{{ unreadCount() }} New</span>
+                             }
+                        </div>
+                        <div class="flex gap-4">
+                            <button (click)="markAllAsRead()" class="text-[10px] font-bold text-mlm-primary hover:underline transition-all">Mark all read</button>
+                            <button (click)="clearNotifications()" class="text-[10px] font-bold text-mlm-secondary hover:text-mlm-text transition-all">Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- Scrollable List -->
+                    <div class="overflow-y-auto divide-y divide-gray-50 bg-gray-50/30">
+                        @for (n of notifications(); track n.id) {
+                            <div class="px-5 py-4 flex gap-4 transition-all hover:bg-white relative group" [class.bg-white]="!n.isRead">
+                                @if (!n.isRead) {
+                                    <div class="absolute left-1.5 top-1/2 -translate-y-1/2 w-1 h-8 bg-mlm-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                }
+                                
+                                <div class="shrink-0 mt-1">
+                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" 
+                                         [ngClass]="{
+                                             'bg-blue-50 text-blue-500': n.type === 'info',
+                                             'bg-green-50 text-green-500': n.type === 'success',
+                                             'bg-red-50 text-red-500': n.type === 'error',
+                                             'bg-orange-50 text-orange-500': n.type === 'warning'
+                                         }">
+                                        <i class="pi" [ngClass]="{
+                                            'pi-info-circle': n.type === 'info',
+                                            'pi-check-circle': n.type === 'success',
+                                            'pi-times-circle': n.type === 'error',
+                                            'pi-exclamation-triangle': n.type === 'warning'
+                                        }"></i>
+                                    </div>
+                                </div>
+
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-start justify-between gap-1 mb-1">
+                                        <p class="text-[11px] font-black leading-tight text-mlm-text truncate">{{ n.title }}</p>
+                                        <span class="text-[9px] font-semibold text-mlm-secondary whitespace-nowrap">{{ n.timestamp | date:'shortTime' }}</span>
+                                    </div>
+                                    <p class="text-[10px] leading-relaxed text-mlm-secondary line-clamp-2">{{ n.message }}</p>
+                                </div>
+                            </div>
+                        } @empty {
+                            <div class="py-16 text-center">
+                                <div class="w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                                    <img src="assets/images/no-alarm.png" alt="Empty Notifications">
+                                </div>
+                                <p class="text-xs font-bold text-mlm-text">All caught up!</p>
+                                <p class="text-[10px] text-mlm-secondary mt-1 px-10">No new notifications at the moment.</p>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="px-5 py-3 border-t border-gray-100 bg-white text-center">
+                        <button class="text-[10px] font-black text-mlm-text uppercase tracking-widest hover:text-mlm-primary transition-colors">See all activity</button>
+                    </div>
+                </div>
+            </p-popover>
+
+
+            <!-- Separator -->
+            <div class="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200" aria-hidden="true"></div>
+
+            <!-- Profile dropdown -->
+            <div class="relative">
+                <button type="button" class="-m-1.5 flex items-center p-1.5" id="user-menu-button" aria-expanded="false" aria-haspopup="true" (click)="menu.toggle($event)">
+                    <span class="sr-only">Open user menu</span>
+                    <p-avatar 
+                        [label]="currentUser()?.firstName?.charAt(0) || 'U'" 
+                        shape="circle" 
+                        styleClass="bg-mlm-blue-100 text-mlm-blue-600 font-bold">
+                    </p-avatar>
+                    <span class="hidden lg:flex lg:items-center">
+                        <span class="ml-4 text-sm font-semibold leading-6 text-mlm-text" aria-hidden="true">
+                            {{ currentUser()?.firstName }} {{ currentUser()?.lastName }}
+                        </span>
+                        <i class="pi pi-chevron-down ml-2 text-gray-400 text-xs"></i>
+                    </span>
+                </button>
+                <p-menu #menu [model]="userMenuItems" [popup]="true" appendTo="body"></p-menu>
+            </div>
+        </div>
+    </div>
+</header>

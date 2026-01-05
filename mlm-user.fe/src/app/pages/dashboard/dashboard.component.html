@@ -1,5 +1,6 @@
 <div class="min-h-screen bg-mlm-background">
-  <main class="py-10 lg:pl-72">
+  <main class="py-10">
+
     <div class="px-4 sm:px-6 lg:px-8">
       @if (!isPaid()) {
         <!-- Restricted Dashboard (UNPAID) -->
@@ -98,123 +99,252 @@
           }
 
           <!-- Stats Grid -->
-          <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
             <!-- Wallet Summary -->
-            <p-card class="w-full">
-              <div class="flex justify-between mb-4">
-                <div class="flex-1">
-                  <span class="block text-mlm-secondary font-medium mb-4">Wallet Balance</span>
-                  <div class="text-mlm-text font-medium text-xl">$0.00</div>
+            <div class="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02] bg-mlm-blue-500">
+              <i class="pi pi-wallet absolute" 
+                 style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.25; pointer-events: none; z-index: 0;"></i>
+              <div class="relative z-10 flex flex-col gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider opacity-90">Wallet Balance</span>
+                <div class="flex flex-col">
+                  <span class="text-2xl font-black">₦{{ ngnWallet()?.balance | number:'1.2-2' }}</span>
+                  <span class="text-lg font-bold opacity-80">${{ usdWallet()?.balance | number:'1.2-2' }}</span>
                 </div>
-                <div class="flex items-center justify-center bg-mlm-blue-100 rounded-lg" style="width: 2.5rem; height: 2.5rem">
-                  <i class="pi pi-wallet text-mlm-blue-500 text-xl"></i>
+                <div class="mt-2 flex items-center gap-1 text-[10px] font-bold">
+                  <i class="pi pi-arrow-up-right"></i>
+                  <span>VIEW DETAILS</span>
                 </div>
               </div>
-              <span class="text-mlm-primary font-medium">View Wallet </span>
-              <span class="text-mlm-secondary">for details</span>
-            </p-card>
+            </div>
 
             <!-- Referral Summary -->
-            <p-card class="w-full">
-              <div class="flex justify-between mb-4">
-                <div class="flex-1">
-                  <span class="block text-mlm-secondary font-medium mb-4">Total Referrals</span>
-                  <div class="text-mlm-text font-medium text-xl">0</div>
-                </div>
-                <div class="flex items-center justify-center bg-mlm-blue-100 rounded-lg" style="width: 2.5rem; height: 2.5rem">
-                  <i class="pi pi-users text-mlm-blue-500 text-xl"></i>
+            <div class="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02] bg-mlm-blue-700">
+              <i class="pi pi-users absolute" 
+                 style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.25; pointer-events: none; z-index: 0;"></i>
+              <div class="relative z-10 flex flex-col gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider opacity-90">Total Referrals</span>
+                <span class="text-4xl font-black">0</span>
+                <div class="mt-2 flex items-center gap-1 text-[10px] font-bold">
+                  <i class="pi pi-chart-line"></i>
+                  <span>8.2% INCREASE</span>
                 </div>
               </div>
-              <span class="text-mlm-primary font-medium">0 </span>
-              <span class="text-mlm-secondary">active this month</span>
-            </p-card>
+            </div>
 
             <!-- Commissions -->
-            <p-card class="w-full">
-              <div class="flex justify-between mb-4">
-                <div class="flex-1">
-                  <span class="block text-mlm-secondary font-medium mb-4">Commissions</span>
-                  <div class="text-mlm-text font-medium text-xl">$0.00</div>
+            <div class="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02] bg-mlm-primary">
+              <i class="pi pi-money-bill absolute" 
+                 style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.25; pointer-events: none; z-index: 0;"></i>
+              <div class="relative z-10 flex flex-col gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider opacity-90">Total Commissions</span>
+                <div class="flex flex-col">
+                  <span class="text-2xl font-black">₦{{ ngnSummary().totalEarnings | number:'1.2-2' }}</span>
+                  <span class="text-lg font-bold opacity-80">${{ usdSummary().totalEarnings | number:'1.2-2' }}</span>
                 </div>
-                <div class="flex items-center justify-center bg-mlm-success/10 rounded-lg" style="width: 2.5rem; height: 2.5rem">
-                  <i class="pi pi-dollar text-mlm-success text-xl"></i>
+                <div class="mt-2 flex items-center gap-1 text-[10px] font-bold">
+                  <span class="bg-white/20 px-2 py-0.5 rounded-full">ACTIVE</span>
                 </div>
               </div>
-              <span class="text-mlm-primary font-medium">Pending </span>
-              <span class="text-mlm-secondary">commissions</span>
-            </p-card>
+            </div>
 
             <!-- Orders -->
-            <p-card class="w-full">
-              <div class="flex justify-between mb-4">
-                <div class="flex-1">
-                  <span class="block text-mlm-secondary font-medium mb-4">Orders</span>
-                  <div class="text-mlm-text font-medium text-xl">0</div>
-                </div>
-                <div class="flex items-center justify-center bg-mlm-blue-100 rounded-lg" style="width: 2.5rem; height: 2.5rem">
-                  <i class="pi pi-shopping-bag text-mlm-blue-500 text-xl"></i>
+            <div class="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02] bg-brand-gold">
+              <i class="pi pi-shopping-bag absolute" 
+                 style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.25; pointer-events: none; z-index: 0;"></i>
+              <div class="relative z-10 flex flex-col gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider opacity-90">Orders</span>
+                <span class="text-4xl font-black">0</span>
+                <div class="mt-2 flex items-center gap-1 text-[10px] font-bold">
+                  <i class="pi pi-clock"></i>
+                  <span>THIS MONTH</span>
                 </div>
               </div>
-              <span class="text-mlm-primary font-medium">0 </span>
-              <span class="text-mlm-secondary">this month</span>
-            </p-card>
+            </div>
           </div>
 
-          <!-- Quick Links and Notifications -->
-          <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <!-- Quick Links -->
-            <p-card header="Quick Links" class="w-full">
-              <div class="grid grid-cols-2 gap-4">
-                <p-button
-                  label="Shop"
-                  icon="pi pi-shopping-cart"
-                  [outlined]="true"
-                  [style]="{ width: '100%' }"
-                  (onClick)="navigateTo('/shop')">
-                </p-button>
-                <p-button
-                  label="Wallet"
-                  icon="pi pi-wallet"
-                  [outlined]="true"
-                  [style]="{ width: '100%' }"
-                  (onClick)="navigateTo('/wallet')">
-                </p-button>
-                <p-button
-                  label="Network"
-                  icon="pi pi-users"
-                  [outlined]="true"
-                  [style]="{ width: '100%' }"
-                  (onClick)="navigateTo('/network')">
-                </p-button>
-                <p-button
-                  label="Commissions"
-                  icon="pi pi-dollar"
-                  [outlined]="true"
-                  [style]="{ width: '100%' }"
-                  (onClick)="navigateTo('/commissions')">
-                </p-button>
+          <!-- Charts Section -->
+          <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <!-- Sales Overview -->
+            <div class="lg:col-span-2 bg-white rounded-3xl border border-gray-100 shadow-sm p-6 overflow-hidden">
+              <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-black text-mlm-text uppercase tracking-tighter">Sales Overview</h3>
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-full bg-mlm-primary"></span>
+                  <span class="text-[10px] font-bold text-mlm-secondary uppercase">Revenue</span>
+                </div>
               </div>
-            </p-card>
+              <div class="h-[300px]">
+                <p-chart type="line" [data]="salesData" [options]="salesOptions" class="w-full h-full"></p-chart>
+              </div>
+            </div>
 
-            <!-- Notifications -->
-            <p-card header="Recent Notifications" class="w-full">
-              <div class="space-y-4">
-                <div class="flex items-start gap-3 p-3 rounded-lg bg-mlm-blue-50">
-                  <i class="pi pi-info-circle text-mlm-blue-500 mt-1"></i>
-                  <div class="flex-1">
-                    <p class="text-sm font-medium text-mlm-text">Welcome!</p>
-                    <p class="text-xs text-mlm-secondary">Your account has been activated successfully.</p>
+            <!-- Traffic Sources -->
+            <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 flex flex-col items-center">
+               <h3 class="text-lg font-black text-mlm-text uppercase tracking-tighter self-start mb-6">Traffic Sources</h3>
+               <div class="relative w-full aspect-square max-w-[240px]">
+                  <p-chart type="doughnut" [data]="trafficData" [options]="trafficOptions" class="w-full h-full"></p-chart>
+                  <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span class="text-3xl font-black text-mlm-text">1,567</span>
+                    <span class="text-[10px] font-bold text-mlm-secondary uppercase">Total Views</span>
+                  </div>
+               </div>
+            </div>
+          </div>
+
+          <!-- Activity & Tables -->
+          <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+              <h3 class="text-lg font-black text-mlm-text uppercase tracking-tighter mb-6">Recent Activity</h3>
+              <div class="space-y-6">
+                <!-- Activity Item -->
+                <div class="flex gap-4">
+                  <div class="w-10 h-10 rounded-xl bg-blue-50 text-mlm-blue-500 flex items-center justify-center shrink-0">
+                    <i class="pi pi-shopping-bag"></i>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="text-xs font-bold text-mlm-text italic whitespace-nowrap">New order received</span>
+                    <span class="text-[10px] text-mlm-secondary line-clamp-1">Order #12345 from John Doe</span>
+                    <span class="text-[9px] font-medium text-mlm-primary uppercase mt-1">2 MINUTES AGO</span>
                   </div>
                 </div>
-                <div class="text-center py-4 text-sm text-mlm-secondary">
-                  No new notifications
+                <!-- Activity Item -->
+                <div class="flex gap-4">
+                  <div class="w-10 h-10 rounded-xl bg-green-50 text-mlm-primary flex items-center justify-center shrink-0">
+                    <i class="pi pi-user-plus"></i>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="text-xs font-bold text-mlm-text">New customer registered</span>
+                    <span class="text-[10px] text-mlm-secondary">Jane Smith joined the platform</span>
+                    <span class="text-[9px] font-medium text-mlm-primary uppercase mt-1">15 MINUTES AGO</span>
+                  </div>
+                </div>
+                <!-- Activity Item -->
+                <div class="flex gap-4">
+                  <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
+                    <i class="pi pi-exclamation-triangle"></i>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="text-xs font-bold text-mlm-text">Low stock alert</span>
+                    <span class="text-[10px] text-mlm-secondary">Product SKU #789 is running low</span>
+                    <span class="text-[9px] font-medium text-mlm-primary uppercase mt-1">1 HOUR AGO</span>
+                  </div>
                 </div>
               </div>
-            </p-card>
+              <p-button label="VIEW ALL" variant="text" size="small" class="mt-6 w-full text-[10px] font-black"></p-button>
+            </div>
+
+            <!-- Top Products -->
+            <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+              <h3 class="text-lg font-black text-mlm-text uppercase tracking-tighter mb-6">Top Products</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="border-b border-gray-50">
+                      <th class="pb-3 text-[10px] font-black text-mlm-secondary uppercase">Product</th>
+                      <th class="pb-3 text-[10px] font-black text-mlm-secondary uppercase">Sales</th>
+                      <th class="pb-3 text-[10px] font-black text-mlm-secondary uppercase">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-50">
+                    <tr>
+                      <td class="py-3">
+                        <div class="flex items-center gap-3">
+                          <div class="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                             <i class="pi pi-box text-purple-500 text-xs"></i>
+                          </div>
+                          <span class="text-[11px] font-bold text-mlm-text">Premium Widget</span>
+                        </div>
+                      </td>
+                      <td class="py-3 text-[11px] font-black">246</td>
+                      <td class="py-3"><span class="bg-green-100 text-green-600 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">IN STOCK</span></td>
+                    </tr>
+                    <tr>
+                      <td class="py-3">
+                        <div class="flex items-center gap-3">
+                          <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                             <i class="pi pi-box text-blue-500 text-xs"></i>
+                          </div>
+                          <span class="text-[11px] font-bold text-mlm-text">Standard Package</span>
+                        </div>
+                      </td>
+                      <td class="py-3 text-[11px] font-black">189</td>
+                      <td class="py-3"><span class="bg-green-100 text-green-600 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">IN STOCK</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       }
     </div>
   </main>
 </div>
+
+<!-- Registration Payment Modal -->
+<p-dialog 
+  [(visible)]="showPaymentModal" 
+  [modal]="true" 
+  [header]="'Pay Registration Fee'" 
+  [style]="{ width: '90vw', maxWidth: '500px' }"
+  [draggable]="false"
+  [resizable]="false">
+  
+  <div class="py-4">
+    <p class="text-mlm-secondary mb-6">
+      Complete your registration by paying the registration fee to unlock all earning features.
+    </p>
+
+    <form [formGroup]="paymentForm" (ngSubmit)="onPaymentSubmit()" class="space-y-6">
+      <!-- Amount Display -->
+      <div class="p-4 bg-mlm-blue-50 rounded-lg">
+        <div class="flex justify-between items-center">
+          <span class="text-mlm-secondary font-medium">Registration Fee</span>
+          <span class="text-2xl font-bold text-mlm-text">₦{{ paymentForm.get('amount')?.value | number }}</span>
+        </div>
+      </div>
+
+      <!-- Payment Method Selection -->
+      <div class="space-y-2">
+        <label for="paymentMethod" class="block text-sm font-medium text-mlm-text">
+          Payment Method <span class="text-mlm-error">*</span>
+        </label>
+        <p-select
+          id="paymentMethod"
+          formControlName="paymentMethod"
+          [options]="paymentMethods"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select a payment method"
+          [style]="{ width: '100%' }"
+          [invalid]="paymentForm.get('paymentMethod')?.invalid && paymentForm.get('paymentMethod')?.touched">
+        </p-select>
+        @if (paymentForm.get('paymentMethod')?.invalid && paymentForm.get('paymentMethod')?.touched) {
+          <p-message severity="error" variant="simple" size="small">
+            Please select a payment method
+          </p-message>
+        }
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-4 pt-4">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="showPaymentModal.set(false)"
+          [style]="{ flex: 1 }">
+        </p-button>
+        <p-button
+          label="Confirm Payment"
+          icon="pi pi-credit-card"
+          type="submit"
+          [disabled]="paymentForm.invalid"
+          [style]="{ flex: 1 }">
+        </p-button>
+      </div>
+    </form>
+  </div>
+</p-dialog>
 
