@@ -53,3 +53,39 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Design services around a single responsibility
 - Use the `providedIn: 'root'` option for singleton services
 - Use the `inject()` function instead of constructor injection
+
+## Styling:
+
+- Use Tailwind CSS exclusively for all styling.
+
+- Avoid hardcoding any colors; always use the color palette defined in the Tailwind configuration file.
+
+- Maintain consistent spacing, typography, and component styles across the project.
+
+- Prefer reusable components over duplicating code for similar UI elements.
+
+## Components & UI:
+
+- Design form inputs and UI elements that are modern, polished, and professional.
+
+- Use only PrimeIcons or Font Awesome for icons.
+
+- Ensure all components are responsive and mobile-friendly by default.
+
+- Keep accessibility in mind: proper ARIA attributes, focus states, and semantic HTML.
+
+## Development Practices:
+
+- Follow a consistent naming convention for files, classes, and components.
+
+- Write clean, readable code with comments where necessary.
+
+- Ensure that designs are scalable and maintainable for future enhancements.
+
+- Ask clarifying questions before making assumptions or implementing new features.
+
+## General:
+
+- Aim for UI/UX that is intuitive, high-quality, and professional—something suitable for executive-level approval.
+
+- Avoid shortcuts that compromise code quality or user experience.

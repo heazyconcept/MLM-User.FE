@@ -1,0 +1,44 @@
+@keyframes stepIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.animate-step-in {
+    animation: stepIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:host ::ng-deep {
+    .p-select {
+        border-radius: 1rem !important;
+        background: rgb(248 250 252 / 0.5) !important;
+        border: 1px solid rgb(226 232 240) !important;
+        padding: 0.5rem !important;
+    }
+    
+    .p-select:hover {
+        border-color: rgb(203 213 225) !important;
+    }
+    
+    .p-select-focus {
+        box-shadow: 0 0 0 4px rgba(73, 163, 33, 0.1) !important;
+        border-color: #49A321 !important;
+    }
+
+    .p-checkbox .p-checkbox-box {
+        border-radius: 0.5rem !important;
+        width: 1.5rem !important;
+        height: 1.5rem !important;
+        border: 2px solid rgb(226 232 240) !important;
+    }
+
+    .p-checkbox-checked .p-checkbox-box {
+        background: #49A321 !important;
+        border-color: #49A321 !important;
+    }
+}

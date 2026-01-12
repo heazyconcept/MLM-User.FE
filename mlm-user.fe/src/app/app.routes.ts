@@ -1,13 +1,34 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './pages/auth/login/login.component';
+import { LoginComponent } from './auth/login/login.component';
 import { DashboardLayoutComponent } from './layouts/dashboard-layout/dashboard-layout.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { path: 'login', component: LoginComponent },
-  { 
-    path: 'register', 
-    loadComponent: () => import('./pages/auth/register/register.component').then(m => m.RegisterComponent) 
+  { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
+  {
+    path: 'auth',
+    children: [
+      { path: 'login', component: LoginComponent },
+      { 
+        path: 'register', 
+        loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent) 
+      },
+      {
+        path: 'forgot-password',
+        loadComponent: () => import('./auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent)
+      },
+      {
+        path: 'reset-password',
+        loadComponent: () => import('./auth/reset-password/reset-password.component').then(m => m.ResetPasswordComponent)
+      },
+      {
+        path: 'verify',
+        loadComponent: () => import('./auth/verify/verify.component').then(m => m.VerifyComponent)
+      },
+      {
+        path: 'logout',
+        redirectTo: 'login'
+      }
+    ]
   },
   {
     path: 'dashboard',
