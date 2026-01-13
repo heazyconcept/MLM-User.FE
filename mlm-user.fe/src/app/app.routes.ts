@@ -31,6 +31,33 @@ export const routes: Routes = [
     ]
   },
   {
+    path: 'onboarding',
+    loadComponent: () => import('./onboarding/layouts/onboarding-layout/onboarding-layout.component').then(m => m.OnboardingLayoutComponent),
+    children: [
+      { path: '', redirectTo: 'profile', pathMatch: 'full' },
+      { 
+        path: 'profile', 
+        loadComponent: () => import('./onboarding/pages/profile/profile.component').then(m => m.ProfileInfoComponent) 
+      },
+      { 
+        path: 'contact', 
+        loadComponent: () => import('./onboarding/pages/contact/contact-details.component').then(m => m.ContactDetailsComponent) 
+      },
+      { 
+        path: 'identity', 
+        loadComponent: () => import('./onboarding/pages/identity/identity-kyc.component').then(m => m.IdentityKycComponent) 
+      },
+      { 
+        path: 'bank', 
+        loadComponent: () => import('./onboarding/pages/bank/bank-details.component').then(m => m.BankDetailsComponent) 
+      },
+      { 
+        path: 'preferences', 
+        loadComponent: () => import('./onboarding/pages/preferences/preferences.component').then(m => m.PreferencesComponent) 
+      }
+    ]
+  },
+  {
     path: 'dashboard',
     component: DashboardLayoutComponent,
     children: [

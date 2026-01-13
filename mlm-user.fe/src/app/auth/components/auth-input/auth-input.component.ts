@@ -24,6 +24,7 @@ export class AuthInputComponent implements ControlValueAccessor {
   icon = input<string>();
   required = input<boolean>(false);
   error = input<string | null>(null);
+  maxLength = input<number | null>(null);
 
   value = signal<string>('');
   isDisabled = signal<boolean>(false);

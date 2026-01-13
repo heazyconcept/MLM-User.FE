@@ -1,0 +1,63 @@
+<div class="text-center mb-10">
+    <h1 class="text-2xl font-bold text-slate-800 tracking-tight mb-2">Identity Verification</h1>
+    <p class="text-slate-500 text-sm">Help us verify your identity for security</p>
+</div>
+
+<form [formGroup]="kycForm" (ngSubmit)="onSubmit()">
+    <div class="space-y-6">
+        <div>
+            <label class="block text-sm font-semibold text-slate-500 mb-2">ID Type</label>
+            <p-select 
+                [options]="idTypes" 
+                formControlName="idType" 
+                optionLabel="label" 
+                placeholder="Select ID Type"
+                styleClass="w-full !rounded-xl !border-slate-400 !h-12 !flex !items-center">
+            </p-select>
+        </div>
+
+        <app-auth-input 
+            label="ID Number" 
+            placeholder="Enter ID Number" 
+            icon="pi-id-card" 
+            formControlName="idNumber"
+            [required]="true"
+            [maxLength]="11"
+            [error]="kycForm.get('idNumber')?.touched ? 
+                    (kycForm.get('idNumber')?.hasError('required') ? 'Required' : 
+                     (kycForm.get('idNumber')?.hasError('minlength') || kycForm.get('idNumber')?.hasError('maxlength') ? 'ID must be exactly 11 digits' : null)) : null">
+        </app-auth-input>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <app-onboarding-file-upload 
+                label="Upload ID (Front)"
+                icon="pi-file"
+                placeholder="Select ID Document"
+                (fileSelected)="onFileSelected('idDocument', $event)"
+            ></app-onboarding-file-upload>
+
+            <app-onboarding-file-upload 
+                label="Selfie with ID"
+                icon="pi-camera"
+                placeholder="Select Selfie"
+                (fileSelected)="onFileSelected('selfie', $event)"
+            ></app-onboarding-file-upload>
+        </div>
+
+        <div class="flex items-center gap-4 pt-4">
+            <button type="button" 
+                    routerLink="/onboarding/contact"
+                    class="flex-1 h-12 rounded-xl text-slate-600 font-semibold border border-slate-300 hover:bg-slate-50 transition-all duration-200">
+                Back
+            </button>
+            <p-button 
+                label="Continue" 
+                styleClass="w-full !bg-mlm-primary !border-mlm-primary !h-12 !font-bold !rounded-xl shadow-lg shadow-mlm-primary/20" 
+                type="submit" 
+                [disabled]="kycForm.invalid || isLoading()"
+                [loading]="isLoading()">
+            </p-button>
+        </div>
+    </div>
+</form>
+

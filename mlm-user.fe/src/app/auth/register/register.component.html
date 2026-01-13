@@ -89,7 +89,7 @@
                                 label="Password"
                                 type="password"
                                 placeholder="••••••••"
-                                icon="pi-lock"
+                                icon="pi-key"
                                 formControlName="password"
                                 [required]="true"
                                 [error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched ? 'Min 8 characters required' : null">
@@ -98,7 +98,7 @@
                                 label="Confirm Password"
                                 type="password"
                                 placeholder="••••••••"
-                                icon="pi-lock-open"
+                                icon="pi-key"
                                 formControlName="confirmPassword"
                                 [required]="true"
                                 [error]="registerForm.get('confirmPassword')?.touched && registerForm.hasError('passwordMismatch') ? 'Passwords do not match' : null">

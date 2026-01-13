@@ -74,11 +74,11 @@ export class VerifyComponent implements OnInit, OnDestroy {
         this.modalService.open(
           'success',
           'Verification Successful',
-          'Your account has been verified. You can now log in to your account.',
-          '/auth/login'
+          'Your account has been verified. Let\'s set up your profile.',
+          '/onboarding/profile'
         );
         setTimeout(() => {
-          this.router.navigate(['/auth/login']);
+          this.router.navigate(['/onboarding/profile']);
         }, 2000);
       }, 1500);
     }
