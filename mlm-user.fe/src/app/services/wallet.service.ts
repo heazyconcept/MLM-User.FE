@@ -10,6 +10,9 @@ export interface Wallet {
   id: string;
   currency: 'NGN' | 'USD';
   balance: number;
+  cashBalance: number;
+  voucherBalance: number;
+  autoshipBalance: number;
 }
 
 export interface Transaction {
@@ -60,12 +63,24 @@ export class WalletService {
     // Load wallets
     const savedWallets = localStorage.getItem(WALLET_KEY);
     if (savedWallets) {
-      this.wallets.set(JSON.parse(savedWallets));
+      let wallets = JSON.parse(savedWallets) as Wallet[];
+      // Migration: Ensure new fields exist
+      const migrationNeeded = wallets.some(w => w.cashBalance === undefined);
+      if (migrationNeeded) {
+        wallets = wallets.map(w => ({
+          ...w,
+          cashBalance: w.cashBalance ?? (w.balance * 0.6),
+          voucherBalance: w.voucherBalance ?? (w.balance * 0.2),
+          autoshipBalance: w.autoshipBalance ?? (w.balance * 0.2)
+        }));
+        this.persistWallets(wallets);
+      }
+      this.wallets.set(wallets);
     } else {
       // Default mock wallets
       const defaultWallets: Wallet[] = [
-        { id: '1', currency: 'NGN', balance: 250000.50 },
-        { id: '2', currency: 'USD', balance: 1250.75 }
+        { id: '1', currency: 'NGN', balance: 250000.50, cashBalance: 150000.50, voucherBalance: 50000, autoshipBalance: 50000 },
+        { id: '2', currency: 'USD', balance: 1250.75, cashBalance: 850.75, voucherBalance: 200, autoshipBalance: 200 }
       ];
       this.wallets.set(defaultWallets);
       this.persistWallets(defaultWallets);

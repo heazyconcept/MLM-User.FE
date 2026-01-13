@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -6,7 +6,7 @@ import { AvatarModule } from 'primeng/avatar';
 import { MenuModule } from 'primeng/menu';
 import { BadgeModule } from 'primeng/badge';
 import { MenuItem } from 'primeng/api';
-import { Popover } from 'primeng/popover';
+import { DrawerModule } from 'primeng/drawer';
 import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { LayoutService } from '../../services/layout.service';
@@ -21,7 +21,7 @@ import { NotificationService } from '../../services/notification.service';
     AvatarModule,
     MenuModule,
     BadgeModule,
-    Popover
+    DrawerModule
   ],
   templateUrl: './dashboard-header.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -36,6 +36,8 @@ export class DashboardHeaderComponent {
   currentUser = this.userService.currentUser;
   notifications = this.notificationService.allNotifications;
   unreadCount = this.notificationService.unreadCount;
+  
+  notificationsVisible = signal(false);
 
   
   userMenuItems: MenuItem[] = [
