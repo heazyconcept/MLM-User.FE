@@ -47,7 +47,19 @@ export class SideMenuComponent {
         { label: 'Transaction History', route: '/wallet/transactions/NGN', icon: 'pi pi-history', requiresPayment: true }
       ]
     },
-    { label: 'Network', route: '/network', icon: 'pi pi-users', requiresPayment: true },
+    { 
+      label: 'Network', 
+      route: '/network', 
+      icon: 'pi pi-users', 
+      requiresPayment: true,
+      children: [
+        { label: 'Overview', route: '/network/overview', icon: 'pi pi-home', requiresPayment: true },
+        { label: 'Referrals', route: '/network/referrals', icon: 'pi pi-link', requiresPayment: true },
+        { label: 'Matrix Tree', route: '/network/matrix', icon: 'pi pi-sitemap', requiresPayment: true },
+        { label: 'Downline', route: '/network/downline', icon: 'pi pi-list', requiresPayment: true },
+        { label: 'Performance', route: '/network/performance', icon: 'pi pi-chart-bar', requiresPayment: true }
+      ]
+    },
     { label: 'Commissions', route: '/commissions', icon: 'pi pi-dollar', requiresPayment: true },
     { label: 'Withdrawals', route: '/withdrawals', icon: 'pi pi-money-bill', requiresPayment: true },
     { label: 'Orders', route: '/orders', icon: 'pi pi-shopping-bag', requiresPayment: true }

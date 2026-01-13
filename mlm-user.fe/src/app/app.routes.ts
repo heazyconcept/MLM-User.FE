@@ -108,10 +108,31 @@ export const routes: Routes = [
     path: 'network',
     component: DashboardLayoutComponent,
     children: [
+      { path: '', redirectTo: 'overview', pathMatch: 'full' },
       {
-        path: '',
-        loadComponent: () => import('./pages/placeholder/placeholder.component').then(m => m.PlaceholderComponent),
-        data: { title: 'Network' }
+        path: 'overview',
+        loadComponent: () => import('./pages/network/overview/network-overview.component').then(m => m.NetworkOverviewComponent),
+        data: { title: 'Network Overview' }
+      },
+      {
+        path: 'referrals',
+        loadComponent: () => import('./pages/network/referrals/referral-link.component').then(m => m.ReferralLinkComponent),
+        data: { title: 'Referral Link' }
+      },
+      {
+        path: 'matrix',
+        loadComponent: () => import('./pages/network/matrix/matrix-tree.component').then(m => m.MatrixTreeComponent),
+        data: { title: 'Matrix Tree' }
+      },
+      {
+        path: 'downline',
+        loadComponent: () => import('./pages/network/downline/downline-list.component').then(m => m.DownlineListComponent),
+        data: { title: 'Downline List' }
+      },
+      {
+        path: 'performance',
+        loadComponent: () => import('./pages/network/performance/performance-cpv.component').then(m => m.PerformanceCpvComponent),
+        data: { title: 'Performance Stats' }
       }
     ]
   },

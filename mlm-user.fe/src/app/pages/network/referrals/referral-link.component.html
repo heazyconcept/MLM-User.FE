@@ -1,0 +1,166 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+      <div class="space-y-8 animate-fade-in">
+        
+        <!-- Header -->
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 mb-1">Referral Tools</h1>
+          <p class="text-gray-500 text-sm">Share your unique link to grow your team and earn bonuses.</p>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
+                <i class="pi pi-users text-green-600"></i>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 font-medium">Total Referrals</p>
+                <p class="text-xl font-bold text-gray-900">12</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                <i class="pi pi-check-circle text-blue-600"></i>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 font-medium">Active Members</p>
+                <p class="text-xl font-bold text-gray-900">8</p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
+                <i class="pi pi-money-bill text-orange-500"></i>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 font-medium">Earnings from Referrals</p>
+                <p class="text-xl font-bold text-gray-900">₦45,000</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Referral Link Card -->
+        <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-mlm-primary/10 flex items-center justify-center">
+              <i class="pi pi-link text-mlm-primary"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold text-gray-900">Your Referral Link</h3>
+              <p class="text-xs text-gray-500">Share this link to invite new members</p>
+            </div>
+          </div>
+          
+          <div class="space-y-4">
+            <!-- Link Input -->
+            <div class="flex flex-col sm:flex-row gap-3">
+              <div class="flex-1 bg-gray-50 rounded-xl border border-gray-100 px-4 py-3.5 flex items-center">
+                <span class="text-gray-900 font-medium text-sm truncate">{{ referral().url }}</span>
+              </div>
+              <app-copy-button 
+                [textToCopy]="referral().url" 
+                label="Copy Link"
+                styleClass="!w-full sm:!w-auto !bg-mlm-primary !border-mlm-primary !py-3.5 !px-6 !rounded-xl !font-medium !text-sm shadow-sm hover:!bg-mlm-primary/90 transition-colors">
+              </app-copy-button>
+            </div>
+
+            <!-- Referral Code -->
+            <div class="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-xl border border-gray-100">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-hashtag text-gray-400 text-sm"></i>
+                <span class="text-xs text-gray-500">Referral Code:</span>
+              </div>
+              <span class="font-mono font-semibold text-gray-900">{{ referral().code }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Share Options -->
+        <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-900 mb-4">Quick Share</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <button class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
+              <div class="w-12 h-12 rounded-full bg-[#25D366]/10 flex items-center justify-center group-hover:bg-[#25D366]/20 transition-colors">
+                <i class="pi pi-whatsapp text-xl text-[#25D366]"></i>
+              </div>
+              <span class="text-xs font-medium text-gray-700">WhatsApp</span>
+            </button>
+            <button class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
+              <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                <i class="pi pi-telegram text-xl text-blue-500"></i>
+              </div>
+              <span class="text-xs font-medium text-gray-700">Telegram</span>
+            </button>
+            <button class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
+              <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                <i class="pi pi-envelope text-xl text-gray-600"></i>
+              </div>
+              <span class="text-xs font-medium text-gray-700">Email</span>
+            </button>
+            <button class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
+              <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                <i class="pi pi-share-alt text-xl text-gray-600"></i>
+              </div>
+              <span class="text-xs font-medium text-gray-700">More</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sponsor Info -->
+        <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
+                <i class="pi pi-user text-lg"></i>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 font-medium mb-0.5">Your Sponsor</p>
+                <p class="text-base font-semibold text-gray-900">{{ referral().sponsorName }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+              <div class="w-2 h-2 rounded-full bg-green-500"></div>
+              <span>Registered via referral link</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tips Section -->
+        <div class="bg-gradient-to-br from-mlm-primary/5 to-green-50 rounded-2xl border border-mlm-primary/10 p-6">
+          <h3 class="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="pi pi-lightbulb text-mlm-primary"></i>
+            Tips to Get More Referrals
+          </h3>
+          <ul class="space-y-3">
+            <li class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-mlm-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <span class="text-xs font-semibold text-mlm-primary">1</span>
+              </div>
+              <p class="text-sm text-gray-600">Share your link on social media platforms with a personal message about your experience.</p>
+            </li>
+            <li class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-mlm-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <span class="text-xs font-semibold text-mlm-primary">2</span>
+              </div>
+              <p class="text-sm text-gray-600">Follow up with interested contacts within 24 hours to answer any questions.</p>
+            </li>
+            <li class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-mlm-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <span class="text-xs font-semibold text-mlm-primary">3</span>
+              </div>
+              <p class="text-sm text-gray-600">Help new members get started quickly to increase their activation rate.</p>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </main>
+</div>

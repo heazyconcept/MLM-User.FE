@@ -1,0 +1,105 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div class="space-y-8 animate-fade-in">
+        <!-- Header & Filters -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-1">Downline List</h1>
+              <p class="text-gray-500 text-sm">Manage and view your team members.</p>
+            </div>
+            <div class="flex gap-2">
+              <button class="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-sm flex items-center gap-2 hover:bg-gray-800 transition-colors">
+                <i class="pi pi-download text-sm"></i> Export CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="relative">
+            <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input 
+              type="text" 
+              [(ngModel)]="searchQuery"
+              placeholder="Search by username..." 
+              class="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary/20 transition-all font-normal text-gray-900 placeholder:text-gray-400">
+          </div>
+        </div>
+
+        <!-- Table Section -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="bg-gray-50/50 border-b border-gray-100">
+                  <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wide text-gray-600">Member</th>
+                  <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wide text-gray-600">Level</th>
+                  <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wide text-gray-600">Package</th>
+                  <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wide text-gray-600">Joined</th>
+                  <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wide text-gray-600 text-center">Stats</th>
+                  <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wide text-gray-600 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-50">
+                @for (member of filteredMembers(); track member.id) {
+                  <tr class="hover:bg-gray-50/50 transition-colors group">
+                    <td class="py-4 px-6">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-mlm-primary/10 flex items-center justify-center text-mlm-primary font-semibold text-sm">
+                          {{ member.username.charAt(0) }}
+                        </div>
+                        <div class="flex flex-col">
+                          <span class="text-sm font-semibold text-gray-900 group-hover:text-mlm-primary transition-colors">{{ member.username }}</span>
+                          <span class="text-xs text-gray-500">{{ member.fullName }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="py-4 px-6">
+                      <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-sm font-medium text-gray-700">
+                        {{ member.level }}
+                      </span>
+                    </td>
+                    <td class="py-4 px-6">
+                      <span [class]="'text-xs font-medium uppercase tracking-wide px-3 py-1.5 rounded-lg ' + getPackageClass(member.package)">
+                        {{ member.package }}
+                      </span>
+                    </td>
+                    <td class="py-4 px-6">
+                      <span class="text-sm font-normal text-gray-600">{{ member.joinDate | date:'mediumDate' }}</span>
+                    </td>
+                    <td class="py-4 px-6">
+                      <div class="flex justify-center gap-6 text-sm">
+                        <div class="text-center" title="Direct Referrals">
+                          <span class="block font-semibold text-gray-900">{{ member.totalDirects }}</span>
+                          <span class="text-[10px] text-gray-500 uppercase font-medium">DR</span>
+                        </div>
+                        <div class="text-center" title="Team Size">
+                          <span class="block font-semibold text-gray-900">{{ member.teamSize }}</span>
+                          <span class="text-[10px] text-gray-500 uppercase font-medium">Team</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="py-4 px-6 text-right">
+                      <span [class]="'px-3 py-1.5 rounded-full text-xs font-medium uppercase tracking-wide ' + getStatusClass(member.status)">
+                        {{ member.status }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+                @if (filteredMembers().length === 0) {
+                  <tr>
+                    <td colspan="6" class="py-16 text-center text-gray-500">
+                      <i class="pi pi-search text-3xl mb-3 block opacity-30"></i>
+                      <p class="text-sm font-medium">No members found matching "{{ searchQuery() }}"</p>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
