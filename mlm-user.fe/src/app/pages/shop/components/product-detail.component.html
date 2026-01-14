@@ -1,0 +1,122 @@
+<div class="flex flex-col lg:flex-row gap-8 p-2">
+    
+  <!-- Image Gallery -->
+  <div class="lg:w-1/2">
+    <!-- Main Image -->
+    <div class="aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 mb-4 shadow-sm">
+      <img 
+        [src]="selectedImage()" 
+        [alt]="product.name"
+        class="w-full h-full object-cover transition-transform duration-300 hover:scale-105">
+    </div>
+    
+    <!-- Thumbnail Gallery -->
+    @if (product.images.length > 1) {
+      <div class="flex gap-3">
+        @for (image of product.images; track image; let i = $index) {
+          <button
+            (click)="selectImage(image)"
+            [class]="selectedImage() === image ? 'ring-2 ring-mlm-primary ring-offset-2' : 'ring-1 ring-gray-200 hover:ring-mlm-primary/50'"
+            class="w-16 h-16 rounded-xl overflow-hidden transition-all bg-gray-50">
+            <img [src]="image" [alt]="product.name + ' thumbnail'" class="w-full h-full object-cover">
+          </button>
+        }
+      </div>
+    }
+  </div>
+  
+  <!-- Product Details -->
+  <div class="lg:w-1/2 space-y-5">
+    
+    <!-- Category & Stock -->
+    <div class="flex items-center gap-3">
+      <span class="text-xs font-bold text-mlm-secondary uppercase tracking-widest">{{ product.category }}</span>
+      @if (product.inStock) {
+        <span class="text-xs font-semibold text-mlm-primary">In Stock</span>
+      } @else {
+        <span class="text-xs font-semibold text-mlm-error">Out of Stock</span>
+      }
+    </div>
+    
+    <!-- Price & PV -->
+    <div class="flex items-center gap-4">
+      <span class="text-4xl font-bold text-mlm-text tracking-tight">{{ formatCurrency(product.price) }}</span>
+      <span class="text-sm font-semibold text-mlm-secondary bg-gray-100 px-4 py-1.5 rounded-full">
+        {{ product.pv }} PV
+      </span>
+    </div>
+    
+    <!-- Description -->
+    <div class="pt-2">
+      <h4 class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">Description</h4>
+      <p class="text-sm text-mlm-secondary leading-relaxed">{{ product.description }}</p>
+    </div>
+    
+    <!-- Wallet Selection -->
+    <div class="pt-2">
+      <h4 class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-4">Pay With</h4>
+      <div class="grid grid-cols-3 gap-3">
+        @for (wallet of walletOptions; track wallet.type) {
+          <button
+            (click)="selectWallet(wallet.type)"
+            [disabled]="!product.eligibleWallets.includes(wallet.type) || isProcessing()"
+            [class]="getWalletButtonClass(wallet.type)"
+            class="py-5 px-4 rounded-2xl text-center transition-all duration-200">
+            <i [class]="'pi ' + wallet.icon + ' text-xl mb-2 block'"></i>
+            <span class="text-sm font-semibold block">{{ wallet.label }}</span>
+          </button>
+        }
+      </div>
+    </div>
+    
+    <!-- Quantity Selector -->
+    <div class="pt-2">
+      <h4 class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-4">Quantity</h4>
+      <div class="flex items-center gap-1">
+        <button 
+          (click)="decrementQuantity()"
+          [disabled]="quantity() <= 1 || isProcessing()"
+          class="w-12 h-12 rounded-xl border border-gray-200 flex items-center justify-center text-mlm-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+          <i class="pi pi-minus text-sm"></i>
+        </button>
+        <span class="w-14 text-center text-xl font-bold text-mlm-text">{{ quantity() }}</span>
+        <button 
+          (click)="incrementQuantity()"
+          [disabled]="quantity() >= 10 || isProcessing()"
+          class="w-12 h-12 rounded-xl border border-gray-200 flex items-center justify-center text-mlm-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+          <i class="pi pi-plus text-sm"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Total -->
+    <div class="bg-gray-50 rounded-2xl p-5 mt-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <span class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-1">Total</span>
+          <span class="text-3xl font-bold text-mlm-text tracking-tight">{{ formatCurrency(product.price * quantity()) }}</span>
+        </div>
+        <div class="text-right">
+          <span class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-1">Total PV</span>
+          <span class="text-xl font-bold text-mlm-secondary">{{ product.pv * quantity() }} PV</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="flex gap-3 pt-3">
+      <button
+        (click)="onBuyNow()"
+        [disabled]="!product.inStock || isProcessing()"
+        class="flex-1 py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-brand-green-dark shadow-lg shadow-mlm-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all flex items-center justify-center gap-2">
+        @if (isProcessing()) {
+          <i class="pi pi-spinner pi-spin"></i>
+          <span>Processing...</span>
+        } @else {
+          <span>Buy Now</span>
+        }
+      </button>
+    </div>
+    
+  </div>
+</div>

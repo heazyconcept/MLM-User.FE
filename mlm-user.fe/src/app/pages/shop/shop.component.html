@@ -78,17 +78,18 @@
       <!-- Product Grid -->
       @if (isLoading()) {
         <!-- Loading Skeleton -->
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           @for (item of skeletonArray; track $index) {
-            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <p-skeleton height="200px" styleClass="w-full"></p-skeleton>
-              <div class="p-4 space-y-3">
-                <p-skeleton height="1rem" width="80%"></p-skeleton>
-                <p-skeleton height="0.75rem" width="60%"></p-skeleton>
-                <div class="flex items-center justify-between pt-2">
-                  <p-skeleton height="1.25rem" width="40%"></p-skeleton>
-                  <p-skeleton height="1.5rem" width="30%" borderRadius="999px"></p-skeleton>
+            <div class="bg-white rounded-2xl overflow-hidden">
+              <p-skeleton height="280px" styleClass="w-full"></p-skeleton>
+              <div class="p-5 space-y-3">
+                <div class="flex items-center justify-between">
+                  <p-skeleton height="1.25rem" width="70%"></p-skeleton>
+                  <p-skeleton height="1rem" width="15%"></p-skeleton>
                 </div>
+                <p-skeleton height="0.875rem" width="100%"></p-skeleton>
+                <p-skeleton height="0.875rem" width="80%"></p-skeleton>
+                <p-skeleton height="1.5rem" width="30%" styleClass="mt-2"></p-skeleton>
               </div>
             </div>
           }
@@ -118,7 +119,7 @@
         </div>
       } @else {
         <!-- Products Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           @for (product of products(); track product.id) {
             <app-product-card
               [product]="product"

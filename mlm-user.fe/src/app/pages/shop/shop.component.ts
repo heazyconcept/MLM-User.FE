@@ -1,9 +1,11 @@
-import { Component, inject, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ProductService, Product, SortOption } from '../../services/product.service';
 import { ProductCardComponent } from './components/product-card.component';
 import { ProductDetailComponent } from './components/product-detail.component';
+import { OrderSuccessComponent } from './components/order-success.component';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { SkeletonModule } from 'primeng/skeleton';
 
@@ -18,12 +20,55 @@ import { SkeletonModule } from 'primeng/skeleton';
   ],
   providers: [DialogService],
   templateUrl: './shop.component.html',
+  styles: [`
+    :host ::ng-deep .product-detail-dialog {
+      .p-dialog {
+        border-radius: 1.5rem;
+        overflow: hidden;
+      }
+      .p-dialog-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+      }
+      .p-dialog-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #000;
+      }
+      .p-dialog-header-close {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 0.5rem;
+        color: #64748b;
+        transition: all 0.2s;
+        &:hover {
+          background: #f1f5f9;
+          color: #000;
+        }
+      }
+    }
+    :host ::ng-deep .order-success-dialog {
+      .p-dialog {
+        border-radius: 1.5rem;
+        overflow: hidden;
+      }
+      .p-dialog-header {
+        display: none;
+      }
+      .p-dialog-content {
+        padding: 1rem;
+        overflow: hidden;
+      }
+    }
+  `],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ShopComponent implements OnInit {
+export class ShopComponent implements OnInit, OnDestroy {
   private productService = inject(ProductService);
   private dialogService = inject(DialogService);
+  private router = inject(Router);
   private dialogRef: DynamicDialogRef | null = null;
+  private successDialogRef: DynamicDialogRef | null = null;
 
   // Signals from service
   products = this.productService.filteredProducts;
@@ -51,6 +96,11 @@ export class ShopComponent implements OnInit {
 
   ngOnInit(): void {
     this.productService.loadProducts();
+  }
+
+  ngOnDestroy(): void {
+    this.dialogRef?.close();
+    this.successDialogRef?.close();
   }
 
   onCategorySelect(categoryId: string): void {
@@ -84,15 +134,48 @@ export class ShopComponent implements OnInit {
       header: product.name,
       width: '90vw',
       style: { 'max-width': '900px' },
-      contentStyle: { 'max-height': '85vh', 'overflow': 'auto' },
+      contentStyle: { 'max-height': '85vh', 'overflow': 'auto', 'padding': '1.5rem' },
       baseZIndex: 10000,
       dismissableMask: true,
+      closable: true,
+      closeOnEscape: true,
       styleClass: 'product-detail-dialog'
     });
+
+    // Handle dialog close
+    if (this.dialogRef) {
+      this.dialogRef.onClose.subscribe((result: any) => {
+        if (result?.action === 'order-success') {
+          this.openSuccessModal(result.orderData);
+        }
+      });
+    }
+  }
+
+  private openSuccessModal(orderData: any): void {
+    this.successDialogRef = this.dialogService.open(OrderSuccessComponent, {
+      data: orderData,
+      width: '90vw',
+      style: { 'max-width': '450px' },
+      baseZIndex: 10001,
+      dismissableMask: false,
+      closable: false,
+      closeOnEscape: false,
+      styleClass: 'order-success-dialog'
+    });
+
+    // Handle success modal close
+    if (this.successDialogRef) {
+      this.successDialogRef.onClose.subscribe((result: any) => {
+        if (result?.action === 'view-orders') {
+          this.router.navigate(['/orders']);
+        }
+        // 'continue' action just closes the modal and stays on shop page
+      });
+    }
   }
 
   formatCurrency(amount: number): string {
     return `₦${amount.toLocaleString('en-US')}`;
   }
 }
-
