@@ -1,0 +1,134 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      
+      <!-- Page Header -->
+      <div class="mb-10">
+        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Marketplace</h1>
+        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
+        <p class="text-mlm-secondary text-sm">Browse our curated collection of premium products</p>
+      </div>
+
+      <!-- Search & Filter Bar -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-8">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+          
+          <!-- Search Input -->
+          <div class="flex-1 relative">
+            <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-mlm-secondary text-sm"></i>
+            <input
+              type="text"
+              [value]="searchInput()"
+              (input)="onSearchInput($event)"
+              placeholder="Search products..."
+              class="w-full pl-11 pr-4 py-3 bg-mlm-background border-0 rounded-xl text-sm text-mlm-text placeholder:text-mlm-secondary focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 transition-all">
+          </div>
+
+          <!-- Sort Dropdown -->
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-semibold text-mlm-secondary uppercase tracking-wide hidden sm:inline">Sort by</span>
+            <select
+              [value]="sortOption()"
+              (change)="onSortChange($event)"
+              class="px-4 py-3 bg-mlm-background border-0 rounded-xl text-sm text-mlm-text font-medium focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 cursor-pointer">
+              @for (option of sortOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Pills -->
+      <div class="mb-8 overflow-x-auto scrollbar-hide">
+        <div class="flex gap-2 pb-2">
+          @for (category of categories(); track category.id) {
+            <button
+              (click)="onCategorySelect(category.id)"
+              [class]="selectedCategory() === category.id 
+                ? 'bg-mlm-text text-white' 
+                : 'bg-white text-mlm-text border border-gray-200 hover:border-mlm-primary/30'"
+              class="px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-2">
+              <i [class]="'pi ' + category.icon + ' text-xs'"></i>
+              {{ category.name }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Results Count -->
+      <div class="flex items-center justify-between mb-6">
+        <p class="text-sm text-mlm-secondary">
+          @if (searchQuery() || selectedCategory() !== 'all') {
+            <span class="font-semibold text-mlm-text">{{ productCount() }}</span> of {{ totalProductCount() }} products
+          } @else {
+            <span class="font-semibold text-mlm-text">{{ productCount() }}</span> products
+          }
+        </p>
+        @if (searchQuery() || selectedCategory() !== 'all') {
+          <button
+            (click)="onClearFilters()"
+            class="text-xs font-semibold text-mlm-primary hover:text-mlm-primary/80 transition-colors flex items-center gap-1">
+            <i class="pi pi-times text-[10px]"></i>
+            Clear filters
+          </button>
+        }
+      </div>
+
+      <!-- Product Grid -->
+      @if (isLoading()) {
+        <!-- Loading Skeleton -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+          @for (item of skeletonArray; track $index) {
+            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <p-skeleton height="200px" styleClass="w-full"></p-skeleton>
+              <div class="p-4 space-y-3">
+                <p-skeleton height="1rem" width="80%"></p-skeleton>
+                <p-skeleton height="0.75rem" width="60%"></p-skeleton>
+                <div class="flex items-center justify-between pt-2">
+                  <p-skeleton height="1.25rem" width="40%"></p-skeleton>
+                  <p-skeleton height="1.5rem" width="30%" borderRadius="999px"></p-skeleton>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else if (products().length === 0) {
+        <!-- Empty State -->
+        <div class="flex flex-col items-center justify-center py-20 text-center">
+          <div class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6">
+            <i class="pi pi-shopping-bag text-4xl text-mlm-warm-400"></i>
+          </div>
+          @if (searchQuery()) {
+            <h3 class="text-xl font-bold text-mlm-text mb-2">No results found</h3>
+            <p class="text-mlm-secondary text-sm mb-6 max-w-md">
+              We couldn't find any products matching "{{ searchQuery() }}". Try adjusting your search or browse categories.
+            </p>
+          } @else {
+            <h3 class="text-xl font-bold text-mlm-text mb-2">No products available</h3>
+            <p class="text-mlm-secondary text-sm mb-6 max-w-md">
+              Check back soon! We're constantly adding new products to our marketplace.
+            </p>
+          }
+          <button
+            (click)="onClearFilters()"
+            class="px-6 py-3 bg-mlm-text text-white rounded-xl text-sm font-semibold hover:bg-mlm-text/90 transition-colors">
+            Browse all products
+          </button>
+        </div>
+      } @else {
+        <!-- Products Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
+          @for (product of products(); track product.id) {
+            <app-product-card
+              [product]="product"
+              (productClick)="onProductClick($event)">
+            </app-product-card>
+          }
+        </div>
+      }
+
+    </div>
+  </main>
+</div>
+

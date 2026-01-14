@@ -1,163 +1,178 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
-    <div class="px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-      <div class="space-y-8 animate-fade-in">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div class="space-y-10 animate-fade-in">
         
         <!-- Header -->
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900 mb-1">Referral Tools</h1>
-          <p class="text-gray-500 text-sm">Share your unique link to grow your team and earn bonuses.</p>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4">
+          <div>
+            <h1 class="text-2xl font-bold text-mlm-text mb-2">Referral Tools</h1>
+            <p class="text-mlm-secondary text-sm">Share your unique link to grow your team and earn bonuses.</p>
+          </div>
         </div>
 
         <!-- Quick Stats -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-                <i class="pi pi-users text-green-600"></i>
-              </div>
-              <div>
-                <p class="text-xs text-gray-500 font-medium">Total Referrals</p>
-                <p class="text-xl font-bold text-gray-900">12</p>
-              </div>
-            </div>
-          </div>
-          <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                <i class="pi pi-check-circle text-blue-600"></i>
-              </div>
-              <div>
-                <p class="text-xs text-gray-500 font-medium">Active Members</p>
-                <p class="text-xl font-bold text-gray-900">8</p>
-              </div>
-            </div>
-          </div>
-          <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                <i class="pi pi-money-bill text-orange-500"></i>
-              </div>
-              <div>
-                <p class="text-xs text-gray-500 font-medium">Earnings from Referrals</p>
-                <p class="text-xl font-bold text-gray-900">₦45,000</p>
-              </div>
-            </div>
-          </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <app-stat-card
+            label="Total Referrals"
+            [value]="12"
+            icon="pi-users"
+            bgClass="bg-mlm-blue-500"
+            trend="Growing"
+            trendIcon="pi-chart-line">
+          </app-stat-card>
+
+          <app-stat-card
+            label="Active Members"
+            [value]="8"
+            icon="pi-check-circle"
+            bgClass="bg-mlm-success"
+            trend="Active"
+            trendIcon="pi-check-circle">
+          </app-stat-card>
+
+          <app-stat-card
+            label="Earnings from Referrals"
+            [value]="'₦45,000'"
+            icon="pi-money-bill"
+            bgClass="bg-brand-gold"
+            trend="This Month"
+            trendIcon="pi-calendar">
+          </app-stat-card>
         </div>
 
         <!-- Main Referral Link Card -->
-        <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-10 h-10 rounded-xl bg-mlm-primary/10 flex items-center justify-center">
-              <i class="pi pi-link text-mlm-primary"></i>
-            </div>
-            <div>
-              <h3 class="text-base font-semibold text-gray-900">Your Referral Link</h3>
-              <p class="text-xs text-gray-500">Share this link to invite new members</p>
-            </div>
-          </div>
+        <div class="relative overflow-hidden bg-white rounded-[2.5rem] border border-gray-100/50 shadow-sm p-8 lg:p-10 transition-all duration-300">
+          <i class="pi pi-link absolute" 
+             style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.1; pointer-events: none; z-index: 0;"></i>
           
-          <div class="space-y-4">
-            <!-- Link Input -->
-            <div class="flex flex-col sm:flex-row gap-3">
-              <div class="flex-1 bg-gray-50 rounded-xl border border-gray-100 px-4 py-3.5 flex items-center">
-                <span class="text-gray-900 font-medium text-sm truncate">{{ referral().url }}</span>
+          <div class="relative z-10 space-y-6">
+            <div class="flex items-center gap-4 mb-2">
+              <div class="w-12 h-12 bg-mlm-primary/10 rounded-2xl flex items-center justify-center">
+                <i class="pi pi-link text-xl text-mlm-primary"></i>
               </div>
-              <app-copy-button 
-                [textToCopy]="referral().url" 
-                label="Copy Link"
-                styleClass="!w-full sm:!w-auto !bg-mlm-primary !border-mlm-primary !py-3.5 !px-6 !rounded-xl !font-medium !text-sm shadow-sm hover:!bg-mlm-primary/90 transition-colors">
-              </app-copy-button>
+              <div>
+                <h3 class="text-lg font-semibold text-mlm-text">Your Referral Link</h3>
+                <p class="text-sm text-mlm-secondary">Share this link to invite new members</p>
+              </div>
             </div>
-
-            <!-- Referral Code -->
-            <div class="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-xl border border-gray-100">
-              <div class="flex items-center gap-2">
-                <i class="pi pi-hashtag text-gray-400 text-sm"></i>
-                <span class="text-xs text-gray-500">Referral Code:</span>
+            
+            <div class="space-y-4">
+              <!-- Link Input -->
+              <div class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-1 bg-gray-50 rounded-xl border border-gray-100 px-4 py-3.5 flex items-center">
+                  <span class="text-gray-900 font-medium text-sm truncate">{{ referral().url }}</span>
+                </div>
+                <app-copy-button 
+                  [textToCopy]="referral().url" 
+                  label="Copy Link"
+                  styleClass="!w-full sm:!w-auto !bg-mlm-primary !border-mlm-primary !py-3.5 !px-6 !rounded-xl !font-medium !text-sm shadow-sm hover:!bg-mlm-primary/90 transition-colors">
+                </app-copy-button>
               </div>
-              <span class="font-mono font-semibold text-gray-900">{{ referral().code }}</span>
+
+              <!-- Referral Code -->
+              <div class="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-xl border border-gray-100">
+                <div class="flex items-center gap-2">
+                  <i class="pi pi-hashtag text-gray-400 text-sm"></i>
+                  <span class="text-xs text-gray-500 font-medium">Referral Code:</span>
+                </div>
+                <span class="font-mono font-semibold text-gray-900">{{ referral().code }}</span>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Share Options -->
-        <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-          <h3 class="text-base font-semibold text-gray-900 mb-4">Quick Share</h3>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <button class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
-              <div class="w-12 h-12 rounded-full bg-[#25D366]/10 flex items-center justify-center group-hover:bg-[#25D366]/20 transition-colors">
-                <i class="pi pi-whatsapp text-xl text-[#25D366]"></i>
-              </div>
-              <span class="text-xs font-medium text-gray-700">WhatsApp</span>
-            </button>
-            <button class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
-              <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                <i class="pi pi-telegram text-xl text-blue-500"></i>
-              </div>
-              <span class="text-xs font-medium text-gray-700">Telegram</span>
-            </button>
-            <button class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
-              <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
-                <i class="pi pi-envelope text-xl text-gray-600"></i>
-              </div>
-              <span class="text-xs font-medium text-gray-700">Email</span>
-            </button>
-            <button class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors group">
-              <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
-                <i class="pi pi-share-alt text-xl text-gray-600"></i>
-              </div>
-              <span class="text-xs font-medium text-gray-700">More</span>
-            </button>
+        <div class="relative overflow-hidden bg-white rounded-[2.5rem] border border-gray-100/50 shadow-sm p-8 lg:p-10 transition-all duration-300">
+          <i class="pi pi-share-alt absolute" 
+             style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.1; pointer-events: none; z-index: 0;"></i>
+          
+          <div class="relative z-10">
+            <h3 class="text-lg font-semibold text-mlm-text mb-6">Quick Share</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <button class="flex flex-col items-center gap-3 p-5 rounded-2xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all group">
+                <div class="w-14 h-14 rounded-full bg-[#25D366]/10 flex items-center justify-center group-hover:bg-[#25D366]/20 transition-colors group-hover:scale-110">
+                  <i class="pi pi-whatsapp text-2xl text-[#25D366]"></i>
+                </div>
+                <span class="text-xs font-semibold text-gray-700">WhatsApp</span>
+              </button>
+              <button class="flex flex-col items-center gap-3 p-5 rounded-2xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all group">
+                <div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors group-hover:scale-110">
+                  <i class="pi pi-telegram text-2xl text-blue-500"></i>
+                </div>
+                <span class="text-xs font-semibold text-gray-700">Telegram</span>
+              </button>
+              <button class="flex flex-col items-center gap-3 p-5 rounded-2xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all group">
+                <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors group-hover:scale-110">
+                  <i class="pi pi-envelope text-2xl text-gray-600"></i>
+                </div>
+                <span class="text-xs font-semibold text-gray-700">Email</span>
+              </button>
+              <button class="flex flex-col items-center gap-3 p-5 rounded-2xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all group">
+                <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors group-hover:scale-110">
+                  <i class="pi pi-share-alt text-2xl text-gray-600"></i>
+                </div>
+                <span class="text-xs font-semibold text-gray-700">More</span>
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Sponsor Info -->
-        <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div class="flex items-center gap-4">
-              <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-                <i class="pi pi-user text-lg"></i>
+        <div class="relative overflow-hidden bg-white rounded-[2.5rem] border border-gray-100/50 shadow-sm p-8 lg:p-10 transition-all duration-300">
+          <i class="pi pi-user absolute" 
+             style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.1; pointer-events: none; z-index: 0;"></i>
+          
+          <div class="relative z-10">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-full bg-mlm-primary/10 flex items-center justify-center">
+                  <i class="pi pi-user text-xl text-mlm-primary"></i>
+                </div>
+                <div>
+                  <p class="text-xs text-mlm-secondary font-medium mb-1">Your Sponsor</p>
+                  <p class="text-lg font-semibold text-mlm-text">{{ referral().sponsorName }}</p>
+                </div>
               </div>
-              <div>
-                <p class="text-xs text-gray-500 font-medium mb-0.5">Your Sponsor</p>
-                <p class="text-base font-semibold text-gray-900">{{ referral().sponsorName }}</p>
+              <div class="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl border border-green-100">
+                <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                <span class="text-xs font-medium text-green-700">Registered via referral link</span>
               </div>
-            </div>
-            <div class="flex items-center gap-2 text-xs text-gray-500">
-              <div class="w-2 h-2 rounded-full bg-green-500"></div>
-              <span>Registered via referral link</span>
             </div>
           </div>
         </div>
 
         <!-- Tips Section -->
-        <div class="bg-gradient-to-br from-mlm-primary/5 to-green-50 rounded-2xl border border-mlm-primary/10 p-6">
-          <h3 class="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <i class="pi pi-lightbulb text-mlm-primary"></i>
-            Tips to Get More Referrals
-          </h3>
-          <ul class="space-y-3">
-            <li class="flex items-start gap-3">
-              <div class="w-6 h-6 rounded-full bg-mlm-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                <span class="text-xs font-semibold text-mlm-primary">1</span>
-              </div>
-              <p class="text-sm text-gray-600">Share your link on social media platforms with a personal message about your experience.</p>
-            </li>
-            <li class="flex items-start gap-3">
-              <div class="w-6 h-6 rounded-full bg-mlm-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                <span class="text-xs font-semibold text-mlm-primary">2</span>
-              </div>
-              <p class="text-sm text-gray-600">Follow up with interested contacts within 24 hours to answer any questions.</p>
-            </li>
-            <li class="flex items-start gap-3">
-              <div class="w-6 h-6 rounded-full bg-mlm-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                <span class="text-xs font-semibold text-mlm-primary">3</span>
-              </div>
-              <p class="text-sm text-gray-600">Help new members get started quickly to increase their activation rate.</p>
-            </li>
-          </ul>
+        <div class="relative overflow-hidden bg-gradient-to-br from-mlm-primary/5 to-green-50 rounded-[2.5rem] border border-mlm-primary/10 p-8 lg:p-10">
+          <i class="pi pi-lightbulb absolute" 
+             style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.1; pointer-events: none; z-index: 0;"></i>
+          
+          <div class="relative z-10">
+            <h3 class="text-lg font-semibold text-mlm-text mb-6 flex items-center gap-2">
+              <i class="pi pi-lightbulb text-mlm-primary"></i>
+              Tips to Get More Referrals
+            </h3>
+            <ul class="space-y-4">
+              <li class="flex items-start gap-4">
+                <div class="w-8 h-8 rounded-full bg-mlm-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <span class="text-sm font-semibold text-mlm-primary">1</span>
+                </div>
+                <p class="text-sm text-mlm-secondary leading-relaxed">Share your link on social media platforms with a personal message about your experience.</p>
+              </li>
+              <li class="flex items-start gap-4">
+                <div class="w-8 h-8 rounded-full bg-mlm-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <span class="text-sm font-semibold text-mlm-primary">2</span>
+                </div>
+                <p class="text-sm text-mlm-secondary leading-relaxed">Follow up with interested contacts within 24 hours to answer any questions.</p>
+              </li>
+              <li class="flex items-start gap-4">
+                <div class="w-8 h-8 rounded-full bg-mlm-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <span class="text-sm font-semibold text-mlm-primary">3</span>
+                </div>
+                <p class="text-sm text-mlm-secondary leading-relaxed">Help new members get started quickly to increase their activation rate.</p>
+              </li>
+            </ul>
+          </div>
         </div>
 
       </div>

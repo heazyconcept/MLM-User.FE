@@ -83,8 +83,8 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/placeholder/placeholder.component').then(m => m.PlaceholderComponent),
-        data: { title: 'Shop' }
+        loadComponent: () => import('./pages/shop/shop.component').then(m => m.ShopComponent),
+        data: { title: 'Marketplace' }
       }
     ]
   },

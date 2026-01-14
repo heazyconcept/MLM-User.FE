@@ -10,9 +10,12 @@
               <p class="text-gray-500 text-sm">Manage and view your team members.</p>
             </div>
             <div class="flex gap-2">
-              <button class="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm font-medium shadow-sm flex items-center gap-2 hover:bg-gray-800 transition-colors">
-                <i class="pi pi-download text-sm"></i> Export CSV
-              </button>
+              <p-button 
+                label="Export CSV" 
+                icon="pi pi-download" 
+                (onClick)="exportCSV()"
+                styleClass="p-button-sm">
+              </p-button>
             </div>
           </div>
 
@@ -29,75 +32,104 @@
 
         <!-- Table Section -->
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left">
-              <thead>
-                <tr class="bg-gray-50/50 border-b border-gray-100">
-                  <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wide text-gray-600">Member</th>
-                  <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wide text-gray-600">Level</th>
-                  <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wide text-gray-600">Package</th>
-                  <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wide text-gray-600">Joined</th>
-                  <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wide text-gray-600 text-center">Stats</th>
-                  <th class="py-4 px-6 text-xs font-semibold uppercase tracking-wide text-gray-600 text-right">Status</th>
+          <p-table 
+            #dt
+            [value]="isLoading() ? skeletonRows : filteredMembers()" 
+            [tableStyle]="{'min-width': '50rem'}"
+            styleClass="p-datatable-sm"
+            [rowHover]="true">
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Member</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Level</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Package</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Joined</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700 text-center">Stats</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700 text-right">Status</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-member>
+              @if (isLoading()) {
+                <tr>
+                  <td>
+                    <div class="flex flex-col gap-2">
+                      <p-skeleton width="120px" height="1rem"></p-skeleton>
+                      <p-skeleton width="100px" height="0.75rem"></p-skeleton>
+                    </div>
+                  </td>
+                  <td>
+                    <p-skeleton width="32px" height="32px" shape="circle" class="mx-auto"></p-skeleton>
+                  </td>
+                  <td>
+                    <p-skeleton width="80px" height="1.5rem" borderRadius="8px"></p-skeleton>
+                  </td>
+                  <td>
+                    <p-skeleton width="100px" height="1rem"></p-skeleton>
+                  </td>
+                  <td class="text-center">
+                    <div class="flex gap-6 justify-center">
+                      <div class="text-center">
+                        <p-skeleton width="30px" height="1rem" class="mb-1"></p-skeleton>
+                        <p-skeleton width="20px" height="0.625rem"></p-skeleton>
+                      </div>
+                      <div class="text-center">
+                        <p-skeleton width="30px" height="1rem" class="mb-1"></p-skeleton>
+                        <p-skeleton width="30px" height="0.625rem"></p-skeleton>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <p-skeleton width="60px" height="1.5rem" borderRadius="20px" class="ml-auto"></p-skeleton>
+                  </td>
                 </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-50">
-                @for (member of filteredMembers(); track member.id) {
-                  <tr class="hover:bg-gray-50/50 transition-colors group">
-                    <td class="py-4 px-6">
-                      <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-mlm-primary/10 flex items-center justify-center text-mlm-primary font-semibold text-sm">
-                          {{ member.username.charAt(0) }}
-                        </div>
-                        <div class="flex flex-col">
-                          <span class="text-sm font-semibold text-gray-900 group-hover:text-mlm-primary transition-colors">{{ member.username }}</span>
-                          <span class="text-xs text-gray-500">{{ member.fullName }}</span>
-                        </div>
+              } @else {
+                <tr class="p-selectable-row">
+                  <td>
+                    <div class="flex flex-col gap-1">
+                      <span class="text-sm font-semibold text-gray-900 group-hover:text-mlm-primary transition-colors">{{ member.username }}</span>
+                      <span class="text-xs text-gray-500">{{ member.fullName }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-sm font-medium text-gray-700">
+                      {{ member.level }}
+                    </span>
+                  </td>
+                  <td>
+                    <span [class]="'text-xs font-medium uppercase tracking-wide px-3 py-1.5 rounded-lg ' + getPackageClass(member.package)">
+                      {{ member.package }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="text-sm font-normal text-gray-700">{{ member.joinDate | date:'mediumDate' }}</span>
+                  </td>
+                  <td class="text-center">
+                    <div class="flex gap-6 text-sm">
+                      <div class="text-center" title="Direct Referrals">
+                        <span class="block font-semibold text-gray-900 mb-1">{{ member.totalDirects }}</span>
+                        <span class="text-[10px] text-gray-500 uppercase font-medium tracking-wide">DR</span>
                       </div>
-                    </td>
-                    <td class="py-4 px-6">
-                      <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-sm font-medium text-gray-700">
-                        {{ member.level }}
-                      </span>
-                    </td>
-                    <td class="py-4 px-6">
-                      <span [class]="'text-xs font-medium uppercase tracking-wide px-3 py-1.5 rounded-lg ' + getPackageClass(member.package)">
-                        {{ member.package }}
-                      </span>
-                    </td>
-                    <td class="py-4 px-6">
-                      <span class="text-sm font-normal text-gray-600">{{ member.joinDate | date:'mediumDate' }}</span>
-                    </td>
-                    <td class="py-4 px-6">
-                      <div class="flex justify-center gap-6 text-sm">
-                        <div class="text-center" title="Direct Referrals">
-                          <span class="block font-semibold text-gray-900">{{ member.totalDirects }}</span>
-                          <span class="text-[10px] text-gray-500 uppercase font-medium">DR</span>
-                        </div>
-                        <div class="text-center" title="Team Size">
-                          <span class="block font-semibold text-gray-900">{{ member.teamSize }}</span>
-                          <span class="text-[10px] text-gray-500 uppercase font-medium">Team</span>
-                        </div>
+                      <div class="text-center" title="Team Size">
+                        <span class="block font-semibold text-gray-900 mb-1">{{ member.teamSize }}</span>
+                        <span class="text-[10px] text-gray-500 uppercase font-medium tracking-wide">Team</span>
                       </div>
-                    </td>
-                    <td class="py-4 px-6 text-right">
-                      <span [class]="'px-3 py-1.5 rounded-full text-xs font-medium uppercase tracking-wide ' + getStatusClass(member.status)">
-                        {{ member.status }}
-                      </span>
-                    </td>
-                  </tr>
-                }
-                @if (filteredMembers().length === 0) {
-                  <tr>
-                    <td colspan="6" class="py-16 text-center text-gray-500">
-                      <i class="pi pi-search text-3xl mb-3 block opacity-30"></i>
-                      <p class="text-sm font-medium">No members found matching "{{ searchQuery() }}"</p>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <app-status-badge [status]="member.status" size="sm" />
+                  </td>
+                </tr>
+              }
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="6" class="py-16 text-center text-gray-500">
+                  <i class="pi pi-search text-3xl mb-3 block opacity-30"></i>
+                  <p class="text-sm font-medium">No members found matching "{{ searchQuery() }}"</p>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
         </div>
       </div>
     </div>

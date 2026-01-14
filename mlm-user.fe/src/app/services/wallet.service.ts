@@ -55,6 +55,30 @@ export class WalletService {
   readonly allTransactions = computed(() => this.transactions());
   readonly allWithdrawals = computed(() => this.withdrawalRequests());
 
+  // Total balance across all wallets (aggregated)
+  readonly totalBalance = computed(() => {
+    const wallets = this.wallets();
+    return wallets.reduce((sum, w) => sum + w.balance, 0);
+  });
+
+  // Total cash balance (withdrawable)
+  readonly totalCashBalance = computed(() => {
+    const wallets = this.wallets();
+    return wallets.reduce((sum, w) => sum + w.cashBalance, 0);
+  });
+
+  // Total voucher balance
+  readonly totalVoucherBalance = computed(() => {
+    const wallets = this.wallets();
+    return wallets.reduce((sum, w) => sum + w.voucherBalance, 0);
+  });
+
+  // Total autoship balance
+  readonly totalAutoshipBalance = computed(() => {
+    const wallets = this.wallets();
+    return wallets.reduce((sum, w) => sum + w.autoshipBalance, 0);
+  });
+
   constructor() {
     this.initialLoad();
   }

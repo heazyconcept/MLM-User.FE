@@ -1,6 +1,6 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
-    <div class="px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <div class="space-y-8 animate-fade-in">
         
         <!-- Header -->
@@ -18,52 +18,40 @@
         <!-- Stats Overview -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <!-- Personal CPV -->
-          <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                <i class="pi pi-user text-blue-600"></i>
-              </div>
-              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Personal CPV</span>
-            </div>
-            <p class="text-3xl font-bold text-gray-900">{{ cpv().personalCpv }}</p>
-            <p class="text-xs text-gray-400 mt-1">points this cycle</p>
-          </div>
+          <app-stat-card
+            label="Personal CPV"
+            [value]="cpv().personalCpv"
+            subValue="points this cycle"
+            icon="pi-user"
+            bgClass="bg-blue-500">
+          </app-stat-card>
 
           <!-- Team CPV -->
-          <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-                <i class="pi pi-users text-green-600"></i>
-              </div>
-              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Team CPV</span>
-            </div>
-            <p class="text-3xl font-bold text-gray-900">{{ cpv().teamCpv }}</p>
-            <p class="text-xs text-gray-400 mt-1">/ {{ cpv().requiredCpv }} required</p>
-          </div>
+          <app-stat-card
+            label="Team CPV"
+            [value]="cpv().teamCpv"
+            [subValue]="getTeamCpvSubValue()"
+            icon="pi-users"
+            bgClass="bg-green-500">
+          </app-stat-card>
 
           <!-- Current Rank -->
-          <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center">
-                <i class="pi pi-star text-orange-500"></i>
-              </div>
-              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Current Rank</span>
-            </div>
-            <p class="text-xl font-bold text-gray-900">{{ summary().rank }}</p>
-            <p class="text-xs text-gray-400 mt-1">{{ summary().nextRank }} next</p>
-          </div>
+          <app-stat-card
+            label="Current Rank"
+            [value]="summary().rank"
+            [subValue]="getRankSubValue()"
+            icon="pi-star"
+            bgClass="bg-orange-500">
+          </app-stat-card>
 
           <!-- Progress -->
-          <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
-                <i class="pi pi-chart-line text-purple-600"></i>
-              </div>
-              <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Progress</span>
-            </div>
-            <p class="text-3xl font-bold text-gray-900">{{ getPercentage() | number:'1.0-0' }}%</p>
-            <p class="text-xs text-gray-400 mt-1">to next rank</p>
-          </div>
+          <app-stat-card
+            label="Progress"
+            [value]="getProgressValue()"
+            subValue="to next rank"
+            icon="pi-chart-line"
+            bgClass="bg-purple-500">
+          </app-stat-card>
         </div>
 
         <!-- Progress Bar Section -->
@@ -78,7 +66,7 @@
           <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
             <div 
               class="h-full bg-gradient-to-r from-mlm-primary to-green-400 rounded-full transition-all duration-1000" 
-              [style.width.%]="getPercentage()">
+              [style.width.%]="animatedPercentage()">
             </div>
           </div>
           <div class="flex justify-between mt-3 text-xs text-gray-400">

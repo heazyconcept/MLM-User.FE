@@ -342,8 +342,8 @@
               <div>
                 <h3 class="text-sm font-black uppercase tracking-widest text-mlm-secondary mb-1">Recent Activity</h3>
                 <p class="text-[10px] text-mlm-secondary font-bold uppercase tracking-tighter">Your latest transactions</p>
-              </div>
-            </div>
+                  </div>
+                </div>
 
             @if (recentActivities().length > 0) {
               <div class="space-y-4">
@@ -355,12 +355,12 @@
                     <div class="flex items-center gap-4 flex-1 min-w-0">
                       <div [class]="'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ' + getActivityIconClasses(activity.type)">
                         <i [class]="'pi ' + activity.icon + ' text-sm'"></i>
-                      </div>
+                  </div>
                       <div class="flex-1 min-w-0">
                         <h4 class="text-sm font-bold text-mlm-text truncate">{{ activity.title }}</h4>
                         <p class="text-xs text-mlm-secondary truncate">{{ activity.description }}</p>
-                      </div>
-                    </div>
+                  </div>
+                </div>
 
                     <!-- Right: Amount, Time & Status -->
                     <div class="flex items-center gap-4 shrink-0">
@@ -370,17 +370,17 @@
                             {{ activity.currency === 'NGN' ? '₦' : '$' }}{{ activity.amount | number:'1.0-0' }}
                           </p>
                           <p class="text-[10px] text-mlm-secondary font-bold">{{ formatActivityDate(activity.date) }}</p>
-                        </div>
+                  </div>
                       } @else {
                         <p class="text-[10px] text-mlm-secondary font-bold">{{ formatActivityDate(activity.date) }}</p>
                       }
                       <span [class]="'px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ' + getStatusBadgeClasses(activity.status)">
                         {{ activity.status }}
                       </span>
-                    </div>
                   </div>
+                </div>
                 }
-              </div>
+            </div>
 
               <!-- View All Button -->
               <div class="mt-8 flex justify-center">
@@ -390,18 +390,18 @@
                   <span>View All Activity</span>
                   <i class="pi pi-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
                 </button>
-              </div>
+                          </div>
             } @else {
               <!-- Empty State -->
               <div class="flex flex-col items-center justify-center py-16 text-center">
                 <div class="w-20 h-20 bg-mlm-secondary/10 rounded-full flex items-center justify-center mb-4">
                   <i class="pi pi-inbox text-3xl text-mlm-secondary"></i>
-                </div>
+                        </div>
                 <h4 class="text-lg font-bold text-mlm-text mb-2">No Activity Yet</h4>
                 <p class="text-sm text-mlm-secondary max-w-md">
                   Your recent activities will appear here once you start transacting on the platform.
                 </p>
-              </div>
+                          </div>
             }
           </div>
         </div>

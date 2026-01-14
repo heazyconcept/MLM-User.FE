@@ -20,7 +20,7 @@
   [attr.aria-label]="'Main navigation'"
   style="overflow: visible;">
   <div class="relative flex h-full flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-2 ring-1 ring-brand-green-light" style="overflow-x: visible;">
-    <div class="relative flex h-16 shrink-0 items-center justify-center">
+    <div class="relative flex h-16 shrink-0 items-center justify-start">
       <img src="assets/images/logo.png" alt="logo" class="h-10 w-auto">
       <button
         type="button"
@@ -40,7 +40,7 @@
                   <a
                     (click)="navigate(item.route, item)"
                     (mouseenter)="isItemDisabled(item) && updateTooltipPosition($event)"
-                    [class]="isActiveRoute(item.route) ? 'bg-brand-green-light text-mlm-primary shadow-sm' : 'text-mlm-secondary hover:bg-gray-50'"
+                    [class]="isActiveRoute(item.route) ? 'bg-brand-green-light text-mlm-primary shadow-sm' : 'text-mlm-text hover:bg-gray-50'"
                     [class.opacity-50]="isItemDisabled(item)"
                     [class.cursor-not-allowed]="isItemDisabled(item)"
                     class="group flex items-center gap-x-3 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200"
@@ -74,7 +74,7 @@
                       <li>
                         <a
                           (click)="navigate(child.route, child)"
-                          [class]="isActiveRoute(child.route) ? 'text-mlm-primary font-semibold' : 'text-mlm-secondary hover:text-mlm-text'"
+                          [class]="isActiveRoute(child.route) ? 'text-mlm-primary font-semibold' : 'text-mlm-text hover:text-mlm-primary'"
                           class="block py-1.5 text-xs font-medium transition-colors cursor-pointer">
                           {{ child.label }}
                         </a>
@@ -87,24 +87,51 @@
           </ul>
         </li>
       </ul>
-      <div class="mt-auto -mx-6 space-y-1 px-6 pb-4">
+      <div class="mt-auto -mx-6 px-6 pb-4">
+        <!-- Expandable Menu Items -->
+        <div 
+          class="overflow-hidden transition-all duration-300 ease-in-out"
+          [style.max-height]="isUserMenuExpanded() ? '200px' : '0'"
+          [style.opacity]="isUserMenuExpanded() ? '1' : '0'">
+          <div class="space-y-1 pb-3 border-b border-gray-100 mb-3">
+            <a
+              routerLink="/profile"
+              (click)="closeMobileMenu()"
+              class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm text-mlm-text hover:bg-gray-50 hover:text-mlm-primary transition-all cursor-pointer">
+              <i class="pi pi-user w-4 h-4 shrink-0"></i>
+              Profile
+            </a>
+            <a
+              routerLink="/settings"
+              (click)="closeMobileMenu()"
+              class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm text-mlm-text hover:bg-gray-50 hover:text-mlm-primary transition-all cursor-pointer">
+              <i class="pi pi-cog w-4 h-4 shrink-0"></i>
+              Settings
+            </a>
+            <button
+              (click)="logout()"
+              class="w-full flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm text-mlm-text hover:bg-gray-50 hover:text-mlm-primary transition-all">
+              <i class="pi pi-sign-out w-4 h-4 shrink-0"></i>
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        <!-- User Card Toggle -->
         @if (currentUser(); as user) {
-          <div class="flex items-center gap-x-4 py-3 text-sm font-semibold text-mlm-text">
+          <button
+            (click)="toggleUserMenu()"
+            class="w-full flex items-center gap-x-3 py-3 text-sm font-semibold text-mlm-text hover:bg-gray-50 rounded-xl px-2 transition-colors cursor-pointer">
             <div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-green-light border border-brand-green-light text-xs text-mlm-primary font-bold">
               {{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}
             </div>
-            <div class="flex-1 min-w-0">
-              <p class="truncate">{{ user.firstName }} {{ user.lastName }}</p>
-              <p class="text-[10px] text-mlm-secondary truncate font-normal">{{ user.email }}</p>
+            <div class="flex-1 min-w-0 text-left">
+              <p class="truncate text-sm font-semibold">{{ user.firstName }} {{ user.lastName }}</p>
             </div>
-          </div>
+            <i class="pi pi-chevron-up text-xs text-mlm-secondary transition-transform duration-300"
+               [class.rotate-180]="!isUserMenuExpanded()"></i>
+          </button>
         }
-        <button
-          (click)="logout()"
-          class="w-full flex items-center gap-x-3 rounded-full px-4 py-2 text-sm font-semibold text-mlm-secondary hover:bg-gray-50 hover:text-mlm-text transition-all">
-          <i class="pi pi-sign-out w-5 h-5 shrink-0"></i>
-          Logout
-        </button>
       </div>
     </nav>
   </div>
@@ -113,7 +140,7 @@
 <!-- Desktop Sidebar -->
 <div class="hidden bg-white lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col shadow-sm border-r border-gray-100" style="overflow: visible;">
   <div class="flex grow flex-col gap-y-5 overflow-y-auto px-6" style="overflow-x: visible;">
-    <div class="flex h-16 shrink-0 items-center justify-center">
+    <div class="flex h-16 shrink-0 items-center justify-start">
       <img src="assets/images/logo.png" alt="logo" class="h-12 w-auto">
     </div>
     <nav class="flex flex-1 flex-col">
@@ -126,7 +153,7 @@
                   <a
                     (click)="navigate(item.route, item)"
                     (mouseenter)="isItemDisabled(item) && updateTooltipPosition($event)"
-                    [class]="isActiveRoute(item.route) ? 'bg-brand-green-light text-mlm-primary shadow-sm' : 'text-mlm-secondary hover:bg-gray-50'"
+                    [class]="isActiveRoute(item.route) ? 'bg-brand-green-light text-mlm-primary shadow-sm' : 'text-mlm-text hover:bg-gray-50'"
                     [class.opacity-50]="isItemDisabled(item)"
                     [class.cursor-not-allowed]="isItemDisabled(item)"
                     class="group flex items-center gap-x-3 rounded-full px-4 py-2.5 text-[15px] font-semibold cursor-pointer transition-all duration-200"
@@ -159,7 +186,7 @@
                       <li>
                         <a
                           (click)="navigate(child.route, child)"
-                          [class]="isActiveRoute(child.route) ? 'text-mlm-primary font-bold' : 'text-mlm-secondary hover:text-mlm-text'"
+                          [class]="isActiveRoute(child.route) ? 'text-mlm-primary font-bold' : 'text-mlm-text hover:text-mlm-primary'"
                           class="block py-1.5 text-xs font-medium transition-colors cursor-pointer">
                           {{ child.label }}
                         </a>
@@ -172,24 +199,49 @@
           </ul>
         </li>
       </ul>
-      <div class="mt-auto -mx-6 space-y-1 px-6 pb-6">
+      <div class="mt-auto -mx-6 px-6 pb-6">
+        <!-- Expandable Menu Items -->
+        <div 
+          class="overflow-hidden transition-all duration-300 ease-in-out"
+          [style.max-height]="isUserMenuExpanded() ? '200px' : '0'"
+          [style.opacity]="isUserMenuExpanded() ? '1' : '0'">
+          <div class="space-y-1 pb-3 border-b border-gray-100 mb-3">
+            <a
+              routerLink="/profile"
+              class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm text-mlm-text hover:bg-gray-50 hover:text-mlm-primary transition-all cursor-pointer">
+              <i class="pi pi-user w-4 h-4 shrink-0"></i>
+              Profile
+            </a>
+            <a
+              routerLink="/settings"
+              class="flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm text-mlm-text hover:bg-gray-50 hover:text-mlm-primary transition-all cursor-pointer">
+              <i class="pi pi-cog w-4 h-4 shrink-0"></i>
+              Settings
+            </a>
+            <button
+              (click)="logout()"
+              class="w-full flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm text-mlm-text hover:bg-gray-50 hover:text-mlm-primary transition-all">
+              <i class="pi pi-sign-out w-4 h-4 shrink-0"></i>
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        <!-- User Card Toggle -->
         @if (currentUser(); as user) {
-          <div class="flex items-center gap-x-4 py-3 text-sm font-semibold text-mlm-text hover:bg-gray-50 rounded-xl px-2 transition-colors cursor-pointer">
+          <button
+            (click)="toggleUserMenu()"
+            class="w-full flex items-center gap-x-3 py-3 text-sm font-semibold text-mlm-text hover:bg-gray-50 rounded-xl px-2 transition-colors cursor-pointer">
             <div class="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-green-light border border-brand-green-light text-xs text-mlm-primary font-bold shadow-sm">
               {{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}
             </div>
-            <div class="flex-1 min-w-0">
-              <p class="truncate text-sm font-bold">{{ user.firstName }} {{ user.lastName }}</p>
-              <p class="text-[10px] text-mlm-secondary truncate font-normal">{{ user.email }}</p>
+            <div class="flex-1 min-w-0 text-left">
+              <p class="truncate text-sm font-semibold">{{ user.firstName }} {{ user.lastName }}</p>
             </div>
-          </div>
+            <i class="pi pi-chevron-up text-xs text-mlm-secondary transition-transform duration-300"
+               [class.rotate-180]="!isUserMenuExpanded()"></i>
+          </button>
         }
-        <button
-          (click)="logout()"
-          class="w-full flex items-center gap-x-3 rounded-full px-4 py-2.5 text-sm font-semibold text-mlm-secondary hover:bg-gray-50 hover:text-mlm-text transition-all">
-          <i class="pi pi-sign-out w-5 h-5 shrink-0"></i>
-          Logout
-        </button>
       </div>
     </nav>
   </div>

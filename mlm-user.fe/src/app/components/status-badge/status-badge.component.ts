@@ -1,24 +1,40 @@
 import { Component, ChangeDetectionStrategy, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TagModule } from 'primeng/tag';
 
-export type StatusType = 'Pending' | 'Approved' | 'Rejected' | 'Success' | 'Processing';
+/**
+ * Comprehensive status enum covering all status types in the application
+ */
+export type StatusType = 
+  // Network/Member statuses
+  | 'active' 
+  | 'inactive' 
+  | 'empty'
+  // Activity/Transaction statuses
+  | 'Pending' 
+  | 'Approved' 
+  | 'Rejected' 
+  | 'Success' 
+  | 'Processing'
+  | 'Completed'
+  // Payment statuses
+  | 'UNPAID' 
+  | 'PAID'
+  // KYC statuses
+  | 'PENDING' 
+  | 'VERIFIED' 
+  | 'REJECTED'
+  // Commission statuses
+  | 'Locked';
 
 @Component({
   selector: 'app-status-badge',
   standalone: true,
-  imports: [CommonModule, TagModule],
+  imports: [CommonModule],
   template: `
     @if (status()) {
-      <div class="flex items-center gap-2">
-        <div [class]="getDotClass()"></div>
-        <p-tag 
-          [severity]="getSeverity()" 
-          [value]="status()" 
-          [rounded]="true"
-          styleClass="!bg-transparent !border-none !px-0 !font-semibold !text-sm">
-        </p-tag>
-      </div>
+      <span [class]="getStatusClass()">
+        {{ getDisplayText() }}
+      </span>
     }
   `,
   styles: [`
@@ -30,22 +46,50 @@ export type StatusType = 'Pending' | 'Approved' | 'Rejected' | 'Success' | 'Proc
 })
 export class StatusBadgeComponent {
   status = input.required<string>();
+  size = input<'sm' | 'md' | 'lg'>('md');
 
-  getSeverity(): "success" | "secondary" | "info" | "warn" | "danger" | "contrast" | undefined {
+  getStatusClass(): string {
     const s = this.status().toLowerCase();
-    if (s.includes('approved') || s.includes('success')) return 'success';
-    if (s.includes('pending') || s.includes('processing')) return 'warn';
-    if (s.includes('rejected') || s.includes('failed')) return 'danger';
-    return 'info';
+    const baseClasses = 'px-3 py-1.5 rounded-full text-xs font-medium uppercase tracking-wide';
+    const sizeClasses = {
+      sm: 'px-2 py-1 text-[10px]',
+      md: 'px-3 py-1.5 text-xs',
+      lg: 'px-4 py-2 text-sm'
+    };
+    
+    let colorClasses = '';
+    
+    // Network/Member statuses
+    if (s === 'active') {
+      colorClasses = 'bg-green-50 text-green-600';
+    } else if (s === 'inactive') {
+      colorClasses = 'bg-red-50 text-red-600';
+    } else if (s === 'empty') {
+      colorClasses = 'bg-blue-50 text-blue-600';
+    }
+    // Activity/Transaction statuses
+    else if (s === 'approved' || s === 'success' || s === 'completed' || s === 'verified' || s === 'paid') {
+      colorClasses = 'bg-green-50 text-green-600';
+    } else if (s === 'pending' || s === 'processing' || s === 'locked') {
+      colorClasses = 'bg-yellow-50 text-yellow-600';
+    } else if (s === 'rejected' || s === 'unpaid') {
+      colorClasses = 'bg-red-50 text-red-600';
+    }
+    // Default
+    else {
+      colorClasses = 'bg-gray-100 text-gray-600';
+    }
+    
+    return `${baseClasses} ${sizeClasses[this.size()]} ${colorClasses}`;
   }
 
-  getDotClass(): string {
-    const s = this.status().toLowerCase();
-    let colorClass = 'bg-gray-400';
-    if (s.includes('approved') || s.includes('success')) colorClass = 'bg-mlm-success';
-    else if (s.includes('pending') || s.includes('processing')) colorClass = 'bg-mlm-warning';
-    else if (s.includes('rejected') || s.includes('failed')) colorClass = 'bg-mlm-error';
-    
-    return `h-2 w-2 rounded-full ${colorClass}`;
+  getDisplayText(): string {
+    const s = this.status();
+    // Return uppercase for certain statuses, capitalize for others
+    if (['UNPAID', 'PAID', 'PENDING', 'VERIFIED', 'REJECTED'].includes(s)) {
+      return s;
+    }
+    // Capitalize first letter
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
   }
 }

@@ -32,6 +32,7 @@ export class SideMenuComponent {
   mobileMenuOpen = this.layoutService.isMobileMenuOpen;
   activeRoute = signal('');
   openMenus = signal<Set<string>>(new Set());
+  isUserMenuExpanded = signal(false);
 
 
   menuItems = signal<MenuItem[]>([
@@ -143,6 +144,10 @@ export class SideMenuComponent {
     this.authService.logout();
     this.userService.clearUser();
     this.router.navigate(['/login']);
+  }
+
+  toggleUserMenu(): void {
+    this.isUserMenuExpanded.update(v => !v);
   }
 
   isActiveRoute(route: string): boolean {

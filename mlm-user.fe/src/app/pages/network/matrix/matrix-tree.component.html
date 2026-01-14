@@ -18,7 +18,7 @@
                 @if (isRootView()) {
                   Matrix View
                 } @else {
-                  {{ matrixTree().username }}'s Network
+                  {{ currentRootNode().username }}'s Network
                 }
               </h1>
               <p class="text-gray-500 text-xs">Visualise your binary tree structure</p>
@@ -40,11 +40,49 @@
           <!-- Draggable/Scrollable Area -->
           <div class="absolute inset-0 overflow-auto flex items-start justify-center pt-16 pb-16 px-8 cursor-grab active:cursor-grabbing">
             <div [style.transform]="'scale(' + zoomLevel() + ')'" class="transition-transform duration-200 origin-top">
-              <app-tree-node 
-                [node]="matrixTree()" 
-                [isRoot]="true"
-                (nodeClick)="onNodeClick($event)">
-              </app-tree-node>
+              <p-organization-chart 
+                [value]="matrixTree()" 
+                (onNodeSelect)="onNodeSelect($event)">
+                <ng-template let-node pTemplate="default">
+                  @if (node.data) {
+                    @if (node.data.status === 'empty') {
+                      <!-- Empty Slot - Not clickable -->
+                      <div 
+                        class="flex flex-col items-center justify-center px-6 py-5 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 w-32 cursor-not-allowed"
+                        [pTooltip]="getTooltipText(node.data)"
+                        tooltipPosition="top">
+                        <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-2">
+                          <i class="pi pi-plus text-gray-400 text-sm"></i>
+                        </div>
+                        <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Open Slot</span>
+                      </div>
+                    } @else {
+                      <!-- Active/Inactive Node -->
+                      <div 
+                        class="flex flex-col items-center px-5 py-4 w-32"
+                        [class.opacity-50]="node.data.status === 'inactive'"
+                        [class.cursor-pointer]="!isCurrentRoot(node.data.id)"
+                        [class.cursor-default]="isCurrentRoot(node.data.id)"
+                        [pTooltip]="getTooltipText(node.data)"
+                        tooltipPosition="top"
+                        (click)="handleNodeClick(node.data)">
+                        
+                        <!-- Package Badge Circle -->
+                        <div class="w-9 h-9 rounded-full flex items-center justify-center mb-2 text-sm font-bold"
+                             [ngClass]="getPackageBgClass(node.data.package)">
+                          {{ getPackageInitial(node.data.package) }}
+                        </div>
+
+                        <!-- Username -->
+                        <span class="text-xs font-semibold text-gray-800 truncate max-w-full mb-1">{{ node.data.username }}</span>
+                        
+                        <!-- Level Badge -->
+                        <span class="text-[10px] font-medium text-blue-500 uppercase tracking-wide">LVL {{ node.data.level }}</span>
+                      </div>
+                    }
+                  }
+                </ng-template>
+              </p-organization-chart>
             </div>
           </div>
         </div>
