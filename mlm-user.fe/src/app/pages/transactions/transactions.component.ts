@@ -1,5 +1,5 @@
 import { Component, inject, signal, computed, ViewChild, OnInit, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { TableModule, Table } from 'primeng/table';
@@ -29,7 +29,6 @@ import { TransactionDetailComponent } from './components/transaction-detail.comp
     ButtonModule,
     SkeletonModule,
     DatePipe,
-    DecimalPipe,
     StatusBadgeComponent
   ],
   providers: [DialogService],

@@ -1,6 +1,5 @@
 import { Routes } from '@angular/router';
 // import { LoginComponent } from './auth/login/login.component';
-import { DashboardLayoutComponent } from './layouts/dashboard-layout/dashboard-layout.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
@@ -62,7 +61,7 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
-    component: DashboardLayoutComponent,
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     children: [
       {
         path: '',
@@ -72,7 +71,7 @@ export const routes: Routes = [
   },
   {
     path: 'profile',
-    component: DashboardLayoutComponent,
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     children: [
       {
         path: '',
@@ -82,7 +81,7 @@ export const routes: Routes = [
   },
   {
     path: 'shop',
-    component: DashboardLayoutComponent,
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     children: [
       {
         path: '',
@@ -93,7 +92,7 @@ export const routes: Routes = [
   },
   {
     path: 'wallet',
-    component: DashboardLayoutComponent,
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     children: [
       {
         path: '',
@@ -109,7 +108,7 @@ export const routes: Routes = [
 
   {
     path: 'network',
-    component: DashboardLayoutComponent,
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     children: [
       { path: '', redirectTo: 'overview', pathMatch: 'full' },
       {
@@ -141,7 +140,7 @@ export const routes: Routes = [
   },
   {
     path: 'commissions',
-    component: DashboardLayoutComponent,
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     children: [
       {
         path: '',
@@ -155,7 +154,7 @@ export const routes: Routes = [
   },
   {
     path: 'transactions',
-    component: DashboardLayoutComponent,
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     children: [
       {
         path: '',
@@ -166,7 +165,7 @@ export const routes: Routes = [
   },
   {
     path: 'withdrawals',
-    component: DashboardLayoutComponent,
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     children: [
       {
         path: '',
@@ -177,7 +176,7 @@ export const routes: Routes = [
   },
   {
     path: 'orders',
-    component: DashboardLayoutComponent,
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     children: [
       {
         path: '',
