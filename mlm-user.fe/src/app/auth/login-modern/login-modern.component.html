@@ -22,9 +22,11 @@
                         <input pInputText id="email" formControlName="email" class="w-full !py-3" [class.ng-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" />
                         <label for="email">Email Address</label>
                     </p-floatlabel>
-                    <small class="text-red-500 text-xs ml-1" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
-                        Please enter a valid email
-                    </small>
+                    @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
+                        <small class="text-red-500 text-xs ml-1">
+                            Please enter a valid email
+                        </small>
+                    }
                 </div>
 
                 <!-- Password -->
@@ -41,9 +43,11 @@
                         </p-password>
                         <label for="password">Password</label>
                     </p-floatlabel>
-                    <small class="text-red-500 text-xs ml-1" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
-                        Password is required
-                    </small>
+                    @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
+                        <small class="text-red-500 text-xs ml-1">
+                            Password is required
+                        </small>
+                    }
                 </div>
 
                 <!-- Remember & Forgot -->
@@ -73,6 +77,7 @@
         </form>
     </div>
 
+    
     <!-- Right Side: Illustration -->
     <div class="hidden lg:block flex-1 p-6">
         <div class="w-full h-full rounded-[40px] overflow-hidden relative">
