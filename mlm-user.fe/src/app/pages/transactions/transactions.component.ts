@@ -13,8 +13,6 @@ import {
   WalletType, 
   TransactionStatus,
   DateRangePreset,
-  SortField,
-  SortOrder
 } from '../../services/transaction.service';
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
 import { TransactionDetailComponent } from './components/transaction-detail.component';
