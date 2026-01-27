@@ -24,7 +24,12 @@ export type StatusType =
   | 'VERIFIED' 
   | 'REJECTED'
   // Commission statuses
-  | 'Locked';
+  | 'Locked'
+  // Bonus statuses
+  | 'Qualified'
+  | 'In Progress'
+  | 'Not Qualified'
+  | 'Earned';
 
 @Component({
   selector: 'app-status-badge',
@@ -67,12 +72,16 @@ export class StatusBadgeComponent {
     } else if (s === 'empty') {
       colorClasses = 'bg-blue-50 text-blue-600';
     }
-    // Activity/Transaction statuses
-    else if (s === 'approved' || s === 'success' || s === 'completed' || s === 'verified' || s === 'paid') {
+    // Activity/Transaction statuses - Success states
+    else if (s === 'approved' || s === 'success' || s === 'completed' || s === 'verified' || s === 'paid' || s === 'qualified' || s === 'earned') {
       colorClasses = 'bg-green-50 text-green-600';
-    } else if (s === 'pending' || s === 'processing' || s === 'locked') {
+    } 
+    // Pending/In Progress states
+    else if (s === 'pending' || s === 'processing' || s === 'locked' || s === 'in progress') {
       colorClasses = 'bg-yellow-50 text-yellow-600';
-    } else if (s === 'rejected' || s === 'unpaid') {
+    } 
+    // Rejected/Failed states
+    else if (s === 'rejected' || s === 'unpaid' || s === 'not qualified') {
       colorClasses = 'bg-red-50 text-red-600';
     }
     // Default

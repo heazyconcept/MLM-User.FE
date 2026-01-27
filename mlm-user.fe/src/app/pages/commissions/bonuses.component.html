@@ -1,0 +1,109 @@
+<div class="p-6 lg:p-10 space-y-8 mx-auto">
+  
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Earnings</h1>
+      <p class="text-sm text-gray-500 mt-1">Bonuses and qualification status</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <app-earnings-tabs></app-earnings-tabs>
+  @if (!userService.isPaid()) {
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-12 text-center">
+      <div class="max-w-sm mx-auto space-y-4">
+        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+          <i class="pi pi-lock text-gray-400"></i>
+        </div>
+        <h2 class="text-lg font-semibold text-gray-900">Unlock Bonuses</h2>
+        <p class="text-sm text-gray-500">Complete your registration to access bonus opportunities.</p>
+        <button routerLink="/dashboard/registration-payment" 
+                class="inline-flex items-center px-4 py-2 bg-mlm-primary text-white text-sm font-medium rounded-lg hover:bg-mlm-primary/90 transition-colors">
+          Complete Registration
+        </button>
+      </div>
+    </div>
+  } @else {
+    
+    <!-- Bonus List -->
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+      
+      <!-- Table Header -->
+      <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+        <div class="col-span-5 text-xs font-medium text-gray-500 uppercase tracking-wide">Bonus Type</div>
+        <div class="col-span-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Status</div>
+        <div class="col-span-2 text-xs font-medium text-gray-500 uppercase tracking-wide text-right">Amount</div>
+        <div class="col-span-2 text-xs font-medium text-gray-500 uppercase tracking-wide text-right">Earned</div>
+      </div>
+      
+      <!-- Bonus Rows -->
+      @for (bonus of bonuses(); track bonus.id) {
+        <div class="border-b border-gray-100 last:border-b-0">
+          <!-- Main Row -->
+          <div class="grid grid-cols-12 gap-4 px-6 py-5 items-center cursor-pointer hover:bg-gray-50/50 transition-colors"
+               (click)="toggleExpand(bonus.id)">
+            
+            <!-- Bonus Name -->
+            <div class="col-span-5">
+              <span class="text-sm font-medium text-gray-900">{{ bonus.name }}</span>
+            </div>
+            
+            <!-- Qualification Status -->
+            <div class="col-span-3">
+              <app-status-badge [status]="bonus.qualificationStatus" size="sm"></app-status-badge>
+            </div>
+            
+            <!-- Amount -->
+            <div class="col-span-2 text-right">
+              @if (bonus.amount) {
+                <span class="text-sm font-semibold text-gray-900">
+                  {{ bonus.currency === 'NGN' ? '₦' : '$' }}{{ bonus.amount | number:'1.0-0' }}
+                </span>
+              } @else {
+                <span class="text-sm text-gray-400">—</span>
+              }
+            </div>
+            
+            <!-- Earned Status -->
+            <div class="col-span-2 text-right">
+              <app-status-badge [status]="bonus.earnedStatus" size="sm"></app-status-badge>
+            </div>
+          </div>
+          
+          <!-- Expanded Details -->
+          @if (expandedId() === bonus.id) {
+            <div class="px-6 py-5 bg-gray-50/30 border-t border-gray-100">
+              <div class="space-y-4">
+                <p class="text-sm text-gray-600 leading-relaxed">{{ bonus.description }}</p>
+                
+                <div>
+                  <span class="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">Requirements</span>
+                  <div class="flex flex-wrap gap-2">
+                    @for (req of bonus.requirements; track req) {
+                      <span class="inline-flex items-center px-3 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-md">
+                        {{ req }}
+                      </span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Empty State -->
+    @if (bonuses().length === 0) {
+      <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-12 text-center">
+        <div class="max-w-sm mx-auto space-y-4">
+          <p class="text-sm text-gray-500">No bonus opportunities available yet.</p>
+          <a routerLink="/network/referrals" class="text-sm font-medium text-mlm-primary hover:underline">
+            Start building your network →
+          </a>
+        </div>
+      </div>
+    }
+  }
+</div>

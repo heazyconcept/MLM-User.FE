@@ -1,136 +1,100 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule, DecimalPipe, DatePipe, LowerCasePipe } from '@angular/common';
+import { RouterLink, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { WalletService, WithdrawalRequest } from '../../../services/wallet.service';
-import { SkeletonModule } from 'primeng/skeleton';
+import { UserService } from '../../../services/user.service';
+import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 
 @Component({
   selector: 'app-withdrawal-history',
   standalone: true,
-  imports: [CommonModule, TableModule, TagModule, SkeletonModule],
-  template: `
-    <div class="p-6 space-y-6">
-      <div class="flex justify-between items-center">
-        <div>
-          <h1 class="text-2xl font-bold text-mlm-text">Withdrawal History</h1>
-          <p class="text-sm text-mlm-secondary">Track your withdrawal requests and their statuses.</p>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <p-table 
-          [value]="isLoading() ? skeletonRows : withdrawals()" 
-          [paginator]="true" 
-          [rows]="10" 
-          styleClass="p-datatable-lg"
-          [responsiveLayout]="'stack'"
-          [breakpoint]="'960px'">
-          
-          <ng-template pTemplate="header">
-            <tr>
-              <th class="bg-gray-50/50 text-[10px] font-bold uppercase tracking-wider text-mlm-secondary px-6 py-4">ID</th>
-              <th class="bg-gray-50/50 text-[10px] font-bold uppercase tracking-wider text-mlm-secondary px-6 py-4">Date</th>
-              <th class="bg-gray-50/50 text-[10px] font-bold uppercase tracking-wider text-mlm-secondary px-6 py-4">Amount</th>
-              <th class="bg-gray-50/50 text-[10px] font-bold uppercase tracking-wider text-mlm-secondary px-6 py-4">Bank</th>
-              <th class="bg-gray-50/50 text-[10px] font-bold uppercase tracking-wider text-mlm-secondary px-6 py-4 text-center">Status</th>
-            </tr>
-          </ng-template>
-
-          <ng-template pTemplate="body" let-w>
-            @if (isLoading()) {
-              <tr>
-                <td class="px-6 py-4"><p-skeleton width="80px"></p-skeleton></td>
-                <td class="px-6 py-4"><p-skeleton width="100px"></p-skeleton></td>
-                <td class="px-6 py-4"><p-skeleton width="70px"></p-skeleton></td>
-                <td class="px-6 py-4"><p-skeleton width="120px"></p-skeleton></td>
-                <td class="px-6 py-4"><p-skeleton width="60px" class="mx-auto"></p-skeleton></td>
-              </tr>
-            } @else {
-              <tr class="hover:bg-gray-50/50 transition-colors cursor-default">
-                <td class="px-6 py-4">
-                  <span class="text-xs font-bold text-mlm-text">{{ w.id }}</span>
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex flex-col">
-                    <span class="text-xs font-bold text-mlm-text">{{ w.date | date:'MMM dd, yyyy' }}</span>
-                    <span class="text-[10px] text-mlm-secondary">{{ w.date | date:'hh:mm a' }}</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4">
-                  <span class="text-xs font-black text-mlm-text">
-                    {{ w.currency === 'NGN' ? '₦' : '$' }}{{ w.amount | number:'1.2-2' }}
-                  </span>
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex flex-col max-w-[200px]">
-                    <span class="text-xs font-bold text-mlm-text truncate">{{ w.bankName }}</span>
-                    <span class="text-[10px] text-mlm-secondary">{{ w.accountNumber }}</span>
-                  </div>
-                </td>
-                <td class="px-6 py-4 text-center">
-                  <p-tag 
-                    [value]="w.status" 
-                    [severity]="getSeverity(w.status)"
-                    [style]="{ 'font-size': '10px', 'font-weight': '700', 'border-radius': '6px', 'padding': '2px 8px' }">
-                  </p-tag>
-                </td>
-              </tr>
-            }
-          </ng-template>
-
-          <ng-template pTemplate="emptymessage">
-            <tr>
-              <td colspan="5" class="py-20 text-center">
-                <div class="flex flex-col items-center gap-4">
-                  <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center">
-                    <i class="pi pi-history text-3xl text-gray-300"></i>
-                  </div>
-                  <div class="space-y-1">
-                    <p class="text-sm font-bold text-mlm-text">No withdrawals yet</p>
-                    <p class="text-xs text-mlm-secondary">When you make a withdrawal, it will appear here.</p>
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
-      </div>
-    </div>
-  `,
-  styles: [`
-    :host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
-      border-bottom: 1px solid #f1f5f9;
-    }
-    :host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
-      border-bottom: 1px solid #f1f5f9;
-    }
-  `]
+  imports: [CommonModule, RouterLink, FormsModule, DecimalPipe, DatePipe, LowerCasePipe, TableModule, TooltipModule, StatusBadgeComponent],
+  templateUrl: './withdrawal-history.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    class: 'block bg-gray-50 min-h-screen'
+  }
 })
 export class WithdrawalHistoryComponent implements OnInit {
   private walletService = inject(WalletService);
+  private userService = inject(UserService);
+  private router = inject(Router);
   
   withdrawals = this.walletService.allWithdrawals;
   isLoading = signal(true);
-  skeletonRows = Array(5).fill({});
+
+  // Filters
+  statusFilter = signal<string | null>(null);
+  statusOptions = [
+    { label: 'All Status', value: null },
+    { label: 'Pending', value: 'Pending' },
+    { label: 'Approved', value: 'Approved' },
+    { label: 'Rejected', value: 'Rejected' }
+  ];
+
+  // Get user's currency
+  currency = computed(() => this.userService.currentUser()?.currency || 'NGN');
+  
+  // Get wallet for user's currency
+  wallet = computed(() => {
+    const cur = this.currency();
+    return this.walletService.getWallet(cur as 'NGN' | 'USD')();
+  });
+
+  // Available balance (cash balance only - withdrawable)
+  availableBalance = computed(() => this.wallet()?.cashBalance || 0);
+
+  // Filtered withdrawals
+  filteredWithdrawals = computed(() => {
+    const status = this.statusFilter();
+    if (!status) return this.withdrawals();
+    return this.withdrawals().filter(w => w.status === status);
+  });
+
+  // Pending withdrawals
+  pendingWithdrawals = computed(() => {
+    return this.withdrawals().filter(w => w.status === 'Pending');
+  });
+
+  pendingAmount = computed(() => {
+    return this.pendingWithdrawals().reduce((sum, w) => sum + w.amount, 0);
+  });
+
+  // Total withdrawn (approved)
+  totalWithdrawn = computed(() => {
+    return this.withdrawals()
+      .filter(w => w.status === 'Approved')
+      .reduce((sum, w) => sum + w.amount, 0);
+  });
 
   ngOnInit() {
-    // We still call fetch to trigger the initial load if needed, 
-    // although initialLoad in constructor handles it now.
-    // However, fetchWithdrawals in WalletService currently just returns an observable of the signal.
     this.walletService.fetchWithdrawals().subscribe({
       next: () => this.isLoading.set(false),
       error: () => this.isLoading.set(false)
     });
   }
 
+  requestWithdrawal() {
+    this.router.navigate(['/wallet'], { queryParams: { action: 'withdraw' } });
+  }
 
-  getSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+  getCurrencySymbol(): string {
+    return this.currency() === 'NGN' ? '₦' : '$';
+  }
+
+  getStatusClass(status: string): string {
     switch (status) {
-      case 'Approved': return 'success';
-      case 'Pending': return 'info';
-      case 'Rejected': return 'danger';
-      default: return 'secondary';
+      case 'Approved': return 'bg-green-100 text-green-700';
+      case 'Pending': return 'bg-amber-100 text-amber-700';
+      case 'Rejected': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
+  }
+
+  onStatusFilterChange(event: any) {
+    this.statusFilter.set(event.value);
   }
 }

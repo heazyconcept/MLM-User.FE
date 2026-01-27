@@ -1,0 +1,246 @@
+<div class="p-6 lg:p-10 space-y-8 mx-auto">
+  
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Withdrawals</h1>
+      <p class="text-sm text-gray-500 mt-1">Request and track your withdrawal payouts</p>
+    </div>
+    <button (click)="requestWithdrawal()" 
+            class="inline-flex items-center gap-2 px-4 py-2 bg-mlm-primary text-white text-sm font-medium rounded-lg hover:bg-mlm-primary/90 transition-colors">
+      <i class="pi pi-arrow-up-right text-sm"></i>
+      Request Withdrawal
+    </button>
+  </div>
+
+  <!-- Hero Stats - Dashboard Style -->
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <!-- Available Balance -->
+    <div class="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02] bg-mlm-primary">
+      <i class="pi pi-wallet absolute" 
+         style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.25; pointer-events: none; z-index: 0;"></i>
+      <div class="relative z-10 flex flex-col gap-2">
+        <span class="text-xs font-bold uppercase tracking-wider opacity-90">Available to Withdraw</span>
+        <div class="flex flex-col">
+          <span class="text-3xl font-black">{{ getCurrencySymbol() }}{{ availableBalance() | number:'1.2-2' }}</span>
+        </div>
+        <div class="mt-2 flex items-center gap-1 text-[10px] font-bold">
+          <span>FROM CASH WALLET</span>
+          <i class="pi pi-info-circle ml-1 cursor-help" 
+             pTooltip="Only your cash wallet balance can be withdrawn. Voucher and autoship balances are non-withdrawable."
+             tooltipPosition="top"></i>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Pending Withdrawals -->
+    <div class="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02] bg-brand-gold">
+      <i class="pi pi-clock absolute" 
+         style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.25; pointer-events: none; z-index: 0;"></i>
+      <div class="relative z-10 flex flex-col gap-2">
+        <span class="text-xs font-bold uppercase tracking-wider opacity-90">Pending Withdrawals</span>
+        <div class="flex flex-col">
+          <span class="text-3xl font-black">{{ getCurrencySymbol() }}{{ pendingAmount() | number:'1.2-2' }}</span>
+        </div>
+        <div class="mt-2 flex items-center gap-1 text-[10px] font-bold">
+          <span class="bg-white/20 px-2 py-0.5 rounded-full">{{ pendingWithdrawals().length }} PENDING</span>
+          <i class="pi pi-info-circle ml-1 cursor-help" 
+             pTooltip="Pending withdrawals are awaiting admin approval. This usually takes up to 48 hours."
+             tooltipPosition="top"></i>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Total Withdrawn -->
+    <div class="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02] bg-mlm-blue-500">
+      <i class="pi pi-check-circle absolute" 
+         style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.25; pointer-events: none; z-index: 0;"></i>
+      <div class="relative z-10 flex flex-col gap-2">
+        <span class="text-xs font-bold uppercase tracking-wider opacity-90">Total Withdrawn</span>
+        <div class="flex flex-col">
+          <span class="text-3xl font-black">{{ getCurrencySymbol() }}{{ totalWithdrawn() | number:'1.2-2' }}</span>
+        </div>
+        <div class="mt-2 flex items-center gap-1 text-[10px] font-bold">
+          <i class="pi pi-chart-line"></i>
+          <span>LIFETIME PAYOUTS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Withdrawal History - Professional Data Table -->
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <!-- Table Header with Filters -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+      <div class="flex items-center gap-3">
+        <span class="text-sm font-semibold text-gray-900">Withdrawal History</span>
+        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{{ filteredWithdrawals().length }} records</span>
+      </div>
+      
+      <!-- Filters -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500">Status:</span>
+          <select 
+            [ngModel]="statusFilter()"
+            (ngModelChange)="statusFilter.set($event)"
+            class="text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg px-3 py-1.5 pr-8 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary cursor-pointer appearance-none"
+            style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M3%204.5L6%207.5L9%204.5%22/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 8px center;">
+            <option [value]="null">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    @if (isLoading()) {
+      <!-- Loading State -->
+      <div class="divide-y divide-gray-100">
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="px-6 py-4 flex items-center gap-6">
+            <div class="w-20 h-4 bg-gray-100 rounded animate-pulse"></div>
+            <div class="flex-1 h-4 bg-gray-100 rounded animate-pulse"></div>
+            <div class="w-24 h-4 bg-gray-100 rounded animate-pulse"></div>
+            <div class="w-32 h-4 bg-gray-100 rounded animate-pulse"></div>
+            <div class="w-16 h-6 bg-gray-100 rounded animate-pulse"></div>
+          </div>
+        }
+      </div>
+    } @else if (filteredWithdrawals().length === 0) {
+      <!-- Empty State -->
+      <div class="px-6 py-16 text-center">
+        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="pi pi-history text-gray-400 text-2xl"></i>
+        </div>
+        @if (statusFilter()) {
+          <h3 class="text-sm font-medium text-gray-900">No {{ statusFilter() | lowercase }} withdrawals</h3>
+          <p class="text-xs text-gray-500 mt-1">Try changing the filter to see more results.</p>
+          <button (click)="statusFilter.set(null)" 
+                  class="mt-4 text-sm font-medium text-mlm-primary hover:underline">
+            Clear filter
+          </button>
+        } @else {
+          <h3 class="text-sm font-medium text-gray-900">No withdrawals yet</h3>
+          <p class="text-xs text-gray-500 mt-1">When you request a withdrawal, it will appear here.</p>
+          <button (click)="requestWithdrawal()" 
+                  class="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-mlm-primary border border-mlm-primary rounded-lg hover:bg-mlm-primary/5 transition-colors">
+            <i class="pi pi-plus text-xs"></i>
+            Request Your First Withdrawal
+          </button>
+        }
+      </div>
+    } @else {
+      <!-- Data Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-gray-100">
+              <th class="px-6 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                Reference
+                <i class="pi pi-info-circle ml-1 text-gray-300 cursor-help" 
+                   pTooltip="Unique withdrawal reference ID for tracking"
+                   tooltipPosition="top"></i>
+              </th>
+              <th class="px-6 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-500">Date</th>
+              <th class="px-6 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                Bank Details
+                <i class="pi pi-info-circle ml-1 text-gray-300 cursor-help" 
+                   pTooltip="Funds will be sent to this bank account"
+                   tooltipPosition="top"></i>
+              </th>
+              <th class="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-gray-500">Amount</th>
+              <th class="px-6 py-3 text-center text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                Status
+                <i class="pi pi-info-circle ml-1 text-gray-300 cursor-help" 
+                   pTooltip="Pending = Awaiting approval | Approved = Payment sent | Rejected = Request declined"
+                   tooltipPosition="top"></i>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            @for (w of filteredWithdrawals(); track w.id) {
+              <tr class="hover:bg-gray-50/50 transition-colors">
+                <!-- Reference -->
+                <td class="px-6 py-4">
+                  <span class="text-xs font-mono font-semibold text-gray-900">{{ w.id }}</span>
+                </td>
+                
+                <!-- Date -->
+                <td class="px-6 py-4">
+                  <div class="flex flex-col">
+                    <span class="text-xs font-medium text-gray-900">{{ w.date | date:'MMM d, yyyy' }}</span>
+                    <span class="text-[10px] text-gray-400">{{ w.date | date:'h:mm a' }}</span>
+                  </div>
+                </td>
+                
+                <!-- Bank Details -->
+                <td class="px-6 py-4">
+                  <div class="flex flex-col">
+                    <span class="text-xs font-medium text-gray-900">{{ w.bankName }}</span>
+                    <span class="text-[10px] text-gray-400">{{ w.accountNumber }} • {{ w.accountName }}</span>
+                  </div>
+                </td>
+                
+                <!-- Amount -->
+                <td class="px-6 py-4 text-right">
+                  <span class="text-sm font-semibold text-gray-900">
+                    {{ w.currency === 'NGN' ? '₦' : '$' }}{{ w.amount | number:'1.2-2' }}
+                  </span>
+                </td>
+                
+                <!-- Status Badge -->
+                <td class="px-6 py-4 text-center">
+                  <app-status-badge [status]="w.status" size="sm"></app-status-badge>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Table Footer with Tips -->
+      <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/30">
+        <div class="flex flex-wrap items-center gap-4 text-[10px] text-gray-500">
+          <div class="flex items-center gap-1">
+            <i class="pi pi-info-circle text-gray-400"></i>
+            <span><strong>Tip:</strong> Pending withdrawals are processed within 48 hours</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <i class="pi pi-shield text-gray-400"></i>
+            <span>All transactions are secured and encrypted</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <i class="pi pi-question-circle text-gray-400"></i>
+            <span>Questions? Contact support</span>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Withdrawal Guidelines -->
+  <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
+    <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">Withdrawal Guidelines</h3>
+    <ul class="space-y-2 text-xs text-gray-600">
+      <li class="flex items-center gap-2">
+        <i class="pi pi-check-circle text-mlm-primary text-[10px]"></i>
+        Withdrawals are processed from your <strong>Cash Wallet</strong> only
+      </li>
+      <li class="flex items-center gap-2">
+        <i class="pi pi-check-circle text-mlm-primary text-[10px]"></i>
+        All requests require <strong>admin approval</strong>
+      </li>
+      <li class="flex items-center gap-2">
+        <i class="pi pi-check-circle text-mlm-primary text-[10px]"></i>
+        Processing takes up to <strong>48 hours</strong>
+      </li>
+      <li class="flex items-center gap-2">
+        <i class="pi pi-check-circle text-mlm-primary text-[10px]"></i>
+        Currency locked to <strong>{{ currency() }}</strong>
+      </li>
+    </ul>
+  </div>
+</div>

@@ -1,0 +1,172 @@
+Layout Architecture
+Instead of a messy page with buttons everywhere, we use a Card-Based Grid System.
+
+A. The Navigation (Tabs)
+Don't use "folder style" tabs. Use a Segmented Control or a Sub-nav Underline.
+
+Look: A simple horizontal list of text links. The active state has a thick, colored underline or a soft gray pill-shaped background.
+
+Placement: Top of the page, below the "Earnings" header.
+
+Screen-by-Screen Design Breakdown
+Screen 1: Overview (/earnings/overview)
+Goal: Instant clarity. "How much money do I have?"
+
+The "Hero" Card:
+
+Do: A clean white card. Top left: "Total Lifetime Earnings" (small, gray label). Below it: "$12,450.00" (Huge, bold, dark font).
+
+Don't: Don't put a "wallet icon" next to the money. It looks cheap.
+
+The Split: To the right of the total, split "Available" and "Pending" using a simple vertical divider.
+
+Available: Black text.
+
+Pending: Gray text (implies it's not real yet).
+
+The Chart (Trend):
+
+Style: A simple line chart or bar chart.
+
+Anti-Cringe: Remove the grid lines. Remove the axis borders. Just show the curve. When the user hovers, show the tooltip.
+
+Color: Use your primary accent color.
+
+Screen 2: Breakdown (/earnings/breakdown)
+Goal: Auditability.
+
+The Data Table:
+
+Structure: No vertical lines between columns. Only horizontal lines between rows.
+
+Hierarchy:
+
+Column 1 (Source): "Direct Referral" (Bold) + "Ref: John Doe" (Subtext in gray).
+
+Column 2 (Date): "Oct 24, 2025".
+
+Column 3 (Amount): Right-aligned. "+ $50.00".
+
+Filters: Use a simple dropdown "pills" at the top right (e.g., [All Types v], [This Month v]).
+
+Screen 3: Bonuses & Ranks (/earnings/bonuses, /earnings/ranking)
+This is where it usually gets cringe (gold stars, trophies).
+
+The "Rank" Visualization:
+
+Avoid: 3D trophies, medals, or ribbons.
+
+Do: A linear Progress Bar.
+
+Visual: A thin gray track with a colored fill indicating progress to the next rank.
+
+Labels: "Current: Silver" (Left) → "Next: Gold" (Right).
+
+Stats: "80% Completed" displayed as simple text above the bar.
+
+The Badges:
+
+Use "Lozenges": Small, rounded rectangles with soft backgrounds.
+
+Example: A "Qualified" badge should look like a tag on a shirt, not a sheriff's badge.
+
+Style: Background #DCFCE7 (light green), Text #166534 (dark green), Font size 12px, Uppercase tracking.
+
+Screen 4: CPV & Milestones (/earnings/cpv)
+Goal: Tracking abstract points.
+
+Metric Cards:
+
+Display CPV (Cumulative Point Volume) exactly like a financial metric.
+
+Label: "Total CPV Volume".
+
+Value: "15,400 pts".
+
+Milestone Timeline:
+
+Use a vertical timeline list (like a shipment tracking UI).
+
+Past (Achieved): Solid circle, black text.
+
+Current (In Progress): Hollow circle with a pulsing border (subtle), bold text.
+
+Future (Locked): Grayed out text, dotted line connecting them.
+
+4. Component Specs (for your developers)
+If you are handing this off, give them these specific rules to keep it tight:
+
+Shadows: Use "diffused" shadows.
+
+CSS: box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); (This is the standard Tailwind CSS shadow).
+
+Borders:
+
+Cards should have a 1px border of #E5E7EB (light gray) plus the shadow. This creates a "crisp" high-quality look.
+
+Radius:
+
+Keep it consistent. If you use 8px (0.5rem) for buttons, use 12px or 16px for cards. Do not mix pill-shapes with sharp corners.
+
+Whitespace:
+
+The Golden Rule of Professional UI: If it looks cluttered, add padding.
+
+Inside a card, use at least 24px (1.5rem) of padding on all sides.
+
+
++-----------------------------------------------------------------------+
+|  SIDEBAR  |  MAIN CONTENT AREA                                        |
+|  (Nav)    |                                                           |
+|           |  Header                                                   |
+|  Dashboard|  Earnings                                                 |
+|  Orders   |  [Download Report] (Ghost Button)                         |
+|  Products |                                                           |
+|  > Earn.. |  Tabs (Segmented Control - Bottom Border Style)           |
+|  Settings |  [Overview]  Breakdown  Bonuses  Ranking  CPV             |
+|           |  ==========                                               |
+|           |                                                           |
+|           |  -------------------------------------------------------  |
+|           |                                                           |
+|           |  ROW 1: The "Hero" Metrics (Split 60/40)                  |
+|           |                                                           |
+|           |  +---------------------------+  +-----------------------+ |
+|           |  | Lifetime Earnings         |  | Wallet Impact         | |
+|           |  | (Label: Slate-500, 14px)  |  | (Summary)             | |
+|           |  |                           |  |                       | |
+|           |  | $12,450.00                |  | Available for Payout  | |
+|           |  | (Inter Bold, 32px, Black) |  | $450.00               | |
+|           |  |                           |  | (Green Text)          | |
+|           |  | +-----------------------+ |  |                       | |
+|           |  | | PENDING   | AVAILABLE | |  | --------------------- | |
+|           |  | | $1,200.00 | $450.00   | |  |                       | |
+|           |  | | (Gray)    | (Black)   | |  | Already Withdrawn     | |
+|           |  | +-----------------------+ |  | $10,800.00            | |
+|           |  +---------------------------+  +-----------------------+ |
+|           |                                                           |
+|           |  ROW 2: The Trend (Full Width)                            |
+|           |                                                           |
+|           |  +------------------------------------------------------+ |
+|           |  | Earnings Trend (Last 30 Days)           [Filter \/]  | |
+|           |  |                                                      | |
+|           |  |  $500 |              _.~~_                           | |
+|           |  |       |            .~     ~.                         | |
+|           |  |  $250 |      _.~~.~         ~._       _              | |
+|           |  |       |    .~                  ~.   .~ ~             | |
+|           |  |    $0 |____|____________________|___|____|_______    | |
+|           |  |          Nov 1                Nov 15                 | |
+|           |  +------------------------------------------------------+ |
+|           |                                                           |
+|           |  ROW 3: Recent Activity (Brief Snapshot)                  |
+|           |                                                           |
+|           |  +------------------------------------------------------+ |
+|           |  | Recent Transactions                     [View All >] | |
+|           |  |                                                      | |
+|           |  | Direct Referral - John D.        Oct 24    + $50.00  | |
+|           |  | (border-bottom: 1px solid #E5E7EB)                   | |
+|           |  |                                                      | |
+|           |  | Product Bonus - Order #123       Oct 22    + $12.50  | |
+|           |  | (border-bottom: 1px solid #E5E7EB)                   | |
+|           |  +------------------------------------------------------+ |
+|           |                                                           |
++-----------------------------------------------------------------------+
