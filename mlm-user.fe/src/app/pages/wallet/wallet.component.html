@@ -58,6 +58,12 @@
                 <h1 class="text-2xl font-bold text-mlm-text">My Wallet</h1>
                 <p class="text-mlm-secondary text-sm mt-1">Manage your balances and withdraw your earnings.</p>
               </div>
+              <button 
+                (click)="navigateToTransactions()"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-mlm-text text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
+                <i class="pi pi-list text-mlm-primary"></i>
+                View Transactions
+              </button>
             </div>
 
             <!-- Empty State -->

@@ -81,6 +81,14 @@ export class WalletComponent implements OnInit {
     this.router.navigate(['/shop']);
   }
 
+  navigateToTransactions(walletType?: 'cash' | 'voucher' | 'autoship') {
+    if (walletType) {
+      this.router.navigate(['/transactions'], { queryParams: { wallet: walletType } });
+    } else {
+      this.router.navigate(['/transactions']);
+    }
+  }
+
   openWithdrawDialog(wallet: Wallet) {
     this.dialogService.open(WithdrawalComponent, {
       header: `Withdraw ${wallet.currency} Funds`,

@@ -5,6 +5,7 @@ import { Injectable, signal } from '@angular/core';
 })
 export class LayoutService {
   isMobileMenuOpen = signal(false);
+  isSidebarCollapsed = signal(false);
 
   toggleMobileMenu() {
     this.isMobileMenuOpen.update(open => !open);
@@ -16,5 +17,13 @@ export class LayoutService {
 
   openMobileMenu() {
     this.isMobileMenuOpen.set(true);
+  }
+
+  toggleSidebar() {
+    this.isSidebarCollapsed.update(collapsed => !collapsed);
+  }
+
+  setSidebarCollapsed(collapsed: boolean) {
+    this.isSidebarCollapsed.set(collapsed);
   }
 }

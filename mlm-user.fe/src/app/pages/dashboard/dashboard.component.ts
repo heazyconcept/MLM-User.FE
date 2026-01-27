@@ -212,6 +212,8 @@ export class DashboardComponent implements OnInit {
     return user?.profileCompletionPercentage ?? 0;
   });
 
+  isLoading = this.loadingService.isLoading;
+
   navigateToPayment(): void {
     this.showPaymentModal.set(true);
   }
@@ -228,12 +230,17 @@ export class DashboardComponent implements OnInit {
           this.userService.updatePaymentStatus('PAID');
           this.showPaymentModal.set(false);
           
+          // Trigger change detection to update the view
+          this.cdr.markForCheck();
+          
           setTimeout(() => {
             this.modalService.open(
               'success',
               'Payment Successful',
               'Your registration fee of ₦5,000 has been paid successfully. You now have full access to all features.'
             );
+            // Force change detection again after modal
+            this.cdr.markForCheck();
           }, 100);
         } else {
           this.modalService.open(

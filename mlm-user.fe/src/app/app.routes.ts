@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './auth/login/login.component';
+// import { LoginComponent } from './auth/login/login.component';
 import { DashboardLayoutComponent } from './layouts/dashboard-layout/dashboard-layout.component';
 
 export const routes: Routes = [
@@ -7,7 +7,10 @@ export const routes: Routes = [
   {
     path: 'auth',
     children: [
-      { path: 'login', component: LoginComponent },
+      { 
+        path: 'login', 
+        loadComponent: () => import('./auth/login-modern/login-modern.component').then(m => m.LoginModernComponent)
+      },
       { 
         path: 'register', 
         loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent) 
@@ -147,6 +150,17 @@ export const routes: Routes = [
       {
         path: 'breakdown',
         loadComponent: () => import('./pages/commissions/commission-breakdown.component').then(m => m.CommissionBreakdownComponent)
+      }
+    ]
+  },
+  {
+    path: 'transactions',
+    component: DashboardLayoutComponent,
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./pages/transactions/transactions.component').then(m => m.TransactionsComponent),
+        data: { title: 'Transactions' }
       }
     ]
   },

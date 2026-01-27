@@ -1,0 +1,90 @@
+<div class="flex h-screen overflow-hidden bg-white">
+    <!-- Left Side: Login Form -->
+    <div class="w-full lg:w-[480px] xl:w-[550px] flex flex-col justify-center p-8 sm:p-12 xl:p-16 relative">
+        <!-- Logo -->
+        <div class="mb-12">
+            <img src="assets/images/logo.png" alt="logo" class="w-28 h-28 -ml-3">
+        </div>
+
+        <!-- Header -->
+        <div class="mb-10">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">Hello,<br>Welcome Back</h1>
+            <p class="text-slate-500 text-sm">Hey, welcome back to your special place</p>
+        </div>
+
+        <!-- Form -->
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+            <div class="space-y-5">
+                <!-- Email -->
+                <!-- Email -->
+                <div class="flex flex-col gap-1">
+                    <p-floatlabel variant="on">
+                        <input pInputText id="email" formControlName="email" class="w-full !py-3" [class.ng-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" />
+                        <label for="email">Email Address</label>
+                    </p-floatlabel>
+                    <small class="text-red-500 text-xs ml-1" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+                        Please enter a valid email
+                    </small>
+                </div>
+
+                <!-- Password -->
+                <div class="flex flex-col gap-1">
+                    <p-floatlabel variant="on">
+                        <p-password 
+                            id="password" 
+                            formControlName="password" 
+                            [toggleMask]="true" 
+                            [feedback]="false" 
+                            styleClass="w-full" 
+                            inputStyleClass="w-full !py-3"
+                            [class.ng-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+                        </p-password>
+                        <label for="password">Password</label>
+                    </p-floatlabel>
+                    <small class="text-red-500 text-xs ml-1" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+                        Password is required
+                    </small>
+                </div>
+
+                <!-- Remember & Forgot -->
+                <div class="flex items-center justify-between pt-1">
+                    <div class="flex items-center gap-2">
+                        <p-checkbox formControlName="rememberMe" [binary]="true" styleClass="scale-90"></p-checkbox>
+                        <span class="text-slate-500 text-sm">Remember me</span>
+                    </div>
+                    <a routerLink="/auth/forgot-password" class="text-slate-500 text-xs font-semibold hover:text-mlm-primary transition-colors">Forgot Password?</a>
+                </div>
+
+                <!-- Submit Button -->
+                <p-button 
+                    label="Sign In" 
+                    styleClass="w-full !bg-mlm-primary !border-mlm-primary !h-13 !text-lg !font-bold !rounded-xl shadow-lg shadow-mlm-primary/20" 
+                    type="submit" 
+                    [disabled]="loginForm.invalid || isLoading()"
+                    [loading]="isLoading()">
+                </p-button>
+
+                <!-- Signup Link -->
+                <div class="mt-8 text-sm">
+                    <span class="text-slate-400">Don't have an account? </span>
+                    <a routerLink="/auth/register" class="text-mlm-primary font-bold hover:underline">Sign Up</a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Right Side: Illustration -->
+    <div class="hidden lg:block flex-1 p-6">
+        <div class="w-full h-full rounded-[40px] overflow-hidden relative">
+            <img 
+                src="Finance%20leaders-bro.png" 
+                alt="Login Illustration" 
+                class="absolute top-1/2 -translate-y-1/2 left-8 w-[80%] h-[80%] object-contain"
+            >
+            <div class="absolute inset-0 bg-mlm-primary/10 mix-blend-overlay"></div>
+            
+            <!-- Decorative Elements matching the vibe -->
+             <div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-mlm-primary/40 to-transparent"></div>
+        </div>
+    </div>
+</div>

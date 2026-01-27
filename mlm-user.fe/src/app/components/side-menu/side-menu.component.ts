@@ -1,24 +1,37 @@
-import { Component, computed, signal, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { TooltipModule } from 'primeng/tooltip';
 import { filter } from 'rxjs/operators';
 import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
+import { LayoutService } from '../../services/layout.service';
 
 interface MenuItem {
   label: string;
-  route: string;
   icon: string;
-  requiresPayment: boolean;
+  route?: string;
+  badge?: number;
+  requiresPayment?: boolean;
+  action?: () => void;
   children?: MenuItem[];
 }
 
-import { LayoutService } from '../../services/layout.service';
+interface MenuSection {
+  title: string;
+  items: MenuItem[];
+}
 
 @Component({
   selector: 'app-side-menu',
-  imports: [CommonModule, RouterModule],
+  standalone: true,
+  imports: [CommonModule, RouterModule, TooltipModule],
   templateUrl: './side-menu.component.html',
+  styles: [`
+    :host {
+      display: block;
+    }
+  `],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SideMenuComponent {
@@ -32,51 +45,57 @@ export class SideMenuComponent {
   mobileMenuOpen = this.layoutService.isMobileMenuOpen;
   activeRoute = signal('');
   openMenus = signal<Set<string>>(new Set());
-  isUserMenuExpanded = signal(false);
+  collapsed = this.layoutService.isSidebarCollapsed;
 
-
-  menuItems = signal<MenuItem[]>([
-    { label: 'Dashboard', route: '/dashboard', icon: 'pi pi-home', requiresPayment: false },
-    { label: 'Profile', route: '/profile', icon: 'pi pi-user', requiresPayment: false },
-    { label: 'Shop', route: '/shop', icon: 'pi pi-shopping-cart', requiresPayment: true },
-    { 
-      label: 'Wallet', 
-      route: '/wallet', 
-      icon: 'pi pi-wallet', 
-      requiresPayment: true,
-      children: [
-        { label: 'Transaction History', route: '/wallet/transactions/NGN', icon: 'pi pi-history', requiresPayment: true }
+  menuSections = signal<MenuSection[]>([
+    {
+      title: 'MAIN MENU',
+      items: [
+        { label: 'Dashboard', icon: 'pi pi-th-large', route: '/dashboard' },
+        { label: 'Profile', icon: 'pi pi-user', route: '/profile' },
+        { label: 'Shop', icon: 'pi pi-shopping-cart', route: '/shop', requiresPayment: true },
+        { 
+          label: 'Wallet', 
+          icon: 'pi pi-wallet', 
+          route: '/wallet',
+          requiresPayment: true,
+          children: [
+            { label: 'Transaction History', icon: 'pi pi-history', route: '/wallet/transactions/NGN', requiresPayment: true }
+          ]
+        },
+        { 
+          label: 'Network', 
+          icon: 'pi pi-users', 
+          route: '/network',
+          requiresPayment: true,
+          children: [
+            { label: 'Overview', icon: 'pi pi-home', route: '/network/overview', requiresPayment: true },
+            { label: 'Referrals', icon: 'pi pi-link', route: '/network/referrals', requiresPayment: true },
+            { label: 'Matrix Tree', icon: 'pi pi-sitemap', route: '/network/matrix', requiresPayment: true },
+            { label: 'Downline', icon: 'pi pi-list', route: '/network/downline', requiresPayment: true },
+            { label: 'Performance', icon: 'pi pi-chart-bar', route: '/network/performance', requiresPayment: true }
+          ]
+        }
       ]
     },
-    { 
-      label: 'Network', 
-      route: '/network', 
-      icon: 'pi pi-users', 
-      requiresPayment: true,
-      children: [
-        { label: 'Overview', route: '/network/overview', icon: 'pi pi-home', requiresPayment: true },
-        { label: 'Referrals', route: '/network/referrals', icon: 'pi pi-link', requiresPayment: true },
-        { label: 'Matrix Tree', route: '/network/matrix', icon: 'pi pi-sitemap', requiresPayment: true },
-        { label: 'Downline', route: '/network/downline', icon: 'pi pi-list', requiresPayment: true },
-        { label: 'Performance', route: '/network/performance', icon: 'pi pi-chart-bar', requiresPayment: true }
+    {
+      title: 'FINANCE',
+      items: [
+        { label: 'Commissions', icon: 'pi pi-dollar', route: '/commissions', requiresPayment: true },
+        { label: 'Transactions', icon: 'pi pi-arrow-right-arrow-left', route: '/transactions', requiresPayment: true },
+        { label: 'Withdrawals', icon: 'pi pi-money-bill', route: '/withdrawals', requiresPayment: true },
+        { label: 'Orders', icon: 'pi pi-shopping-bag', route: '/orders', requiresPayment: true }
       ]
     },
-    { label: 'Commissions', route: '/commissions', icon: 'pi pi-dollar', requiresPayment: true },
-    { label: 'Withdrawals', route: '/withdrawals', icon: 'pi pi-money-bill', requiresPayment: true },
-    { label: 'Orders', route: '/orders', icon: 'pi pi-shopping-bag', requiresPayment: true }
+    {
+      title: 'GENERAL',
+      items: [
+        { label: 'Settings', icon: 'pi pi-cog', route: '/settings' },
+        { label: 'Help', icon: 'pi pi-question-circle', route: '/help' },
+        { label: 'Log out', icon: 'pi pi-sign-out', action: () => this.logout() }
+      ]
+    }
   ]);
-
-  isItemDisabled = (item: MenuItem): boolean => {
-    return item.requiresPayment && !this.isPaid();
-  };
-
-  updateTooltipPosition(event: MouseEvent): void {
-    const target = event.currentTarget as HTMLElement;
-    const tooltip = target.querySelector('[data-tooltip]') as HTMLElement;
-    if (!tooltip) return;
-    const rect = target.getBoundingClientRect();
-    tooltip.style.setProperty('--tooltip-top', `${rect.top + rect.height / 2}px`);
-  }
 
   constructor() {
     this.router.events
@@ -93,14 +112,20 @@ export class SideMenuComponent {
 
   private autoExpandActiveSubmenu(): void {
     const currentUrl = this.activeRoute();
-    this.menuItems().forEach(item => {
-      const hasActiveChild = item.children?.some(child => currentUrl.startsWith(child.route));
-      const isParentActive = currentUrl === item.route || currentUrl.startsWith(item.route + '/');
-      
-      if (hasActiveChild || (isParentActive && item.children)) {
-        this.toggleSubMenu(item.label, true);
-      }
+    this.menuSections().forEach(section => {
+      section.items.forEach(item => {
+        const hasActiveChild = item.children?.some(child => child.route && currentUrl.startsWith(child.route));
+        const isParentActive = item.route && (currentUrl === item.route || currentUrl.startsWith(item.route + '/'));
+        
+        if (hasActiveChild || (isParentActive && item.children)) {
+          this.toggleSubMenu(item.label, true);
+        }
+      });
     });
+  }
+
+  toggleCollapse(): void {
+    this.layoutService.toggleSidebar();
   }
 
   toggleMobileMenu(): void {
@@ -125,19 +150,32 @@ export class SideMenuComponent {
     this.openMenus.set(current);
   }
 
+  isItemDisabled(item: MenuItem): boolean {
+    return (item.requiresPayment ?? false) && !this.isPaid();
+  }
 
-  navigate(route: string, item: MenuItem): void {
+  navigate(item: MenuItem): void {
+    // Handle action items (like logout)
+    if (item.action) {
+      item.action();
+      return;
+    }
+
     // Prevent navigation if item requires payment and user hasn't paid
     if (this.isItemDisabled(item)) {
       return;
     }
 
+    // Toggle submenu if has children
     if (item.children && item.children.length > 0) {
       this.toggleSubMenu(item.label);
     }
 
-    this.router.navigate([route]);
-    this.closeMobileMenu();
+    // Navigate if has route
+    if (item.route) {
+      this.router.navigate([item.route]);
+      this.closeMobileMenu();
+    }
   }
 
   logout(): void {
@@ -146,12 +184,8 @@ export class SideMenuComponent {
     this.router.navigate(['/login']);
   }
 
-  toggleUserMenu(): void {
-    this.isUserMenuExpanded.update(v => !v);
-  }
-
-  isActiveRoute(route: string): boolean {
+  isActiveRoute(route?: string): boolean {
+    if (!route) return false;
     return this.activeRoute() === route || this.activeRoute().startsWith(route + '/');
   }
 }
-
