@@ -16,6 +16,9 @@ export interface User {
   accountNumber?: string;
   accountName?: string;
   kycStatus?: KycStatus;
+  currency?: 'NGN' | 'USD';
+  rank?: string;
+  stage?: number;
 }
 
 const PAYMENT_STATUS_KEY = 'mlm_user_payment_status';
@@ -31,7 +34,14 @@ export class UserService {
     // Load persisted user data on initialization
     const persistedUser = this.getPersistedUserData();
     if (persistedUser) {
-      this.user.set(persistedUser);
+      // Migration: Add rank and stage if they don't exist
+      const migratedUser = {
+        ...persistedUser,
+        rank: persistedUser.rank ?? 'Ruby',
+        stage: persistedUser.stage ?? 2
+      };
+      this.user.set(migratedUser);
+      this.persistUserData(migratedUser);
     } else {
       // Default mock user for testing with bank details
       this.user.set({
@@ -44,7 +54,10 @@ export class UserService {
         bankName: 'GTBank',
         accountNumber: '0123456789',
         accountName: 'PELUMI DOE',
-        kycStatus: 'VERIFIED'
+        kycStatus: 'VERIFIED',
+        currency: 'NGN',
+        rank: 'Ruby',
+        stage: 2
       });
     }
   }
@@ -98,7 +111,10 @@ export class UserService {
         bankName: persistedUser.bankName ?? user.bankName,
         accountNumber: persistedUser.accountNumber ?? user.accountNumber,
         accountName: persistedUser.accountName ?? user.accountName,
-        kycStatus: persistedUser.kycStatus ?? user.kycStatus
+        kycStatus: persistedUser.kycStatus ?? user.kycStatus,
+        currency: persistedUser.currency ?? user.currency,
+        rank: persistedUser.rank ?? user.rank,
+        stage: persistedUser.stage ?? user.stage
       })
     };
     
@@ -128,7 +144,7 @@ export class UserService {
     }
   }
 
-  updateProfile(profileData: Partial<Pick<User, 'firstName' | 'lastName' | 'phoneNumber' | 'address' | 'bankName' | 'accountNumber' | 'accountName'>>): void {
+  updateProfile(profileData: Partial<Pick<User, 'firstName' | 'lastName' | 'phoneNumber' | 'address' | 'bankName' | 'accountNumber' | 'accountName' | 'currency'>>): void {
     const currentUser = this.user();
     if (currentUser) {
       const updatedUser = { ...currentUser, ...profileData };

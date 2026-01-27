@@ -1,0 +1,9 @@
+    <button 
+      pButton 
+      [icon]="copied() ? 'pi pi-check' : 'pi pi-copy'" 
+      [label]="label" 
+      [class]="styleClass"
+      (click)="copyToClipboard()"
+      [pTooltip]="copied() ? 'Copied!' : tooltip"
+      tooltipPosition="top">
+    </button>

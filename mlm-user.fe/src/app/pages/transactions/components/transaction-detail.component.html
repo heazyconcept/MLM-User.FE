@@ -1,0 +1,105 @@
+<div class="relative max-h-[90vh] overflow-hidden">
+
+    <!-- Content Wrapper -->
+    <div class="p-6 space-y-6">
+  
+      <!-- EXECUTIVE SUMMARY HEADER -->
+      <div class="flex items-start justify-between">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <i [class]="getTypeIcon() + ' text-gray-500 text-sm'"></i>
+            <span class="text-xs font-semibold uppercase tracking-widest text-gray-500">
+              {{ transaction.type }}
+            </span>
+          </div>
+  
+          <span
+            [class]="'text-3xl font-bold tracking-tight ' + getAmountColorClass()">
+            {{ getAmountPrefix() }}{{ formatCurrency(transaction.amount) }}
+          </span>
+  
+          <div class="pt-1">
+            <app-status-badge [status]="transaction.status" size="sm" />
+          </div>
+        </div>
+  
+       
+      </div>
+  
+      <!-- DETAILS CARD -->
+      <div class="bg-gray-50 rounded-2xl p-5">
+  
+        <div class="grid grid-cols-2 gap-y-4 text-sm">
+  
+          <div>
+            <p class="text-xs text-gray-500 uppercase tracking-widest">Transaction ID</p>
+            <p class="font-mono font-semibold text-gray-900">{{ transaction.id }}</p>
+          </div>
+  
+          <div class="text-right">
+            <p class="text-xs text-gray-500 uppercase tracking-widest">Date & Time</p>
+            <p class="font-semibold text-gray-900">
+              {{ transaction.date | date:'medium' }}
+            </p>
+          </div>
+  
+          <div>
+            <p class="text-xs text-gray-500 uppercase tracking-widest">Wallet</p>
+            <div class="inline-flex items-center gap-2 mt-1 px-3 py-1 rounded-full text-xs font-semibold
+                        bg-gray-200 text-gray-700">
+              <i [class]="getWalletIcon()"></i>
+              {{ transaction.wallet }}
+            </div>
+          </div>
+  
+          @if (transaction.reference) {
+            <div class="text-right">
+              <p class="text-xs text-gray-500 uppercase tracking-widest">Reference</p>
+              <p class="font-mono font-semibold text-gray-900">
+                {{ transaction.reference }}
+              </p>
+            </div>
+          }
+  
+        </div>
+      </div>
+  
+      <!-- DESCRIPTION -->
+      <div class="space-y-2">
+        <p class="text-xs text-gray-500 uppercase tracking-widest">Description</p>
+        <p class="text-sm text-gray-700 leading-relaxed">
+          {{ transaction.description }}
+        </p>
+      </div>
+  
+      <!-- BREAKDOWN (PROGRESSIVE DISCLOSURE) -->
+      @if (transaction.narrative) {
+        <details class="group bg-blue-50 rounded-xl px-4 py-3 border border-blue-100">
+          <summary class="flex items-center gap-2 cursor-pointer list-none">
+            <i class="pi pi-info-circle text-blue-500"></i>
+            <span class="text-xs font-semibold uppercase tracking-widest text-blue-700">
+              View Commission Breakdown
+            </span>
+            <i class="pi pi-chevron-down ml-auto text-blue-400 transition-transform
+                       group-open:rotate-180"></i>
+          </summary>
+  
+          <p class="mt-3 text-sm text-blue-700 leading-relaxed">
+            {{ transaction.narrative }}
+          </p>
+        </details>
+      }
+  
+      <!-- FOOTER ACTION -->
+      <div class="pt-4 flex justify-end gap-3">
+        <button
+          (click)="onClose()"
+          class="px-6 py-2.5 rounded-xl text-sm font-semibold
+                 bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+          Close
+        </button>
+      </div>
+  
+    </div>
+  </div>
+  

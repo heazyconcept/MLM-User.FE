@@ -1,0 +1,76 @@
+<div class="text-center mb-10">
+    <h1 class="text-2xl font-bold text-slate-800 tracking-tight mb-2">Contact Details</h1>
+    <p class="text-slate-500 text-sm">Where can we reach you?</p>
+</div>
+
+<form [formGroup]="contactForm" (ngSubmit)="onSubmit()">
+    <div class="space-y-5">
+        <app-auth-input 
+            label="Email Address" 
+            icon="pi-envelope" 
+            formControlName="email">
+        </app-auth-input>
+
+        <app-auth-input 
+            label="Phone Number" 
+            placeholder="+234 ..." 
+            icon="pi-phone" 
+            formControlName="phone"
+            [required]="true"
+            [error]="contactForm.get('phone')?.invalid && contactForm.get('phone')?.touched ? 'Required' : null">
+        </app-auth-input>
+
+        <app-auth-input 
+            label="Street Address" 
+            placeholder="Enter your full address" 
+            icon="pi-map-marker" 
+            formControlName="address"
+            [required]="true"
+            [error]="contactForm.get('address')?.invalid && contactForm.get('address')?.touched ? 'Required' : null">
+        </app-auth-input>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <app-auth-input 
+                label="City" 
+                placeholder="City" 
+                icon="pi-building" 
+                formControlName="city"
+                [required]="true"
+                [error]="contactForm.get('city')?.invalid && contactForm.get('city')?.touched ? 'Required' : null">
+            </app-auth-input>
+            <app-auth-input 
+                label="State / Province" 
+                placeholder="State" 
+                icon="pi-map" 
+                formControlName="state"
+                [required]="true"
+                [error]="contactForm.get('state')?.invalid && contactForm.get('state')?.touched ? 'Required' : null">
+            </app-auth-input>
+        </div>
+
+        <app-auth-input 
+            label="Country" 
+            placeholder="Select Country" 
+            icon="pi-globe" 
+            formControlName="country"
+            [required]="true"
+            [error]="contactForm.get('country')?.invalid && contactForm.get('country')?.touched ? 'Required' : null">
+        </app-auth-input>
+
+        <div class="flex items-center gap-4 pt-4">
+            <button type="button" 
+                    routerLink="/onboarding/profile"
+                    class="flex-1 h-12 rounded-xl text-slate-600 font-semibold border border-slate-300 hover:bg-slate-50 transition-all duration-200">
+                Back
+            </button>
+            <p-button 
+                label="Continue" 
+                styleClass="w-full !bg-mlm-primary !border-mlm-primary !h-12 !font-bold !rounded-xl shadow-lg shadow-mlm-primary/20" 
+                type="submit" 
+                [disabled]="contactForm.invalid || isLoading()"
+                [loading]="isLoading()">
+            </p-button>
+        </div>
+    </div>
+</form>
+

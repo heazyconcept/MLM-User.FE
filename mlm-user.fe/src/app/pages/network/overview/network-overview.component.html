@@ -1,0 +1,113 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div class="space-y-10 animate-fade-in">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4">
+          <div>
+            <h1 class="text-2xl font-bold text-mlm-text mb-2">Network Overview</h1>
+            <p class="text-mlm-secondary text-sm">Monitor your team's growth and performance.</p>
+          </div>
+          <button [routerLink]="['/network/referrals']" 
+                  class="bg-mlm-primary text-white px-6 py-3 rounded-xl font-semibold text-sm shadow-lg shadow-mlm-primary/20 hover:bg-mlm-primary/90 transition-all flex items-center justify-center gap-2">
+            <i class="pi pi-user-plus text-sm"></i>
+            <span>Invite New Members</span>
+          </button>
+        </div>
+
+          <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-4">
+        <app-stat-card
+          label="Total Team Size"
+          [value]="summary().teamSize"
+          icon="pi-users"
+          bgClass="bg-mlm-blue-500"
+          trend="Increasing"
+          trendIcon="pi-chart-line">
+        </app-stat-card>
+
+        <app-stat-card
+          label="Direct Referrals"
+          [value]="summary().directReferrals"
+          icon="pi-user-plus"
+          bgClass="bg-mlm-blue-700"
+          trend="Active"
+          trendIcon="pi-check-circle">
+        </app-stat-card>
+
+        <app-stat-card
+          label="Active Legs"
+          [value]="summary().activeLegs"
+          icon="pi-sitemap"
+          bgClass="bg-brand-gold"
+          trend="Stable"
+          trendIcon="pi-minus">
+        </app-stat-card>
+
+        <app-stat-card
+          label="Current Rank"
+          [value]="summary().rank"
+          icon="pi-star-fill"
+          bgClass="bg-mlm-primary"
+          trend="Next: "
+          [subValue]="summary().nextRank">
+        </app-stat-card>
+        </div>
+
+        <!-- Quick Action Cards -->
+        <div>
+          <h2 class="text-lg font-semibold text-mlm-text mb-6">Quick Actions</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Matrix View Card -->
+            <div [routerLink]="['/network/matrix']" 
+                 class="group bg-white p-6 rounded-2xl border border-mlm-secondary/10 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden">
+              <div class="relative z-10">
+                <div class="w-12 h-12 bg-mlm-blue-50 rounded-xl flex items-center justify-center text-mlm-blue-500 mb-4 group-hover:scale-110 transition-transform">
+                  <i class="pi pi-sitemap text-xl"></i>
+                </div>
+                <h3 class="text-base font-semibold text-mlm-text mb-2">Matrix Tree</h3>
+                <p class="text-sm text-mlm-secondary leading-relaxed mb-4">Visualise your binary tree structure and manage placements.</p>
+                <span class="text-mlm-blue-500 text-xs font-semibold group-hover:underline flex items-center gap-2">
+                  View Tree <i class="pi pi-arrow-right text-[10px]"></i>
+                </span>
+              </div>
+              <i class="pi pi-sitemap absolute -bottom-8 -right-8 text-[140px] text-mlm-blue-500/5 group-hover:text-mlm-blue-500/10 transition-colors"></i>
+            </div>
+
+            <!-- Downline List Card -->
+            <div [routerLink]="['/network/downline']" 
+                 class="group bg-white p-6 rounded-2xl border border-mlm-secondary/10 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden">
+              <div class="relative z-10">
+                <div class="w-12 h-12 bg-mlm-success/10 rounded-xl flex items-center justify-center text-mlm-success mb-4 group-hover:scale-110 transition-transform">
+                  <i class="pi pi-list text-xl"></i>
+                </div>
+                <h3 class="text-base font-semibold text-mlm-text mb-2">Downline List</h3>
+                <p class="text-sm text-mlm-secondary leading-relaxed mb-4">Search, filter and manage your entire downline team members.</p>
+                <span class="text-mlm-success text-xs font-semibold group-hover:underline flex items-center gap-2">
+                  View List <i class="pi pi-arrow-right text-[10px]"></i>
+                </span>
+              </div>
+              <i class="pi pi-list absolute -bottom-8 -right-8 text-[140px] text-mlm-success/5 group-hover:text-mlm-success/10 transition-colors"></i>
+            </div>
+
+            <!-- Performance Card -->
+            <div [routerLink]="['/network/performance']" 
+                 class="group bg-white p-6 rounded-2xl border border-mlm-secondary/10 shadow-sm hover:shadow-md transition-all cursor-pointer relative overflow-hidden">
+              <div class="relative z-10">
+                <div class="w-12 h-12 bg-mlm-warning/10 rounded-xl flex items-center justify-center text-mlm-warning mb-4 group-hover:scale-110 transition-transform">
+                  <i class="pi pi-chart-bar text-xl"></i>
+                </div>
+                <h3 class="text-base font-semibold text-mlm-text mb-2">Performance</h3>
+                <p class="text-sm text-mlm-secondary leading-relaxed mb-4">Track your CPV, rank progress and team volume stats.</p>
+                <span class="text-mlm-warning text-xs font-semibold group-hover:underline flex items-center gap-2">
+                  View Analytics <i class="pi pi-arrow-right text-[10px]"></i>
+                </span>
+              </div>
+              <i class="pi pi-chart-bar absolute -bottom-8 -right-8 text-[140px] text-mlm-warning/5 group-hover:text-mlm-warning/10 transition-colors"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

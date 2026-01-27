@@ -1,0 +1,51 @@
+<div class="relative w-full group mb-5">
+  @if (label()) {
+    <label [for]="id()" 
+           class="block text-sm font-semibold text-slate-500 mb-2 transition-all duration-300 group-focus-within:text-mlm-primary group-focus-within:translate-x-0.5">
+      {{ label() }}
+      @if (required()) {
+        <span class="text-red-500 ml-0.5">*</span>
+      }
+    </label>
+  }
+  
+  <div class="relative flex items-center transition-all duration-300 rounded-xl">
+    @if (icon()) {
+      <div class="absolute left-4 flex items-center justify-center text-slate-400 group-focus-within:text-mlm-primary transition-colors duration-300">
+        <i [class]="'pi ' + icon() + ' text-base'"></i>
+      </div>
+    }
+    
+    <input
+      [id]="id()"
+      [name]="id()"
+      [type]="actualType()"
+      [placeholder]="placeholder()"
+      [value]="value()"
+      (input)="onInputChange($event)"
+      (blur)="onBlur()"
+      [disabled]="isDisabled()"
+      [class]="inputClasses()"
+      [attr.maxlength]="maxLength()"
+      class="w-full h-12 rounded-xl border outline-none transition-all duration-300 font-medium text-slate-900 placeholder:text-slate-400 focus:ring-4"
+    />
+    
+    @if (type() === 'password') {
+      <button type="button" 
+              (click)="togglePassword()"
+              class="absolute right-4 flex items-center justify-center text-slate-400 hover:text-slate-600 focus:outline-none transition-colors duration-200">
+        <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye' + ' text-base'"></i>
+      </button>
+    }
+  </div>
+  
+  @if (error() && isTouched()) {
+    <div class="flex items-center gap-1.5 mt-2 animate-error-in">
+      <i class="pi pi-exclamation-circle text-red-500 text-xs"></i>
+      <span class="text-[11px] font-semibold text-red-500 tracking-tight">
+        {{ error() }}
+      </span>
+    </div>
+  }
+</div>
+

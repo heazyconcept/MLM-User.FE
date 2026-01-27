@@ -1,0 +1,137 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div class="space-y-8 animate-fade-in">
+        <!-- Header & Filters -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-1">Downline List</h1>
+              <p class="text-gray-500 text-sm">Manage and view your team members.</p>
+            </div>
+            <div class="flex gap-2">
+              <p-button 
+                label="Export CSV" 
+                icon="pi pi-download" 
+                (onClick)="exportCSV()"
+                styleClass="p-button-sm">
+              </p-button>
+            </div>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="relative">
+            <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input 
+              type="text" 
+              [(ngModel)]="searchQuery"
+              placeholder="Search by username..." 
+              class="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary/20 transition-all font-normal text-gray-900 placeholder:text-gray-400">
+          </div>
+        </div>
+
+        <!-- Table Section -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <p-table 
+            #dt
+            [value]="isLoading() ? skeletonRows : filteredMembers()" 
+            [tableStyle]="{'min-width': '50rem'}"
+            styleClass="p-datatable-sm"
+            [rowHover]="true">
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Member</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Level</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Package</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Joined</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700 text-center">Stats</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700 text-right">Status</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-member>
+              @if (isLoading()) {
+                <tr>
+                  <td>
+                    <div class="flex flex-col gap-2">
+                      <p-skeleton width="120px" height="1rem"></p-skeleton>
+                      <p-skeleton width="100px" height="0.75rem"></p-skeleton>
+                    </div>
+                  </td>
+                  <td>
+                    <p-skeleton width="32px" height="32px" shape="circle" class="mx-auto"></p-skeleton>
+                  </td>
+                  <td>
+                    <p-skeleton width="80px" height="1.5rem" borderRadius="8px"></p-skeleton>
+                  </td>
+                  <td>
+                    <p-skeleton width="100px" height="1rem"></p-skeleton>
+                  </td>
+                  <td class="text-center">
+                    <div class="flex gap-6 justify-center">
+                      <div class="text-center">
+                        <p-skeleton width="30px" height="1rem" class="mb-1"></p-skeleton>
+                        <p-skeleton width="20px" height="0.625rem"></p-skeleton>
+                      </div>
+                      <div class="text-center">
+                        <p-skeleton width="30px" height="1rem" class="mb-1"></p-skeleton>
+                        <p-skeleton width="30px" height="0.625rem"></p-skeleton>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <p-skeleton width="60px" height="1.5rem" borderRadius="20px" class="ml-auto"></p-skeleton>
+                  </td>
+                </tr>
+              } @else {
+                <tr class="p-selectable-row">
+                  <td>
+                    <div class="flex flex-col gap-1">
+                      <span class="text-sm font-semibold text-gray-900 group-hover:text-mlm-primary transition-colors">{{ member.username }}</span>
+                      <span class="text-xs text-gray-500">{{ member.fullName }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-sm font-medium text-gray-700">
+                      {{ member.level }}
+                    </span>
+                  </td>
+                  <td>
+                    <span [class]="'text-xs font-medium uppercase tracking-wide px-3 py-1.5 rounded-lg ' + getPackageClass(member.package)">
+                      {{ member.package }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="text-sm font-normal text-gray-700">{{ member.joinDate | date:'mediumDate' }}</span>
+                  </td>
+                  <td class="text-center">
+                    <div class="flex gap-6 text-sm">
+                      <div class="text-center" title="Direct Referrals">
+                        <span class="block font-semibold text-gray-900 mb-1">{{ member.totalDirects }}</span>
+                        <span class="text-[10px] text-gray-500 uppercase font-medium tracking-wide">DR</span>
+                      </div>
+                      <div class="text-center" title="Team Size">
+                        <span class="block font-semibold text-gray-900 mb-1">{{ member.teamSize }}</span>
+                        <span class="text-[10px] text-gray-500 uppercase font-medium tracking-wide">Team</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-right">
+                    <app-status-badge [status]="member.status" size="sm" />
+                  </td>
+                </tr>
+              }
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="6" class="py-16 text-center text-gray-500">
+                  <i class="pi pi-search text-3xl mb-3 block opacity-30"></i>
+                  <p class="text-sm font-medium">No members found matching "{{ searchQuery() }}"</p>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

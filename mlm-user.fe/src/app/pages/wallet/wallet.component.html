@@ -1,18 +1,14 @@
 <div class="min-h-screen bg-mlm-background">
-  <main class="py-10">
-
-    <div class="px-4 sm:px-6 lg:px-8">
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-mlm-text">My Wallet</h1>
-        <p class="mt-2 text-mlm-secondary">Manage your balances and withdraw your earnings.</p>
-      </div>
+  <main class="py-8">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
 
       @if (!isPaid()) {
-        <div class="max-w-3xl">
-          <p-card header="Access Restricted" class="border-t-4 border-mlm-warning">
+        <!-- Access Restricted State -->
+        <div class="max-w-3xl mx-auto">
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
             <div class="flex flex-col items-center text-center py-8 space-y-6">
-              <div class="w-20 h-20 bg-mlm-warning/10 rounded-full flex items-center justify-center">
-                <i class="pi pi-lock text-4xl text-mlm-warning"></i>
+              <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+                <i class="pi pi-lock text-4xl text-mlm-secondary"></i>
               </div>
               <div class="space-y-2">
                 <h3 class="text-xl font-semibold text-mlm-text">Complete Registration</h3>
@@ -20,70 +16,362 @@
                   You need to pay your registration fee to access your wallet features, view transactions, and make withdrawals.
                 </p>
               </div>
-              <p-button 
-                label="Pay Registration Fee" 
-                icon="pi pi-credit-card" 
-                (onClick)="navigateToPayment()"
-                class="p-button-lg">
-              </p-button>
+              <button 
+                (click)="navigateToPayment()"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white font-semibold rounded-xl hover:bg-brand-green-dark transition-colors">
+                <i class="pi pi-credit-card"></i>
+                Pay Registration Fee
+              </button>
             </div>
-          </p-card>
+          </div>
         </div>
       } @else {
-      @if (isLoading()) {
-          <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <p-card *ngFor="let i of [1, 2]">
-              <div class="space-y-4">
-                <div class="flex justify-between items-start">
-                  <div class="space-y-2">
-                    <p-skeleton width="4rem" height="1rem"></p-skeleton>
-                    <p-skeleton width="8rem" height="2rem"></p-skeleton>
-                  </div>
-                  <p-skeleton shape="circle" size="3rem"></p-skeleton>
-                </div>
-                <div class="flex gap-4 pt-4">
-                  <p-skeleton width="100%" height="2.5rem"></p-skeleton>
-                  <p-skeleton width="100%" height="2.5rem"></p-skeleton>
-                </div>
+        @if (isLoading()) {
+          <!-- Skeleton Loading State -->
+          <div class="space-y-6 animate-pulse">
+            <!-- Header Skeleton -->
+            <div class="flex justify-between items-center">
+              <div class="space-y-2">
+                <p-skeleton width="200px" height="2rem"></p-skeleton>
+                <p-skeleton width="300px" height="1rem"></p-skeleton>
               </div>
-            </p-card>
+            </div>
+
+            <!-- Main Grid Skeleton -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div class="lg:col-span-2 space-y-4">
+                <p-skeleton height="220px" borderRadius="16px"></p-skeleton>
+                <p-skeleton height="220px" borderRadius="16px"></p-skeleton>
+              </div>
+              <div class="space-y-4">
+                <p-skeleton height="240px" borderRadius="16px"></p-skeleton>
+                <p-skeleton height="200px" borderRadius="16px"></p-skeleton>
+                <p-skeleton height="100px" borderRadius="16px"></p-skeleton>
+              </div>
+            </div>
           </div>
         } @else {
-          <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-            @for (wallet of wallets(); track wallet.id) {
-              <app-wallet-card [wallet]="wallet"></app-wallet-card>
-            }
-          </div>
+          <div class="space-y-6 animate-fade-in">
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 class="text-2xl font-bold text-mlm-text">My Wallet</h1>
+                <p class="text-mlm-secondary text-sm mt-1">Manage your balances and withdraw your earnings.</p>
+              </div>
+              <button 
+                (click)="navigateToTransactions()"
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-mlm-text text-sm font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
+                <i class="pi pi-list text-mlm-primary"></i>
+                View Transactions
+              </button>
+            </div>
 
-          <!-- Quick Info / Business Rules -->
-          <div class="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-3">
-             <div class="bg-white p-6 rounded-xl shadow-sm border border-mlm-blue-100 flex items-start gap-4">
-               <div class="bg-mlm-blue-50 p-3 rounded-lg">
-                 <i class="pi pi-info-circle text-mlm-blue-500"></i>
-               </div>
-               <div>
-                 <h4 class="font-semibold text-mlm-text">Currency Locked</h4>
-                 <p class="text-sm text-mlm-secondary mt-1">Earnings stay in their original currency. No internal conversion is supported.</p>
-               </div>
-             </div>
-             <div class="bg-white p-6 rounded-xl shadow-sm border border-mlm-blue-100 flex items-start gap-4">
-               <div class="bg-mlm-blue-50 p-3 rounded-lg">
-                 <i class="pi pi-clock text-mlm-blue-500"></i>
-               </div>
-               <div>
-                 <h4 class="font-semibold text-mlm-text">Processing Time</h4>
-                 <p class="text-sm text-mlm-secondary mt-1">Withdrawals are processed within 24-48 business hours.</p>
-               </div>
-             </div>
-             <div class="bg-white p-6 rounded-xl shadow-sm border border-mlm-blue-100 flex items-start gap-4">
-               <div class="bg-mlm-blue-50 p-3 rounded-lg">
-                 <i class="pi pi-shield text-mlm-blue-500"></i>
-               </div>
-               <div>
-                 <h4 class="font-semibold text-mlm-text">Secure Transactions</h4>
-                 <p class="text-sm text-mlm-secondary mt-1">All transactions are encrypted and audited for your security.</p>
-               </div>
-             </div>
+            <!-- Empty State -->
+            @if (hasZeroBalance()) {
+              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+                <div class="flex flex-col items-center text-center py-8 space-y-6">
+                  <div class="w-20 h-20 bg-brand-green-light rounded-full flex items-center justify-center">
+                    <i class="pi pi-wallet text-4xl text-mlm-primary"></i>
+                  </div>
+                  <div class="space-y-2">
+                    <h3 class="text-xl font-semibold text-mlm-text">No Balance Yet</h3>
+                    <p class="text-mlm-secondary max-w-md">
+                      Start earning commissions by inviting friends or fund your wallet to get started.
+                    </p>
+                  </div>
+                  <div class="flex gap-3">
+                    <button 
+                      (click)="navigateToFunding()"
+                      class="inline-flex items-center gap-2 px-5 py-2.5 bg-mlm-primary text-white font-semibold rounded-xl hover:bg-brand-green-dark transition-colors">
+                      <i class="pi pi-wallet"></i>
+                      Fund Wallet
+                    </button>
+                    <button 
+                      routerLink="/network/referrals"
+                      class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-mlm-text font-semibold rounded-xl hover:bg-gray-200 transition-colors">
+                      <i class="pi pi-users"></i>
+                      Invite Friends
+                    </button>
+                    <button 
+                      (click)="navigateToMarketplace()"
+                      class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-100 text-mlm-text font-semibold rounded-xl hover:bg-gray-200 transition-colors">
+                      <i class="pi pi-shopping-bag"></i>
+                      Browse Products
+                    </button>
+                  </div>
+                </div>
+              </div>
+            } @else {
+              <!-- Main Grid: Wallet Cards + Right Sidebar -->
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Left Section: Wallet Type Cards -->
+                <div class="lg:col-span-2 space-y-4">
+                  
+                  <!-- Wallet Cards per Currency -->
+                  @for (wallet of wallets(); track wallet.id) {
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <div class="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
+                        <div class="w-10 h-10 rounded-xl bg-brand-green-light flex items-center justify-center">
+                          <i class="pi pi-wallet text-lg text-mlm-primary"></i>
+                        </div>
+                        <div>
+                          <h3 class="text-base font-semibold text-mlm-text">{{ wallet.currency }} Wallet</h3>
+                          <p class="text-xs text-mlm-secondary">Total: {{ formatCurrency(wallet.balance, wallet.currency) }}</p>
+                        </div>
+                      </div>
+
+                      <div class="space-y-3">
+                        <!-- Cash Wallet -->
+                        <div class="bg-mlm-green-50 rounded-xl p-4 hover:bg-mlm-green-100/70 transition-colors border border-mlm-green-100">
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                              <div class="w-10 h-10 rounded-xl bg-mlm-green-100 flex items-center justify-center">
+                                <i class="pi pi-wallet text-mlm-green-600"></i>
+                              </div>
+                              <div>
+                                <p class="text-sm font-semibold text-mlm-text">Cash Wallet</p>
+                                <p class="text-lg font-bold text-mlm-text">{{ formatCurrency(wallet.cashBalance, wallet.currency) }}</p>
+                              </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                              <span class="text-[10px] font-semibold text-mlm-green-600 uppercase hidden sm:block"
+                                    pTooltip="Can be withdrawn to your bank account"
+                                    tooltipPosition="top">
+                                Withdrawable
+                              </span>
+                              <div class="flex gap-2">
+                                <button 
+                                  (click)="openWithdrawDialog(wallet)"
+                                  [disabled]="wallet.cashBalance <= 0"
+                                  class="py-2 px-4 bg-mlm-primary text-white text-xs font-semibold rounded-lg hover:bg-mlm-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                  Withdraw
+                                </button>
+                                <button 
+                                  (click)="navigateToFunding()"
+                                  class="py-2 px-4 bg-white border border-mlm-green-200 text-mlm-text text-xs font-semibold rounded-lg hover:bg-mlm-green-50 transition-colors">
+                                  Fund
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Voucher Wallet -->
+                        <div class="bg-mlm-warm-50 rounded-xl p-4 hover:bg-mlm-warm-100 transition-colors border border-mlm-warm-200">
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                              <div class="w-10 h-10 rounded-xl bg-mlm-warm-100 flex items-center justify-center">
+                                <i class="pi pi-ticket text-brand-gold"></i>
+                              </div>
+                              <div>
+                                <p class="text-sm font-semibold text-mlm-text">Voucher Wallet</p>
+                                <p class="text-lg font-bold text-mlm-text">{{ formatCurrency(wallet.voucherBalance, wallet.currency) }}</p>
+                              </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                              <span class="text-[10px] font-semibold text-mlm-warm-500 uppercase hidden sm:block"
+                                    pTooltip="Can only be used for product purchases"
+                                    tooltipPosition="top">
+                                Non-Withdrawable
+                              </span>
+                              <button 
+                                (click)="navigateToMarketplace()"
+                                class="py-2 px-4 bg-mlm-primary text-white text-xs font-semibold rounded-lg hover:bg-mlm-green-700 transition-colors">
+                                Browse Products
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Autoship Wallet -->
+                        <div class="bg-mlm-teal-50 rounded-xl p-4 hover:bg-mlm-teal-100/70 transition-colors border border-mlm-teal-100">
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                              <div class="w-10 h-10 rounded-xl bg-mlm-teal-100 flex items-center justify-center">
+                                <i class="pi pi-sync text-mlm-teal-600"></i>
+                              </div>
+                              <div>
+                                <p class="text-sm font-semibold text-mlm-text">Autoship Wallet</p>
+                                <p class="text-lg font-bold text-mlm-text">{{ formatCurrency(wallet.autoshipBalance, wallet.currency) }}</p>
+                              </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                              <span class="text-[10px] font-semibold text-mlm-teal-600 uppercase hidden sm:block"
+                                    pTooltip="Auto product credits for recurring orders"
+                                    tooltipPosition="top">
+                                Non-Withdrawable
+                              </span>
+                              <span class="text-[10px] text-mlm-teal-600 flex items-center gap-1">
+                                <i class="pi pi-info-circle"></i>
+                                Recurring orders
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+
+                <!-- Right Sidebar: Total Balance -->
+                <div class="space-y-4">
+                  
+                  <!-- Total Balance Card -->
+                  <div class="bg-gradient-to-br from-mlm-primary to-brand-green-dark rounded-2xl p-6 text-white shadow-sm relative overflow-hidden">
+                    <!-- Background Pattern -->
+                    <div class="absolute inset-0 opacity-10">
+                      <div class="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-1/2 translate-x-1/4"></div>
+                      <div class="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-1/2 -translate-x-1/4"></div>
+                    </div>
+                    
+                    <div class="relative z-10">
+                      <div class="flex items-center gap-2 mb-4">
+                        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                          <i class="pi pi-wallet text-xl"></i>
+                        </div>
+                        <span class="text-sm font-medium opacity-90">Total Balance</span>
+                      </div>
+                      
+                      <div class="mb-6">
+                        <div class="flex items-center gap-3">
+                          <p class="text-3xl font-bold">
+                            @if (isBalanceHidden()) {
+                              {{ getHiddenBalance() }}
+                            } @else {
+                              {{ formatCurrency(totalBalance(), 'USD') }}
+                            }
+                          </p>
+                          <!-- Eye Toggle Button -->
+                          <button 
+                            (click)="toggleBalanceVisibility()"
+                            class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+                            <i [class]="'pi text-sm ' + (isBalanceHidden() ? 'pi-eye' : 'pi-eye-slash')"></i>
+                          </button>
+                        </div>
+                        <p class="text-xs opacity-70 mt-1">Across all wallets</p>
+                      </div>
+
+                      <div class="grid grid-cols-2 gap-3">
+                        <button 
+                          (click)="navigateToWithdrawals()"
+                          class="py-2.5 px-4 bg-white/20 hover:bg-white/30 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2">
+                          <i class="pi pi-history text-xs"></i>
+                          History
+                        </button>
+                        <button 
+                          (click)="navigateToFunding()"
+                          class="py-2.5 px-4 bg-white text-mlm-primary hover:bg-brand-green-light rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2">
+                          <i class="pi pi-plus text-xs"></i>
+                          Fund
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Balance Breakdown -->
+                  <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                    <h3 class="text-sm font-semibold text-mlm-text mb-4">Balance Breakdown</h3>
+                    
+                    <div class="space-y-3">
+                      <!-- Cash Balance -->
+                      <div class="flex items-center justify-between p-3 bg-mlm-green-50 rounded-xl border border-mlm-green-100">
+                        <div class="flex items-center gap-3">
+                          <div class="w-8 h-8 rounded-lg bg-mlm-green-100 flex items-center justify-center">
+                            <i class="pi pi-wallet text-mlm-green-600 text-sm"></i>
+                          </div>
+                          <div>
+                            <p class="text-xs font-medium text-mlm-text">Cash Balance</p>
+                            <p class="text-[10px] text-mlm-green-600">Withdrawable</p>
+                          </div>
+                        </div>
+                        <span class="text-sm font-bold text-mlm-text">
+                          @if (isBalanceHidden()) { •••••• } @else { {{ formatCurrency(totalCashBalance(), 'USD') }} }
+                        </span>
+                      </div>
+
+                      <!-- Voucher Balance -->
+                      <div class="flex items-center justify-between p-3 bg-mlm-warm-50 rounded-xl border border-mlm-warm-200">
+                        <div class="flex items-center gap-3">
+                          <div class="w-8 h-8 rounded-lg bg-mlm-warm-100 flex items-center justify-center">
+                            <i class="pi pi-ticket text-brand-gold text-sm"></i>
+                          </div>
+                          <div>
+                            <p class="text-xs font-medium text-mlm-text">Voucher Balance</p>
+                            <p class="text-[10px] text-mlm-warm-500">Products only</p>
+                          </div>
+                        </div>
+                        <span class="text-sm font-bold text-mlm-text">
+                          @if (isBalanceHidden()) { •••••• } @else { {{ formatCurrency(totalVoucherBalance(), 'USD') }} }
+                        </span>
+                      </div>
+
+                      <!-- Autoship Balance -->
+                      <div class="flex items-center justify-between p-3 bg-mlm-teal-50 rounded-xl border border-mlm-teal-100">
+                        <div class="flex items-center gap-3">
+                          <div class="w-8 h-8 rounded-lg bg-mlm-teal-100 flex items-center justify-center">
+                            <i class="pi pi-sync text-mlm-teal-600 text-sm"></i>
+                          </div>
+                          <div>
+                            <p class="text-xs font-medium text-mlm-text">Autoship Balance</p>
+                            <p class="text-[10px] text-mlm-teal-600">Recurring orders</p>
+                          </div>
+                        </div>
+                        <span class="text-sm font-bold text-mlm-text">
+                          @if (isBalanceHidden()) { •••••• } @else { {{ formatCurrency(totalAutoshipBalance(), 'USD') }} }
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Currency Info -->
+                  <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                    <div class="flex items-start gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                        <i class="pi pi-globe text-mlm-secondary text-sm"></i>
+                      </div>
+                      <div>
+                        <p class="text-xs font-semibold text-mlm-text mb-1">Currency Display</p>
+                        <p class="text-[10px] text-mlm-secondary leading-relaxed">
+                          Balances are displayed in your registration currency. Currency conversion is not supported.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- Quick Info / Business Rules -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-start gap-4">
+                <div class="bg-gray-100 p-3 rounded-xl">
+                  <i class="pi pi-info-circle text-mlm-secondary"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-mlm-text text-sm">Currency Locked</h4>
+                  <p class="text-xs text-mlm-secondary mt-1">Earnings stay in their original currency. No internal conversion is supported.</p>
+                </div>
+              </div>
+              <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-start gap-4">
+                <div class="bg-gray-100 p-3 rounded-xl">
+                  <i class="pi pi-clock text-mlm-secondary"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-mlm-text text-sm">Processing Time</h4>
+                  <p class="text-xs text-mlm-secondary mt-1">Withdrawals are processed within 24-48 business hours.</p>
+                </div>
+              </div>
+              <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-start gap-4">
+                <div class="bg-gray-100 p-3 rounded-xl">
+                  <i class="pi pi-shield text-mlm-secondary"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-mlm-text text-sm">Secure Transactions</h4>
+                  <p class="text-xs text-mlm-secondary mt-1">All transactions are encrypted and audited for your security.</p>
+                </div>
+              </div>
+            </div>
           </div>
         }
       }

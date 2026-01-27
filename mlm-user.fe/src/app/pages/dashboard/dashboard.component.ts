@@ -17,6 +17,7 @@ import { CommissionService } from '../../services/commission.service';
 import { WalletService } from '../../services/wallet.service';
 import { LoadingService } from '../../services/loading.service';
 import { ModalService } from '../../services/modal.service';
+import { ActivityService } from '../../services/activity.service';
 import { signal } from '@angular/core';
 
 @Component({
@@ -44,6 +45,7 @@ export class DashboardComponent implements OnInit {
   private walletService = inject(WalletService);
   private loadingService = inject(LoadingService);
   private modalService = inject(ModalService);
+  private activityService = inject(ActivityService);
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
 
@@ -56,6 +58,25 @@ export class DashboardComponent implements OnInit {
 
   ngnWallet = this.walletService.getWallet('NGN');
   usdWallet = this.walletService.getWallet('USD');
+
+  activeWallet = computed(() => {
+    const user = this.currentUser();
+    const currency = user?.currency || 'USD';
+    return this.walletService.getWallet(currency as 'NGN' | 'USD')();
+  });
+
+  activeSummary = computed(() => {
+    const user = this.currentUser();
+    const currency = user?.currency || 'USD';
+    return this.commissionService.getSummary(currency as 'NGN' | 'USD')();
+  });
+
+  hasActivity = computed(() => {
+    const summary = this.activeSummary();
+    return summary.totalEarnings > 0 || summary.directReferrals > 0;
+  });
+
+  recentActivities = this.activityService.getRecentActivities(5);
 
   salesData: any;
   salesOptions: any;
@@ -191,6 +212,8 @@ export class DashboardComponent implements OnInit {
     return user?.profileCompletionPercentage ?? 0;
   });
 
+  isLoading = this.loadingService.isLoading;
+
   navigateToPayment(): void {
     this.showPaymentModal.set(true);
   }
@@ -207,12 +230,17 @@ export class DashboardComponent implements OnInit {
           this.userService.updatePaymentStatus('PAID');
           this.showPaymentModal.set(false);
           
+          // Trigger change detection to update the view
+          this.cdr.markForCheck();
+          
           setTimeout(() => {
             this.modalService.open(
               'success',
               'Payment Successful',
               'Your registration fee of ₦5,000 has been paid successfully. You now have full access to all features.'
             );
+            // Force change detection again after modal
+            this.cdr.markForCheck();
           }, 100);
         } else {
           this.modalService.open(
@@ -229,6 +257,87 @@ export class DashboardComponent implements OnInit {
 
   navigateTo(route: string): void {
     this.router.navigate([route]);
+  }
+
+  getRankStyle(rank: string | undefined): { bgClass: string; icon: string } {
+    if (!rank) {
+      return { bgClass: 'bg-mlm-secondary', icon: 'pi-star' };
+    }
+    
+    const rankLower = rank.toLowerCase();
+    
+    switch (rankLower) {
+      case 'silver':
+        return { bgClass: 'bg-gradient-to-r from-mlm-secondary to-mlm-secondary/80', icon: 'pi-star' };
+      case 'gold':
+        return { bgClass: 'bg-gradient-to-r from-brand-gold to-mlm-warning', icon: 'pi-star-fill' };
+      case 'platinum':
+        return { bgClass: 'bg-gradient-to-r from-mlm-secondary/60 to-mlm-secondary', icon: 'pi-star-fill' };
+      case 'ruby':
+        return { bgClass: 'bg-gradient-to-r from-mlm-red-500 to-mlm-red-400', icon: 'pi-star-fill' };
+      case 'diamond':
+        return { bgClass: 'bg-gradient-to-r from-mlm-blue-400 to-mlm-blue-500', icon: 'pi-gem' };
+      default:
+        return { bgClass: 'bg-gradient-to-r from-brand-gold to-mlm-warning', icon: 'pi-star-fill' };
+    }
+  }
+
+  formatActivityDate(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) {
+      return 'Just now';
+    } else if (diffMins < 60) {
+      return `${diffMins}m ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  }
+
+  navigateToActivity(activity: any): void {
+    if (activity.route) {
+      this.router.navigate([activity.route]);
+    }
+  }
+
+  getActivityIconClasses(type: string): string {
+    switch (type) {
+      case 'Earnings Posted':
+        return 'bg-mlm-warning/10 text-mlm-warning';
+      case 'Wallet Funding':
+        return 'bg-mlm-success/10 text-mlm-success';
+      case 'Withdrawal':
+        return 'bg-mlm-error/10 text-mlm-error';
+      case 'Order Placed':
+        return 'bg-mlm-blue-50 text-mlm-blue-500';
+      default:
+        return 'bg-mlm-secondary/10 text-mlm-secondary';
+    }
+  }
+
+  getStatusBadgeClasses(status: string): string {
+    switch (status) {
+      case 'Approved':
+      case 'Completed':
+        return 'bg-mlm-success/10 text-mlm-success';
+      case 'Pending':
+        return 'bg-mlm-warning/10 text-mlm-warning';
+      case 'Rejected':
+        return 'bg-mlm-error/10 text-mlm-error';
+      default:
+        return 'bg-mlm-secondary/10 text-mlm-secondary';
+    }
   }
 }
 

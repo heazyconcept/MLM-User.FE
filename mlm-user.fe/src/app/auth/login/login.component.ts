@@ -1,33 +1,31 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
-import { InputTextModule } from 'primeng/inputtext';
-import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
-import { AuthService } from '../../../services/auth.service';
+import { AuthService } from '../../services/auth.service';
 import { MessageModule } from 'primeng/message';
-import { LoadingService } from '../../../services/loading.service';
-import { UserService } from '../../../services/user.service';
-import { ModalService } from '../../../services/modal.service';
+import { LoadingService } from '../../services/loading.service';
+import { UserService } from '../../services/user.service';
+import { ModalService } from '../../services/modal.service';
+import { AuthInputComponent } from '../components/auth-input/auth-input.component';
 
 @Component({
   selector: 'app-login',
-  standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
     ButtonModule,
     CheckboxModule,
-    InputTextModule,
-    PasswordModule,
     RippleModule,
-    MessageModule
+    MessageModule,
+    AuthInputComponent
   ],
-  templateUrl: './login.component.html'
+  templateUrl: './login.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LoginComponent {
   private fb = inject(FormBuilder);
@@ -35,7 +33,8 @@ export class LoginComponent {
   private router = inject(Router);
   private userService = inject(UserService);
   private modalService = inject(ModalService);
-  loadingService = inject(LoadingService); // Public for template access
+  
+  isLoading = signal<boolean>(false);
 
   loginForm = this.fb.group({
     email: ['pelumi123@gmail.com', [Validators.required, Validators.email]],
@@ -47,10 +46,10 @@ export class LoginComponent {
     if (this.loginForm.valid) {
       const { email, password } = this.loginForm.value;
       if (email && password) {
-        this.loadingService.show();
+        this.isLoading.set(true);
         this.authService.login(email, password).subscribe({
           next: (result) => {
-            this.loadingService.hide();
+            this.isLoading.set(false);
             
             // Registration Fee Status Check (On Every Login)
             // The payment status has been fetched from the server in AuthService.login()
@@ -79,7 +78,7 @@ export class LoginComponent {
             }, 2000);
           },
           error: () => {
-            this.loadingService.hide();
+            this.isLoading.set(false);
             // Show error modal
             this.modalService.open(
               'error',

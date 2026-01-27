@@ -1,0 +1,66 @@
+<div class="text-center mb-10">
+    <h1 class="text-2xl font-bold text-slate-800 tracking-tight mb-2">Preferences</h1>
+    <p class="text-slate-500 text-sm">Customize your experience</p>
+</div>
+
+<form [formGroup]="prefForm" (ngSubmit)="onSubmit()">
+    <div class="space-y-6">
+        <div>
+            <label class="block text-sm font-semibold text-slate-500 mb-2">Preferred Language</label>
+            <p-select 
+                [options]="languages" 
+                formControlName="language" 
+                optionLabel="label" 
+                placeholder="Select Language"
+                styleClass="w-full !rounded-xl !border-slate-400 !h-12 !flex !items-center">
+            </p-select>
+        </div>
+
+        <div>
+            <label class="block text-sm font-semibold text-slate-500 mb-2">Display Currency</label>
+            <p-select 
+                [options]="currencies" 
+                formControlName="currency" 
+                optionLabel="label" 
+                placeholder="Select Currency"
+                styleClass="w-full !rounded-xl !border-slate-400 !h-12 !flex !items-center">
+            </p-select>
+        </div>
+
+        <div class="space-y-4 pt-2">
+            <label class="block text-sm font-semibold text-slate-700">Notification Settings</label>
+            
+            <div class="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 transition-all hover:border-mlm-primary/30">
+                <p-checkbox formControlName="emailNotifications" [binary]="true"></p-checkbox>
+                <div class="flex flex-col">
+                    <span class="text-sm font-semibold text-slate-700">Email Notifications</span>
+                    <span class="text-xs text-slate-500">Receive updates and news via email</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200 transition-all hover:border-mlm-primary/30">
+                <p-checkbox formControlName="smsNotifications" [binary]="true"></p-checkbox>
+                <div class="flex flex-col">
+                    <span class="text-sm font-semibold text-slate-700">SMS Notifications</span>
+                    <span class="text-xs text-slate-500">Receive security alerts via SMS</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4 pt-6">
+            <button type="button" 
+                    routerLink="/onboarding/bank"
+                    class="flex-1 h-12 rounded-xl text-slate-600 font-semibold border border-slate-300 hover:bg-slate-50 transition-all duration-200">
+                Back
+            </button>
+            <p-button 
+                label="Finish Setup" 
+                styleClass="w-full !bg-mlm-primary !border-mlm-primary !h-12 !font-bold !rounded-xl shadow-lg shadow-mlm-primary/20" 
+                type="submit" 
+                [disabled]="isLoading()"
+                [loading]="isLoading()">
+            </p-button>
+        </div>
+    </div>
+</form>
+

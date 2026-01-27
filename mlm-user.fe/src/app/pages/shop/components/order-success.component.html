@@ -1,0 +1,56 @@
+<div class="flex flex-col items-center justify-center py-4 px-2 text-center">
+  <!-- Success Icon -->
+  <div class="w-20 h-20 mb-4">
+    <img src="assets/images/commercial.png" alt="Order Success" class="w-full h-full object-contain">
+  </div>
+  
+  <!-- Success Message -->
+  <h2 class="text-xl font-bold text-mlm-text mb-1">Order Placed!</h2>
+  <p class="text-mlm-secondary text-sm mb-4">Your order has been successfully processed</p>
+  
+  <!-- Order Details Card -->
+  <div class="w-full bg-gray-50 rounded-xl p-4 mb-4">
+    <div class="flex items-center gap-3 mb-3 pb-3 border-b border-gray-200">
+      <div class="w-12 h-12 rounded-lg overflow-hidden bg-white shrink-0">
+        <img [src]="orderData.productImage" [alt]="orderData.productName" class="w-full h-full object-cover">
+      </div>
+      <div class="flex-1 text-left min-w-0">
+        <h4 class="text-sm font-semibold text-mlm-text truncate">{{ orderData.productName }}</h4>
+        <p class="text-xs text-mlm-secondary">Qty: {{ orderData.quantity }}</p>
+      </div>
+    </div>
+    
+    <div class="space-y-1.5 text-sm">
+      <div class="flex justify-between">
+        <span class="text-mlm-secondary">Order ID</span>
+        <span class="font-semibold text-mlm-text">{{ orderData.orderId }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-mlm-secondary">Payment Method</span>
+        <span class="font-semibold text-mlm-text capitalize">{{ orderData.wallet }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-mlm-secondary">Total Paid</span>
+        <span class="font-bold text-mlm-primary">{{ formatCurrency(orderData.total) }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-mlm-secondary">PV Earned</span>
+        <span class="font-semibold text-mlm-text">{{ orderData.totalPV }} PV</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Action Buttons -->
+  <div class="w-full space-y-2">
+    <button
+      (click)="onContinueShopping()"
+      class="w-full py-3 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-brand-green-dark transition-all">
+      Continue Shopping
+    </button>
+    <button
+      (click)="onViewOrders()"
+      class="w-full py-3 bg-white border border-gray-200 text-mlm-text text-sm font-semibold rounded-xl hover:bg-gray-50 transition-all">
+      View My Orders
+    </button>
+  </div>
+</div>
