@@ -8,15 +8,35 @@ import { UserService, type User, type PaymentStatus } from './user.service';
 })
 export class AuthService {
   private userService = inject(UserService);
+  private readonly TOKEN_KEY = 'mlm_auth_token';
   
   // Simple signal to track authentication state
-  isAuthenticated = signal<boolean>(false);
+  // Initialize from localStorage to persist across page refreshes
+  isAuthenticated = signal<boolean>(this.checkAuthState());
+
+  constructor() {
+    // Authentication state is already initialized from localStorage in signal initialization above
+    // UserService constructor will automatically restore user data from localStorage
+  }
+
+  private checkAuthState(): boolean {
+    // Check if token exists in localStorage
+    // This is called during signal initialization to restore auth state on page refresh
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const token = localStorage.getItem(this.TOKEN_KEY);
+      return !!token;
+    }
+    return false;
+  }
 
   login(email: string, password: string): Observable<{ success: boolean; paymentStatus: PaymentStatus }> {
     // Mock login logic
     return of(true).pipe(
       delay(1000), // Simulate API call
       tap(() => {
+        // Save token to localStorage to persist across page refreshes
+        const mockToken = 'mock_token_' + Date.now();
+        localStorage.setItem(this.TOKEN_KEY, mockToken);
         this.isAuthenticated.set(true);
       }),
       // After login, fetch registration fee status from server
@@ -61,6 +81,9 @@ export class AuthService {
     return of(true).pipe(
       delay(1000), // Simulate API call
       tap(() => {
+        // Save token to localStorage to persist across page refreshes
+        const mockToken = 'mock_token_' + Date.now();
+        localStorage.setItem(this.TOKEN_KEY, mockToken);
         this.isAuthenticated.set(true);
         // Set mock user data with UNPAID status (as per register component)
         const mockUser: User = {
@@ -77,6 +100,8 @@ export class AuthService {
   }
 
   logout() {
+    // Clear token from localStorage
+    localStorage.removeItem(this.TOKEN_KEY);
     this.isAuthenticated.set(false);
     this.userService.clearUser();
   }

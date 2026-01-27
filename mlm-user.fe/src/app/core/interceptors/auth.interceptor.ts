@@ -1,8 +1,8 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  // Get token from local storage or auth service
-  const token = localStorage.getItem('token'); 
+  // Get token from local storage (using same key as AuthService)
+  const token = localStorage.getItem('mlm_auth_token'); 
 
   if (token) {
     const cloned = req.clone({

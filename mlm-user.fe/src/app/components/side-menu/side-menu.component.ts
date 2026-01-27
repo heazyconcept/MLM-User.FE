@@ -181,7 +181,7 @@ export class SideMenuComponent {
   logout(): void {
     this.authService.logout();
     this.userService.clearUser();
-    this.router.navigate(['/login']);
+    this.router.navigate(['/auth/login']);
   }
 
   isActiveRoute(route?: string): boolean {
