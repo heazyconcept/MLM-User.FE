@@ -149,6 +149,18 @@ export const routes: Routes = [
       {
         path: 'breakdown',
         loadComponent: () => import('./pages/commissions/commission-breakdown.component').then(m => m.CommissionBreakdownComponent)
+      },
+      {
+        path: 'bonuses',
+        loadComponent: () => import('./pages/commissions/bonuses.component').then(m => m.BonusesComponent)
+      },
+      {
+        path: 'ranking',
+        loadComponent: () => import('./pages/commissions/ranking.component').then(m => m.RankingComponent)
+      },
+      {
+        path: 'cpv',
+        loadComponent: () => import('./pages/commissions/cpv-milestones.component').then(m => m.CpvMilestonesComponent)
       }
     ]
   },

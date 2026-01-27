@@ -1,0 +1,164 @@
+<div class="p-6 lg:p-10 space-y-8 mx-auto">
+  
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Earnings</h1>
+      <p class="text-sm text-gray-500 mt-1">Rank progression and achievements</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <app-earnings-tabs></app-earnings-tabs>
+  @if (!userService.isPaid()) {
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-12 text-center">
+      <div class="max-w-sm mx-auto space-y-4">
+        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+          <i class="pi pi-lock text-gray-400"></i>
+        </div>
+        <h2 class="text-lg font-semibold text-gray-900">Start Your Journey</h2>
+        <p class="text-sm text-gray-500">Complete your registration to begin ranking up.</p>
+        <button routerLink="/dashboard/registration-payment" 
+                class="inline-flex items-center px-4 py-2 bg-mlm-primary text-white text-sm font-medium rounded-lg hover:bg-mlm-primary/90 transition-colors">
+          Complete Registration
+        </button>
+      </div>
+    </div>
+  } @else {
+    
+    <!-- Premium Rank Status Card (Brand Colors) -->
+    <div class="max-w-3xl mx-auto">
+      <div class="relative overflow-hidden bg-linear-to-br from-mlm-primary via-mlm-green-600 to-mlm-green-700 rounded-2xl p-8 border border-mlm-green-600/30"
+           style="box-shadow: 0 4px 20px rgba(73, 163, 33, 0.2), 0 0 40px rgba(73, 163, 33, 0.08);">
+        <!-- Subtle pattern overlay -->
+        <div class="absolute inset-0 opacity-10">
+          <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+        </div>
+        
+        <div class="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
+          <!-- Left: Status -->
+          <div class="space-y-1">
+            <span class="text-[10px] font-medium text-white/70 uppercase tracking-widest">Member Status</span>
+            <h2 class="text-3xl font-bold text-white tracking-tight">{{ rankInfo().currentRank }}</h2>
+            <p class="text-xs text-white/70">Since {{ rankInfo().achievedRanks[0]?.achievedDate | date:'MMM yyyy' }}</p>
+          </div>
+          
+          <!-- Right: Next Level -->
+          <div class="text-left lg:text-right space-y-1">
+            <span class="text-[10px] font-medium text-white/70 uppercase tracking-widest">Next Level</span>
+            <div class="flex items-baseline gap-2 lg:justify-end">
+              <span class="text-xl font-bold text-white">{{ rankInfo().nextRank }}</span>
+            </div>
+            <div class="flex items-center gap-2 lg:justify-end">
+              <span class="text-sm font-semibold text-white/90">{{ getPointsToGo() | number }} points to go</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Segmented Progress Bar -->
+        <div class="relative mt-6">
+          <div class="flex gap-1">
+            @for (segment of progressSegments; track $index) {
+              <div class="flex-1 h-2 rounded-full transition-all duration-500"
+                   [class]="segment.filled ? 'bg-white' : 'bg-white/20'">
+              </div>
+            }
+          </div>
+          <div class="flex justify-between mt-2">
+            <span class="text-[10px] text-white/70">{{ rankInfo().progressPercentage }}% complete</span>
+            <span class="text-[10px] text-white/70">Stage {{ rankInfo().currentStage }}/{{ rankInfo().totalStages }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid Layout: Requirements + Timeline -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start mt-16">
+      
+      <!-- Requirements Checklist (Left - 60%) -->
+      <div class="lg:col-span-3 bg-white border border-gray-200 rounded-xl shadow-sm">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <span class="text-sm font-medium text-gray-900">Requirements for {{ rankInfo().nextRank }}</span>
+          <span class="text-xs text-gray-500">{{ getCompletedReqs() }}/{{ rankInfo().requirements.length }} done</span>
+        </div>
+        
+        <div class="divide-y divide-gray-100">
+          @for (req of rankInfo().requirements; track req.label) {
+            <div class="px-6 py-4">
+              <div class="flex items-center gap-4">
+                <!-- Status Icon -->
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                     [class]="req.completed ? 'bg-green-50' : 'bg-gray-50'">
+                  @if (req.completed) {
+                    <i class="pi pi-check text-green-600 text-sm"></i>
+                  } @else {
+                    <i class="pi pi-circle text-gray-300 text-sm"></i>
+                  }
+                </div>
+                
+                <!-- Requirement Info -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-900">{{ req.label }}</span>
+                    <span class="text-sm tabular-nums" [class]="req.completed ? 'text-green-600 font-semibold' : 'text-gray-500'">
+                      {{ req.current | number }}<span class="text-gray-400">/{{ req.required | number }}</span>
+                    </span>
+                  </div>
+                  
+                  <!-- Compact Progress -->
+                  <div class="mt-2 flex items-center gap-3">
+                    <div class="flex-1 h-1 bg-gray-100 rounded-full overflow-hidden">
+                      <div class="h-full rounded-full transition-all duration-300"
+                           [class]="req.completed ? 'bg-green-500' : 'bg-mlm-primary'"
+                           [style.width.%]="getReqPercentage(req)">
+                      </div>
+                    </div>
+                    @if (!req.completed) {
+                      <span class="text-[10px] text-gray-400 shrink-0">{{ req.required - req.current | number }} to go</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+      
+      <!-- Achievement Timeline (Right - 40%) -->
+      <div class="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm">
+        <div class="px-6 py-4 border-b border-gray-100">
+          <span class="text-sm font-medium text-gray-900">Achievement Timeline</span>
+        </div>
+        
+        <div class="p-6">
+          <div class="relative">
+            @for (achieved of rankInfo().achievedRanks; track achieved.rank; let first = $first; let last = $last) {
+              <div class="flex gap-4">
+                <!-- Timeline -->
+                <div class="flex flex-col items-center">
+                  <div class="w-3 h-3 rounded-full border-2"
+                       [class]="first ? 'bg-mlm-primary border-mlm-primary' : 'bg-white border-gray-300'">
+                  </div>
+                  @if (!last) {
+                    <div class="w-px flex-1 bg-gray-200 my-1"></div>
+                  }
+                </div>
+                
+                <!-- Content -->
+                <div class="pb-5" [class.pb-0]="last">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-gray-900">{{ achieved.rank }}</span>
+                    @if (first) {
+                      <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-mlm-primary/10 text-mlm-primary rounded">CURRENT</span>
+                    }
+                  </div>
+                  <p class="text-xs text-gray-500 mt-0.5">{{ achieved.achievedDate | date:'MMM d, yyyy' }}</p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

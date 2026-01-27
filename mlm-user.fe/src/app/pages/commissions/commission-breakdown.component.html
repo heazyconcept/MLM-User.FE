@@ -1,0 +1,82 @@
+<div class="p-6 lg:p-10 space-y-8 mx-auto">
+  
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Earnings</h1>
+      <p class="text-sm text-gray-500 mt-1">Detailed commission breakdown</p>
+    </div>
+    
+    <!-- Filters -->
+    <div class="flex items-center gap-3">
+      <select class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
+        <option>All Types</option>
+        <option>Direct Referral</option>
+        <option>Team Commission</option>
+        <option>Bonuses</option>
+      </select>
+      <select class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
+        <option>This Month</option>
+        <option>Last Month</option>
+        <option>Last 3 Months</option>
+        <option>All Time</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <app-earnings-tabs></app-earnings-tabs>
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    
+    <!-- Table Header -->
+    <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+      <div class="col-span-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Source</div>
+      <div class="col-span-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Type</div>
+      <div class="col-span-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Date</div>
+      <div class="col-span-2 text-xs font-medium text-gray-500 uppercase tracking-wide text-right">Amount</div>
+      <div class="col-span-1 text-xs font-medium text-gray-500 uppercase tracking-wide text-right">Status</div>
+    </div>
+    
+    <!-- Table Body -->
+    <div class="divide-y divide-gray-100">
+      @for (entry of allCommissions(); track entry.id) {
+        <div class="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-50/50 transition-colors">
+          
+          <!-- Source -->
+          <div class="col-span-4">
+            <span class="text-sm font-medium text-gray-900">{{ entry.source }}</span>
+          </div>
+          
+          <!-- Type -->
+          <div class="col-span-3">
+            <span class="text-sm text-gray-500">{{ entry.type }}</span>
+          </div>
+          
+          <!-- Date -->
+          <div class="col-span-2">
+            <span class="text-sm text-gray-500">{{ entry.date | date:'MMM d, yyyy' }}</span>
+          </div>
+          
+          <!-- Amount -->
+          <div class="col-span-2 text-right">
+            <span class="text-sm font-medium text-gray-900">
+              + {{ entry.currency === 'NGN' ? '₦' : '$' }}{{ entry.amount | number:'1.2-2' }}
+            </span>
+          </div>
+          
+          <!-- Status -->
+          <div class="col-span-1 text-right">
+            <app-status-badge [status]="entry.status" size="sm"></app-status-badge>
+          </div>
+        </div>
+      }
+      
+      <!-- Empty State -->
+      @if (allCommissions().length === 0) {
+        <div class="px-6 py-12 text-center">
+          <p class="text-sm text-gray-500">No commissions found.</p>
+        </div>
+      }
+    </div>
+  </div>
+</div>

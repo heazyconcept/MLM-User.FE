@@ -19,7 +19,7 @@
                 <!-- Email -->
                 <div class="flex flex-col gap-1">
                     <p-floatlabel variant="on">
-                        <input pInputText id="email" formControlName="email" class="w-full !py-3" [class.ng-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" />
+                        <input pInputText id="email" formControlName="email" class="w-full py-3!" [class.ng-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" />
                         <label for="email">Email Address</label>
                     </p-floatlabel>
                     @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
@@ -89,7 +89,7 @@
             <div class="absolute inset-0 bg-mlm-primary/10 mix-blend-overlay"></div>
             
             <!-- Decorative Elements matching the vibe -->
-             <div class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-mlm-primary/40 to-transparent"></div>
+             <div class="absolute bottom-0 left-0 right-0 h-1/2 bg-linear-to-t from-mlm-primary/40 to-transparent"></div>
         </div>
     </div>
 </div>
