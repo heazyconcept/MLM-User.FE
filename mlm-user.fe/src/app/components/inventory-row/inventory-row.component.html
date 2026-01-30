@@ -1,0 +1,18 @@
+<div
+  class="flex flex-wrap items-center gap-4 py-5 border-b border-gray-200 last:border-b-0 hover:bg-gray-50/50 transition-colors"
+  role="row">
+  <div class="flex-1 min-w-0">
+    <p class="font-semibold text-mlm-text truncate">{{ productName() }}</p>
+    <p class="text-sm text-mlm-secondary">Stock: {{ stockQuantity() }}</p>
+  </div>
+  <div class="flex items-center gap-3">
+    <app-status-badge [status]="status()" size="sm"></app-status-badge>
+    <button
+      type="button"
+      (click)="onEdit()"
+      class="px-4 py-2 text-sm font-semibold text-mlm-primary border border-mlm-primary rounded-xl hover:bg-mlm-primary/5 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20"
+      aria-label="Edit stock for {{ productName() }}">
+      Edit stock
+    </button>
+  </div>
+</div>

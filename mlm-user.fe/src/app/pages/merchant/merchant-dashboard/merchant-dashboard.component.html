@@ -1,0 +1,70 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div class="mb-10">
+        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Merchant Dashboard</h1>
+        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
+        <p class="text-mlm-secondary text-sm">Manage products, orders, and earnings</p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 mb-10">
+        <app-merchant-stat-card
+          title="Total merchant sales"
+          [value]="formatCurrency(totalMerchantSales())"
+          icon="pi pi-shopping-cart"
+          variant="bg-mlm-primary"></app-merchant-stat-card>
+        <app-merchant-stat-card
+          title="Pending fulfilments"
+          [value]="pendingFulfilmentsCount()"
+          icon="pi pi-clock"
+          variant="bg-mlm-blue-500"></app-merchant-stat-card>
+        <app-merchant-stat-card
+          title="Inventory summary"
+          [value]="inventorySummary().total + ' products'"
+          [subtitle]="inventorySummary().lowOrOut + ' low or out'"
+          icon="pi pi-box"
+          variant="bg-mlm-blue-700"></app-merchant-stat-card>
+        <app-merchant-stat-card
+          title="Merchant earnings"
+          [value]="formatCurrency(earnings().totalEarnings)"
+          icon="pi pi-money-bill"
+          variant="bg-brand-gold"></app-merchant-stat-card>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a
+          routerLink="/merchant/inventory"
+          class="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:border-mlm-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
+          <div class="w-10 h-10 rounded-xl bg-mlm-primary/10 flex items-center justify-center">
+            <i class="pi pi-box text-mlm-primary" aria-hidden="true"></i>
+          </div>
+          <span class="font-semibold text-mlm-text">Inventory</span>
+        </a>
+        <a
+          routerLink="/merchant/orders"
+          class="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:border-mlm-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
+          <div class="w-10 h-10 rounded-xl bg-mlm-blue-50 flex items-center justify-center">
+            <i class="pi pi-shopping-bag text-mlm-blue-500" aria-hidden="true"></i>
+          </div>
+          <span class="font-semibold text-mlm-text">Orders</span>
+        </a>
+        <a
+          routerLink="/merchant/deliveries"
+          class="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:border-mlm-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
+          <div class="w-10 h-10 rounded-xl bg-mlm-success/10 flex items-center justify-center">
+            <i class="pi pi-truck text-mlm-success" aria-hidden="true"></i>
+          </div>
+          <span class="font-semibold text-mlm-text">Deliveries</span>
+        </a>
+        <a
+          routerLink="/merchant/earnings"
+          class="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:border-mlm-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
+          <div class="w-10 h-10 rounded-xl bg-mlm-warning/10 flex items-center justify-center">
+            <i class="pi pi-chart-line text-mlm-warning" aria-hidden="true"></i>
+          </div>
+          <span class="font-semibold text-mlm-text">Earnings</span>
+        </a>
+      </div>
+    </div>
+  </main>
+</div>

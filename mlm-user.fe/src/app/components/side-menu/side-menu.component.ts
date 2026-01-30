@@ -1,4 +1,4 @@
-import { Component, signal, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { TooltipModule } from 'primeng/tooltip';
@@ -41,6 +41,7 @@ export class SideMenuComponent {
   private layoutService = inject(LayoutService);
 
   isPaid = this.userService.isPaid;
+  isMerchant = this.userService.isMerchant;
   currentUser = this.userService.currentUser;
   mobileMenuOpen = this.layoutService.isMobileMenuOpen;
   activeRoute = signal('');
@@ -79,6 +80,12 @@ export class SideMenuComponent {
       ]
     },
     {
+      title: 'MERCHANT',
+      items: [
+        { label: 'Merchant Center', icon: 'pi pi-store', route: '/merchant' }
+      ]
+    },
+    {
       title: 'FINANCE',
       items: [
         { label: 'Commissions', icon: 'pi pi-dollar', route: '/commissions', requiresPayment: true },
@@ -97,6 +104,13 @@ export class SideMenuComponent {
     }
   ]);
 
+  /** Sections to display; MERCHANT only when user is a merchant */
+  visibleMenuSections = computed(() => {
+    const sections = this.menuSections();
+    if (this.isMerchant()) return sections;
+    return sections.filter((s: MenuSection) => s.title !== 'MERCHANT');
+  });
+
   constructor() {
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
@@ -112,9 +126,9 @@ export class SideMenuComponent {
 
   private autoExpandActiveSubmenu(): void {
     const currentUrl = this.activeRoute();
-    this.menuSections().forEach(section => {
-      section.items.forEach(item => {
-        const hasActiveChild = item.children?.some(child => child.route && currentUrl.startsWith(child.route));
+    this.visibleMenuSections().forEach((section: MenuSection) => {
+      section.items.forEach((item: MenuItem) => {
+        const hasActiveChild = item.children?.some((child: MenuItem) => child.route && currentUrl.startsWith(child.route));
         const isParentActive = item.route && (currentUrl === item.route || currentUrl.startsWith(item.route + '/'));
         
         if (hasActiveChild || (isParentActive && item.children)) {

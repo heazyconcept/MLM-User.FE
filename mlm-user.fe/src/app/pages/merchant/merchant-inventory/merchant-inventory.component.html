@@ -1,0 +1,81 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div class="mb-10">
+        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Inventory</h1>
+        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
+        <p class="text-mlm-secondary text-sm">Product list, stock quantity, and status</p>
+      </div>
+
+      <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+        @if (inventory().length === 0) {
+          <div class="flex flex-col items-center justify-center py-20 text-center border-t border-gray-200 pt-12">
+            <div class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6">
+              <i class="pi pi-box text-4xl text-mlm-warm-400" aria-hidden="true"></i>
+            </div>
+            <h2 class="text-xl font-bold text-mlm-text mb-2">No inventory</h2>
+            <p class="text-mlm-secondary text-sm mb-6 max-w-md">
+              Add products to start managing your merchant inventory.
+            </p>
+            <a
+              routerLink="/marketplace"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2">
+              Add Product
+            </a>
+          </div>
+        } @else {
+          <ul class="border-t border-gray-200" role="list">
+            @for (item of inventory(); track item.productId) {
+              <li>
+                <app-inventory-row
+                  [productId]="item.productId"
+                  [productName]="item.productName"
+                  [stockQuantity]="item.stockQuantity"
+                  [status]="item.status"
+                  (editStock)="onEditStock($event)"></app-inventory-row>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+  </main>
+
+  <p-dialog
+    [visible]="editModalVisible()"
+    (visibleChange)="editModalVisible.set($event)"
+    [modal]="true"
+    [header]="'Edit stock'"
+    [style]="{ width: '90vw', maxWidth: '400px' }"
+    [draggable]="false"
+    [resizable]="false"
+    (onHide)="onCloseModal()"
+    styleClass="rounded-xl">
+    <div class="py-2">
+      @if (editingItem(); as item) {
+        <p class="text-sm text-mlm-secondary mb-4">{{ item.productName }}</p>
+        <label for="edit-qty" class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2">Quantity</label>
+        <p-inputNumber
+          id="edit-qty"
+          [ngModel]="editQuantity()"
+          (ngModelChange)="editQuantity.set($event)"
+          [min]="0"
+          [showButtons]="true"
+          inputId="edit-qty"
+          class="w-full"></p-inputNumber>
+        <div class="flex gap-3 mt-6">
+          <p-button
+            label="Save"
+            icon="pi pi-check"
+            (onClick)="onSaveStock()"
+            styleClass="flex-1 !bg-mlm-primary !border-mlm-primary"></p-button>
+          <p-button
+            label="Cancel"
+            severity="secondary"
+            (onClick)="onCloseModal()"
+            styleClass="flex-1"></p-button>
+        </div>
+      }
+    </div>
+  </p-dialog>
+</div>

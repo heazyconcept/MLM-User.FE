@@ -1,0 +1,45 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div class="mb-10">
+        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Merchant Earnings</h1>
+        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
+        <p class="text-mlm-secondary text-sm">Earnings breakdown, sales commissions, and delivery bonuses</p>
+      </div>
+
+      <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+        @if (earnings().totalEarnings === 0 && earnings().salesCommissions === 0 && earnings().deliveryBonuses === 0) {
+          <div class="flex flex-col items-center justify-center py-20 text-center border-t border-gray-200 pt-12">
+            <div class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6">
+              <i class="pi pi-chart-line text-4xl text-mlm-warm-400" aria-hidden="true"></i>
+            </div>
+            <h2 class="text-xl font-bold text-mlm-text mb-2">No merchant earnings yet</h2>
+            <p class="text-mlm-secondary text-sm mb-6 max-w-md">
+              Your earnings from sales and deliveries will appear here.
+            </p>
+            <a
+              routerLink="/marketplace"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2">
+              Explore Marketplace
+            </a>
+          </div>
+        } @else {
+          <div class="space-y-6">
+            <div class="flex items-center justify-between border-b border-gray-200 pb-4">
+              <span class="text-mlm-secondary font-medium">Total earnings</span>
+              <span class="text-2xl font-bold text-mlm-primary">{{ formatCurrency(earnings().totalEarnings) }}</span>
+            </div>
+            <div class="flex items-center justify-between border-b border-gray-200 pb-4">
+              <span class="text-mlm-secondary font-medium">Sales commissions</span>
+              <span class="text-lg font-semibold text-mlm-text">{{ formatCurrency(earnings().salesCommissions) }}</span>
+            </div>
+            <div class="flex items-center justify-between pb-4">
+              <span class="text-mlm-secondary font-medium">Delivery bonuses</span>
+              <span class="text-lg font-semibold text-mlm-text">{{ formatCurrency(earnings().deliveryBonuses) }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </main>
+</div>

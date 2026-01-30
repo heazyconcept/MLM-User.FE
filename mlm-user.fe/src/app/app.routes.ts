@@ -212,5 +212,42 @@ export const routes: Routes = [
         data: { title: 'Order details' }
       }
     ]
+  },
+  {
+    path: 'merchant',
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./pages/merchant/merchant-dashboard/merchant-dashboard.component').then(m => m.MerchantDashboardComponent),
+        data: { title: 'Merchant Dashboard' }
+      },
+      {
+        path: 'inventory',
+        loadComponent: () => import('./pages/merchant/merchant-inventory/merchant-inventory.component').then(m => m.MerchantInventoryComponent),
+        data: { title: 'Merchant Inventory' }
+      },
+      {
+        path: 'orders',
+        loadComponent: () => import('./pages/merchant/merchant-orders/merchant-orders.component').then(m => m.MerchantOrdersComponent),
+        data: { title: 'Merchant Orders' }
+      },
+      {
+        path: 'orders/:id',
+        loadComponent: () => import('./pages/merchant/merchant-order-detail/merchant-order-detail.component').then(m => m.MerchantOrderDetailComponent),
+        data: { title: 'Order Fulfilment' }
+      },
+      {
+        path: 'deliveries',
+        loadComponent: () => import('./pages/merchant/merchant-deliveries/merchant-deliveries.component').then(m => m.MerchantDeliveriesComponent),
+        data: { title: 'Merchant Deliveries' }
+      },
+      {
+        path: 'earnings',
+        loadComponent: () => import('./pages/merchant/merchant-earnings/merchant-earnings.component').then(m => m.MerchantEarningsComponent),
+        data: { title: 'Merchant Earnings' }
+      }
+    ]
   }
 ];

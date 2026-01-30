@@ -33,7 +33,7 @@
 
   <!-- Menu Sections -->
   <nav class="flex-1 overflow-y-auto py-4 px-3">
-    @for (section of menuSections(); track section.title) {
+    @for (section of visibleMenuSections(); track section.title) {
       <div class="mb-6">
         <h3 class="px-3 mb-2 text-xs font-medium text-mlm-secondary uppercase tracking-wider">
           {{ section.title }}
@@ -126,7 +126,7 @@
 
   <!-- Menu Sections -->
   <nav class="flex-1 overflow-y-auto py-4 px-3">
-    @for (section of menuSections(); track section.title) {
+    @for (section of visibleMenuSections(); track section.title) {
       <div class="mb-6">
         @if (!collapsed()) {
           <h3 class="px-3 mb-2 text-xs font-medium text-mlm-secondary uppercase tracking-wider">
