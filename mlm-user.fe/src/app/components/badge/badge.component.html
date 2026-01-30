@@ -1,0 +1,10 @@
+<span
+  [class]="
+    variant === 'category'
+      ? 'px-3 py-1.5 bg-white/95 backdrop-blur-sm rounded-full text-xs font-semibold text-mlm-text shadow-sm'
+      : variant === 'pv'
+        ? 'text-xs font-semibold text-mlm-secondary bg-gray-100 px-2.5 py-1 rounded-full'
+        : 'px-2.5 py-1 rounded-full text-xs font-medium bg-mlm-background text-mlm-text'
+  ">
+  {{ text }}
+</span>

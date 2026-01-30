@@ -78,7 +78,7 @@ export class WalletComponent implements OnInit {
   }
 
   navigateToMarketplace() {
-    this.router.navigate(['/shop']);
+    this.router.navigate(['/marketplace']);
   }
 
   navigateToTransactions(walletType?: 'cash' | 'voucher' | 'autoship') {

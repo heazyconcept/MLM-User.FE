@@ -79,9 +79,17 @@ export class StatusBadgeComponent {
     // Pending/In Progress states
     else if (s === 'pending' || s === 'processing' || s === 'locked' || s === 'in progress') {
       colorClasses = 'bg-yellow-50 text-yellow-600';
-    } 
-    // Rejected/Failed states
-    else if (s === 'rejected' || s === 'unpaid' || s === 'not qualified') {
+    }
+    // Order fulfilment: in progress (pickup/delivery)
+    else if (s === 'ready for pickup' || s === 'out for delivery') {
+      colorClasses = 'bg-blue-50 text-blue-600';
+    }
+    // Order: delivered (success)
+    else if (s === 'delivered') {
+      colorClasses = 'bg-green-50 text-green-600';
+    }
+    // Rejected/Failed states (including Cancelled)
+    else if (s === 'rejected' || s === 'unpaid' || s === 'not qualified' || s === 'cancelled') {
       colorClasses = 'bg-red-50 text-red-600';
     }
     // Default
@@ -94,11 +102,15 @@ export class StatusBadgeComponent {
 
   getDisplayText(): string {
     const s = this.status();
-    // Return uppercase for certain statuses, capitalize for others
+    // Return uppercase for certain statuses
     if (['UNPAID', 'PAID', 'PENDING', 'VERIFIED', 'REJECTED'].includes(s)) {
       return s;
     }
-    // Capitalize first letter
+    // Order statuses: preserve "Ready for Pickup", "Out for Delivery" etc.
+    if (s === 'Ready for Pickup' || s === 'Out for Delivery') {
+      return s;
+    }
+    // Capitalize first letter only
     return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
   }
 }

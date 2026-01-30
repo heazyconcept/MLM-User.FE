@@ -40,6 +40,10 @@ export class OrderSuccessComponent {
     this.dialogRef.close({ action: 'continue' });
   }
 
+  onChooseFulfilment(): void {
+    this.dialogRef.close({ action: 'choose-fulfilment' });
+  }
+
   onViewOrders(): void {
     this.dialogRef.close({ action: 'view-orders' });
   }

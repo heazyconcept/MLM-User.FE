@@ -1,0 +1,17 @@
+<div class="flex items-center gap-1">
+  <button
+    type="button"
+    (click)="decrement()"
+    [disabled]="value <= min || disabled"
+    class="w-12 h-12 rounded-xl border border-gray-200 flex items-center justify-center text-mlm-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+    <i class="pi pi-minus text-sm"></i>
+  </button>
+  <span class="w-14 text-center text-xl font-bold text-mlm-text">{{ value }}</span>
+  <button
+    type="button"
+    (click)="increment()"
+    [disabled]="value >= max || disabled"
+    class="w-12 h-12 rounded-xl border border-gray-200 flex items-center justify-center text-mlm-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+    <i class="pi pi-plus text-sm"></i>
+  </button>
+</div>

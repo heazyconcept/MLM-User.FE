@@ -1,0 +1,16 @@
+<div class="border-t border-gray-200" role="group" aria-label="Pickup locations">
+  @for (loc of locations(); track loc.id) {
+    <button
+      type="button"
+      (click)="onSelect(loc.id)"
+      [class]="selectedId() === loc.id
+        ? 'border-l-4 border-mlm-primary bg-mlm-primary/5'
+        : 'border-l-4 border-transparent hover:bg-gray-50/50'"
+      class="w-full flex items-center justify-between gap-4 py-3 px-4 border-b border-gray-100 text-left transition-all focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2 last:border-b-0">
+      <span class="font-semibold text-mlm-text">{{ loc.name }}</span>
+      @if (loc.distance) {
+        <span class="text-sm text-mlm-secondary">{{ loc.distance }}</span>
+      }
+    </button>
+  }
+</div>

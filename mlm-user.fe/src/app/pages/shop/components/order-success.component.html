@@ -43,13 +43,21 @@
   <!-- Action Buttons -->
   <div class="w-full space-y-2">
     <button
+      type="button"
       (click)="onContinueShopping()"
-      class="w-full py-3 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-brand-green-dark transition-all">
+      class="w-full py-3 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-brand-green-dark transition-all focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2">
       Continue Shopping
     </button>
     <button
+      type="button"
+      (click)="onChooseFulfilment()"
+      class="w-full py-3 bg-white border border-mlm-primary text-mlm-primary text-sm font-semibold rounded-xl hover:bg-mlm-primary/5 transition-all focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2">
+      Choose fulfilment
+    </button>
+    <button
+      type="button"
       (click)="onViewOrders()"
-      class="w-full py-3 bg-white border border-gray-200 text-mlm-text text-sm font-semibold rounded-xl hover:bg-gray-50 transition-all">
+      class="w-full py-3 bg-white border border-gray-200 text-mlm-text text-sm font-semibold rounded-xl hover:bg-gray-50 transition-all focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2">
       View My Orders
     </button>
   </div>

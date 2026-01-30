@@ -1,0 +1,24 @@
+<div class="lg:w-full">
+  <div class="aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 mb-4 shadow-sm">
+    <img
+      [src]="displayImage"
+      [alt]="alt"
+      class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+      loading="lazy">
+  </div>
+  @if (images.length) {
+    <div class="flex justify-center">
+      <div class="grid grid-cols-4 gap-3">
+        @for (image of images; track image) {
+          <button
+            type="button"
+            (click)="selectImage(image)"
+            [class]="(selectedImage() || images[0]) === image ? 'ring-2 ring-mlm-primary ring-offset-2' : 'ring-1 ring-gray-200 hover:ring-mlm-primary/50'"
+            class="w-16 h-16 rounded-xl overflow-hidden transition-all bg-gray-50">
+            <img [src]="image" [alt]="alt + ' thumbnail'" class="w-full h-full object-cover">
+          </button>
+        }
+      </div>
+    </div>
+  }
+</div>

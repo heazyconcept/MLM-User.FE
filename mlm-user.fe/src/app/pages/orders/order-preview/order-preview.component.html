@@ -1,0 +1,88 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto">
+      <div class="mb-10">
+        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Fulfilment options</h1>
+        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
+        <p class="text-mlm-secondary text-sm">Choose how you want to receive your order</p>
+      </div>
+
+      <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+        <div class="border-b border-gray-200">
+          <button
+            type="button"
+            (click)="setOption('pickup')"
+            [class]="fulfilmentOption() === 'pickup'
+              ? 'border-l-4 border-mlm-primary bg-mlm-primary/5'
+              : 'border-l-4 border-transparent hover:bg-gray-50/50'"
+            class="w-full flex items-center gap-4 py-5 px-4 text-left transition-all focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2">
+            <i class="pi pi-map-marker text-2xl text-mlm-primary" aria-hidden="true"></i>
+            <div>
+              <h2 class="text-lg font-bold text-mlm-text">Pickup</h2>
+              <p class="text-sm text-mlm-secondary">Collect your order at a nearby store</p>
+            </div>
+          </button>
+          @if (fulfilmentOption() === 'pickup') {
+            <div class="pb-5 pt-4 border-t border-gray-200 px-4">
+              <h3 class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">Select pickup location</h3>
+              <app-location-selector
+                [locations]="pickupLocations"
+                [selectedId]="selectedPickupId()"
+                (locationSelect)="onLocationSelect($event)">
+              </app-location-selector>
+            </div>
+          }
+        </div>
+
+        <div class="border-b border-gray-200">
+          <button
+            type="button"
+            (click)="setOption('delivery')"
+            [class]="fulfilmentOption() === 'delivery'
+              ? 'border-l-4 border-mlm-primary bg-mlm-primary/5'
+              : 'border-l-4 border-transparent hover:bg-gray-50/50'"
+            class="w-full flex items-center gap-4 py-5 px-4 text-left transition-all focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2">
+            <i class="pi pi-truck text-2xl text-mlm-primary" aria-hidden="true"></i>
+            <div>
+              <h2 class="text-lg font-bold text-mlm-text">Home Delivery</h2>
+              <p class="text-sm text-mlm-secondary">Get your order delivered to your address</p>
+            </div>
+          </button>
+          @if (fulfilmentOption() === 'delivery') {
+            <div class="pb-5 pt-4 border-t border-gray-200 px-4 space-y-4">
+              <div class="bg-amber-50 border-l-4 border-amber-400 p-4" role="alert">
+                <p class="text-sm font-medium text-amber-800">
+                  Delivery cost will be added to your order total.
+                </p>
+              </div>
+              <div>
+                <label for="delivery-address" class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-2">Delivery address</label>
+                <input
+                  id="delivery-address"
+                  type="text"
+                  [value]="deliveryAddress()"
+                  (input)="onDeliveryAddressInput($event)"
+                  placeholder="Enter your address"
+                  class="w-full px-4 py-3 bg-mlm-background border-0 rounded-xl text-sm text-mlm-text placeholder:text-mlm-secondary focus:outline-none focus:ring-2 focus:ring-mlm-primary/20"
+                  aria-label="Delivery address">
+              </div>
+              <div class="flex justify-between items-center py-2">
+                <span class="text-sm text-mlm-secondary">Delivery fee</span>
+                <span class="font-bold text-mlm-text">₦{{ deliveryFee.toLocaleString('en-US') }}</span>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="pt-6">
+        <button
+          type="button"
+          (click)="onConfirm()"
+          class="w-full py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2">
+          Confirm
+        </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
