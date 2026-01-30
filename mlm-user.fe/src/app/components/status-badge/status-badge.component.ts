@@ -81,7 +81,7 @@ export class StatusBadgeComponent {
       colorClasses = 'bg-yellow-50 text-yellow-600';
     }
     // Order fulfilment: in progress (pickup/delivery)
-    else if (s === 'ready for pickup' || s === 'out for delivery') {
+    else if (s === 'ready for pickup' || s === 'out for delivery' || s === 'assigned' || s === 'in transit') {
       colorClasses = 'bg-blue-50 text-blue-600';
     }
     // Order: delivered (success)
@@ -90,6 +90,14 @@ export class StatusBadgeComponent {
     }
     // Rejected/Failed states (including Cancelled)
     else if (s === 'rejected' || s === 'unpaid' || s === 'not qualified' || s === 'cancelled') {
+      colorClasses = 'bg-red-50 text-red-600';
+    }
+    // Inventory statuses
+    else if (s === 'in stock') {
+      colorClasses = 'bg-green-50 text-green-600';
+    } else if (s === 'low') {
+      colorClasses = 'bg-yellow-50 text-yellow-600';
+    } else if (s === 'out') {
       colorClasses = 'bg-red-50 text-red-600';
     }
     // Default
@@ -108,6 +116,14 @@ export class StatusBadgeComponent {
     }
     // Order statuses: preserve "Ready for Pickup", "Out for Delivery" etc.
     if (s === 'Ready for Pickup' || s === 'Out for Delivery') {
+      return s;
+    }
+    // Inventory: "In Stock", "Low", "Out"
+    if (s === 'In Stock' || s === 'Low' || s === 'Out') {
+      return s;
+    }
+    // Delivery: "In Transit"
+    if (s === 'In Transit') {
       return s;
     }
     // Capitalize first letter only

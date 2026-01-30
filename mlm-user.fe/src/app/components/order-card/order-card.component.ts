@@ -12,6 +12,8 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 })
 export class OrderCardComponent {
   order = input.required<Order>();
+  /** Base route for detail link (default /orders). Use /merchant/orders for merchant context. */
+  baseRoute = input<string>('/orders');
 
   formatDate(iso: string): string {
     const d = new Date(iso);

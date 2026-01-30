@@ -19,6 +19,7 @@ export interface User {
   currency?: 'NGN' | 'USD';
   rank?: string;
   stage?: number;
+  isMerchant?: boolean;
 }
 
 const PAYMENT_STATUS_KEY = 'mlm_user_payment_status';
@@ -34,16 +35,17 @@ export class UserService {
     // Load persisted user data on initialization
     const persistedUser = this.getPersistedUserData();
     if (persistedUser) {
-      // Migration: Add rank and stage if they don't exist
+      // Migration: Add rank, stage, isMerchant if they don't exist
       const migratedUser = {
         ...persistedUser,
         rank: persistedUser.rank ?? 'Ruby',
-        stage: persistedUser.stage ?? 2
+        stage: persistedUser.stage ?? 2,
+        isMerchant: persistedUser.isMerchant ?? false
       };
       this.user.set(migratedUser);
       this.persistUserData(migratedUser);
     } else {
-      // Default mock user for testing with bank details
+      // Default mock user for testing (isMerchant: true for Merchant Center access)
       this.user.set({
         id: '1',
         email: 'pelumi123@gmail.com',
@@ -57,7 +59,8 @@ export class UserService {
         kycStatus: 'VERIFIED',
         currency: 'NGN',
         rank: 'Ruby',
-        stage: 2
+        stage: 2,
+        isMerchant: true
       });
     }
   }
@@ -65,6 +68,7 @@ export class UserService {
 
   paymentStatus = computed(() => this.user()?.paymentStatus ?? this.getPersistedPaymentStatus());
   isPaid = computed(() => this.paymentStatus() === 'PAID');
+  isMerchant = computed(() => this.user()?.isMerchant ?? false);
   currentUser = computed(() => this.user());
 
   getPersistedPaymentStatus(): PaymentStatus {
@@ -114,7 +118,8 @@ export class UserService {
         kycStatus: persistedUser.kycStatus ?? user.kycStatus,
         currency: persistedUser.currency ?? user.currency,
         rank: persistedUser.rank ?? user.rank,
-        stage: persistedUser.stage ?? user.stage
+        stage: persistedUser.stage ?? user.stage,
+        isMerchant: persistedUser.isMerchant ?? user.isMerchant
       })
     };
     
