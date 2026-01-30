@@ -1,0 +1,35 @@
+<div class="p-4">
+  <h3 class="text-lg font-bold text-mlm-text mb-4">Purchase Summary</h3>
+  <div class="flex gap-4 mb-6">
+    <div class="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+      <img [src]="product.images[0]" [alt]="product.name" class="w-full h-full object-cover">
+    </div>
+    <div class="min-w-0">
+      <h4 class="text-base font-semibold text-mlm-text truncate">{{ product.name }}</h4>
+      <p class="text-sm text-mlm-secondary mt-1">Qty: {{ quantity }}</p>
+      <p class="text-sm text-mlm-secondary">Pay with: <span class="font-semibold capitalize">{{ selectedWallet }}</span></p>
+    </div>
+  </div>
+  <div class="bg-gray-50 rounded-xl p-4 mb-6">
+    <div class="flex justify-between text-sm">
+      <span class="text-mlm-secondary">Total</span>
+      <span class="font-bold text-mlm-text">{{ formatCurrency(total) }}</span>
+    </div>
+    <div class="flex justify-between text-sm mt-1">
+      <span class="text-mlm-secondary">Total PV</span>
+      <span class="font-bold text-mlm-secondary">{{ totalPV }} PV</span>
+    </div>
+  </div>
+  <button
+    type="button"
+    (click)="onConfirm()"
+    [disabled]="isProcessing()"
+    class="w-full py-3 bg-mlm-primary text-white text-sm font-bold rounded-xl hover:bg-brand-green-dark disabled:opacity-70 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+    @if (isProcessing()) {
+      <i class="pi pi-spinner pi-spin"></i>
+      <span>Processing...</span>
+    } @else {
+      <span>Confirm</span>
+    }
+  </button>
+</div>

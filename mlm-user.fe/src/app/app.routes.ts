@@ -79,14 +79,20 @@ export const routes: Routes = [
       }
     ]
   },
+  { path: 'shop', redirectTo: 'marketplace', pathMatch: 'full' },
   {
-    path: 'shop',
+    path: 'marketplace',
     loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     children: [
       {
         path: '',
         loadComponent: () => import('./pages/shop/shop.component').then(m => m.ShopComponent),
         data: { title: 'Marketplace' }
+      },
+      {
+        path: 'product/:id',
+        loadComponent: () => import('./pages/shop/product-detail-page/product-detail-page.component').then(m => m.ProductDetailPageComponent),
+        data: { title: 'Product' }
       }
     ]
   },
@@ -192,8 +198,18 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/placeholder/placeholder.component').then(m => m.PlaceholderComponent),
+        loadComponent: () => import('./pages/orders/orders-overview/orders-overview.component').then(m => m.OrdersOverviewComponent),
         data: { title: 'Orders' }
+      },
+      {
+        path: 'preview',
+        loadComponent: () => import('./pages/orders/order-preview/order-preview.component').then(m => m.OrderPreviewComponent),
+        data: { title: 'Fulfilment options' }
+      },
+      {
+        path: ':id',
+        loadComponent: () => import('./pages/orders/order-detail/order-detail.component').then(m => m.OrderDetailComponent),
+        data: { title: 'Order details' }
       }
     ]
   }

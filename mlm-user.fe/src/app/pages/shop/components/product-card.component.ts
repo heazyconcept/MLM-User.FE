@@ -1,11 +1,12 @@
 import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Product } from '../../../services/product.service';
+import { BadgeComponent } from '../../../components/badge/badge.component';
 
 @Component({
   selector: 'app-product-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BadgeComponent],
   templateUrl: './product-card.component.html',
   styles: [`
     :host {
@@ -33,6 +34,11 @@ export class ProductCardComponent {
   @Output() productClick = new EventEmitter<Product>();
 
   onProductClick(): void {
+    this.productClick.emit(this.product);
+  }
+
+  onBuyClick(event: Event): void {
+    event.stopPropagation();
     this.productClick.emit(this.product);
   }
 

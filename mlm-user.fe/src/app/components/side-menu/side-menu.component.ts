@@ -53,7 +53,7 @@ export class SideMenuComponent {
       items: [
         { label: 'Dashboard', icon: 'pi pi-th-large', route: '/dashboard' },
         { label: 'Profile', icon: 'pi pi-user', route: '/profile' },
-        { label: 'Shop', icon: 'pi pi-shopping-cart', route: '/shop', requiresPayment: true },
+        { label: 'Marketplace', icon: 'pi pi-shopping-cart', route: '/marketplace', requiresPayment: true },
         { 
           label: 'Wallet', 
           icon: 'pi pi-wallet', 

@@ -1,0 +1,39 @@
+<ol class="flex flex-col gap-0" role="list" aria-label="Order status timeline">
+  @for (step of steps(); track step.status; let i = $index) {
+    <li
+      class="flex gap-4"
+      [attr.aria-current]="step.isCurrent ? 'step' : null">
+      <div class="flex flex-col items-center">
+        <span
+          class="w-4 h-4 rounded-full border-2 flex-shrink-0 transition-colors"
+          [class.bg-mlm-primary]="step.isCompleted && !step.isCancelled"
+          [class.border-mlm-primary]="step.isCurrent || step.isCompleted"
+          [class.bg-mlm-error]="step.isCancelled"
+          [class.border-mlm-error]="step.isCancelled"
+          [class.bg-white]="!step.isCompleted && !step.isCurrent"
+          [class.border-gray-200]="!step.isCompleted && !step.isCurrent"
+          [class.ring-2]="step.isCurrent"
+          [class.ring-mlm-primary/30]="step.isCurrent"
+          [class.ring-offset-2]="step.isCurrent">
+        </span>
+        @if (i < steps().length - 1) {
+          <span
+            class="w-0.5 h-6 mt-1 block"
+            [class.bg-mlm-primary]="step.isCompleted && !step.isCancelled"
+            [class.bg-mlm-error]="step.isCancelled"
+            [class.bg-gray-200]="!step.isCompleted">
+          </span>
+        }
+      </div>
+      <div class="pb-4">
+        <span
+          class="text-sm font-medium"
+          [class.text-mlm-text]="step.isCurrent || step.isCompleted"
+          [class.text-mlm-secondary]="!step.isCurrent && !step.isCompleted"
+          [class.text-mlm-error]="step.isCancelled">
+          {{ step.status }}
+        </span>
+      </div>
+    </li>
+  }
+</ol>
