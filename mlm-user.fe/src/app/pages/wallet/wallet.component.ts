@@ -101,9 +101,23 @@ export class WalletComponent implements OnInit {
     });
   }
 
+  /** Mock rate for secondary currency display only (no real conversion). */
+  readonly MOCK_RATE_NGN_PER_USD = 1500;
+
   formatCurrency(amount: number, currency: 'NGN' | 'USD' = 'USD'): string {
     const symbol = currency === 'NGN' ? '₦' : '$';
     return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  /** Returns mock secondary currency equivalent, e.g. "≈ $1,250.00" or "≈ ₦1,875,000". */
+  formatSecondaryEquivalent(amount: number, fromCurrency: 'NGN' | 'USD'): string {
+    const toAmount = fromCurrency === 'USD'
+      ? amount * this.MOCK_RATE_NGN_PER_USD
+      : amount / this.MOCK_RATE_NGN_PER_USD;
+    const toCurrency = fromCurrency === 'USD' ? 'NGN' : 'USD';
+    const symbol = toCurrency === 'NGN' ? '₦' : '$';
+    const formatted = toAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `≈ ${symbol}${formatted}`;
   }
 
   toggleBalanceVisibility() {

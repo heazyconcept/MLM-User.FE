@@ -40,8 +40,7 @@
   </div>
   
   @if (error() && isTouched()) {
-    <div class="flex items-center gap-1.5 mt-2 animate-error-in">
-      <i class="pi pi-exclamation-circle text-red-500 text-xs"></i>
+    <div class="mt-2 animate-error-in">
       <span class="text-[11px] font-semibold text-red-500 tracking-tight">
         {{ error() }}
       </span>

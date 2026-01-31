@@ -1,12 +1,17 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
-    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div class="px-4 sm:px-6 lg:px-8 mx-auto">
       
       <!-- Page Header -->
       <div class="mb-10">
-        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Marketplace</h1>
-        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
-        <p class="text-mlm-secondary text-sm">Browse our curated collection of premium products</p>
+        <div class="flex items-center gap-3 mb-2">
+          
+          <div>
+            <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight">Marketplace</h1>
+            <p class="text-mlm-secondary text-sm mt-0.5">Browse our curated collection of premium products</p>
+          </div>
+        </div>
+        <div class="h-px w-16 bg-mlm-primary/40 rounded-full"></div>
       </div>
 
       <app-filter-bar
@@ -62,9 +67,7 @@
       } @else if (products().length === 0) {
         <!-- Empty State -->
         <div class="flex flex-col items-center justify-center py-20 text-center">
-          <div class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6">
-            <i class="pi pi-shopping-bag text-4xl text-mlm-warm-400"></i>
-          </div>
+        
           @if (searchQuery()) {
             <h3 class="text-xl font-bold text-mlm-text mb-2">No results found</h3>
             <p class="text-mlm-secondary text-sm mb-6 max-w-md">
@@ -79,7 +82,7 @@
           <div class="flex flex-wrap gap-3 justify-center">
             <button
               (click)="onClearFilters()"
-              class="px-6 py-3 bg-mlm-text text-white rounded-xl text-sm font-semibold hover:bg-mlm-text/90 transition-colors">
+              class="px-6 py-3 bg-mlm-primary text-white rounded-xl text-sm font-semibold hover:bg-mlm-primary/90 transition-colors">
               Browse all products
             </button>
             <button

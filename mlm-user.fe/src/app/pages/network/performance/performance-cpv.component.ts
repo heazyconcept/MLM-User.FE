@@ -1,20 +1,51 @@
-import { Component, inject, signal, AfterViewInit } from '@angular/core';
+import { Component, inject, signal, computed, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { NetworkService } from '../../../services/network.service';
 import { StatCardComponent } from '../../../components/stat-card/stat-card.component';
+
+/** Mock earnings contribution by source (for visual only). */
+const MOCK_EARNINGS_CONTRIBUTION = {
+  fromDirectReferrals: 45000,
+  fromTeamCpv: 120000,
+  personalSales: 28000
+};
 
 @Component({
   selector: 'app-performance-cpv',
   standalone: true,
-  imports: [CommonModule, StatCardComponent],
+  imports: [CommonModule, RouterModule, StatCardComponent],
   templateUrl: './performance-cpv.component.html'
 })
 export class PerformanceCpvComponent implements AfterViewInit {
   private networkService = inject(NetworkService);
+  private messageService = inject(MessageService);
   cpv = this.networkService.cpvSummary;
   summary = this.networkService.networkSummary;
   
   animatedPercentage = signal(0);
+  /** Mock earnings contribution (read-only) for the Earnings Contribution block. */
+  earningsContribution = MOCK_EARNINGS_CONTRIBUTION;
+
+  get totalEarningsContribution(): number {
+    return this.earningsContribution.fromDirectReferrals + this.earningsContribution.fromTeamCpv + this.earningsContribution.personalSales;
+  }
+
+  getEarningsShare(value: number): number {
+    const total = this.totalEarningsContribution;
+    return total ? (value / total) * 100 : 0;
+  }
+
+  /** True when there is no CPV activity (used for empty state). */
+  hasNoCpvActivity = computed(() => this.cpv().teamCpv === 0 && this.cpv().personalCpv === 0);
+
+  copyReferralLink(): void {
+    const url = this.networkService.referralLink().url;
+    navigator.clipboard.writeText(url).then(() => {
+      this.messageService.add({ severity: 'success', summary: 'Copied', detail: 'Referral link copied to clipboard' });
+    });
+  }
 
   getPercentage() {
     const { teamCpv, requiredCpv } = this.cpv();

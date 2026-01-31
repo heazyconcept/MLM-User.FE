@@ -1,4 +1,4 @@
-import { Component, Input, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
@@ -15,6 +15,9 @@ export class CopyButtonComponent {
   @Input() tooltip: string = 'Copy to clipboard';
   @Input() styleClass: string = '';
 
+  /** Emitted when text was successfully copied to clipboard (e.g. for showing a toast). */
+  @Output() copiedSuccess = new EventEmitter<void>();
+
   copied = signal(false);
 
   copyToClipboard() {
@@ -22,6 +25,7 @@ export class CopyButtonComponent {
     
     navigator.clipboard.writeText(this.textToCopy).then(() => {
       this.copied.set(true);
+      this.copiedSuccess.emit();
       setTimeout(() => this.copied.set(false), 2000);
     }).catch(err => {
       console.error('Failed to copy: ', err);

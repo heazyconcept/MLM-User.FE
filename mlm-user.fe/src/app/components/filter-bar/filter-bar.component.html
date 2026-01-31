@@ -1,5 +1,5 @@
 <!-- Search & Filter Bar -->
-<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-8">
+<div class="w-full lg:w-1/2 bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-8">
   <div class="flex flex-col lg:flex-row lg:items-center gap-4">
     <div class="flex-1 relative">
       <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-mlm-secondary text-sm"></i>
@@ -32,8 +32,8 @@
         type="button"
         (click)="onCategorySelect(category.id)"
         [class]="selectedCategory === category.id
-          ? 'bg-mlm-text text-white'
-          : 'bg-white text-mlm-text border border-gray-200 hover:border-mlm-primary/30'"
+          ? 'bg-mlm-primary text-white shadow-sm shadow-mlm-primary/20'
+          : 'bg-white text-mlm-text border border-gray-200 hover:border-mlm-primary/40 hover:bg-mlm-primary/5'"
         class="px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 flex items-center gap-2">
         <i [class]="'pi ' + category.icon + ' text-xs'"></i>
         {{ category.name }}

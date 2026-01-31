@@ -6,7 +6,7 @@ import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';
 import { DialogService } from 'primeng/dynamicdialog';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 
 
 const MyPreset = definePreset(Aura, {
@@ -48,6 +48,7 @@ export const appConfig: ApplicationConfig = {
     }),
     DialogService,
     ConfirmationService,
+    MessageService,
     provideHttpClient(
 
 

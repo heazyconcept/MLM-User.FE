@@ -1,17 +1,13 @@
-<div class="min-h-screen w-full flex items-center justify-center p-4 bg-linear-to-br from-slate-50 via-white to-slate-100" style="background-image: radial-gradient(circle at 20% 80%, rgba(73, 163, 33, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(73, 163, 33, 0.03) 0%, transparent 50%)">
+<div class="min-h-screen w-full flex items-center justify-center p-4 bg-slate-100">
     <div class="w-full max-w-2xl">
         <!-- Progress Bar -->
-        <div class="mb-10">
+        <div class="mb-8">
             <div class="flex items-center justify-between mb-4 px-2">
                 @for (step of [1, 2, 3]; track step) {
                     <div class="flex flex-col items-center gap-4 relative z-10">
                         <div [class]="currentStep() >= step ? 'bg-mlm-primary text-white' : 'bg-white text-slate-400 border border-slate-300'"
                              class="w-9 h-9 rounded-full flex items-center justify-center font-semibold text-sm transition-all duration-300">
-                            @if (currentStep() > step) {
-                                <i class="pi pi-check text-sm"></i>
-                            } @else {
-                                {{ step }}
-                            }
+                            {{ step }}
                         </div>
                         <span class="text-xs font-semibold uppercase tracking-wide transition-colors duration-300"
                               [class]="currentStep() >= step ? 'text-slate-700' : 'text-slate-400'">
@@ -29,9 +25,9 @@
         </div>
 
         <!-- Form Card -->
-        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="p-8 sm:p-10">
-                <div class="text-center mb-8">
+                <div class="text-center mb-6">
                     <h1 class="text-3xl font-semibold text-slate-800 tracking-tight mb-2">
                         {{ currentStep() === 1 ? 'Join the Community' : currentStep() === 2 ? 'Secure Your Account' : 'Choose Your Path' }}
                     </h1>
@@ -48,7 +44,6 @@
                                 <app-auth-input
                                     label="First Name"
                                     placeholder="Enter first name"
-                                    icon="pi-user"
                                     formControlName="firstName"
                                     [required]="true"
                                     [error]="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched ? 'First name is required' : null">
@@ -56,7 +51,6 @@
                                 <app-auth-input
                                     label="Last Name"
                                     placeholder="Enter last name"
-                                    icon="pi-user"
                                     formControlName="lastName"
                                     [required]="true"
                                     [error]="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched ? 'Last name is required' : null">
@@ -66,7 +60,6 @@
                                 label="Email Address"
                                 type="email"
                                 placeholder="name@example.com"
-                                icon="pi-envelope"
                                 formControlName="email"
                                 [required]="true"
                                 [error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched ? 'Valid email is required' : null">
@@ -74,7 +67,6 @@
                             <app-auth-input
                                 label="Phone Number"
                                 placeholder="+234 ..."
-                                icon="pi-phone"
                                 formControlName="phoneNumber"
                                 [required]="true"
                                 [error]="registerForm.get('phoneNumber')?.invalid && registerForm.get('phoneNumber')?.touched ? 'Phone number is required' : null">
@@ -89,7 +81,6 @@
                                 label="Password"
                                 type="password"
                                 placeholder="••••••••"
-                                icon="pi-key"
                                 formControlName="password"
                                 [required]="true"
                                 [error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched ? 'Min 8 characters required' : null">
@@ -98,7 +89,6 @@
                                 label="Confirm Password"
                                 type="password"
                                 placeholder="••••••••"
-                                icon="pi-key"
                                 formControlName="confirmPassword"
                                 [required]="true"
                                 [error]="registerForm.get('confirmPassword')?.touched && registerForm.hasError('passwordMismatch') ? 'Passwords do not match' : null">
@@ -106,7 +96,6 @@
                             <app-auth-input
                                 label="Sponsor Username"
                                 placeholder="e.g. john_doe"
-                                icon="pi-id-card"
                                 formControlName="sponsorUsername">
                             </app-auth-input>
                         </div>
@@ -139,12 +128,11 @@
                     }
 
                     <!-- Action Buttons -->
-                    <div class="mt-10 flex items-center justify-between gap-4">
+                    <div class="mt-8 flex items-center justify-between gap-4">
                         @if (currentStep() > 1) {
                             <button type="button" 
                                     (click)="prevStep()"
-                                    class="px-5 py-2.5 rounded-xl text-slate-600 font-semibold hover:bg-slate-100 transition-all duration-200 flex items-center gap-2 text-sm">
-                                <i class="pi pi-arrow-left text-xs"></i>
+                                    class="px-5 py-2.5 rounded-xl text-slate-600 font-semibold hover:bg-slate-100 transition-all duration-200 text-sm">
                                 Back
                             </button>
                         } @else {
@@ -157,9 +145,8 @@
                             <button type="button" 
                                     (click)="nextStep()"
                                     [disabled]="!isStepValid(currentStep())"
-                                    class="px-6 py-2.5 bg-mlm-primary text-white rounded-xl font-semibold hover:bg-mlm-primary/90 transition-all duration-200 flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                                    class="px-6 py-2.5 bg-mlm-primary text-white rounded-xl font-semibold hover:bg-mlm-primary/90 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                                 Next Step
-                                <i class="pi pi-arrow-right text-xs"></i>
                             </button>
                         } @else {
                             <button type="submit" 
@@ -168,8 +155,6 @@
                                 Create Account
                                 @if (isLoading()) {
                                     <i class="pi pi-spin pi-spinner text-xs"></i>
-                                } @else {
-                                    <i class="pi pi-check text-xs"></i>
                                 }
                             </button>
                         }

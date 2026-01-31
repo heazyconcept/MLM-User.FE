@@ -15,6 +15,21 @@
           </div>
         </div>
 
+        <!-- Empty state: no CPV activity -->
+        @if (hasNoCpvActivity()) {
+          <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm text-center">
+            <p class="text-mlm-secondary mb-6">No CPV activity yet. Invite friends and share your referral link to start building volume.</p>
+            <div class="flex flex-wrap gap-3 justify-center">
+              <a routerLink="/network/referrals" class="inline-flex items-center justify-center gap-2 bg-mlm-primary text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-mlm-primary/90 transition-colors">
+                Invite Friends
+              </a>
+              <button type="button" (click)="copyReferralLink()" class="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors">
+                Share referral link
+              </button>
+            </div>
+          </div>
+        } @else {
+
         <!-- Stats Overview -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
           <!-- Personal CPV -->
@@ -52,6 +67,42 @@
             icon="pi-chart-line"
             bgClass="bg-purple-500">
           </app-stat-card>
+        </div>
+
+        <!-- Earnings Contribution (visual) -->
+        <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <h3 class="text-base font-semibold text-gray-900 mb-4">Earnings Contribution</h3>
+          <p class="text-sm text-gray-500 mb-4">How your earnings break down by source (this cycle).</p>
+          <div class="space-y-3">
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="font-medium text-gray-700">From direct referrals</span>
+                <span class="font-semibold text-gray-900">₦{{ earningsContribution.fromDirectReferrals | number:'1.0-0' }}</span>
+              </div>
+              <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-mlm-primary rounded-full transition-all" [style.width.%]="getEarningsShare(earningsContribution.fromDirectReferrals)"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="font-medium text-gray-700">From team volume (CPV)</span>
+                <span class="font-semibold text-gray-900">₦{{ earningsContribution.fromTeamCpv | number:'1.0-0' }}</span>
+              </div>
+              <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-green-500 rounded-full transition-all" [style.width.%]="getEarningsShare(earningsContribution.fromTeamCpv)"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="font-medium text-gray-700">Personal sales</span>
+                <span class="font-semibold text-gray-900">₦{{ earningsContribution.personalSales | number:'1.0-0' }}</span>
+              </div>
+              <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full bg-blue-500 rounded-full transition-all" [style.width.%]="getEarningsShare(earningsContribution.personalSales)"></div>
+              </div>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 mt-3">Total: ₦{{ totalEarningsContribution | number:'1.0-0' }}</p>
         </div>
 
         <!-- Progress Bar Section -->
@@ -167,6 +218,8 @@
             </div>
           </div>
         </div>
+
+        }
 
       </div>
     </div>
