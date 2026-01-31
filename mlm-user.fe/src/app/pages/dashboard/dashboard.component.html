@@ -299,7 +299,7 @@
       } @else {
       <div class="min-h-screen bg-mlm-background">
         <main class="py-10">
-          <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <div class="px-4 sm:px-6 lg:px-8 mx-auto">
             @if (isPaid() && !hasActivity()) {
       <!-- State 2: PAID but INACTIVE - Onboarding/Quick Start -->
       <div class="space-y-10 animate-fade-in">
@@ -349,11 +349,19 @@
               Copy your unique referral link and share it with your network to start building your
               team.
             </p>
-            <button
-              class="text-mlm-primary text-xs font-black uppercase tracking-widest hover:underline"
-            >
-              Copy Link
-            </button>
+            <div class="flex flex-wrap gap-3">
+              <button
+                class="text-mlm-primary text-xs font-black uppercase tracking-widest hover:underline"
+              >
+                Copy Link
+              </button>
+              <button
+                (click)="navigateTo('/network/overview')"
+                class="text-mlm-primary text-xs font-black uppercase tracking-widest hover:underline"
+              >
+                View Network
+              </button>
+            </div>
           </div>
 
           <div class="bg-white p-8 rounded-4xl border border-mlm-secondary/10 shadow-sm space-y-4">

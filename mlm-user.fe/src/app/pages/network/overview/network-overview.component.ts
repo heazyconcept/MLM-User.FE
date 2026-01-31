@@ -13,4 +13,5 @@ import { StatCardComponent } from '../../../components/stat-card/stat-card.compo
 export class NetworkOverviewComponent {
   private networkService = inject(NetworkService);
   summary = this.networkService.networkSummary;
+  cpvSummary = this.networkService.cpvSummary;
 }

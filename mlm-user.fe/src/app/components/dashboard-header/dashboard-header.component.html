@@ -10,80 +10,67 @@
         <div class="flex-1"></div>
         <div class="flex items-center gap-x-4 lg:gap-x-6">
             <!-- Notifications -->
-            <button type="button" 
-                    class="-m-2.5 p-2.5 text-gray-400 hover:text-mlm-primary transition-colors relative"
+            <button type="button"
+                    class="relative -m-2.5 p-2.5 text-gray-500 hover:text-mlm-primary hover:bg-gray-50 rounded-lg transition-colors"
                     (click)="notificationsVisible.set(true)">
                 <span class="sr-only">View notifications</span>
-                <i class="pi pi-bell text-xl"></i>
+                <i class="pi pi-bell text-xl" aria-hidden="true"></i>
                 @if (unreadCount() > 0) {
-                    <p-badge [value]="unreadCount().toString()" severity="danger" styleClass="absolute border-2 border-white" [style]="{ 'top': '4px', 'right': '4px', 'min-width': '1.2rem', 'height': '1.2rem', 'font-size': '10px' }"></p-badge>
+                    <span class="absolute top-1 right-1 min-w-5 h-5 px-1.5 flex items-center justify-center text-[10px] font-bold text-white bg-mlm-error rounded-full border-2 border-white">{{ unreadCount() }}</span>
                 }
             </button>
 
-            <p-drawer [(visible)]="notificationsVisible" position="right" [style]="{ width: '400px' }" styleClass="border-0 !bg-white">
+            <p-drawer
+                [visible]="notificationsVisible()"
+                (visibleChange)="notificationsVisible.set($event)"
+                position="right"
+                [style]="{ width: '400px' }"
+                styleClass="border-0 !bg-white"
+                appendTo="body"
+                [modal]="true"
+                [dismissible]="true"
+                [closeOnEscape]="true"
+                [showCloseIcon]="false">
                 <ng-template pTemplate="header">
-                    <div class="flex flex-col w-full">
-                        <div class="flex items-center gap-2 mb-1">
-                             <h3 class="text-lg font-black text-mlm-text uppercase tracking-tighter">Notifications</h3>
-                             @if (unreadCount() > 0) {
-                                <span class="bg-mlm-error/10 text-mlm-error text-[10px] font-extrabold px-2 py-0.5 rounded-full">{{ unreadCount() }} New</span>
-                             }
+                    <div class="flex flex-col w-full gap-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <h2 class="text-base font-bold text-mlm-text">Notifications</h2>
+                            @if (unreadCount() > 0) {
+                                <span class="text-[10px] font-semibold text-mlm-error bg-mlm-error/10 px-2 py-1 rounded-full">{{ unreadCount() }} new</span>
+                            }
                         </div>
-                        <div class="flex gap-4">
-                            <button (click)="markAllAsRead()" class="text-[10px] font-bold text-mlm-primary hover:underline transition-all uppercase tracking-widest">Mark all read</button>
-                            <button (click)="clearNotifications()" class="text-[10px] font-bold text-mlm-secondary hover:text-mlm-text transition-all uppercase tracking-widest">Clear</button>
+                        <div class="flex gap-3">
+                            <button type="button" (click)="markAllAsRead()" class="text-xs font-semibold text-mlm-primary hover:underline">Mark all read</button>
+                            <button type="button" (click)="clearNotifications()" class="text-xs font-semibold text-mlm-secondary hover:underline">Clear</button>
                         </div>
                     </div>
                 </ng-template>
 
                 <div class="flex flex-col h-full -mx-4">
-                    <!-- Scrollable List -->
-                    <div class="flex-1 overflow-y-auto divide-y divide-gray-100 bg-gray-50/20">
+                    <div class="flex-1 overflow-y-auto px-1">
                         @for (n of notifications(); track n.id) {
-                            <div class="px-6 py-5 flex gap-4 transition-all hover:bg-white relative group" [class.bg-white]="!n.isRead">
-                                @if (!n.isRead) {
-                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-mlm-primary opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                }
-                                
-                                <div class="shrink-0 mt-1">
-                                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm border border-gray-100" 
-                                         [ngClass]="{
-                                             'bg-blue-50 text-blue-500': n.type === 'info',
-                                             'bg-green-50 text-green-500': n.type === 'success',
-                                             'bg-red-50 text-red-500': n.type === 'error',
-                                             'bg-orange-50 text-orange-500': n.type === 'warning'
-                                         }">
-                                        <i class="pi text-lg" [ngClass]="{
-                                            'pi-info-circle': n.type === 'info',
-                                            'pi-check-circle': n.type === 'success',
-                                            'pi-times-circle': n.type === 'error',
-                                            'pi-exclamation-triangle': n.type === 'warning'
-                                        }"></i>
+                            <div class="px-4 py-5 mb-3 last:mb-0 rounded-lg border border-gray-100 hover:bg-gray-50/80 transition-colors relative"
+                                 [class.bg-white]="!n.isRead"
+                                 [class.border-l-4]="!n.isRead"
+                                 [class.border-l-mlm-primary]="!n.isRead">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-semibold text-mlm-text">{{ n.title }}</p>
+                                        <p class="text-xs text-mlm-secondary mt-0.5 leading-relaxed">{{ n.message }}</p>
                                     </div>
-                                </div>
-
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-start justify-between gap-2 mb-1">
-                                        <p class="text-sm font-bold leading-tight text-mlm-text">{{ n.title }}</p>
-                                        <span class="text-[10px] font-semibold text-mlm-secondary whitespace-nowrap">{{ n.timestamp | date:'shortTime' }}</span>
-                                    </div>
-                                    <p class="text-xs leading-relaxed text-mlm-secondary">{{ n.message }}</p>
+                                    <span class="text-[10px] font-medium text-mlm-secondary whitespace-nowrap shrink-0">{{ n.timestamp | date:'shortTime' }}</span>
                                 </div>
                             </div>
                         } @empty {
-                            <div class="h-full flex flex-col items-center justify-center py-20 text-center px-10">
-                                <div class="w-24 h-24 flex items-center justify-center mx-auto mb-6 bg-slate-100 rounded-full">
-                                    <i class="pi pi-bell-slash text-4xl text-slate-300"></i>
-                                </div>
-                                <p class="text-sm font-bold text-mlm-text uppercase tracking-widest">All caught up!</p>
-                                <p class="text-xs text-mlm-secondary mt-2">No new notifications at the moment.</p>
+                            <div class="flex flex-col items-center justify-center py-16 px-6 text-center">
+                                <p class="text-sm font-semibold text-mlm-text">All caught up</p>
+                                <p class="text-xs text-mlm-secondary mt-1">No new notifications at the moment.</p>
                             </div>
                         }
                     </div>
 
-                    <!-- Footer -->
-                    <div class="p-6 border-t border-gray-100 bg-white sticky bottom-0">
-                        <p-button label="View All Activity" icon="pi pi-history" styleClass="w-full !bg-slate-900 !border-slate-900 !text-xs !font-bold !uppercase !tracking-widest !py-3"></p-button>
+                    <div class="p-4 border-t border-gray-100 bg-white shrink-0">
+                        <p-button label="View all activity" styleClass="w-full !bg-slate-900 !border-slate-900 !text-xs !font-semibold !py-2.5"></p-button>
                     </div>
                 </div>
             </p-drawer>

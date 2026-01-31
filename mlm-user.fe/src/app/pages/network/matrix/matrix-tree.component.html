@@ -35,11 +35,11 @@
           </div>
         </div>
 
-        <!-- Desktop: Tree View -->
-        <div class="hidden lg:block flex-1 bg-white rounded-2xl border border-gray-100 relative overflow-hidden shadow-sm min-h-[600px]">
+        <!-- Desktop: Tree View - use viewport height so full tree can be seen at default zoom -->
+        <div class="hidden lg:block flex-1 bg-white rounded-2xl border border-gray-100 relative overflow-hidden shadow-sm min-h-[500px] h-[calc(100vh-12rem)]">
           <!-- Draggable/Scrollable Area -->
-          <div class="absolute inset-0 overflow-auto flex items-start justify-center pt-16 pb-16 px-8 cursor-grab active:cursor-grabbing">
-            <div [style.transform]="'scale(' + zoomLevel() + ')'" class="transition-transform duration-200 origin-top">
+          <div class="absolute inset-0 overflow-auto flex items-center justify-center p-8 cursor-grab active:cursor-grabbing">
+            <div [style.transform]="'scale(' + zoomLevel() + ')'" class="transition-transform duration-200 origin-center flex-shrink-0">
               <p-organization-chart 
                 [value]="matrixTree()" 
                 (onNodeSelect)="onNodeSelect($event)">
@@ -59,13 +59,24 @@
                     } @else {
                       <!-- Active/Inactive Node -->
                       <div 
-                        class="flex flex-col items-center px-5 py-4 w-32"
+                        class="flex flex-col items-center px-5 py-4 w-32 relative"
                         [class.opacity-50]="node.data.status === 'inactive'"
                         [class.cursor-pointer]="!isCurrentRoot(node.data.id)"
                         [class.cursor-default]="isCurrentRoot(node.data.id)"
                         [pTooltip]="getTooltipText(node.data)"
                         tooltipPosition="top"
                         (click)="handleNodeClick(node.data)">
+                        
+                        <!-- Details control: info icon (stops propagation) -->
+                        <button
+                          type="button"
+                          class="absolute top-1 right-1 w-6 h-6 rounded-full bg-gray-200/80 hover:bg-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800 z-10"
+                          (click)="$event.stopPropagation(); openNodeDetails(node.data)"
+                          [pTooltip]="'Details'"
+                          tooltipPosition="top"
+                          aria-label="View details">
+                          <i class="pi pi-info text-[10px]"></i>
+                        </button>
                         
                         <!-- Package Badge Circle -->
                         <div class="w-9 h-9 rounded-full flex items-center justify-center mb-2 text-sm font-bold"
@@ -148,6 +159,16 @@
                   {{ node.status }}
                 </span>
                 
+                <!-- Details button (mobile): stops propagation so row click still drills down when tapping elsewhere -->
+                @if (node.status !== 'empty') {
+                  <button
+                    type="button"
+                    class="shrink-0 px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 text-[10px] font-semibold"
+                    (click)="$event.stopPropagation(); openDetailsForFlat(node)"
+                    aria-label="View details">
+                    Details
+                  </button>
+                }
                 <!-- Arrow -->
                 @if (node.status !== 'empty' && !isRootNode(node.id)) {
                   <i class="pi pi-chevron-right text-gray-300 text-xs"></i>
@@ -159,4 +180,25 @@
       </div>
     </div>
   </main>
+
+  <!-- Node details modal -->
+  <p-dialog
+    [visible]="nodeForModal() !== null"
+    (visibleChange)="onDialogVisibleChange($event)"
+    [modal]="true"
+    [closable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    header="Member details"
+    styleClass="w-full max-w-sm"
+    [contentStyle]="{ padding: '1rem' }">
+    @if (nodeForModal(); as node) {
+      <div class="space-y-3 text-sm">
+        <p><span class="font-semibold text-gray-500">Username</span><br/><span class="text-gray-900">{{ node.username }}</span></p>
+        <p><span class="font-semibold text-gray-500">Package</span><br/><span class="text-gray-900">{{ getPackageLabel(node.package) }}</span></p>
+        <p><span class="font-semibold text-gray-500">Level</span><br/><span class="text-gray-900">{{ node.level }}</span></p>
+        <p><span class="font-semibold text-gray-500">Status</span><br/><span [class]="node.status === 'active' ? 'text-emerald-600' : 'text-gray-500'">{{ node.status === 'active' ? 'Active' : 'Inactive' }}</span></p>
+      </div>
+    }
+  </p-dialog>
 </div>

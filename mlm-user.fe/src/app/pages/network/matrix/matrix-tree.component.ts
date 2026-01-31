@@ -30,8 +30,10 @@ export class MatrixTreeComponent {
   // Navigation state
   currentRootNode = signal<MatrixNode>(this.originalRoot);
   navigationStack = signal<MatrixNode[]>([]);
+  nodeForModal = signal<MatrixNode | null>(null);
   
-  zoomLevel = signal(1);
+  /** Default zoom &lt; 1 so the full tree fits in view on load; user can zoom in from here. */
+  zoomLevel = signal(0.5);
 
   // Computed: check if viewing original root
   isRootView = computed(() => {
@@ -259,5 +261,24 @@ export class MatrixTreeComponent {
 
   isCurrentRoot(nodeId: string): boolean {
     return nodeId === this.currentRootNode().id;
+  }
+
+  openNodeDetails(node: MatrixNode): void {
+    if (!node || node.status === 'empty') return;
+    this.nodeForModal.set(node);
+  }
+
+  openDetailsForFlat(flatNode: FlatNode): void {
+    if (flatNode.status === 'empty') return;
+    const node = this.networkService.findNode(flatNode.id);
+    if (node) this.nodeForModal.set(node);
+  }
+
+  closeNodeDetails(): void {
+    this.nodeForModal.set(null);
+  }
+
+  onDialogVisibleChange(visible: boolean): void {
+    if (!visible) this.closeNodeDetails();
   }
 }

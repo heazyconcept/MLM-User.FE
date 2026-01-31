@@ -15,43 +15,61 @@
           </button>
         </div>
 
-          <!-- Stats Grid -->
+          <!-- Stats Grid (clickable cards) -->
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-4">
-        <app-stat-card
-          label="Total Team Size"
-          [value]="summary().teamSize"
-          icon="pi-users"
-          bgClass="bg-mlm-blue-500"
-          trend="Increasing"
-          trendIcon="pi-chart-line">
-        </app-stat-card>
+        <a [routerLink]="['/network/downline']" class="block cursor-pointer hover:opacity-95 transition-opacity">
+          <app-stat-card
+            label="Total Team Size"
+            [value]="summary().teamSize"
+            icon="pi-users"
+            bgClass="bg-mlm-blue-500"
+            trend="Increasing"
+            trendIcon="pi-chart-line">
+          </app-stat-card>
+        </a>
 
-        <app-stat-card
-          label="Direct Referrals"
-          [value]="summary().directReferrals"
-          icon="pi-user-plus"
-          bgClass="bg-mlm-blue-700"
-          trend="Active"
-          trendIcon="pi-check-circle">
-        </app-stat-card>
+        <a [routerLink]="['/network/referrals']" class="block cursor-pointer hover:opacity-95 transition-opacity">
+          <app-stat-card
+            label="Direct Referrals"
+            [value]="summary().directReferrals"
+            icon="pi-user-plus"
+            bgClass="bg-mlm-blue-700"
+            trend="Active"
+            trendIcon="pi-check-circle">
+          </app-stat-card>
+        </a>
 
-        <app-stat-card
-          label="Active Legs"
-          [value]="summary().activeLegs"
-          icon="pi-sitemap"
-          bgClass="bg-brand-gold"
-          trend="Stable"
-          trendIcon="pi-minus">
-        </app-stat-card>
+        <a [routerLink]="['/network/matrix']" class="block cursor-pointer hover:opacity-95 transition-opacity">
+          <app-stat-card
+            label="Active Legs"
+            [value]="summary().activeLegs"
+            icon="pi-sitemap"
+            bgClass="bg-brand-gold"
+            trend="Stable"
+            trendIcon="pi-minus">
+          </app-stat-card>
+        </a>
 
-        <app-stat-card
-          label="Current Rank"
-          [value]="summary().rank"
-          icon="pi-star-fill"
-          bgClass="bg-mlm-primary"
-          trend="Next: "
-          [subValue]="summary().nextRank">
-        </app-stat-card>
+        <a [routerLink]="['/network/performance']" class="block cursor-pointer hover:opacity-95 transition-opacity">
+          <app-stat-card
+            label="Current Rank"
+            [value]="summary().rank"
+            icon="pi-star-fill"
+            bgClass="bg-mlm-primary"
+            trend="Next: "
+            [subValue]="summary().nextRank">
+          </app-stat-card>
+        </a>
+        </div>
+
+        <!-- CPV Summary -->
+        <div class="bg-white p-6 rounded-2xl border border-mlm-secondary/10 shadow-sm mb-6">
+          <h2 class="text-base font-semibold text-mlm-text mb-3">CPV Summary</h2>
+          <p class="text-mlm-secondary text-sm">
+            Team CPV <span class="font-semibold text-mlm-text">{{ cpvSummary().teamCpv | number }}</span>
+            / <span class="font-semibold text-mlm-text">{{ cpvSummary().requiredCpv | number }}</span>
+            this cycle ({{ cpvSummary().cycle }}). Personal CPV: {{ cpvSummary().personalCpv | number }}.
+          </p>
         </div>
 
         <!-- Quick Action Cards -->
