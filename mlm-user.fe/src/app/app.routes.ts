@@ -214,6 +214,55 @@ export const routes: Routes = [
     ]
   },
   {
+    path: 'notifications',
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./pages/notifications/notifications-list/notifications-list.component').then(m => m.NotificationsListComponent),
+        data: { title: 'Notifications' }
+      },
+      {
+        path: 'preferences',
+        loadComponent: () => import('./pages/notifications/notification-preferences/notification-preferences.component').then(m => m.NotificationPreferencesComponent),
+        data: { title: 'Notification Preferences' }
+      }
+    ]
+  },
+  {
+    path: 'settings',
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./pages/settings/settings-shell/settings-shell.component').then(m => m.SettingsShellComponent),
+        children: [
+          { path: '', redirectTo: 'account', pathMatch: 'full' },
+          {
+            path: 'account',
+            loadComponent: () => import('./pages/settings/settings-account/settings-account.component').then(m => m.SettingsAccountComponent),
+            data: { title: 'Account' }
+          },
+          {
+            path: 'security',
+            loadComponent: () => import('./pages/settings/settings-security/settings-security.component').then(m => m.SettingsSecurityComponent),
+            data: { title: 'Security' }
+          },
+          {
+            path: 'preferences',
+            loadComponent: () => import('./pages/settings/settings-preferences/settings-preferences.component').then(m => m.SettingsPreferencesComponent),
+            data: { title: 'Preferences' }
+          },
+          {
+            path: 'sessions',
+            loadComponent: () => import('./pages/settings/settings-sessions/settings-sessions.component').then(m => m.SettingsSessionsComponent),
+            data: { title: 'Sessions' }
+          }
+        ]
+      }
+    ]
+  },
+  {
     path: 'merchant',
     loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
     children: [

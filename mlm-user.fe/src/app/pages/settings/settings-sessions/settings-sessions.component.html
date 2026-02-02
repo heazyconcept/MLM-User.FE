@@ -1,0 +1,46 @@
+<div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+  <h2 class="text-lg font-bold text-mlm-text mb-4">Active sessions</h2>
+  <p class="text-sm text-mlm-secondary mb-6 max-w-2xl">Manage devices where you are signed in. Logging out a session is UI-only (no real invalidation).</p>
+
+  <div class="max-w-2xl">
+  @if (sessions().length === 0) {
+    <div class="py-12 text-center border-t border-gray-100">
+      <p class="text-mlm-text font-semibold">No active sessions</p>
+      <p class="text-mlm-secondary text-sm mt-1">You are not signed in on any device.</p>
+    </div>
+  } @else {
+    <ul class="space-y-4 divide-y divide-gray-100">
+      @for (session of sessions(); track session.id) {
+        <li class="pt-4 first:pt-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-mlm-text">{{ session.device }}</p>
+            @if (session.location) {
+              <p class="text-xs text-mlm-secondary mt-0.5">{{ session.location }}</p>
+            }
+            <p class="text-xs text-mlm-secondary mt-0.5">Last active: {{ session.lastActive | date:'short' }}</p>
+            @if (session.isCurrent) {
+              <span class="inline-block mt-2 px-2 py-0.5 text-[10px] font-semibold bg-mlm-primary/10 text-mlm-primary rounded">Current session</span>
+            }
+          </div>
+          <button
+            type="button"
+            (click)="logoutSession(session.id)"
+            [disabled]="session.isCurrent"
+            class="shrink-0 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-red-200 disabled:opacity-50 disabled:cursor-not-allowed">
+            Logout
+          </button>
+        </li>
+      }
+    </ul>
+
+    <div class="mt-6 pt-4 border-t border-gray-100">
+      <button
+        type="button"
+        (click)="logoutAll()"
+        class="px-5 py-2.5 text-sm font-semibold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-red-200">
+        Logout all other sessions
+      </button>
+    </div>
+  }
+  </div>
+</div>

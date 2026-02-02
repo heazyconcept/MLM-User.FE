@@ -97,8 +97,9 @@ export class SideMenuComponent {
     {
       title: 'GENERAL',
       items: [
+        { label: 'Notifications', icon: 'pi pi-bell', route: '/notifications' },
         { label: 'Settings', icon: 'pi pi-cog', route: '/settings' },
-        { label: 'Help', icon: 'pi pi-question-circle', route: '/help' },
+        // { label: 'Help', icon: 'pi pi-question-circle', route: '/help' },
         { label: 'Log out', icon: 'pi pi-sign-out', action: () => this.logout() }
       ]
     }

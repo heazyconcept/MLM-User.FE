@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
 import { MenuModule } from 'primeng/menu';
@@ -17,6 +17,7 @@ import { NotificationService } from '../../services/notification.service';
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
     ButtonModule,
     AvatarModule,
     MenuModule,
@@ -49,7 +50,7 @@ export class DashboardHeaderComponent {
     {
       label: 'Settings',
       icon: 'pi pi-cog',
-      command: () => this.router.navigate(['/settings'])
+      command: () => this.router.navigate(['/settings/account'])
     },
     {
       separator: true

@@ -39,7 +39,7 @@
         <div class="hidden lg:block flex-1 bg-white rounded-2xl border border-gray-100 relative overflow-hidden shadow-sm min-h-[500px] h-[calc(100vh-12rem)]">
           <!-- Draggable/Scrollable Area -->
           <div class="absolute inset-0 overflow-auto flex items-center justify-center p-8 cursor-grab active:cursor-grabbing">
-            <div [style.transform]="'scale(' + zoomLevel() + ')'" class="transition-transform duration-200 origin-center flex-shrink-0">
+            <div [style.transform]="'scale(' + zoomLevel() + ')'" class="transition-transform duration-200 origin-center shrink-0">
               <p-organization-chart 
                 [value]="matrixTree()" 
                 (onNodeSelect)="onNodeSelect($event)">

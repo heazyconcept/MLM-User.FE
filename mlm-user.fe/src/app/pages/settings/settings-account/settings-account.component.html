@@ -1,0 +1,60 @@
+<div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+  <h2 class="text-lg font-bold text-mlm-text mb-4">Account</h2>
+  @if (currentUser(); as user) {
+    <div class="max-w-md space-y-6">
+      <div class="flex items-center gap-4">
+        <div class="w-20 h-20 rounded-full bg-mlm-green-100 flex items-center justify-center text-mlm-primary text-2xl font-bold shrink-0">
+          {{ user.firstName.charAt(0) }}{{ user.lastName.charAt(0) }}
+        </div>
+        <p class="text-sm text-mlm-secondary">Profile photo placeholder</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="account-firstName" class="block text-sm font-semibold text-mlm-text mb-2">First Name</label>
+          <input
+            id="account-firstName"
+            type="text"
+            [ngModel]="firstName()"
+            (ngModelChange)="firstName.set($event)"
+            class="w-full min-w-0 px-4 py-2.5 rounded-lg border border-gray-200 text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary">
+        </div>
+        <div>
+          <label for="account-lastName" class="block text-sm font-semibold text-mlm-text mb-2">Last Name</label>
+          <input
+            id="account-lastName"
+            type="text"
+            [ngModel]="lastName()"
+            (ngModelChange)="lastName.set($event)"
+            class="w-full min-w-0 px-4 py-2.5 rounded-lg border border-gray-200 text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary">
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-mlm-text mb-2">Username</label>
+        <p class="text-mlm-secondary text-sm py-2.5">{{ username() }}</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-mlm-text mb-2">Email</label>
+        <p class="text-mlm-secondary text-sm py-2.5">{{ user.email }}</p>
+      </div>
+
+      @if (savedMessage()) {
+        <p class="text-sm font-semibold text-green-600">{{ savedMessage() }}</p>
+      }
+
+      <div>
+        <button
+          type="button"
+          (click)="save()"
+          [disabled]="!hasChanges()"
+          class="px-5 py-2.5 bg-mlm-primary text-white text-sm font-semibold rounded-lg hover:bg-mlm-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
+          Save
+        </button>
+      </div>
+    </div>
+  } @else {
+    <p class="text-mlm-secondary text-sm">No account data available.</p>
+  }
+</div>
