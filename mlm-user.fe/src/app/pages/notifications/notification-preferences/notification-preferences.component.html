@@ -1,0 +1,45 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 mx-auto">
+      <div class="mb-10">
+        <a
+          routerLink="/notifications"
+          class="inline-flex items-center gap-2 text-sm font-semibold text-mlm-primary hover:underline focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 rounded mb-4">
+          Back to Notifications
+        </a>
+        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Notification Preferences</h1>
+        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
+        <p class="text-mlm-secondary text-sm">Choose which notification types you want to receive.</p>
+      </div>
+
+      <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+        <p class="text-xs font-medium text-mlm-secondary uppercase tracking-wide mb-4">Channels: Email / In-app (informational)</p>
+        <ul class="space-y-4 divide-y divide-gray-100">
+          @for (opt of preferenceOptions; track opt.key) {
+            <li class="flex items-center justify-between gap-4 pt-4 first:pt-0 first:border-0">
+              <label [for]="'pref-' + opt.key" class="flex-1 text-sm font-semibold text-mlm-text cursor-pointer">
+                {{ opt.label }}
+              </label>
+              <p-toggleswitch
+                [inputId]="'pref-' + opt.key"
+                [ngModel]="localPrefs()[opt.key]"
+                (ngModelChange)="setPreference(opt.key, $event)">
+              </p-toggleswitch>
+            </li>
+          }
+        </ul>
+        @if (savedMessage()) {
+          <p class="mt-4 text-sm font-semibold text-green-600">{{ savedMessage() }}</p>
+        }
+        <div class="mt-6 pt-4 border-t border-gray-100">
+          <button
+            type="button"
+            (click)="save()"
+            class="px-5 py-2.5 bg-mlm-primary text-white text-sm font-semibold rounded-lg hover:bg-mlm-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:ring-offset-2">
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

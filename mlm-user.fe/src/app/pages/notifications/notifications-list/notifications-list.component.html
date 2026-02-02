@@ -1,0 +1,132 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 mx-auto">
+      <div class="mb-10">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div>
+            <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Notifications</h1>
+            <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
+            <p class="text-mlm-secondary text-sm">View and manage your notifications</p>
+          </div>
+          <a
+            routerLink="/notifications/preferences"
+            class="text-sm font-semibold text-mlm-primary hover:underline focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 rounded shrink-0">
+            Notification preferences
+          </a>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+        <div class="border-b border-gray-200 pb-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div class="flex flex-wrap gap-2" role="tablist" aria-label="Filter by category">
+            @for (tab of categoryTabs; track tab.value) {
+              <button
+                type="button"
+                role="tab"
+                [attr.aria-selected]="activeTab() === tab.value"
+                [class.bg-mlm-primary]="activeTab() === tab.value"
+                [class.text-white]="activeTab() === tab.value"
+                [class.bg-gray-100]="activeTab() !== tab.value"
+                [class.text-mlm-text]="activeTab() !== tab.value"
+                (click)="setTab(tab.value)"
+                class="px-4 py-2 rounded-lg text-sm font-semibold transition-colors hover:bg-mlm-primary/90 hover:text-white focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
+                {{ tab.label }}
+              </button>
+            }
+          </div>
+          @if (unreadCount() > 0) {
+            <button
+              type="button"
+              (click)="markAllAsRead()"
+              class="text-sm font-semibold text-mlm-primary hover:underline focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 rounded">
+              Mark all as read
+            </button>
+          }
+        </div>
+
+        @if (filteredNotifications().length === 0) {
+          <div class="flex flex-col items-center justify-center py-20 text-center border-t border-gray-200 pt-12">
+            <p class="text-lg font-semibold text-mlm-text">You're all caught up</p>
+            <p class="text-mlm-secondary text-sm mt-1">No notifications at the moment.</p>
+          </div>
+        } @else {
+          <ul class="border-t border-gray-200 divide-y divide-gray-100" role="list">
+            @for (n of filteredNotifications(); track n.id) {
+              <li>
+                <button
+                  type="button"
+                  (click)="openNotification(n)"
+                  class="w-full text-left px-4 py-4 rounded-lg transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:bg-gray-50"
+                  [class.border-l-4]="!n.isRead"
+                  [class.border-l-mlm-primary]="!n.isRead"
+                  [class.bg-mlm-green-50/30]="!n.isRead">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex-1 min-w-0">
+                      <div class="flex flex-wrap items-center gap-2 mb-1">
+                        <span class="text-sm font-semibold text-mlm-text">{{ n.title }}</span>
+                        <span [class]="getTypeBadgeClass(n.type)">{{ n.type }}</span>
+                      </div>
+                      <p class="text-xs text-mlm-secondary line-clamp-2">{{ n.message }}</p>
+                    </div>
+                    <span class="text-[10px] font-medium text-mlm-secondary whitespace-nowrap shrink-0">{{ n.timestamp | date:'short' }}</span>
+                  </div>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+  </main>
+
+  <p-dialog
+    [visible]="!!selectedNotification()"
+    (visibleChange)="!$event && closeDetailModal()"
+    [modal]="true"
+    [closable]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: '90vw', maxWidth: '420px' }"
+    styleClass="rounded-xl"
+    (onHide)="closeDetailModal()"
+    appendTo="body">
+    @if (selectedNotification(); as n) {
+      <ng-template pTemplate="header">
+        <span class="text-base font-bold text-mlm-text">{{ n.title }}</span>
+      </ng-template>
+      <div class="space-y-3">
+        <p class="text-[10px] font-medium text-mlm-secondary">{{ n.timestamp | date:'medium' }}</p>
+        <p class="text-sm text-mlm-text leading-relaxed whitespace-pre-wrap">{{ n.message }}</p>
+        @if (n.actionUrl && n.actionLabel) {
+          <div class="pt-2">
+            @if (n.actionUrl.startsWith('http')) {
+              <a
+                [href]="n.actionUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                (click)="closeDetailModal()"
+                class="inline-flex items-center justify-center px-4 py-2 bg-mlm-primary text-white text-sm font-semibold rounded-lg hover:bg-mlm-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
+                {{ n.actionLabel }}
+              </a>
+            } @else {
+              <a
+                [routerLink]="n.actionUrl"
+                (click)="closeDetailModal()"
+                class="inline-flex items-center justify-center px-4 py-2 bg-mlm-primary text-white text-sm font-semibold rounded-lg hover:bg-mlm-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
+                {{ n.actionLabel }}
+              </a>
+            }
+          </div>
+        }
+      </div>
+      <ng-template pTemplate="footer">
+        <button
+          type="button"
+          (click)="closeDetailModal()"
+          class="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300">
+          Close
+        </button>
+      </ng-template>
+    }
+  </p-dialog>
+</div>

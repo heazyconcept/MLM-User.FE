@@ -1,0 +1,55 @@
+<div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+  <h2 class="text-lg font-bold text-mlm-text mb-4">Preferences</h2>
+  <div class="max-w-md space-y-6">
+    <div>
+      <label for="pref-language" class="block text-sm font-semibold text-mlm-text mb-2">Language</label>
+      <p-select
+        id="pref-language"
+        [options]="languages"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="language()"
+        (ngModelChange)="language.set($event)"
+        placeholder="Select language"
+        styleClass="w-full">
+      </p-select>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-mlm-text mb-2">Display currency</label>
+      <p class="text-mlm-secondary text-sm py-2.5">{{ displayCurrency() }}</p>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-mlm-text mb-2">Notification preferences</label>
+      <a
+        routerLink="/notifications/preferences"
+        class="text-sm font-semibold text-mlm-primary hover:underline focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 rounded">
+        Manage notification preferences
+      </a>
+    </div>
+
+    <div class="flex items-center justify-between gap-4">
+      <label for="pref-theme" class="text-sm font-semibold text-mlm-text">Theme (dark mode)</label>
+      <p-toggleswitch
+        id="pref-theme"
+        [ngModel]="darkMode()"
+        (ngModelChange)="darkMode.set($event)">
+      </p-toggleswitch>
+    </div>
+
+    @if (savedMessage()) {
+      <p class="text-sm font-semibold text-green-600">{{ savedMessage() }}</p>
+    }
+
+    <div>
+      <button
+        type="button"
+        (click)="save()"
+        [disabled]="!hasChanges()"
+        class="px-5 py-2.5 bg-mlm-primary text-white text-sm font-semibold rounded-lg hover:bg-mlm-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
+        Save
+      </button>
+    </div>
+  </div>
+</div>

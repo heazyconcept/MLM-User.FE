@@ -205,7 +205,8 @@ export class WalletService {
         this.notificationService.add({
           title: 'Withdrawal Submitted',
           message: `Your withdrawal of ${currency === 'NGN' ? '₦' : '$'}${amount} is pending.`,
-          type: 'info'
+          type: 'info',
+          category: 'wallet'
         });
 
         // Simulate Mock Admin Approval after 10 seconds
@@ -245,7 +246,8 @@ export class WalletService {
         this.notificationService.add({
           title: `Withdrawal ${status}`,
           message: `Request ${withdrawalId} was ${status.toLowerCase()}.`,
-          type: isApproved ? 'success' : 'error'
+          type: isApproved ? 'success' : 'error',
+          category: 'wallet'
         });
       }
 

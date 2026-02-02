@@ -1,0 +1,58 @@
+<div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+  <h2 class="text-lg font-bold text-mlm-text mb-4">Security</h2>
+  <p class="text-sm text-mlm-secondary mb-4">Change your password. New password at least 6 characters; confirm must match.</p>
+
+  <form [formGroup]="passwordForm" (ngSubmit)="save()" class="max-w-md space-y-4">
+    <div>
+      <label for="security-current" class="block text-sm font-semibold text-mlm-text mb-2">Current password</label>
+      <input
+        id="security-current"
+        type="password"
+        formControlName="currentPassword"
+        class="w-full min-w-0 px-4 py-2.5 rounded-lg border border-gray-200 text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+        [class.border-red-500]="passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched">
+      @if (passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched) {
+        <p class="text-xs font-medium text-red-500 mt-1">Current password is required.</p>
+      }
+    </div>
+
+    <div>
+      <label for="security-new" class="block text-sm font-semibold text-mlm-text mb-2">New password</label>
+      <input
+        id="security-new"
+        type="password"
+        formControlName="newPassword"
+        class="w-full min-w-0 px-4 py-2.5 rounded-lg border border-gray-200 text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+        [class.border-red-500]="passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched">
+      @if (passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched) {
+        <p class="text-xs font-medium text-red-500 mt-1">At least 6 characters required.</p>
+      }
+    </div>
+
+    <div>
+      <label for="security-confirm" class="block text-sm font-semibold text-mlm-text mb-2">Confirm new password</label>
+      <input
+        id="security-confirm"
+        type="password"
+        formControlName="confirmPassword"
+        class="w-full min-w-0 px-4 py-2.5 rounded-lg border border-gray-200 text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+        [class.border-red-500]="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched">
+      @if (passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched) {
+        <p class="text-xs font-medium text-red-500 mt-1">Passwords do not match.</p>
+      }
+    </div>
+
+    @if (savedMessage()) {
+      <p class="text-sm font-semibold text-green-600">{{ savedMessage() }}</p>
+    }
+
+    <div>
+      <button
+        type="submit"
+        [disabled]="passwordForm.invalid || passwordForm.pristine"
+        class="px-5 py-2.5 bg-mlm-primary text-white text-sm font-semibold rounded-lg hover:bg-mlm-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
+        Save
+      </button>
+    </div>
+  </form>
+</div>
