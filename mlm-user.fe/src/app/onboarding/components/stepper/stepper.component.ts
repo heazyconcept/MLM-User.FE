@@ -10,34 +10,32 @@ export interface OnboardingStep {
   selector: 'app-onboarding-stepper',
   imports: [CommonModule],
   template: `
-    <div class="w-full max-w-2xl mx-auto mb-12">
-      <div class="flex items-start justify-between relative">
-        <!-- Connector Line (Background) -->
-        <div class="absolute top-[18px] left-0 right-0 h-0.5 bg-slate-200 rounded-full mx-6">
-          <div class="absolute h-full bg-mlm-primary transition-all duration-500 ease-out rounded-full"
-               [style.width]="((currentStep() - 1) / (steps().length - 1) * 100) + '%'">
-          </div>
-        </div>
-
+    <div class="mb-10">
+      <div class="flex items-center justify-between mb-4 px-1 sm:px-2">
         @for (step of steps(); track step.id) {
-          <div class="flex flex-col items-center flex-1 relative z-10">
-            <!-- Step Circle -->
-            <div [class]="currentStep() >= step.id ? 'bg-mlm-primary text-white border-mlm-primary shadow-md shadow-mlm-primary/20' : 'bg-white text-slate-400 border-slate-300'"
-                 class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-500 mb-3">
+          <div class="flex flex-col items-center gap-2 sm:gap-3 relative z-10">
+            <div
+              [class]="currentStep() >= step.id ? 'bg-mlm-primary text-white shadow-sm' : 'bg-white text-mlm-warm-400 border border-mlm-warm-200'"
+              class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm transition-all duration-300">
               @if (currentStep() > step.id) {
                 <i class="pi pi-check text-xs"></i>
               } @else {
                 {{ step.id }}
               }
             </div>
-            
-            <!-- Step Label -->
-            <span class="text-[10px] font-extrabold uppercase tracking-[0.05em] text-center px-1 transition-colors duration-300"
-                  [class]="currentStep() >= step.id ? 'text-slate-800' : 'text-slate-400'">
+            <span
+              class="text-[10px] sm:text-xs font-medium tracking-wide uppercase transition-colors duration-300"
+              [class]="currentStep() >= step.id ? 'text-mlm-warm-800' : 'text-mlm-warm-400'">
               {{ step.label }}
             </span>
           </div>
         }
+      </div>
+      <div class="relative -mt-6 sm:-mt-[38px] px-10 sm:px-12 h-px w-full bg-mlm-warm-200 rounded-full">
+        <div
+          class="absolute h-full bg-mlm-primary transition-all duration-300 ease-out rounded-full"
+          [style.width]="((currentStep() - 1) / (steps().length - 1) * 100) + '%'">
+        </div>
       </div>
     </div>
   `,
