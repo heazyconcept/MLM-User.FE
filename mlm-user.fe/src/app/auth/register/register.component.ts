@@ -2,7 +2,6 @@ import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { startWith } from 'rxjs';
 import { RouterModule, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
@@ -56,7 +55,7 @@ export class RegisterComponent {
     phoneNumber: ['', [Validators.required]],
     
     // Step 2: Account Security
-    password: ['', [Validators.required, Validators.minLength(8)]],
+    password: ['', [Validators.required, this.passwordStrengthValidator]],
     confirmPassword: ['', [Validators.required]],
     sponsorUsername: [''],
     
@@ -66,10 +65,8 @@ export class RegisterComponent {
   }, { validators: this.passwordMatchValidator });
 
   private passwordValue = toSignal(
-    this.registerForm.get('password')!.valueChanges.pipe(
-      startWith(this.registerForm.get('password')!.value ?? '')
-    ),
-    { initialValue: this.registerForm.get('password')?.value ?? '' }
+    this.registerForm.get('password')!.valueChanges,
+    { initialValue: this.registerForm.get('password')!.value ?? '' }
   );
 
   passwordChecklist = computed(() => {
@@ -87,6 +84,28 @@ export class RegisterComponent {
       { key: 'symbol', label: 'At least one symbol (! @ # $ % & *)', met: hasSymbol }
     ];
   });
+
+  /** Enforces checklist rules: min 8 chars, at least one letter, number, and symbol. */
+  passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {
+    const value = control.value ?? '';
+    if (value.length < 8) return { passwordStrength: 'length' };
+    if (!/[A-Za-z]/.test(value)) return { passwordStrength: 'letter' };
+    if (!/\d/.test(value)) return { passwordStrength: 'number' };
+    if (!/[^A-Za-z0-9]/.test(value)) return { passwordStrength: 'symbol' };
+    return null;
+  }
+
+  getPasswordErrorMessage(): string | null {
+    const control = this.registerForm.get('password');
+    if (!control?.invalid || !control?.touched) return null;
+    if (control.hasError('required')) return 'Password is required';
+    const strength = control.getError('passwordStrength');
+    if (strength === 'length') return 'At least 8 characters required';
+    if (strength === 'letter') return 'Include at least one letter (A–Z)';
+    if (strength === 'number') return 'Include at least one number (0–9)';
+    if (strength === 'symbol') return 'Include at least one symbol (e.g. ! @ # $ % & *)';
+    return null;
+  }
 
   passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
     const password = control.get('password')?.value;

@@ -87,7 +87,7 @@
                                     placeholder="••••••••"
                                     formControlName="password"
                                     [required]="true"
-                                    [error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched ? 'Min 8 characters required' : null">
+                                    [error]="getPasswordErrorMessage()">
                                 </app-auth-input>
 
                                 <div class="mt-1.5 mb-1.5 space-y-1.5 text-xs leading-snug text-mlm-warm-500">
