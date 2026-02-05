@@ -89,6 +89,27 @@
                                     [required]="true"
                                     [error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched ? 'Min 8 characters required' : null">
                                 </app-auth-input>
+
+                                <div class="mt-1.5 mb-1.5 space-y-1.5 text-xs leading-snug text-mlm-warm-500">
+                                    <p>Your password should include:</p>
+                                    <ul class="space-y-1.5">
+                                        @for (rule of passwordChecklist(); track rule.key) {
+                                            <li
+                                                class="flex items-center gap-2"
+                                                [class.text-mlm-success]="rule.met"
+                                                [class.text-mlm-warm-500]="!rule.met">
+                                                <i
+                                                    class="text-[0.8rem]"
+                                                    [class.pi]="true"
+                                                    [class.pi-check-circle]="rule.met"
+                                                    [class.pi-circle]="!rule.met">
+                                                </i>
+                                                <span>{{ rule.label }}</span>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+
                                 <app-auth-input
                                     label="Confirm Password"
                                     type="password"
@@ -97,9 +118,6 @@
                                     [required]="true"
                                     [error]="registerForm.get('confirmPassword')?.touched && registerForm.hasError('passwordMismatch') ? 'Passwords do not match' : null">
                                 </app-auth-input>
-                                <p class="text-xs text-mlm-warm-600">
-                                    Use at least 8 characters, mixing letters, numbers, and symbols.
-                                </p>
                             </div>
 
                             <app-auth-input

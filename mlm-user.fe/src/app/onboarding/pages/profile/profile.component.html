@@ -1,49 +1,49 @@
 <div class="text-center mb-8">
-    <h1 class="text-2xl font-bold text-slate-800 tracking-tight mb-2">Personal Information</h1>
-    <p class="text-slate-500 text-sm">Let's start with your basic details</p>
+    <h1 class="text-2xl sm:text-3xl font-semibold text-mlm-warm-900 tracking-tight mb-2">Personal Information</h1>
+    <p class="text-mlm-warm-600 text-sm max-w-md mx-auto">Let's start with your basic details</p>
 </div>
 
 <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
     <div class="space-y-5">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <app-auth-input 
-                label="First Name" 
-                placeholder="Enter first name" 
-                icon="pi-user" 
+            <app-auth-input
+                label="First Name"
+                placeholder="Enter first name"
+                icon="pi-user"
                 formControlName="firstName"
                 [required]="true"
                 [error]="profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched ? 'Required' : null">
             </app-auth-input>
-            <app-auth-input 
-                label="Last Name" 
-                placeholder="Enter last name" 
-                icon="pi-user" 
+            <app-auth-input
+                label="Last Name"
+                placeholder="Enter last name"
+                icon="pi-user"
                 formControlName="lastName"
                 [required]="true"
                 [error]="profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched ? 'Required' : null">
             </app-auth-input>
         </div>
 
-        <app-auth-input 
-            label="Username" 
-            placeholder="Username" 
-            icon="pi-at" 
+        <app-auth-input
+            label="Username"
+            placeholder="Username"
+            icon="pi-at"
             formControlName="username"
             [required]="true">
         </app-auth-input>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm font-semibold text-slate-500 mb-2">Date of Birth <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-semibold text-mlm-warm-800 mb-2">Date of Birth <span class="text-mlm-error">*</span></label>
                 <div class="relative flex items-center">
-                    <i class="pi pi-calendar absolute left-4 text-slate-400 z-10"></i>
-                    <p-datepicker 
-                        formControlName="dob" 
+                    <i class="pi pi-calendar absolute left-4 text-mlm-warm-400 z-10"></i>
+                    <p-datepicker
+                        formControlName="dob"
                         placeholder="Select Date of Birth"
                         [showIcon]="false"
                         appendTo="body"
                         styleClass="w-full"
-                        inputStyleClass="w-full !h-12 !pl-11 !rounded-xl !border-slate-400 focus:!ring-4 focus:!ring-mlm-primary/10 transition-all duration-300">
+                        inputStyleClass="w-full !h-12 !pl-11 !rounded-xl !border-mlm-warm-300 focus:!ring-4 focus:!ring-mlm-primary/10 transition-all duration-300">
                     </p-datepicker>
                 </div>
                 @if (profileForm.get('dob')?.invalid && profileForm.get('dob')?.touched) {
@@ -52,36 +52,35 @@
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-slate-500 mb-2">Gender (Optional)</label>
-                <p-select 
-                    [options]="genders" 
-                    formControlName="gender" 
-                    optionLabel="label" 
+                <label class="block text-sm font-semibold text-mlm-warm-800 mb-2">Gender (Optional)</label>
+                <p-select
+                    [options]="genders"
+                    formControlName="gender"
+                    optionLabel="label"
                     placeholder="Select gender"
-                    styleClass="w-full !rounded-xl !border-slate-400 !h-12 !flex !items-center">
+                    styleClass="w-full !rounded-xl !border-mlm-warm-300 !h-12 !flex !items-center">
                 </p-select>
             </div>
         </div>
 
         <div class="pt-2">
-            <app-onboarding-file-upload 
+            <app-onboarding-file-upload
                 label="Profile Photo"
                 icon="pi-user"
                 placeholder="Upload profile photo"
                 (fileSelected)="onFileSelected($event)"
-                class="w-full"
-            ></app-onboarding-file-upload>
+                class="w-full">
+            </app-onboarding-file-upload>
         </div>
 
-        <div class="pt-4">
-            <p-button 
-                label="Continue" 
-                styleClass="w-full !bg-mlm-primary !border-mlm-primary !h-12 !font-bold !rounded-xl shadow-lg shadow-mlm-primary/20" 
-                type="submit" 
+        <div class="mt-8 pt-4 flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-mlm-warm-100">
+            <p-button
+                label="Continue"
+                styleClass="!px-6 !py-2.5 !bg-mlm-primary !border-mlm-primary !text-white !font-semibold !rounded-xl hover:!bg-mlm-primary/90 transition-all duration-200 text-sm disabled:!opacity-60 disabled:!cursor-not-allowed w-full sm:w-auto"
+                type="submit"
                 [disabled]="profileForm.invalid || isLoading()"
                 [loading]="isLoading()">
             </p-button>
         </div>
     </div>
 </form>
-

@@ -1,6 +1,8 @@
 import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { startWith } from 'rxjs';
 import { RouterModule, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
@@ -62,6 +64,29 @@ export class RegisterComponent {
     package: ['', [Validators.required]],
     acceptTerms: [false, [Validators.requiredTrue]]
   }, { validators: this.passwordMatchValidator });
+
+  private passwordValue = toSignal(
+    this.registerForm.get('password')!.valueChanges.pipe(
+      startWith(this.registerForm.get('password')!.value ?? '')
+    ),
+    { initialValue: this.registerForm.get('password')?.value ?? '' }
+  );
+
+  passwordChecklist = computed(() => {
+    const password = this.passwordValue() ?? '';
+
+    const hasMinLength = password.length >= 8;
+    const hasLetter = /[A-Za-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSymbol = /[^A-Za-z0-9]/.test(password);
+
+    return [
+      { key: 'length', label: 'At least 8 characters', met: hasMinLength },
+      { key: 'letter', label: 'At least one letter (A–Z)', met: hasLetter },
+      { key: 'number', label: 'At least one number (0–9)', met: hasNumber },
+      { key: 'symbol', label: 'At least one symbol (! @ # $ % & *)', met: hasSymbol }
+    ];
+  });
 
   passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
     const password = control.get('password')?.value;
