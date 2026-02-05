@@ -410,7 +410,7 @@
         @if (currentUser(); as user) {
         <div class="mb-20">
           <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">
-            Welcome back👋
+            Welcome back, <span class="text-mlm-primary">{{ user.firstName }}</span> 👋
           </h1>
           <div class="h-px w-20 bg-mlm-primary/30 mb-6"></div>
           <div class="flex flex-wrap items-center gap-6 text-sm">
