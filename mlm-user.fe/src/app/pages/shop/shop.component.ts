@@ -45,7 +45,7 @@ export class ShopComponent implements OnInit {
     { label: 'Highest PV', value: 'pv-desc' as SortOption }
   ];
 
-  skeletonArray = Array(8).fill(0);
+  skeletonArray = Array(6).fill(0);
 
   ngOnInit(): void {
     this.productService.loadProducts();
