@@ -18,12 +18,15 @@ import { WalletService } from '../../services/wallet.service';
 import { LoadingService } from '../../services/loading.service';
 import { ModalService } from '../../services/modal.service';
 import { ActivityService } from '../../services/activity.service';
+import { StatCardComponent } from '../../components/stat-card/stat-card.component';
+import { OverlayOptions } from 'primeng/api';
 import { signal } from '@angular/core';
 
 @Component({
   selector: 'app-dashboard',
   imports: [
     CommonModule,
+    StatCardComponent,
     CardModule,
     ButtonModule,
     BadgeModule,
@@ -96,6 +99,14 @@ export class DashboardComponent implements OnInit {
     paymentMethod: ['', [Validators.required]],
     amount: [{ value: 5000, disabled: true }]
   });
+
+  /** Prevents payment select dropdown from closing when dialog/content scrolls */
+  paymentOverlayOptions: OverlayOptions = {
+    listener: (_event: Event, options?: { type?: string; valid?: boolean }) => {
+      if (options?.type === 'scroll') return false;
+      return options?.valid;
+    }
+  };
 
   constructor() {
     // Effect to watch payment status changes and trigger change detection

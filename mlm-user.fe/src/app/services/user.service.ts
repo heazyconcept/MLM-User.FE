@@ -1,4 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { tap, map, catchError } from 'rxjs/operators';
+import { ApiService } from './api.service';
 
 export type PaymentStatus = 'UNPAID' | 'PAID';
 export type KycStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
@@ -20,64 +23,71 @@ export interface User {
   rank?: string;
   stage?: number;
   isMerchant?: boolean;
+  package?: string;
+  registrationPaid?: boolean;
 }
 
-const PAYMENT_STATUS_KEY = 'mlm_user_payment_status';
 const USER_DATA_KEY = 'mlm_user_data';
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
+  private api = inject(ApiService);
   private user = signal<User | null>(null);
 
   constructor() {
-    // Load persisted user data on initialization
     const persistedUser = this.getPersistedUserData();
     if (persistedUser) {
-      // Migration: Add rank, stage, isMerchant if they don't exist
-      const migratedUser = {
-        ...persistedUser,
-        rank: persistedUser.rank ?? 'Ruby',
-        stage: persistedUser.stage ?? 2,
-        isMerchant: persistedUser.isMerchant ?? false
-      };
-      this.user.set(migratedUser);
-      this.persistUserData(migratedUser);
-    } else {
-      // Default mock user for testing (isMerchant: true for Merchant Center access)
-      this.user.set({
-        id: '1',
-        email: 'pelumi123@gmail.com',
-        firstName: 'Pelumi',
-        lastName: 'Doe',
-        paymentStatus: 'PAID',
-        profileCompletionPercentage: 85,
-        bankName: 'GTBank',
-        accountNumber: '0123456789',
-        accountName: 'PELUMI DOE',
-        kycStatus: 'VERIFIED',
-        currency: 'NGN',
-        rank: 'Ruby',
-        stage: 2,
-        isMerchant: true
-      });
+      this.user.set(persistedUser);
     }
   }
 
-
-  paymentStatus = computed(() => this.user()?.paymentStatus ?? this.getPersistedPaymentStatus());
+  paymentStatus = computed(() => this.user()?.paymentStatus ?? 'UNPAID');
   isPaid = computed(() => this.paymentStatus() === 'PAID');
   isMerchant = computed(() => this.user()?.isMerchant ?? false);
   currentUser = computed(() => this.user());
 
-  getPersistedPaymentStatus(): PaymentStatus {
-    const stored = localStorage.getItem(PAYMENT_STATUS_KEY);
-    return (stored === 'PAID' || stored === 'UNPAID') ? stored : 'UNPAID';
+  fetchProfile(): Observable<User> {
+    return this.api.get<Record<string, unknown>>('users/me').pipe(
+      map(response => this.mapApiUserToUser(response)),
+      tap(user => {
+        this.user.set(user);
+        this.persistUserData(user);
+      }),
+      catchError(err => {
+        const persisted = this.getPersistedUserData();
+        if (persisted) {
+          this.user.set(persisted);
+        }
+        throw err;
+      })
+    );
   }
 
-  private persistPaymentStatus(status: PaymentStatus): void {
-    localStorage.setItem(PAYMENT_STATUS_KEY, status);
+  private mapApiUserToUser(apiUser: Record<string, unknown>): User {
+    const registrationPaid = apiUser['registrationPaid'] === true;
+
+    return {
+      id: String(apiUser['id'] ?? ''),
+      email: String(apiUser['email'] ?? ''),
+      firstName: String(apiUser['firstName'] ?? apiUser['first_name'] ?? ''),
+      lastName: String(apiUser['lastName'] ?? apiUser['last_name'] ?? ''),
+      paymentStatus: registrationPaid ? 'PAID' : 'UNPAID',
+      profileCompletionPercentage: Number(apiUser['profileCompletionPercentage'] ?? 0),
+      phoneNumber: apiUser['phoneNumber'] as string | undefined ?? apiUser['phone'] as string | undefined,
+      address: apiUser['address'] as string | undefined,
+      bankName: apiUser['bankName'] as string | undefined,
+      accountNumber: apiUser['accountNumber'] as string | undefined,
+      accountName: apiUser['accountName'] as string | undefined,
+      kycStatus: apiUser['kycStatus'] as KycStatus | undefined,
+      currency: apiUser['currency'] as 'NGN' | 'USD' | undefined,
+      rank: apiUser['rank'] as string | undefined,
+      stage: apiUser['stage'] as number | undefined,
+      isMerchant: apiUser['isMerchant'] as boolean | undefined ?? false,
+      package: apiUser['package'] as string | undefined,
+      registrationPaid,
+    };
   }
 
   private persistUserData(user: User): void {
@@ -101,30 +111,8 @@ export class UserService {
   }
 
   setUser(user: User): void {
-    // Check if there's persisted user data and merge it
-    const persistedUser = this.getPersistedUserData();
-    const persistedStatus = this.getPersistedPaymentStatus();
-    
-    // Merge persisted data with new user data, prioritizing persisted profile fields
-    const mergedUser: User = {
-      ...user,
-      paymentStatus: persistedStatus,
-      ...(persistedUser && {
-        phoneNumber: persistedUser.phoneNumber ?? user.phoneNumber,
-        address: persistedUser.address ?? user.address,
-        bankName: persistedUser.bankName ?? user.bankName,
-        accountNumber: persistedUser.accountNumber ?? user.accountNumber,
-        accountName: persistedUser.accountName ?? user.accountName,
-        kycStatus: persistedUser.kycStatus ?? user.kycStatus,
-        currency: persistedUser.currency ?? user.currency,
-        rank: persistedUser.rank ?? user.rank,
-        stage: persistedUser.stage ?? user.stage,
-        isMerchant: persistedUser.isMerchant ?? user.isMerchant
-      })
-    };
-    
-    this.user.set(mergedUser);
-    this.persistUserData(mergedUser);
+    this.user.set(user);
+    this.persistUserData(user);
   }
 
   updatePaymentStatus(status: PaymentStatus): void {
@@ -132,11 +120,7 @@ export class UserService {
     if (currentUser) {
       const updatedUser = { ...currentUser, paymentStatus: status };
       this.user.set(updatedUser);
-      this.persistPaymentStatus(status);
       this.persistUserData(updatedUser);
-    } else {
-      // If no user is set, still persist the status for when user logs in
-      this.persistPaymentStatus(status);
     }
   }
 
@@ -160,9 +144,6 @@ export class UserService {
 
   clearUser(): void {
     this.user.set(null);
-    // Don't clear payment status from localStorage - it should persist
-    // Only clear user data if needed
-    // localStorage.removeItem(USER_DATA_KEY);
+    localStorage.removeItem(USER_DATA_KEY);
   }
 }
-

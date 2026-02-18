@@ -30,10 +30,7 @@ const MOCK_PRODUCTS: Product[] = [
     pv: 30,
     category: 'health',
     images: [
-      'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800',
-      'https://images.unsplash.com/photo-1550572017-edd951aa8f72?w=800',
-      'https://images.unsplash.com/photo-1577401239170-897942555fb3?w=800',
-      'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=800'
+      '/assets/images/product1.png'
     ],
     inStock: true,
     eligibleWallets: ['cash', 'voucher']
@@ -47,10 +44,7 @@ const MOCK_PRODUCTS: Product[] = [
     pv: 45,
     category: 'health',
     images: [
-      'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=800',
-      'https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=800',
-      'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=800&q=80',
-      'https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=800&q=80'
+      '/assets/images/product2.png'
     ],
     inStock: true,
     eligibleWallets: ['cash', 'voucher', 'autoship']
@@ -64,10 +58,7 @@ const MOCK_PRODUCTS: Product[] = [
     pv: 90,
     category: 'lifestyle',
     images: [
-      'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800',
-      'https://images.unsplash.com/photo-1570194065650-d99fb4b38b17?w=800',
-      'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=800',
-      'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&q=80'
+      '/assets/images/product3.png'
     ],
     inStock: true,
     eligibleWallets: ['cash', 'voucher']
@@ -81,10 +72,7 @@ const MOCK_PRODUCTS: Product[] = [
     pv: 70,
     category: 'electronics',
     images: [
-      'https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=800',
-      'https://images.unsplash.com/photo-1576243345690-4e4b79b63277?w=800',
-      'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800',
-      'https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=800&q=80'
+      '/assets/images/product4.png'
     ],
     inStock: true,
     eligibleWallets: ['cash']
@@ -98,7 +86,7 @@ const MOCK_PRODUCTS: Product[] = [
     pv: 24,
     category: 'health',
     images: [
-      'https://images.unsplash.com/photo-1577401239170-897942555fb3?w=800'
+      '/assets/images/product5.png'
     ],
     inStock: true,
     eligibleWallets: ['cash', 'voucher', 'autoship']
@@ -112,7 +100,7 @@ const MOCK_PRODUCTS: Product[] = [
     pv: 37,
     category: 'lifestyle',
     images: [
-      'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800'
+      '/assets/images/product6.png'
     ],
     inStock: true,
     eligibleWallets: ['cash', 'voucher']
@@ -126,7 +114,7 @@ const MOCK_PRODUCTS: Product[] = [
     pv: 50,
     category: 'subscriptions',
     images: [
-      'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=800'
+      '/assets/images/product7.png'
     ],
     inStock: true,
     eligibleWallets: ['cash', 'autoship']

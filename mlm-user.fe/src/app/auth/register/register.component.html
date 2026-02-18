@@ -1,201 +1,226 @@
-<div class="min-h-screen w-full flex items-center justify-center px-4 py-8 bg-mlm-background">
-    <div class="w-full max-w-2xl">
-        <!-- Progress Bar -->
-        <div class="mb-10">
-            <div class="flex items-center justify-between mb-4 px-1 sm:px-2">
-                @for (step of [1, 2, 3]; track step) {
-                    <div class="flex flex-col items-center gap-2 sm:gap-3 relative z-10">
-                        <div
-                            [class]="currentStep() >= step ? 'bg-mlm-primary text-white shadow-sm' : 'bg-white text-mlm-warm-400 border border-mlm-warm-200'"
-                            class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm transition-all duration-300">
-                            {{ step }}
-                        </div>
-                        <span
-                            class="text-[10px] sm:text-xs font-medium tracking-wide uppercase transition-colors duration-300"
-                            [class]="currentStep() >= step ? 'text-mlm-warm-800' : 'text-mlm-warm-400'">
-                            {{ step === 1 ? 'Personal' : step === 2 ? 'Security' : 'Membership' }}
-                        </span>
+<div class="flex min-h-screen bg-white overflow-hidden">
+    <!-- Left Side: Illustration -->
+    <div class="hidden lg:flex w-1/2 items-center justify-center bg-mlm-green-50 relative">
+        <div class="absolute inset-0 bg-mlm-primary/10"></div>
+        <img
+            src="Finance%20leaders-bro.png"
+            alt="Register Illustration"
+            class="relative w-[70%] max-w-lg object-contain"
+        />
+    </div>
+
+    <!-- Right Side: Register Form -->
+    <div class="w-full lg:w-1/2 flex flex-col items-center overflow-y-auto bg-white px-6 sm:px-10 xl:px-14 py-12">
+        <div class="w-full max-w-[460px] flex flex-col flex-1">
+            <!-- Logo -->
+            <div class="mb-9">
+                <img src="assets/images/logo.png" alt="logo" class="w-24">
+            </div>
+
+            <!-- Step Indicator -->
+            <div class="flex gap-2 mb-2">
+                @for (step of [1, 2]; track step) {
+                    <div
+                        class="h-1 flex-1 rounded-full transition-all duration-400"
+                        [class]="currentStep() >= step ? 'bg-mlm-primary' : 'bg-mlm-warm-200'">
                     </div>
                 }
             </div>
-            <!-- Connector Line -->
-            <div class="relative -mt-6 sm:-mt-[38px] px-10 sm:px-12 h-px w-full bg-mlm-warm-200 rounded-full">
-                <div
-                    class="absolute h-full bg-mlm-primary transition-all duration-300 ease-out rounded-full"
-                     [style.width]="((currentStep() - 1) / (totalSteps() - 1) * 100) + '%'">
-                </div>
+            <!-- Step Labels -->
+            <div class="flex gap-2 mb-9">
+                @for (step of [1, 2]; track step) {
+                    <span
+                        class="flex-1 text-center text-[10px] font-semibold uppercase tracking-widest transition-colors duration-300"
+                        [class]="currentStep() >= step ? 'text-mlm-primary' : 'text-slate-400'">
+                        {{ step === 1 ? 'Credentials' : 'Membership' }}
+                    </span>
+                }
             </div>
-        </div>
 
-        <!-- Form Card -->
-        <div class="bg-white rounded-2xl shadow-sm border border-mlm-warm-200 overflow-hidden">
-            <div class="p-6 sm:p-8 lg:p-10">
-                <div class="text-center mb-8">
-                    <h1 class="text-2xl sm:text-3xl font-semibold text-mlm-warm-900 tracking-tight mb-2">
-                        {{ currentStep() === 1 ? 'Create your account' : currentStep() === 2 ? 'Secure your access' : 'Choose your membership' }}
+            <!-- Header -->
+            <div class="mb-8">
+                @if (currentStep() === 1) {
+                    <h1 class="font-sora text-[2rem] font-extrabold text-slate-900 leading-tight mb-2">
+                        Create your<br>account
                     </h1>
-                    <p class="text-mlm-warm-600 text-sm max-w-md mx-auto">
-                        {{ currentStep() === 1 ? 'A few details to get you started. No clutter, just what we need.' : currentStep() === 2 ? 'Set a strong password and confirm your sponsor so your account stays protected.' : 'Pick the membership that matches where you are today. You can always grow from here.' }}
+                    <p class="text-sm text-slate-500 leading-relaxed">
+                        Set up your credentials to get started.
                     </p>
-                </div>
+                } @else {
+                    <h1 class="font-sora text-[2rem] font-extrabold text-slate-900 leading-tight mb-2">
+                        Choose your<br>membership
+                    </h1>
+                    <p class="text-sm text-slate-500 leading-relaxed">
+                        Pick the membership that fits you today.
+                    </p>
+                }
+            </div>
 
-                <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-                    <!-- Step 1: Personal Info -->
-                    @if (currentStep() === 1) {
-                        <div class="space-y-5 animate-step-in">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <app-auth-input
-                                    label="First Name"
-                                    placeholder="Enter first name"
-                                    formControlName="firstName"
-                                    [required]="true"
-                                    [error]="registerForm.get('firstName')?.invalid && registerForm.get('firstName')?.touched ? 'First name is required' : null">
-                                </app-auth-input>
-                                <app-auth-input
-                                    label="Last Name"
-                                    placeholder="Enter last name"
-                                    formControlName="lastName"
-                                    [required]="true"
-                                    [error]="registerForm.get('lastName')?.invalid && registerForm.get('lastName')?.touched ? 'Last name is required' : null">
-                                </app-auth-input>
-                            </div>
-                            <app-auth-input
-                                label="Email Address"
-                                type="email"
+            <!-- Form -->
+            <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="flex flex-col flex-1">
+                <!-- Step 1: Credentials -->
+                @if (currentStep() === 1) {
+                    <div class="form-stack animate-step-in">
+                        <!-- Email -->
+                        <div class="flex flex-col gap-1.5">
+                            <label for="reg-email" class="text-[0.8rem] font-semibold text-slate-500 flex items-center gap-1">
+                                Email Address <span class="text-red-500 text-[0.9em]">*</span>
+                            </label>
+                            <input pInputText id="reg-email" formControlName="email"
                                 placeholder="name@example.com"
-                                formControlName="email"
-                                [required]="true"
-                                [error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched ? 'Valid email is required' : null">
-                            </app-auth-input>
-                            <app-auth-input
-                                label="Phone Number"
-                                placeholder="+234 ..."
-                                formControlName="phoneNumber"
-                                [required]="true"
-                                [error]="registerForm.get('phoneNumber')?.invalid && registerForm.get('phoneNumber')?.touched ? 'Phone number is required' : null">
-                            </app-auth-input>
+                                class="reg-input"
+                                [class.ng-invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" />
+                            @if (registerForm.get('email')?.invalid && registerForm.get('email')?.touched) {
+                                <small class="text-red-500 text-xs">Valid email is required</small>
+                            }
                         </div>
-                    }
 
-                    <!-- Step 2: Account Security -->
-                    @if (currentStep() === 2) {
-                        <div class="space-y-6 animate-step-in">
-                            <div class="space-y-4">
-                                <app-auth-input
-                                    label="Password"
-                                    type="password"
-                                    placeholder="••••••••"
-                                    formControlName="password"
-                                    [required]="true"
-                                    [error]="getPasswordErrorMessage()">
-                                </app-auth-input>
-
-                                <div class="mt-1.5 mb-1.5 space-y-1.5 text-xs leading-snug text-mlm-warm-500">
-                                    <p>Your password should include:</p>
-                                    <ul class="space-y-1.5">
-                                        @for (rule of passwordChecklist(); track rule.key) {
-                                            <li
-                                                class="flex items-center gap-2"
-                                                [class.text-mlm-success]="rule.met"
-                                                [class.text-mlm-warm-500]="!rule.met">
-                                                <i
-                                                    class="text-[0.8rem]"
-                                                    [class.pi]="true"
-                                                    [class.pi-check-circle]="rule.met"
-                                                    [class.pi-circle]="!rule.met">
-                                                </i>
-                                                <span>{{ rule.label }}</span>
-                                            </li>
-                                        }
-                                    </ul>
-                                </div>
-
-                                <app-auth-input
-                                    label="Confirm Password"
-                                    type="password"
-                                    placeholder="••••••••"
-                                    formControlName="confirmPassword"
-                                    [required]="true"
-                                    [error]="registerForm.get('confirmPassword')?.touched && registerForm.hasError('passwordMismatch') ? 'Passwords do not match' : null">
-                                </app-auth-input>
-                            </div>
-
-                            <app-auth-input
-                                label="Sponsor Username"
-                                placeholder="e.g. john_doe"
-                                formControlName="sponsorUsername">
-                            </app-auth-input>
-                        </div>
-                    }
-
-                    <!-- Step 3: Membership -->
-                    @if (currentStep() === 3) {
-                        <div class="space-y-6 animate-step-in">
-                            <div class="space-y-2">
-                                <label class="block text-sm font-semibold text-mlm-warm-800">
-                                    Select package
-                                </label>
-                                <p class="text-xs text-mlm-warm-600">
-                                    Your package defines your starting limits and earning potential. You can upgrade later.
-                                </p>
-                                <p-select
-                                    [options]="packages"
-                                    formControlName="package"
-                                    optionLabel="label"
-                                    placeholder="Choose your membership"
-                                    styleClass="w-full !rounded-xl !border-mlm-warm-300 !shadow-none">
-                                </p-select>
-                                @if (registerForm.get('package')?.invalid && registerForm.get('package')?.touched) {
-                                    <span class="text-xs font-medium text-mlm-error mt-1.5 block">Please select a package</span>
+                        <!-- Password -->
+                        <div class="flex flex-col gap-1.5">
+                            <label for="reg-password" class="text-[0.8rem] font-semibold text-slate-500 flex items-center gap-1">
+                                Password <span class="text-red-500 text-[0.9em]">*</span>
+                            </label>
+                            <p-password 
+                                id="reg-password" 
+                                formControlName="password" 
+                                [toggleMask]="true" 
+                                [feedback]="false" 
+                                styleClass="w-full" 
+                                inputStyleClass="w-full reg-input"
+                                [class.ng-invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+                            </p-password>
+                            @if (getPasswordErrorMessage(); as errorMsg) {
+                                <small class="text-red-500 text-xs">{{ errorMsg }}</small>
+                            }
+                            <div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-1">
+                                @for (rule of passwordChecklist(); track rule.key) {
+                                    <span
+                                        class="flex items-center gap-1.5 text-[11px] transition-colors duration-200"
+                                        [class]="rule.met ? 'text-mlm-success' : 'text-slate-400'">
+                                        <span class="w-[5px] h-[5px] rounded-full bg-current shrink-0"></span>
+                                        {{ rule.label }}
+                                    </span>
                                 }
                             </div>
-
-                            <div
-                                class="bg-mlm-background rounded-xl p-4 border border-mlm-warm-200 flex items-start gap-3 transition-all duration-200 hover:border-mlm-primary/30">
-                                <p-checkbox formControlName="acceptTerms" [binary]="true" class="mt-0.5"></p-checkbox>
-                                <label class="text-sm text-mlm-warm-700 leading-relaxed">
-                                    I agree to the
-                                    <a href="#" class="text-mlm-primary font-semibold hover:underline">Terms &amp; Conditions</a>
-                                    and confirm that I understand how the platform works.
-                                </label>
-                            </div>
                         </div>
+
+                        <!-- Confirm Password -->
+                        <div class="flex flex-col gap-1.5">
+                            <label for="reg-confirm-password" class="text-[0.8rem] font-semibold text-slate-500 flex items-center gap-1">
+                                Confirm Password <span class="text-red-500 text-[0.9em]">*</span>
+                            </label>
+                            <p-password 
+                                id="reg-confirm-password" 
+                                formControlName="confirmPassword" 
+                                [toggleMask]="true" 
+                                [feedback]="false" 
+                                styleClass="w-full" 
+                                inputStyleClass="w-full reg-input"
+                                [class.ng-invalid]="registerForm.get('confirmPassword')?.touched && registerForm.hasError('passwordMismatch')">
+                            </p-password>
+                            @if (registerForm.get('confirmPassword')?.touched && registerForm.hasError('passwordMismatch')) {
+                                <small class="text-red-500 text-xs">Passwords do not match</small>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Step 2: Membership -->
+                @if (currentStep() === 2) {
+                    <div class="form-stack animate-step-in">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[0.8rem] font-semibold text-slate-500">Select Package</label>
+                            <p-select
+                                [options]="packages"
+                                formControlName="package"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Choose your membership"
+                                styleClass="w-full !rounded-xl !border-mlm-warm-300 !shadow-none">
+                            </p-select>
+                            @if (registerForm.get('package')?.invalid && registerForm.get('package')?.touched) {
+                                <small class="text-red-500 text-xs">Please select a package</small>
+                            }
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[0.8rem] font-semibold text-slate-500">Currency</label>
+                            <p-select
+                                [options]="currencies"
+                                formControlName="currency"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Select your currency"
+                                styleClass="w-full !rounded-xl !border-mlm-warm-300 !shadow-none">
+                            </p-select>
+                            @if (registerForm.get('currency')?.invalid && registerForm.get('currency')?.touched) {
+                                <small class="text-red-500 text-xs">Please select a currency</small>
+                            }
+                        </div>
+
+                        <!-- Divider -->
+                        <div class="flex items-center gap-3 my-1">
+                            <div class="flex-1 h-px bg-mlm-warm-200"></div>
+                            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Optional</span>
+                            <div class="flex-1 h-px bg-mlm-warm-200"></div>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <label for="reg-referral" class="text-[0.8rem] font-semibold text-slate-500">Referral Code</label>
+                            <input pInputText id="reg-referral" formControlName="referralCode"
+                                placeholder="e.g. ABC123 (optional)"
+                                class="reg-input" />
+                        </div>
+
+                        <div class="flex items-start gap-3 pt-1">
+                            <p-checkbox formControlName="acceptTerms" [binary]="true" class="mt-0.5"></p-checkbox>
+                            <label class="text-[0.85rem] text-slate-500 leading-relaxed cursor-pointer">
+                                I agree to the
+                                <a href="#" class="text-mlm-primary font-semibold hover:underline">Terms &amp; Conditions</a>
+                                and confirm that I understand how the platform works.
+                            </label>
+                        </div>
+                    </div>
+                }
+
+                <!-- Action Buttons -->
+                <div class="mt-auto pt-8 flex flex-col gap-3.5">
+                    @if (currentStep() < totalSteps()) {
+                        <button type="button"
+                            (click)="nextStep()"
+                            [disabled]="!isStepValid(currentStep())"
+                            class="btn-primary">
+                            Next Step
+                            <i class="pi pi-arrow-right text-sm"></i>
+                        </button>
+                    } @else {
+                        <button type="submit"
+                            [disabled]="!registerForm.valid || isLoading()"
+                            class="btn-primary">
+                            @if (isLoading()) {
+                                <i class="pi pi-spin pi-spinner text-sm"></i>
+                            }
+                            Create Account
+                            @if (!isLoading()) {
+                                <i class="pi pi-check text-sm"></i>
+                            }
+                        </button>
                     }
 
-                    <!-- Action Buttons -->
-                    <div class="mt-8 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-mlm-warm-100">
+                    <div class="text-[0.85rem] text-center text-slate-400">
                         @if (currentStep() > 1) {
                             <button type="button" 
                                     (click)="prevStep()"
-                                    class="px-4 py-2.5 rounded-xl text-mlm-warm-700 font-semibold hover:bg-mlm-background transition-all duration-200 text-sm w-full sm:w-auto">
-                                Back
+                                    class="text-slate-500 font-semibold hover:text-mlm-primary transition-colors">
+                                &larr; Back to previous step
                             </button>
                         } @else {
-                            <a routerLink="/auth/login" class="text-mlm-warm-600 font-semibold hover:text-mlm-primary transition-colors duration-200 text-sm w-full sm:w-auto text-center sm:text-left">
-                                Already have an account?
-                            </a>
-                        }
-
-                        @if (currentStep() < totalSteps()) {
-                            <button type="button" 
-                                    (click)="nextStep()"
-                                    [disabled]="!isStepValid(currentStep())"
-                                    class="px-6 py-2.5 bg-mlm-primary text-white rounded-xl font-semibold hover:bg-mlm-primary/90 transition-all duration-200 text-sm disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto">
-                                Next Step
-                            </button>
-                        } @else {
-                            <button type="submit" 
-                                    [disabled]="!registerForm.valid || isLoading()"
-                                    class="px-6 py-2.5 bg-mlm-primary text-white rounded-xl font-semibold hover:bg-mlm-primary/90 transition-all duration-200 flex items-center justify-center gap-2 text-sm disabled:opacity-60 disabled:cursor-not-allowed w-full sm:w-auto">
-                                Create Account
-                                @if (isLoading()) {
-                                    <i class="pi pi-spin pi-spinner text-xs"></i>
-                                }
-                            </button>
+                            Already have an account?
+                            <a routerLink="/auth/login" class="text-mlm-primary font-bold hover:underline">Sign In</a>
                         }
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
