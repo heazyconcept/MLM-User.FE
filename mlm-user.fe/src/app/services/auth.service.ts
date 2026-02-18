@@ -2,7 +2,8 @@ import { Injectable, signal, inject } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { tap, switchMap, map, catchError } from 'rxjs/operators';
 import { ApiService } from './api.service';
-import { UserService, type User, type PaymentStatus } from './user.service';
+import { UserService, type PaymentStatus } from './user.service';
+import { AuditService } from './audit.service';
 
 export interface AuthResponse {
   accessToken: string;
@@ -37,6 +38,7 @@ export interface ResetPasswordRequest {
 export class AuthService {
   private api = inject(ApiService);
   private userService = inject(UserService);
+  private audit = inject(AuditService);
 
   private readonly TOKEN_KEY = 'mlm_auth_token';
   private readonly REFRESH_TOKEN_KEY = 'mlm_refresh_token';
@@ -76,12 +78,14 @@ export class AuthService {
     return this.api.post<AuthResponse>('auth/login', body).pipe(
       tap(tokens => this.storeTokens(tokens)),
       switchMap(() => this.userService.fetchProfile()),
+      tap(user => this.audit.logAuthEvent('login', 'success', user.id || user.email)),
       map(user => ({
         success: true,
         paymentStatus: user.paymentStatus
       })),
       catchError(err => {
         this.clearTokens();
+        this.audit.logAuthEvent('login', 'failure', email);
         return throwError(() => err);
       })
     );
@@ -90,9 +94,11 @@ export class AuthService {
   register(data: RegisterRequest): Observable<boolean> {
     return this.api.post<AuthResponse>('auth/register', data).pipe(
       tap(tokens => this.storeTokens(tokens)),
+      tap(() => this.audit.logAuthEvent('register', 'success', data.email)),
       map(() => true),
       catchError(err => {
         this.clearTokens();
+        this.audit.logAuthEvent('register', 'failure', data.email);
         return throwError(() => err);
       })
     );
@@ -100,13 +106,16 @@ export class AuthService {
 
   logout(): Observable<void> {
     const refreshToken = this.getRefreshToken();
+    const userIdentifier = this.userService.currentUser()?.id ?? this.userService.currentUser()?.email ?? 'unknown';
 
     return this.api.post<void>('auth/logout', { refreshToken }).pipe(
       tap(() => {
+        this.audit.logAuthEvent('logout', 'success', userIdentifier);
         this.clearTokens();
         this.userService.clearUser();
       }),
       catchError(err => {
+        this.audit.logAuthEvent('logout', 'failure', userIdentifier);
         this.clearTokens();
         this.userService.clearUser();
         return throwError(() => err);

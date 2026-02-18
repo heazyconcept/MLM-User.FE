@@ -63,9 +63,10 @@ export class LoginModernComponent {
           },
           error: (err) => {
             this.isLoading.set(false);
-            const message = err?.error?.message;
-            const errorMsg = Array.isArray(message) ? message.join('. ') : (message || 'Invalid email or password. Please try again.');
-            this.modalService.open('error', 'Login Failed', errorMsg);
+            if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+              console.error('Login failed', err);
+            }
+            this.modalService.open('error', 'Login Failed', 'Invalid email or password. Please try again.');
           }
         });
       }

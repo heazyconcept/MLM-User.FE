@@ -15,6 +15,8 @@ function isAuthUrl(url: string): boolean {
 }
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
   const token = localStorage.getItem('mlm_auth_token');
 
   let authReq = req;
@@ -27,16 +29,19 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401 && !isAuthUrl(req.url)) {
-        return handleTokenRefresh(authReq, next);
+        return handleTokenRefresh(authReq, next, authService, router);
       }
       return throwError(() => error);
     })
   );
 };
 
-function handleTokenRefresh(req: HttpRequest<unknown>, next: HttpHandlerFn): Observable<any> {
-  const authService = inject(AuthService);
-  const router = inject(Router);
+function handleTokenRefresh(
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn,
+  authService: AuthService,
+  router: Router
+): Observable<any> {
 
   if (!isRefreshing) {
     isRefreshing = true;

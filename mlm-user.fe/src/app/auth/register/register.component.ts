@@ -178,9 +178,10 @@ export class RegisterComponent {
         },
         error: (err) => {
           this.isLoading.set(false);
-          const message = err?.error?.message;
-          const errorMsg = Array.isArray(message) ? message.join('. ') : (message || 'Registration failed. Please try again.');
-          this.modalService.open('error', 'Registration Failed', errorMsg);
+          if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+            console.error('Registration failed', err);
+          }
+          this.modalService.open('error', 'Registration Failed', 'Registration failed. Please try again.');
         }
       });
     } else {
