@@ -2,13 +2,9 @@ import { Component, inject, ChangeDetectionStrategy, signal } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
-import { RippleModule } from 'primeng/ripple';
 import { AuthService } from '../../services/auth.service';
-import { MessageModule } from 'primeng/message';
 import { ModalService } from '../../services/modal.service';
-import { FloatLabelModule } from 'primeng/floatlabel';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 // import { AuthInputComponent } from '../components/auth-input/auth-input.component';
@@ -21,16 +17,13 @@ import { PasswordModule } from 'primeng/password';
     ReactiveFormsModule,
     FormsModule,
     RouterModule,
-    ButtonModule,
     CheckboxModule,
-    RippleModule,
-    MessageModule,
-    FloatLabelModule,
     InputTextModule,
     PasswordModule,
     // AuthInputComponent
   ],
   templateUrl: './login-modern.component.html',
+  styleUrl: './login-modern.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LoginModernComponent {
@@ -68,13 +61,11 @@ export class LoginModernComponent {
               this.router.navigate([redirectPath]);
             }, 2000);
           },
-          error: () => {
+          error: (err) => {
             this.isLoading.set(false);
-            this.modalService.open(
-              'error',
-              'Login Failed',
-              'Invalid email or password. Please try again.'
-            );
+            const message = err?.error?.message;
+            const errorMsg = Array.isArray(message) ? message.join('. ') : (message || 'Invalid email or password. Please try again.');
+            this.modalService.open('error', 'Login Failed', errorMsg);
           }
         });
       }

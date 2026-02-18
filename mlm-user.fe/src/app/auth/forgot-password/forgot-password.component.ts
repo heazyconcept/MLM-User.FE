@@ -1,10 +1,11 @@
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { AuthInputComponent } from '../components/auth-input/auth-input.component';
-import { LoadingService } from '../../services/loading.service';
+import { AuthService } from '../../services/auth.service';
+import { ModalService } from '../../services/modal.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -20,7 +21,8 @@ import { LoadingService } from '../../services/loading.service';
 })
 export class ForgotPasswordComponent {
   private fb = inject(FormBuilder);
-  private router = inject(Router);
+  private authService = inject(AuthService);
+  private modalService = inject(ModalService);
 
   isLoading = signal<boolean>(false);
 
@@ -30,15 +32,31 @@ export class ForgotPasswordComponent {
 
   onSubmit() {
     if (this.forgotPasswordForm.valid) {
+      const email = this.forgotPasswordForm.value.email!;
       this.isLoading.set(true);
-      // Simulated 1.5s delay as per spec
-      setTimeout(() => {
-        this.isLoading.set(false);
-        this.router.navigate(['/auth/reset-password']);
-      }, 1500);
+
+      this.authService.forgotPassword(email).subscribe({
+        next: () => {
+          this.isLoading.set(false);
+          this.modalService.open(
+            'success',
+            'Email Sent',
+            'If an account exists with that email, you will receive a password reset link shortly.',
+            '/auth/login'
+          );
+        },
+        error: () => {
+          this.isLoading.set(false);
+          this.modalService.open(
+            'success',
+            'Email Sent',
+            'If an account exists with that email, you will receive a password reset link shortly.',
+            '/auth/login'
+          );
+        }
+      });
     } else {
       this.forgotPasswordForm.markAllAsTouched();
     }
   }
 }
-

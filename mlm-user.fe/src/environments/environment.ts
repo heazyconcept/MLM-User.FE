@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://api.yourdomain.com/api/v1'
+  apiUrl: 'https://segulah-api.onrender.com'
 };

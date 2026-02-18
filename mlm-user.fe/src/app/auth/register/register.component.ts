@@ -3,14 +3,12 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
-import { SelectModule } from 'primeng/select'; // PrimeNG v21 Select
-import { RippleModule } from 'primeng/ripple';
-import { AuthService } from '../../services/auth.service';
-import { MessageModule } from 'primeng/message';
+import { SelectModule } from 'primeng/select';
+import { AuthService, type RegisterRequest } from '../../services/auth.service';
 import { ModalService } from '../../services/modal.service';
-import { AuthInputComponent } from '../components/auth-input/auth-input.component';
+import { InputTextModule } from 'primeng/inputtext';
+import { PasswordModule } from 'primeng/password';
 
 @Component({
   selector: 'app-register',
@@ -18,12 +16,10 @@ import { AuthInputComponent } from '../components/auth-input/auth-input.componen
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
-    ButtonModule,
     CheckboxModule,
     SelectModule,
-    RippleModule,
-    MessageModule,
-    AuthInputComponent
+    InputTextModule,
+    PasswordModule
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.css',
@@ -37,30 +33,31 @@ export class RegisterComponent {
 
   isLoading = signal<boolean>(false);
   currentStep = signal<number>(1);
-  totalSteps = signal<number>(3);
+  totalSteps = signal<number>(2);
 
   packages = [
-    { label: 'Silver', value: 'silver' },
-    { label: 'Gold', value: 'gold' },
-    { label: 'Platinum', value: 'platinum' },
-    { label: 'Ruby', value: 'ruby' },
-    { label: 'Diamond', value: 'diamond' }
+    { label: 'Silver', value: 'SILVER' },
+    { label: 'Gold', value: 'GOLD' },
+    { label: 'Platinum', value: 'PLATINUM' },
+    { label: 'Ruby', value: 'RUBY' },
+    { label: 'Diamond', value: 'DIAMOND' }
+  ];
+
+  currencies = [
+    { label: 'Nigerian Naira (NGN)', value: 'NGN' },
+    { label: 'US Dollar (USD)', value: 'USD' }
   ];
 
   registerForm = this.fb.group({
-    // Step 1: Personal Info
-    firstName: ['', [Validators.required]],
-    lastName: ['', [Validators.required]],
+    // Step 1: Account Credentials
     email: ['', [Validators.required, Validators.email]],
-    phoneNumber: ['', [Validators.required]],
-    
-    // Step 2: Account Security
     password: ['', [Validators.required, this.passwordStrengthValidator]],
     confirmPassword: ['', [Validators.required]],
-    sponsorUsername: [''],
-    
-    // Step 3: Membership
+
+    // Step 2: Membership
     package: ['', [Validators.required]],
+    currency: ['', [Validators.required]],
+    referralCode: [''],
     acceptTerms: [false, [Validators.requiredTrue]]
   }, { validators: this.passwordMatchValidator });
 
@@ -79,13 +76,12 @@ export class RegisterComponent {
 
     return [
       { key: 'length', label: 'At least 8 characters', met: hasMinLength },
-      { key: 'letter', label: 'At least one letter (A–Z)', met: hasLetter },
-      { key: 'number', label: 'At least one number (0–9)', met: hasNumber },
+      { key: 'letter', label: 'At least one letter (A\u2013Z)', met: hasLetter },
+      { key: 'number', label: 'At least one number (0\u20139)', met: hasNumber },
       { key: 'symbol', label: 'At least one symbol (! @ # $ % & *)', met: hasSymbol }
     ];
   });
 
-  /** Enforces checklist rules: min 8 chars, at least one letter, number, and symbol. */
   passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {
     const value = control.value ?? '';
     if (value.length < 8) return { passwordStrength: 'length' };
@@ -101,8 +97,8 @@ export class RegisterComponent {
     if (control.hasError('required')) return 'Password is required';
     const strength = control.getError('passwordStrength');
     if (strength === 'length') return 'At least 8 characters required';
-    if (strength === 'letter') return 'Include at least one letter (A–Z)';
-    if (strength === 'number') return 'Include at least one number (0–9)';
+    if (strength === 'letter') return 'Include at least one letter (A\u2013Z)';
+    if (strength === 'number') return 'Include at least one number (0\u20139)';
     if (strength === 'symbol') return 'Include at least one symbol (e.g. ! @ # $ % & *)';
     return null;
   }
@@ -115,18 +111,14 @@ export class RegisterComponent {
 
   isStepValid(step: number): boolean {
     if (step === 1) {
-      return !!(this.registerForm.get('firstName')?.valid && 
-                this.registerForm.get('lastName')?.valid && 
-                this.registerForm.get('email')?.valid && 
-                this.registerForm.get('phoneNumber')?.valid);
-    }
-    if (step === 2) {
-      return !!(this.registerForm.get('password')?.valid && 
+      return !!(this.registerForm.get('email')?.valid &&
+                this.registerForm.get('password')?.valid &&
                 this.registerForm.get('confirmPassword')?.valid &&
                 !this.registerForm.hasError('passwordMismatch'));
     }
-    if (step === 3) {
-      return !!(this.registerForm.get('package')?.valid && 
+    if (step === 2) {
+      return !!(this.registerForm.get('package')?.valid &&
+                this.registerForm.get('currency')?.valid &&
                 this.registerForm.get('acceptTerms')?.valid);
     }
     return false;
@@ -136,7 +128,7 @@ export class RegisterComponent {
     if (this.currentStep() < this.totalSteps() && this.isStepValid(this.currentStep())) {
       this.currentStep.update(s => s + 1);
     } else {
-        this.markStepAsTouched(this.currentStep());
+      this.markStepAsTouched(this.currentStep());
     }
   }
 
@@ -148,15 +140,12 @@ export class RegisterComponent {
 
   markStepAsTouched(step: number) {
     if (step === 1) {
-      this.registerForm.get('firstName')?.markAsTouched();
-      this.registerForm.get('lastName')?.markAsTouched();
       this.registerForm.get('email')?.markAsTouched();
-      this.registerForm.get('phoneNumber')?.markAsTouched();
-    } else if (step === 2) {
       this.registerForm.get('password')?.markAsTouched();
       this.registerForm.get('confirmPassword')?.markAsTouched();
-    } else if (step === 3) {
+    } else if (step === 2) {
       this.registerForm.get('package')?.markAsTouched();
+      this.registerForm.get('currency')?.markAsTouched();
       this.registerForm.get('acceptTerms')?.markAsTouched();
     }
   }
@@ -164,25 +153,38 @@ export class RegisterComponent {
   onSubmit() {
     if (this.registerForm.valid) {
       this.isLoading.set(true);
-      this.authService.register({ ...this.registerForm.value, status: 'UNPAID' }).subscribe({
+
+      const formValue = this.registerForm.value;
+      const payload: RegisterRequest = {
+        email: formValue.email!,
+        password: formValue.password!,
+        package: formValue.package!,
+        currency: formValue.currency!,
+        ...(formValue.referralCode ? { referralCode: formValue.referralCode } : {})
+      };
+
+      this.authService.register(payload).subscribe({
         next: () => {
           this.isLoading.set(false);
           this.modalService.open(
-            'success', 
-            'Account Created', 
-            'Your account has been created successfully. Please verify your email.', 
-            '/auth/verify'
+            'success',
+            'Account Created',
+            'Your account has been created successfully. Let\u2019s set up your profile.',
+            '/onboarding/profile'
           );
           setTimeout(() => {
-            this.router.navigate(['/auth/verify']);
+            this.router.navigate(['/onboarding/profile']);
           }, 2000);
         },
-        error: () => {
+        error: (err) => {
           this.isLoading.set(false);
+          const message = err?.error?.message;
+          const errorMsg = Array.isArray(message) ? message.join('. ') : (message || 'Registration failed. Please try again.');
+          this.modalService.open('error', 'Registration Failed', errorMsg);
         }
       });
     } else {
-        this.registerForm.markAllAsTouched();
+      this.registerForm.markAllAsTouched();
     }
   }
 }

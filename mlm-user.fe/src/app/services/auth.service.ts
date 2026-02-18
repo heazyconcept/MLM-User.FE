@@ -1,108 +1,140 @@
 import { Injectable, signal, inject } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { delay, tap, map } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { tap, switchMap, map, catchError } from 'rxjs/operators';
+import { ApiService } from './api.service';
 import { UserService, type User, type PaymentStatus } from './user.service';
+
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  package: string;
+  currency: string;
+  referralCode?: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  private api = inject(ApiService);
   private userService = inject(UserService);
+
   private readonly TOKEN_KEY = 'mlm_auth_token';
-  
-  // Simple signal to track authentication state
-  // Initialize from localStorage to persist across page refreshes
-  isAuthenticated = signal<boolean>(this.checkAuthState());
+  private readonly REFRESH_TOKEN_KEY = 'mlm_refresh_token';
 
-  constructor() {
-    // Authentication state is already initialized from localStorage in signal initialization above
-    // UserService constructor will automatically restore user data from localStorage
-  }
+  isAuthenticated = signal<boolean>(this.hasToken());
 
-  private checkAuthState(): boolean {
-    // Check if token exists in localStorage
-    // This is called during signal initialization to restore auth state on page refresh
+  private hasToken(): boolean {
     if (typeof window !== 'undefined' && window.localStorage) {
-      const token = localStorage.getItem(this.TOKEN_KEY);
-      return !!token;
+      return !!localStorage.getItem(this.TOKEN_KEY);
     }
     return false;
   }
 
-  login(email: string, password: string): Observable<{ success: boolean; paymentStatus: PaymentStatus }> {
-    // Mock login logic
-    return of(true).pipe(
-      delay(1000), // Simulate API call
-      tap(() => {
-        // Save token to localStorage to persist across page refreshes
-        const mockToken = 'mock_token_' + Date.now();
-        localStorage.setItem(this.TOKEN_KEY, mockToken);
-        this.isAuthenticated.set(true);
-      }),
-      // After login, fetch registration fee status from server
-      // This ensures we always get the latest payment status, even if it changed externally
-      // (e.g., admin override, payment retry, failed payment)
-      delay(500), // Simulate API call for payment status
-      tap(() => {
-        // TODO: Replace this mock with actual API call:
-        // const response = await this.http.get<{registrationFeeStatus: PaymentStatus}>('/api/user/payment-status').toPromise();
-        // const fetchedPaymentStatus = response.registrationFeeStatus;
-        
-        // Mock: Simulate fetching registration fee status from server
-        // In production, this would be: this.http.get('/api/user/payment-status')
-        // For now, we'll use persisted status, but in real app this MUST come from API
-        const fetchedPaymentStatus: PaymentStatus = this.userService.getPersistedPaymentStatus();
-        
-        // Update payment status in UserService with server-fetched value
-        // This ensures the status is always current, even if changed externally
-        this.userService.updatePaymentStatus(fetchedPaymentStatus);
-        
-        // Set mock user data with fetched payment status
-        const mockUser: User = {
-          id: '1',
-          email: email,
-          firstName: 'Oluwapelumi',
-          lastName: 'Olamide',
-          paymentStatus: 'UNPAID', // This will be overridden by persisted status in setUser
-          profileCompletionPercentage: 60
-        };
-        this.userService.setUser(mockUser);
-      }),
-      // Return success with payment status
-      map(() => ({
-        success: true,
-        paymentStatus: this.userService.getPaymentStatus()
-      }))
-    );
+  private storeTokens(response: AuthResponse): void {
+    localStorage.setItem(this.TOKEN_KEY, response.accessToken);
+    localStorage.setItem(this.REFRESH_TOKEN_KEY, response.refreshToken);
+    this.isAuthenticated.set(true);
   }
-  
-  register(data: any): Observable<boolean> {
-    // Mock register logic
-    return of(true).pipe(
-      delay(1000), // Simulate API call
-      tap(() => {
-        // Save token to localStorage to persist across page refreshes
-        const mockToken = 'mock_token_' + Date.now();
-        localStorage.setItem(this.TOKEN_KEY, mockToken);
-        this.isAuthenticated.set(true);
-        // Set mock user data with UNPAID status (as per register component)
-        const mockUser: User = {
-          id: '1',
-          email: data.email,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          paymentStatus: 'UNPAID',
-          profileCompletionPercentage: 50
-        };
-        this.userService.setUser(mockUser);
+
+  private clearTokens(): void {
+    localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+    this.isAuthenticated.set(false);
+  }
+
+  getAccessToken(): string | null {
+    return localStorage.getItem(this.TOKEN_KEY);
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+  }
+
+  login(email: string, password: string): Observable<{ success: boolean; paymentStatus: PaymentStatus }> {
+    const body: LoginRequest = { email, password };
+
+    return this.api.post<AuthResponse>('auth/login', body).pipe(
+      tap(tokens => this.storeTokens(tokens)),
+      switchMap(() => this.userService.fetchProfile()),
+      map(user => ({
+        success: true,
+        paymentStatus: user.paymentStatus
+      })),
+      catchError(err => {
+        this.clearTokens();
+        return throwError(() => err);
       })
     );
   }
 
-  logout() {
-    // Clear token from localStorage
-    localStorage.removeItem(this.TOKEN_KEY);
-    this.isAuthenticated.set(false);
+  register(data: RegisterRequest): Observable<boolean> {
+    return this.api.post<AuthResponse>('auth/register', data).pipe(
+      tap(tokens => this.storeTokens(tokens)),
+      map(() => true),
+      catchError(err => {
+        this.clearTokens();
+        return throwError(() => err);
+      })
+    );
+  }
+
+  logout(): Observable<void> {
+    const refreshToken = this.getRefreshToken();
+
+    return this.api.post<void>('auth/logout', { refreshToken }).pipe(
+      tap(() => {
+        this.clearTokens();
+        this.userService.clearUser();
+      }),
+      catchError(err => {
+        this.clearTokens();
+        this.userService.clearUser();
+        return throwError(() => err);
+      })
+    );
+  }
+
+  logoutLocal(): void {
+    this.clearTokens();
     this.userService.clearUser();
+  }
+
+  refreshToken(): Observable<AuthResponse> {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      return throwError(() => new Error('No refresh token available'));
+    }
+
+    return this.api.post<AuthResponse>('auth/refresh', { refreshToken }).pipe(
+      tap(tokens => this.storeTokens(tokens))
+    );
+  }
+
+  forgotPassword(email: string): Observable<void> {
+    return this.api.post<void>('auth/forgot-password', { email });
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<void> {
+    return this.api.post<void>('auth/reset-password', { token, newPassword });
   }
 }
