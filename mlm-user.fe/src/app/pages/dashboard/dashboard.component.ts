@@ -260,6 +260,7 @@ export class DashboardComponent implements OnInit {
             window.location.href = gatewayUrl;
           } else if (res.reference) {
             this.router.navigate(['/auth/register/payment-pending'], {
+              queryParams: { reference: res.reference },
               state: { reference: res.reference }
             });
           } else {

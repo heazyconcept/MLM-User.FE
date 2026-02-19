@@ -20,8 +20,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       } else {
         // Server-side error
         if (error.status === 401) {
-          errorMessage = 'Unauthorized access. Please login again.';
-          // Optionally redirect to login
+          authService.logoutLocal();
+          router.navigate(['/auth/login'], { queryParams: { returnUrl: router.url } });
+          return throwError(() => error);
         } else if (error.status === 403) {
           errorMessage = 'You do not have permission to perform this action.';
         } else if (error.status === 404) {
