@@ -1767,6 +1767,13 @@ export interface components {
             package: "SILVER" | "GOLD" | "PLATINUM" | "RUBY" | "DIAMOND";
             /** @enum {string} */
             currency: "NGN" | "USD";
+            /** @description URL where the gateway redirects after payment (e.g. https://app.segulah.ng/auth/payment/callback) */
+            callbackUrl?: string;
+            /**
+             * @description Payment provider. Defaults to PAYSTACK. USDT = manual, no gateway redirect.
+             * @enum {string}
+             */
+            provider?: "PAYSTACK" | "USDT";
         };
         InitiateUpgradePaymentDto: {
             /** @enum {string} */

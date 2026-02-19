@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Observable } from 'rxjs';
-import { tap, map, catchError } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { tap, map, catchError, switchMap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 
 export type PaymentStatus = 'UNPAID' | 'PAID';
@@ -29,6 +29,7 @@ export interface User {
 }
 
 const USER_DATA_KEY = 'mlm_user_data';
+const DISPLAY_CURRENCY_KEY = 'mlm_display_currency';
 
 @Injectable({
   providedIn: 'root'
@@ -36,11 +37,16 @@ const USER_DATA_KEY = 'mlm_user_data';
 export class UserService {
   private api = inject(ApiService);
   private user = signal<User | null>(null);
+  private displayCurrencySignal = signal<'NGN' | 'USD'>('NGN');
 
   constructor() {
     const persistedUser = this.getPersistedUserData();
     if (persistedUser) {
       this.user.set(persistedUser);
+    }
+    const stored = localStorage.getItem(DISPLAY_CURRENCY_KEY);
+    if (stored === 'NGN' || stored === 'USD') {
+      this.displayCurrencySignal.set(stored);
     }
   }
 
@@ -50,6 +56,13 @@ export class UserService {
   onboardingComplete = computed(() => this.user()?.onboardingComplete ?? false);
   currentUser = computed(() => this.user());
 
+  /** Display currency from preferences; falls back to registration currency when not set */
+  displayCurrency = computed(() => {
+    const pref = this.displayCurrencySignal();
+    const reg = this.user()?.currency;
+    return pref ?? reg ?? 'NGN';
+  });
+
   fetchProfile(): Observable<User> {
     return this.api.get<Record<string, unknown>>('users/me').pipe(
       map(response => this.mapApiUserToUser(response)),
@@ -57,6 +70,7 @@ export class UserService {
         this.user.set(user);
         this.persistUserData(user);
       }),
+      switchMap(user => this.fetchPreferences().pipe(map(() => user))),
       catchError(err => {
         const persisted = this.getPersistedUserData();
         if (persisted) {
@@ -65,6 +79,29 @@ export class UserService {
         throw err;
       })
     );
+  }
+
+  fetchPreferences(): Observable<'NGN' | 'USD'> {
+    return this.api.get<Record<string, unknown>>('users/me/preferences').pipe(
+      map(data => {
+        const curr = (data['displayCurrency'] ?? data['display_currency']) as 'NGN' | 'USD' | undefined;
+        const fallback = this.user()?.currency ?? 'NGN';
+        const value = (curr === 'NGN' || curr === 'USD' ? curr : fallback) as 'NGN' | 'USD';
+        this.displayCurrencySignal.set(value);
+        localStorage.setItem(DISPLAY_CURRENCY_KEY, value);
+        return value;
+      }),
+      catchError(() => {
+        const fallback = this.user()?.currency ?? 'NGN';
+        this.displayCurrencySignal.set(fallback);
+        return of(fallback);
+      })
+    );
+  }
+
+  setDisplayCurrency(currency: 'NGN' | 'USD'): void {
+    this.displayCurrencySignal.set(currency);
+    localStorage.setItem(DISPLAY_CURRENCY_KEY, currency);
   }
 
   private mapApiUserToUser(apiUser: Record<string, unknown>): User {
@@ -148,6 +185,8 @@ export class UserService {
 
   clearUser(): void {
     this.user.set(null);
+    this.displayCurrencySignal.set('NGN');
     localStorage.removeItem(USER_DATA_KEY);
+    localStorage.removeItem(DISPLAY_CURRENCY_KEY);
   }
 }

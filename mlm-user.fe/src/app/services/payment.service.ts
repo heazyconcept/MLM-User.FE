@@ -37,6 +37,27 @@ export class PaymentService {
       );
   }
 
+  initiateWalletFunding(
+    amount: number,
+    provider: 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT',
+    callbackUrl?: string
+  ): Observable<InitiateRegistrationPaymentResponse> {
+    const body: Record<string, unknown> = { amount, provider };
+    const isValidUrl = callbackUrl && /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(callbackUrl);
+    if (isValidUrl) {
+      body['callbackUrl'] = callbackUrl;
+    }
+    return this.api
+      .post<Record<string, unknown>>('payments/wallet-funding/initiate', body)
+      .pipe(
+        map((res) => ({
+          reference: String(res['reference'] ?? res['ref'] ?? ''),
+          authorizationUrl: res['authorizationUrl'] as string | undefined ?? res['authorization_url'] as string | undefined,
+          gatewayUrl: res['gatewayUrl'] as string | undefined ?? res['gateway_url'] as string | undefined
+        }))
+      );
+  }
+
   verifyPayment(
     reference: string,
     gatewayResponse?: Record<string, unknown>

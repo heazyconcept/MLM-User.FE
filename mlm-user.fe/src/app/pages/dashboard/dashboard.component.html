@@ -186,13 +186,13 @@
               Wallet
             </h3>
             <div class="text-4xl font-bold mb-6">
-              {{ currentUser()?.currency === 'NGN' ? '₦' : '$'
+              {{ displayCurrency() === 'NGN' ? '₦' : '$'
               }}{{ activeWallet()?.cashBalance | number : '1.2-2' }}
             </div>
             <div class="flex gap-4 text-sm text-white/80 mb-6">
-              <span>Vouchers: {{ currentUser()?.currency === 'NGN' ? '₦' : '$'
+              <span>Vouchers: {{ displayCurrency() === 'NGN' ? '₦' : '$'
                 }}{{ activeWallet()?.voucherBalance | number : '1.0-0' }}</span>
-              <span>Autoship: {{ currentUser()?.currency === 'NGN' ? '₦' : '$'
+              <span>Autoship: {{ displayCurrency() === 'NGN' ? '₦' : '$'
                 }}{{ activeWallet()?.autoshipBalance | number : '1.0-0' }}</span>
             </div>
             <p-button
@@ -209,28 +209,28 @@
               <div class="flex items-center justify-between border-b border-mlm-background pb-4">
                 <span class="text-sm font-medium text-mlm-text">Direct Referral</span>
                 <span class="text-sm font-bold text-mlm-text"
-                  >{{ currentUser()?.currency === 'NGN' ? '₦' : '$'
+                  >{{ displayCurrency() === 'NGN' ? '₦' : '$'
                   }}{{ activeSummary().directReferralBonus | number : '1.0-0' }}</span
                 >
               </div>
               <div class="flex items-center justify-between border-b border-mlm-background pb-4">
                 <span class="text-sm font-medium text-mlm-text">Community Bonus</span>
                 <span class="text-sm font-bold text-mlm-text"
-                  >{{ currentUser()?.currency === 'NGN' ? '₦' : '$'
+                  >{{ displayCurrency() === 'NGN' ? '₦' : '$'
                   }}{{ activeSummary().communityBonus | number : '1.0-0' }}</span
                 >
               </div>
               <div class="flex items-center justify-between border-b border-mlm-background pb-4">
                 <span class="text-sm font-medium text-mlm-text">Product Bonus</span>
                 <span class="text-sm font-bold text-mlm-text"
-                  >{{ currentUser()?.currency === 'NGN' ? '₦' : '$'
+                  >{{ displayCurrency() === 'NGN' ? '₦' : '$'
                   }}{{ activeSummary().productBonus | number : '1.0-0' }}</span
                 >
               </div>
               <div class="flex items-center justify-between border-b border-mlm-background pb-4">
                 <span class="text-sm font-medium text-mlm-text">Matching Bonus</span>
                 <span class="text-sm font-bold text-mlm-text"
-                  >{{ currentUser()?.currency === 'NGN' ? '₦' : '$'
+                  >{{ displayCurrency() === 'NGN' ? '₦' : '$'
                   }}{{ activeSummary().matchingBonus | number : '1.0-0' }}</span
                 >
               </div>
@@ -238,7 +238,7 @@
             <div class="mt-6 p-4 bg-mlm-background rounded-xl flex items-center justify-between">
               <span class="text-sm font-bold text-mlm-secondary">Total Earnings</span>
               <span class="text-lg font-bold text-mlm-primary"
-                >{{ currentUser()?.currency === 'NGN' ? '₦' : '$'
+                >{{ displayCurrency() === 'NGN' ? '₦' : '$'
                 }}{{ activeSummary().totalEarnings | number : '1.2-2' }}</span
               >
             </div>
