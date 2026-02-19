@@ -70,6 +70,10 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent)
+      },
+      {
+        path: 'registration-payment',
+        loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent)
       }
     ]
   },

@@ -168,10 +168,16 @@ export class RegisterComponent {
   }
 
   private initiateRegistrationPayment(packageName: string, currency: string): void {
-    this.paymentService.initiateRegistrationPayment(packageName, currency).subscribe({
+    const callbackUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/auth/payment/callback`
+      : undefined;
+    this.paymentService.initiateRegistrationPayment(packageName, currency, callbackUrl).subscribe({
       next: (res) => {
         this.isLoading.set(false);
         const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
+        if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+          console.debug('[Register] Payment initiate response:', { hasGatewayUrl: !!gatewayUrl, hasReference: !!res.reference, res });
+        }
         if (gatewayUrl) {
           window.location.href = gatewayUrl;
         } else if (res.reference) {
@@ -188,8 +194,11 @@ export class RegisterComponent {
           setTimeout(() => this.router.navigate(['/onboarding/profile']), 2000);
         }
       },
-      error: () => {
+      error: (err) => {
         this.isLoading.set(false);
+        if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+          console.error('[Register] Payment initiate failed:', err);
+        }
         this.modalService.open(
           'success',
           'Account Created',

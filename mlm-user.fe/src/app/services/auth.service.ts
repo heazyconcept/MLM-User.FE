@@ -93,6 +93,7 @@ export class AuthService {
 
   register(data: RegisterRequest): Observable<boolean> {
     return this.api.post<AuthResponse>('auth/register', data).pipe(
+      tap(() => this.userService.clearUser()),
       tap(tokens => this.storeTokens(tokens)),
       tap(() => this.audit.logAuthEvent('register', 'success', data.email)),
       map(() => true),

@@ -95,16 +95,18 @@ export class ProfileComponent implements OnInit {
       next: (data) => {
         const bankName = (data['bankName'] ?? data['bank_name']) as string | undefined;
         const accountNumber = (data['accountNumber'] ?? data['account_number']) as string | undefined;
+        const accountNumberMasked = (data['accountNumberMasked'] ?? data['account_number_masked']) as string | undefined;
         const accountName = (data['accountName'] ?? data['account_name']) as string | undefined;
-        if (bankName || accountNumber || accountName) {
+        const displayAccountNumber = accountNumber ?? accountNumberMasked;
+        if (bankName || displayAccountNumber || accountName) {
           this.userService.updateProfile({
             bankName: bankName ?? undefined,
-            accountNumber: accountNumber ?? undefined,
+            accountNumber: displayAccountNumber ?? undefined,
             accountName: accountName ?? undefined
           });
           this.profileForm.patchValue({
             bankName: bankName ?? '',
-            accountNumber: accountNumber ?? '',
+            accountNumber: displayAccountNumber ?? '',
             accountName: accountName ?? ''
           });
           this.cdr.markForCheck();

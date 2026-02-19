@@ -17,12 +17,15 @@ export class PaymentService {
 
   initiateRegistrationPayment(
     packageName: string,
-    currency: string
+    currency: string,
+    callbackUrl?: string
   ): Observable<InitiateRegistrationPaymentResponse> {
-    const body = {
-      package: packageName,
-      currency
-    };
+    const body: Record<string, unknown> = { package: packageName, currency };
+    // Only send callbackUrl when valid (backend @IsUrl rejects localhost)
+    const isValidUrl = callbackUrl && /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(callbackUrl);
+    if (isValidUrl) {
+      body['callbackUrl'] = callbackUrl;
+    }
     return this.api
       .post<Record<string, unknown>>('payments/registration/initiate', body)
       .pipe(
