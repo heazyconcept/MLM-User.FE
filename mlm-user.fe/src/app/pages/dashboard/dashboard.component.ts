@@ -130,7 +130,14 @@ export class DashboardComponent implements OnInit {
     if (this.isPaid()) {
       this.walletService.fetchWallets().subscribe({
         next: () => this.cdr.markForCheck(),
-        error: () => {}
+        error: () => {
+          this.cdr.markForCheck();
+          this.modalService.open(
+            'error',
+            'Wallet Fetch Failed',
+            'Could not load wallet balances. Please refresh the page or contact support if the problem persists.'
+          );
+        }
       });
     }
 
