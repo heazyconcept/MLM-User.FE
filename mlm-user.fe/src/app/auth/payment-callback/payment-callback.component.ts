@@ -62,6 +62,9 @@ export class PaymentCallbackComponent implements OnInit {
       next: () => {
         this.status.set('success');
         this.cdr.markForCheck();
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.removeItem('mlm_registration_payment_reference');
+        }
         this.userService.fetchProfile().subscribe({
           next: () => {
             const redirectPath = this.userService.onboardingComplete()
