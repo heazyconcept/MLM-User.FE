@@ -1,75 +1,133 @@
-<div class="text-center mb-8">
-    <h1 class="text-2xl sm:text-3xl font-semibold text-mlm-warm-900 tracking-tight mb-2">Contact Details</h1>
-    <p class="text-mlm-warm-600 text-sm max-w-md mx-auto">Where can we reach you?</p>
-</div>
+<form [formGroup]="contactForm" (ngSubmit)="onSubmit()" class="flex flex-col flex-1 font-dm-sans">
+    <!-- Form Header -->
+    <div class="mb-8">
+        <div class="flex items-center gap-3 mb-1">
+            <div class="w-1 h-7 bg-mlm-primary rounded-full shrink-0"></div>
+            <h1 class="font-sora text-[clamp(22px,3vw,30px)] font-bold text-slate-900 leading-tight tracking-tight">Contact Details</h1>
+        </div>
+        <p class="text-sm text-slate-500 ml-4 leading-relaxed">Where can we reach you?</p>
+    </div>
 
-<form [formGroup]="contactForm" (ngSubmit)="onSubmit()">
-    <div class="space-y-5">
-        <app-auth-input
-            label="Email Address"
-            icon="pi-envelope"
-            formControlName="email">
-        </app-auth-input>
-
-        <app-auth-input
-            label="Phone Number"
-            placeholder="+234 ..."
-            icon="pi-phone"
-            formControlName="phone"
-            [required]="true"
-            [error]="contactForm.get('phone')?.invalid && contactForm.get('phone')?.touched ? 'Required' : null">
-        </app-auth-input>
-
-        <app-auth-input
-            label="Street Address"
-            placeholder="Enter your full address"
-            icon="pi-map-marker"
-            formControlName="address"
-            [required]="true"
-            [error]="contactForm.get('address')?.invalid && contactForm.get('address')?.touched ? 'Required' : null">
-        </app-auth-input>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <app-auth-input
-                label="City"
-                placeholder="City"
-                icon="pi-building"
-                formControlName="city"
-                [required]="true"
-                [error]="contactForm.get('city')?.invalid && contactForm.get('city')?.touched ? 'Required' : null">
-            </app-auth-input>
-            <app-auth-input
-                label="State / Province"
-                placeholder="State"
-                icon="pi-map"
-                formControlName="state"
-                [required]="true"
-                [error]="contactForm.get('state')?.invalid && contactForm.get('state')?.touched ? 'Required' : null">
-            </app-auth-input>
+    <!-- Form Stack -->
+    <div class="flex flex-col gap-[18px] flex-1">
+        <!-- Contact Info Section (onboarding-preview pattern) -->
+        <p class="text-[10.5px] font-bold text-slate-400 uppercase tracking-[0.1em] mb-2.5">Contact Info</p>
+        <div class="bg-gradient-to-br from-[#f9f8f6] to-[#faf9f7] border border-[#ede9e3] rounded-[18px] p-[18px] mb-5">
+            <div>
+                <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">Email Address</label>
+                <div class="relative flex items-center">
+                    <i class="pi pi-envelope absolute left-[14px] text-[14px] text-slate-400 pointer-events-none z-10"></i>
+                    <input
+                        type="email"
+                        class="w-full h-[48px] pl-[42px] pr-[14px] border-[1.5px] border-[#ddd0c2] rounded-xl font-dm-sans text-[14px] text-slate-800 bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-mlm-primary focus:shadow-[0_0_0_4px_rgba(73,163,33,0.1)] placeholder:text-slate-400 placeholder:text-[13.5px] disabled:opacity-60 disabled:cursor-not-allowed"
+                        placeholder="you@example.com"
+                        formControlName="email"
+                        [disabled]="true">
+                </div>
+            </div>
+            <div style="margin-top: 14px;">
+                <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">Phone Number <span class="text-red-500">*</span></label>
+                <div class="relative flex items-center">
+                    <i class="pi pi-phone absolute left-[14px] text-[14px] text-slate-400 pointer-events-none z-10"></i>
+                    <input
+                        type="tel"
+                        class="w-full h-[48px] pl-[42px] pr-[14px] border-[1.5px] border-[#ddd0c2] rounded-xl font-dm-sans text-[14px] text-slate-800 bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-mlm-primary focus:shadow-[0_0_0_4px_rgba(73,163,33,0.1)] placeholder:text-slate-400 placeholder:text-[13.5px]"
+                        placeholder="+234 800 000 0000"
+                        formControlName="phone"
+                        [class.border-red-500]="contactForm.get('phone')?.invalid && contactForm.get('phone')?.touched">
+                </div>
+                @if (contactForm.get('phone')?.invalid && contactForm.get('phone')?.touched) {
+                    <span class="text-[11px] font-semibold text-red-500 mt-1 block">Required</span>
+                }
+            </div>
         </div>
 
-        <app-auth-input
-            label="Country"
-            placeholder="Select Country"
-            icon="pi-globe"
-            formControlName="country"
-            [required]="true"
-            [error]="contactForm.get('country')?.invalid && contactForm.get('country')?.touched ? 'Required' : null">
-        </app-auth-input>
+        <!-- Home Address Section (onboarding-preview pattern) -->
+        <p class="text-[10.5px] font-bold text-slate-400 uppercase tracking-[0.1em] mb-2.5">Home Address</p>
+        <div class="bg-gradient-to-br from-[#f9f8f6] to-[#faf9f7] border border-[#ede9e3] rounded-[18px] p-[18px] mb-5">
+            <div>
+                <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">Street Address <span class="text-red-500">*</span></label>
+                <div class="relative flex items-center">
+                    <i class="pi pi-map-marker absolute left-[14px] text-[14px] text-slate-400 pointer-events-none z-10"></i>
+                    <input
+                        type="text"
+                        class="w-full h-[48px] pl-[42px] pr-[14px] border-[1.5px] border-[#ddd0c2] rounded-xl font-dm-sans text-[14px] text-slate-800 bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-mlm-primary focus:shadow-[0_0_0_4px_rgba(73,163,33,0.1)] placeholder:text-slate-400 placeholder:text-[13.5px]"
+                        placeholder="Enter your full street address"
+                        formControlName="address"
+                        [class.border-red-500]="contactForm.get('address')?.invalid && contactForm.get('address')?.touched">
+                </div>
+                @if (contactForm.get('address')?.invalid && contactForm.get('address')?.touched) {
+                    <span class="text-[11px] font-semibold text-red-500 mt-1 block">Required</span>
+                }
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3" style="margin: 14px 0;">
+                <div>
+                    <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">City <span class="text-red-500">*</span></label>
+                    <div class="relative flex items-center">
+                        <i class="pi pi-building absolute left-[14px] text-[14px] text-slate-400 pointer-events-none z-10"></i>
+                        <input
+                            type="text"
+                            class="w-full h-[48px] pl-[42px] pr-[14px] border-[1.5px] border-[#ddd0c2] rounded-xl font-dm-sans text-[14px] text-slate-800 bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-mlm-primary focus:shadow-[0_0_0_4px_rgba(73,163,33,0.1)] placeholder:text-slate-400 placeholder:text-[13.5px]"
+                            placeholder="City"
+                            formControlName="city"
+                            [class.border-red-500]="contactForm.get('city')?.invalid && contactForm.get('city')?.touched">
+                    </div>
+                    @if (contactForm.get('city')?.invalid && contactForm.get('city')?.touched) {
+                        <span class="text-[11px] font-semibold text-red-500 mt-1 block">Required</span>
+                    }
+                </div>
+                <div>
+                    <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">State <span class="text-red-500">*</span></label>
+                    <div class="relative flex items-center">
+                        <i class="pi pi-map absolute left-[14px] text-[14px] text-slate-400 pointer-events-none z-10"></i>
+                        <input
+                            type="text"
+                            class="w-full h-[48px] pl-[42px] pr-[14px] border-[1.5px] border-[#ddd0c2] rounded-xl font-dm-sans text-[14px] text-slate-800 bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-mlm-primary focus:shadow-[0_0_0_4px_rgba(73,163,33,0.1)] placeholder:text-slate-400 placeholder:text-[13.5px]"
+                            placeholder="State"
+                            formControlName="state"
+                            [class.border-red-500]="contactForm.get('state')?.invalid && contactForm.get('state')?.touched">
+                    </div>
+                    @if (contactForm.get('state')?.invalid && contactForm.get('state')?.touched) {
+                        <span class="text-[11px] font-semibold text-red-500 mt-1 block">Required</span>
+                    }
+                </div>
+            </div>
+            <div>
+                <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">Country <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <p-select
+                        [options]="countriesList"
+                        formControlName="country"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Select Country"
+                        styleClass="w-full contact-select"
+                        [style]="{'height': '48px', 'border': '1.5px solid #ddd0c2', 'border-radius': '12px', 'background': '#fff'}">
+                    </p-select>
+                </div>
+                @if (contactForm.get('country')?.invalid && contactForm.get('country')?.touched) {
+                    <span class="text-[11px] font-semibold text-red-500 mt-1 block">Required</span>
+                }
+            </div>
+        </div>
+    </div>
 
-        <div class="mt-8 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-mlm-warm-100">
-            <button type="button"
-                    routerLink="/onboarding/profile"
-                    class="px-4 py-2.5 rounded-xl text-mlm-warm-700 font-semibold hover:bg-mlm-background transition-all duration-200 text-sm w-full sm:w-auto">
-                Back
-            </button>
-            <p-button
-                label="Continue"
-                styleClass="!px-6 !py-2.5 !bg-mlm-primary !border-mlm-primary !text-white !font-semibold !rounded-xl hover:!bg-mlm-primary/90 transition-all duration-200 text-sm disabled:!opacity-60 disabled:!cursor-not-allowed w-full sm:w-auto"
-                type="submit"
-                [disabled]="contactForm.invalid || isLoading()"
-                [loading]="isLoading()">
-            </p-button>
+    <!-- Action Area -->
+    <div class="mt-auto pt-8 flex flex-col gap-3.5">
+        <button 
+            type="submit"
+            class="w-full h-[52px] bg-mlm-primary text-white border-none rounded-[14px] font-sora text-[0.95rem] font-bold cursor-pointer tracking-wide shadow-[0_8px_24px_rgba(73,163,33,0.3)] transition-all duration-150 flex items-center justify-center gap-2 hover:bg-[#3d8a1c] hover:-translate-y-[1px] hover:shadow-[0_12px_28px_rgba(73,163,33,0.35)] active:translate-y-0 disabled:opacity-55 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:bg-mlm-primary"
+            [disabled]="contactForm.invalid || isLoading()">
+            @if (isLoading()) {
+                <i class="pi pi-spin pi-spinner text-sm"></i>
+            }
+            Continue
+            @if (!isLoading()) {
+                <i class="pi pi-arrow-right text-sm"></i>
+            }
+        </button>
+        <div class="text-center text-sm text-slate-400">
+            <button type="button" routerLink="/onboarding/profile" class="bg-none border-none text-slate-500 font-semibold cursor-pointer text-sm font-dm-sans p-0 transition-colors duration-200 hover:text-mlm-primary">← Back</button>
         </div>
     </div>
 </form>

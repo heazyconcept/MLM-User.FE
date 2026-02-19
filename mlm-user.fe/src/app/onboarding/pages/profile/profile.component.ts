@@ -1,32 +1,36 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { DatePickerModule } from 'primeng/datepicker';
-import { AuthInputComponent } from '../../../auth/components/auth-input/auth-input.component';
 import { FileUploadComponent } from '../../components/file-upload/file-upload.component';
+import { OnboardingService } from '../../../services/onboarding.service';
+import { UserService } from '../../../services/user.service';
+import { ModalService } from '../../../services/modal.service';
 
 @Component({
   selector: 'app-profile-info',
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    ButtonModule,
     SelectModule,
     DatePickerModule,
-    AuthInputComponent,
     FileUploadComponent
   ],
   templateUrl: './profile.component.html',
+  styleUrl: './profile.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ProfileInfoComponent {
+export class ProfileInfoComponent implements OnInit {
   private fb = inject(FormBuilder);
   private router = inject(Router);
+  private onboardingService = inject(OnboardingService);
+  private userService = inject(UserService);
+  private modalService = inject(ModalService);
 
   isLoading = signal<boolean>(false);
+  private selectedPhotoFile: File | null = null;
 
   genders = [
     { label: 'Male', value: 'male' },
@@ -37,26 +41,81 @@ export class ProfileInfoComponent {
   profileForm = this.fb.group({
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
-    username: [{ value: 'user_123', disabled: true }, [Validators.required]],
-    dob: ['', [Validators.required]],
+    username: ['', [Validators.required]],
+    dob: [null as Date | null, [Validators.required]],
     gender: ['']
   });
 
-  onFileSelected(file: File) {
-    console.log('Profile photo selected:', file);
-  }
-
-  onSubmit() {
-    if (this.profileForm.valid) {
-      this.isLoading.set(true);
-      // Simulated 1s delay
-      setTimeout(() => {
-        this.isLoading.set(false);
-        this.router.navigate(['/onboarding/contact']);
-      }, 1000);
-    } else {
-      this.profileForm.markAllAsTouched();
+  ngOnInit(): void {
+    const user = this.userService.currentUser();
+    if (user) {
+      const u = user as unknown as Record<string, unknown>;
+      this.profileForm.patchValue({
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+        username: String(u['username'] ?? '')
+      });
+      const dob = u['dateOfBirth'] as string | undefined;
+      if (dob) {
+        this.profileForm.patchValue({ dob: new Date(dob) });
+      }
     }
   }
-}
 
+  onFileSelected(file: File): void {
+    this.selectedPhotoFile = file;
+  }
+
+  onSubmit(): void {
+    if (this.profileForm.invalid) {
+      this.profileForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.profileForm.getRawValue();
+    const dob = value.dob;
+    const str = (v: string | undefined | null) => (typeof v === 'string' ? v.trim() : undefined) || undefined;
+    const payload: Record<string, unknown> = {
+      firstName: str(value.firstName),
+      lastName: str(value.lastName),
+      username: str(value.username),
+      dateOfBirth: dob instanceof Date ? dob.toISOString().slice(0, 10) : undefined,
+      gender: str(value.gender)
+    };
+    Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+
+    this.isLoading.set(true);
+
+    this.onboardingService.updateProfile(payload).subscribe({
+      next: () => {
+        if (this.selectedPhotoFile) {
+          this.onboardingService.uploadProfilePhoto(this.selectedPhotoFile).subscribe({
+            next: () => this.handleSuccess(),
+            error: () => this.handleSuccess()
+          });
+        } else {
+          this.handleSuccess();
+        }
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        if (typeof ngDevMode !== 'undefined' && ngDevMode && err?.error) {
+          console.error('Profile update failed', err.error);
+        }
+        this.modalService.open(
+          'error',
+          'Could not save',
+          'We couldn\'t save your profile. Please try again.'
+        );
+      }
+    });
+  }
+
+  private handleSuccess(): void {
+    this.isLoading.set(false);
+    this.userService.fetchProfile().subscribe({
+      next: () => this.router.navigate(['/onboarding/contact']),
+      error: () => this.router.navigate(['/onboarding/contact'])
+    });
+  }
+}

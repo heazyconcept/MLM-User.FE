@@ -25,6 +25,7 @@ export interface User {
   isMerchant?: boolean;
   package?: string;
   registrationPaid?: boolean;
+  onboardingComplete?: boolean;
 }
 
 const USER_DATA_KEY = 'mlm_user_data';
@@ -46,6 +47,7 @@ export class UserService {
   paymentStatus = computed(() => this.user()?.paymentStatus ?? 'UNPAID');
   isPaid = computed(() => this.paymentStatus() === 'PAID');
   isMerchant = computed(() => this.user()?.isMerchant ?? false);
+  onboardingComplete = computed(() => this.user()?.onboardingComplete ?? false);
   currentUser = computed(() => this.user());
 
   fetchProfile(): Observable<User> {
@@ -66,7 +68,8 @@ export class UserService {
   }
 
   private mapApiUserToUser(apiUser: Record<string, unknown>): User {
-    const registrationPaid = apiUser['registrationPaid'] === true;
+    const reg = apiUser['registration'] as Record<string, unknown> | undefined;
+    const registrationPaid = apiUser['registrationPaid'] === true || reg?.['isPaid'] === true;
 
     return {
       id: String(apiUser['id'] ?? ''),
@@ -81,12 +84,13 @@ export class UserService {
       accountNumber: apiUser['accountNumber'] as string | undefined,
       accountName: apiUser['accountName'] as string | undefined,
       kycStatus: apiUser['kycStatus'] as KycStatus | undefined,
-      currency: apiUser['currency'] as 'NGN' | 'USD' | undefined,
+      currency: (apiUser['currency'] ?? reg?.['currency']) as 'NGN' | 'USD' | undefined,
       rank: apiUser['rank'] as string | undefined,
-      stage: apiUser['stage'] as number | undefined,
+      stage: (apiUser['stage'] ?? (apiUser['matrix'] as Record<string, unknown>)?.['currentStage']) as number | undefined,
       isMerchant: apiUser['isMerchant'] as boolean | undefined ?? false,
-      package: apiUser['package'] as string | undefined,
+      package: (apiUser['package'] ?? reg?.['package']) as string | undefined,
       registrationPaid,
+      onboardingComplete: apiUser['onboardingComplete'] === true,
     };
   }
 
@@ -133,7 +137,7 @@ export class UserService {
     }
   }
 
-  updateProfile(profileData: Partial<Pick<User, 'firstName' | 'lastName' | 'phoneNumber' | 'address' | 'bankName' | 'accountNumber' | 'accountName' | 'currency'>>): void {
+  updateProfile(profileData: Partial<Pick<User, 'firstName' | 'lastName' | 'phoneNumber' | 'address' | 'bankName' | 'accountNumber' | 'accountName' | 'currency' | 'kycStatus'>>): void {
     const currentUser = this.user();
     if (currentUser) {
       const updatedUser = { ...currentUser, ...profileData };

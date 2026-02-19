@@ -1,10 +1,14 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { AuthService } from '../../services/auth.service';
 import { ModalService } from '../../services/modal.service';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const modalService = inject(ModalService);
+  const router = inject(Router);
+  const authService = inject(AuthService);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -25,8 +29,18 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         } else if (error.status >= 500) {
           errorMessage = 'Server error. Please try again later.';
         } else if (error.error && error.error.message) {
-            errorMessage = error.error.message;
+          const msg = error.error.message;
+          errorMessage = Array.isArray(msg) ? msg.join(' ') : String(msg);
         }
+        if (error.status === 400 && typeof ngDevMode !== 'undefined' && ngDevMode) {
+          console.error('API 400:', error.error);
+        }
+      }
+
+      // Skip modal for 404 on GET to onboarding endpoints where 404 means "not set up yet"
+      const expected404GetPaths = ['users/me/bank', 'users/me/identity', 'users/me/preferences'];
+      if (error.status === 404 && req.method === 'GET' && expected404GetPaths.some(path => req.url.includes(path))) {
+        return throwError(() => error);
       }
 
       modalService.open('error', 'Error', errorMessage);

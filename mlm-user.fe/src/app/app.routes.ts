@@ -23,6 +23,14 @@ export const routes: Routes = [
         loadComponent: () => import('./auth/reset-password/reset-password.component').then(m => m.ResetPasswordComponent)
       },
       {
+        path: 'payment/callback',
+        loadComponent: () => import('./auth/payment-callback/payment-callback.component').then(m => m.PaymentCallbackComponent)
+      },
+      {
+        path: 'register/payment-pending',
+        loadComponent: () => import('./auth/payment-pending/payment-pending.component').then(m => m.PaymentPendingComponent)
+      },
+      {
         path: 'logout',
         redirectTo: 'login'
       }
