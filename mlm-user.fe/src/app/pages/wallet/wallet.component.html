@@ -76,53 +76,20 @@
               </div>
             </div>
 
-            <!-- Empty State -->
-            @if (hasZeroBalance()) {
-              <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-8 max-w-3xl mx-auto">
-                <div class="flex flex-col items-center text-center py-6 space-y-5">
-                  <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                    <i class="pi pi-wallet text-2xl text-gray-500" aria-hidden="true"></i>
-                  </div>
-                  <div class="space-y-1">
-                    <h3 class="text-lg font-semibold text-gray-900">No balance yet</h3>
-                    <p class="text-gray-500 text-sm max-w-md">
-                      Fund your wallet or start earning commissions by inviting friends.
-                    </p>
-                  </div>
-                  <div class="flex flex-wrap justify-center gap-2">
-                    <button
-                      (click)="navigateToFunding()"
-                      class="px-4 py-2.5 bg-mlm-primary text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors">
-                      Fund Wallet
-                    </button>
-                    <button
-                      routerLink="/network/referrals"
-                      class="px-4 py-2.5 bg-white border border-gray-200 text-mlm-secondary text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
-                      Invite Friends
-                    </button>
-                    <button
-                      (click)="navigateToMarketplace()"
-                      class="px-4 py-2.5 bg-white border border-gray-200 text-mlm-secondary text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
-                      Browse Products
-                    </button>
-                  </div>
-                </div>
-              </div>
-            } @else {
-              <!-- Main Grid: Wallet Cards + Right Sidebar -->
-              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                <!-- Left Section: Wallet Type Cards -->
-                <div class="lg:col-span-2 space-y-6">
-                  @for (wallet of wallets(); track wallet.id) {
+            <!-- Main Grid: Wallet Cards + Right Sidebar (always shown; "--" for empty balances) -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              <!-- Left Section: Wallet Type Cards -->
+              <div class="lg:col-span-2 space-y-6">
+                @for (wallet of displayWallets(); track wallet.id) {
                     <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                       <!-- Card header -->
                       <div class="px-6 py-4 border-b border-gray-100">
                         <div class="flex items-center justify-between">
                           <h3 class="text-base font-semibold text-gray-900">{{ wallet.currency }} Wallet</h3>
                           <div class="text-right">
-                            <span class="text-sm font-medium text-gray-900">Total {{ formatCurrency(wallet.balance, wallet.currency) }}</span>
-                            @if (!isBalanceHidden()) {
+                            <span class="text-sm font-medium text-gray-900">Total {{ formatAmountOrPlaceholder(wallet.balance, wallet.currency) }}</span>
+                            @if (!isBalanceHidden() && wallet.balance > 0) {
                               <p class="text-xs text-gray-500 mt-0.5">{{ formatSecondaryEquivalent(wallet.balance, wallet.currency) }}</p>
                             }
                           </div>
@@ -134,7 +101,7 @@
                         <div class="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                           <div class="min-w-0">
                             <p class="text-sm font-medium text-gray-900">Cash Wallet</p>
-                            <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatCurrency(wallet.cashBalance, wallet.currency) }}</p>
+                            <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatAmountOrPlaceholder(wallet.cashBalance, wallet.currency) }}</p>
                             <span class="text-xs text-gray-500 mt-1 inline-block"
                                   pTooltip="Can be withdrawn to your bank account"
                                   tooltipPosition="top">Withdrawable</span>
@@ -142,7 +109,7 @@
                           <div class="flex gap-2 shrink-0">
                             <button
                               (click)="openWithdrawDialog(wallet)"
-                              [disabled]="wallet.cashBalance <= 0"
+                              [disabled]="wallet.cashBalance <= 0 || wallet.id === 'placeholder'"
                               class="px-4 py-2 text-sm font-medium text-white bg-mlm-primary rounded-lg hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                               Withdraw
                             </button>
@@ -158,8 +125,8 @@
                         <div class="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                           <div class="min-w-0">
                             <p class="text-sm font-medium text-gray-900">Voucher Wallet</p>
-                            <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatCurrency(wallet.voucherBalance, wallet.currency) }}</p>
-                            @if (!isBalanceHidden()) {
+                            <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatAmountOrPlaceholder(wallet.voucherBalance, wallet.currency) }}</p>
+                            @if (!isBalanceHidden() && wallet.voucherBalance > 0) {
                               <p class="text-xs text-gray-500 mt-0.5">{{ formatSecondaryEquivalent(wallet.voucherBalance, wallet.currency) }}</p>
                             }
                             <span class="text-xs text-gray-500 mt-1 inline-block"
@@ -178,8 +145,8 @@
                           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div class="min-w-0">
                               <p class="text-sm font-medium text-gray-900">Autoship Wallet</p>
-                              <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatCurrency(wallet.autoshipBalance, wallet.currency) }}</p>
-                              @if (!isBalanceHidden()) {
+                              <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatAmountOrPlaceholder(wallet.autoshipBalance, wallet.currency) }}</p>
+                              @if (!isBalanceHidden() && wallet.autoshipBalance > 0) {
                                 <p class="text-xs text-gray-500 mt-0.5">{{ formatSecondaryEquivalent(wallet.autoshipBalance, wallet.currency) }}</p>
                               }
                               <span class="text-xs text-gray-500 mt-1 inline-block"
@@ -218,7 +185,7 @@
                             @if (isBalanceHidden()) {
                               {{ getHiddenBalance() }}
                             } @else {
-                              {{ formatCurrency(totalBalance(), 'USD') }}
+                              {{ formatAmountOrPlaceholder(totalBalance(), displayCurrency()) }}
                             }
                           </p>
                           <!-- Eye Toggle Button -->
@@ -228,8 +195,8 @@
                             <i [class]="'pi text-sm ' + (isBalanceHidden() ? 'pi-eye' : 'pi-eye-slash')"></i>
                           </button>
                         </div>
-                        @if (!isBalanceHidden()) {
-                          <p class="text-xs opacity-80 mt-1">{{ formatSecondaryEquivalent(totalBalance(), 'USD') }}</p>
+                        @if (!isBalanceHidden() && totalBalance() > 0) {
+                          <p class="text-xs opacity-80 mt-1">{{ formatSecondaryEquivalent(totalBalance(), displayCurrency()) }}</p>
                         }
                         <p class="text-xs opacity-70 mt-1">Across all wallets</p>
                       </div>
@@ -269,10 +236,10 @@
                         </div>
                         <span class="text-right">
                           <span class="text-sm font-bold text-mlm-text block">
-                            @if (isBalanceHidden()) { •••••• } @else { {{ formatCurrency(totalCashBalance(), 'USD') }} }
+                            @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalCashBalance(), displayCurrency()) }} }
                           </span>
-                          @if (!isBalanceHidden()) {
-                            <span class="text-[10px] text-mlm-secondary block mt-0.5">{{ formatSecondaryEquivalent(totalCashBalance(), 'USD') }}</span>
+                          @if (!isBalanceHidden() && totalCashBalance() > 0) {
+                            <span class="text-[10px] text-mlm-secondary block mt-0.5">{{ formatSecondaryEquivalent(totalCashBalance(), displayCurrency()) }}</span>
                           }
                         </span>
                       </div>
@@ -290,10 +257,10 @@
                         </div>
                         <span class="text-right">
                           <span class="text-sm font-bold text-mlm-text block">
-                            @if (isBalanceHidden()) { •••••• } @else { {{ formatCurrency(totalVoucherBalance(), 'USD') }} }
+                            @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalVoucherBalance(), displayCurrency()) }} }
                           </span>
-                          @if (!isBalanceHidden()) {
-                            <span class="text-[10px] text-mlm-secondary block mt-0.5">{{ formatSecondaryEquivalent(totalVoucherBalance(), 'USD') }}</span>
+                          @if (!isBalanceHidden() && totalVoucherBalance() > 0) {
+                            <span class="text-[10px] text-mlm-secondary block mt-0.5">{{ formatSecondaryEquivalent(totalVoucherBalance(), displayCurrency()) }}</span>
                           }
                         </span>
                       </div>
@@ -311,10 +278,10 @@
                         </div>
                         <span class="text-right">
                           <span class="text-sm font-bold text-mlm-text block">
-                            @if (isBalanceHidden()) { •••••• } @else { {{ formatCurrency(totalAutoshipBalance(), 'USD') }} }
+                            @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalAutoshipBalance(), displayCurrency()) }} }
                           </span>
-                          @if (!isBalanceHidden()) {
-                            <span class="text-[10px] text-mlm-secondary block mt-0.5">{{ formatSecondaryEquivalent(totalAutoshipBalance(), 'USD') }}</span>
+                          @if (!isBalanceHidden() && totalAutoshipBalance() > 0) {
+                            <span class="text-[10px] text-mlm-secondary block mt-0.5">{{ formatSecondaryEquivalent(totalAutoshipBalance(), displayCurrency()) }}</span>
                           }
                         </span>
                       </div>
@@ -337,7 +304,6 @@
                   </div>
                 </div>
               </div>
-            }
 
             <!-- Quick Info / Business Rules -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -1,0 +1,113 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-8">
+    <div class="px-4 sm:px-6 lg:px-8 mx-auto max-w-2xl">
+      @if (showPendingView()) {
+        <!-- Pending view: reference only (e.g. USDT) -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+          <div class="flex flex-col items-center text-center">
+            <div class="w-16 h-16 bg-mlm-green-50 rounded-full flex items-center justify-center mb-6">
+              <i class="pi pi-credit-card text-2xl text-mlm-primary" aria-hidden="true"></i>
+            </div>
+            <h1 class="text-xl font-semibold text-gray-900 mb-2">Complete your wallet funding</h1>
+            <p class="text-slate-500 mb-4">
+              Use the reference below to complete your payment via your preferred method (e.g. bank transfer, USDT).
+            </p>
+            <div class="bg-slate-100 rounded-xl p-4 mb-6 w-full">
+              <p class="text-xs font-medium text-slate-500 mb-1">Payment reference</p>
+              <p class="font-mono font-semibold text-gray-900 break-all">{{ pendingReference() }}</p>
+            </div>
+            <p class="text-sm text-slate-500 mb-6">
+              Once you have completed the payment, click below to verify.
+            </p>
+            <div class="flex flex-wrap gap-3 justify-center">
+              <p-button
+                label="I've paid - Verify"
+                icon="pi pi-check"
+                (onClick)="onVerify()"
+                severity="success">
+              </p-button>
+              <p-button
+                label="Back"
+                icon="pi pi-arrow-left"
+                [outlined]="true"
+                severity="secondary"
+                (onClick)="onBack()">
+              </p-button>
+            </div>
+          </div>
+        </div>
+      } @else {
+        <!-- Form view -->
+        <div class="space-y-6">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Fund Wallet</h1>
+            <p class="text-gray-500 text-sm mt-1">Add funds to your wallet using your preferred payment method.</p>
+          </div>
+
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="p-6">
+              <form [formGroup]="fundForm" (ngSubmit)="onSubmit()" class="space-y-6">
+                <div class="flex flex-col gap-2">
+                  <label for="amount" class="text-sm font-semibold text-gray-700">Amount</label>
+                  <p-inputNumber
+                    formControlName="amount"
+                    inputId="amount"
+                    [mode]="'currency'"
+                    [currency]="userCurrency()"
+                    [currencyDisplay]="'symbol'"
+                    [min]="0.01"
+                    fluid="true"
+                    placeholder="0.00">
+                  </p-inputNumber>
+                  <p class="text-xs text-gray-500">Minimum: {{ currencySymbol() }}0.01</p>
+                  @if (fundForm.get('amount')?.invalid && (fundForm.get('amount')?.dirty || fundForm.get('amount')?.touched)) {
+                    <small class="text-red-500 text-xs">
+                      @if (fundForm.get('amount')?.errors?.['required']) {
+                        Amount is required.
+                      }
+                      @if (fundForm.get('amount')?.errors?.['min']) {
+                        Minimum amount is {{ currencySymbol() }}0.01.
+                      }
+                    </small>
+                  }
+                </div>
+
+                <div class="flex flex-col gap-2">
+                  <label for="provider" class="text-sm font-semibold text-gray-700">Payment method</label>
+                  <p-select
+                    formControlName="provider"
+                    inputId="provider"
+                    [options]="providerOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Select payment method"
+                    styleClass="w-full">
+                  </p-select>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                  <p-button
+                    type="button"
+                    label="Cancel"
+                    [outlined]="true"
+                    severity="secondary"
+                    icon="pi pi-arrow-left"
+                    (onClick)="cancel()"
+                    [disabled]="isSubmitting()">
+                  </p-button>
+                  <p-button
+                    type="submit"
+                    label="Continue to payment"
+                    icon="pi pi-arrow-right"
+                    [loading]="isSubmitting()"
+                    [disabled]="fundForm.invalid || isSubmitting()">
+                  </p-button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </main>
+</div>

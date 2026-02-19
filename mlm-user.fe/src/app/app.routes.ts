@@ -118,6 +118,17 @@ export const routes: Routes = [
       }
     ]
   },
+  {
+    path: 'payments',
+    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    children: [
+      {
+        path: 'fund',
+        loadComponent: () => import('./pages/payments/fund-wallet/fund-wallet.component').then(m => m.FundWalletComponent),
+        data: { title: 'Fund Wallet' }
+      }
+    ]
+  },
 
 
   {

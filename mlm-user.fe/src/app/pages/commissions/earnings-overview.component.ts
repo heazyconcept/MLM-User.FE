@@ -37,6 +37,7 @@ export class EarningsOverviewComponent implements OnInit {
   private initChart(): void {
     const textColorSecondary = '#64748b';
     const surfaceBorder = '#e5e7eb';
+    const symbol = this.userService.displayCurrency() === 'NGN' ? '₦' : '$';
 
     this.chartData = {
       labels: ['Nov 1', 'Nov 4', 'Nov 8', 'Nov 11', 'Nov 15', 'Nov 18', 'Nov 22', 'Nov 25', 'Nov 30'],
@@ -65,7 +66,7 @@ export class EarningsOverviewComponent implements OnInit {
         },
         tooltip: {
           callbacks: {
-            label: (context: any) => `₦${context.raw.toLocaleString()}`
+            label: (context: any) => `${symbol}${context.raw.toLocaleString()}`
           }
         }
       },
@@ -86,7 +87,7 @@ export class EarningsOverviewComponent implements OnInit {
           ticks: { 
             color: textColorSecondary, 
             font: { size: 11 },
-            callback: (value: number) => `₦${value.toLocaleString()}`
+            callback: (value: number) => `${symbol}${value.toLocaleString()}`
           },
           grid: { 
             color: surfaceBorder,

@@ -47,8 +47,11 @@ export class SideMenuComponent {
   activeRoute = signal('');
   openMenus = signal<Set<string>>(new Set());
   collapsed = this.layoutService.isSidebarCollapsed;
+  displayCurrency = this.userService.displayCurrency;
 
-  menuSections = signal<MenuSection[]>([
+  menuSections = computed<MenuSection[]>(() => {
+    const currency = this.displayCurrency();
+    return [
     {
       title: 'MAIN MENU',
       items: [
@@ -61,7 +64,7 @@ export class SideMenuComponent {
           route: '/wallet',
           requiresPayment: true,
           children: [
-            { label: 'Transaction History', icon: 'pi pi-history', route: '/wallet/transactions/NGN', requiresPayment: true }
+            { label: 'Transaction History', icon: 'pi pi-history', route: `/wallet/transactions/${currency}`, requiresPayment: true }
           ]
         },
         { 
@@ -103,7 +106,8 @@ export class SideMenuComponent {
         { label: 'Log out', icon: 'pi pi-sign-out', action: () => this.logout() }
       ]
     }
-  ]);
+  ];
+  });
 
   /** Sections to display; MERCHANT only when user is a merchant */
   visibleMenuSections = computed(() => {

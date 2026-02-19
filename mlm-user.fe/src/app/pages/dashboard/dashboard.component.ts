@@ -57,7 +57,8 @@ export class DashboardComponent implements OnInit {
   isPaid = this.userService.isPaid;
   currentUser = this.userService.currentUser;
   paymentStatus = this.userService.paymentStatus;
-  
+  displayCurrency = this.userService.displayCurrency;
+
   ngnSummary = this.commissionService.getSummary('NGN');
   usdSummary = this.commissionService.getSummary('USD');
 
@@ -65,15 +66,13 @@ export class DashboardComponent implements OnInit {
   usdWallet = this.walletService.getWallet('USD');
 
   activeWallet = computed(() => {
-    const user = this.currentUser();
-    const currency = user?.currency || 'USD';
-    return this.walletService.getWallet(currency as 'NGN' | 'USD')();
+    const currency = this.displayCurrency();
+    return this.walletService.getWallet(currency)();
   });
 
   activeSummary = computed(() => {
-    const user = this.currentUser();
-    const currency = user?.currency || 'USD';
-    return this.commissionService.getSummary(currency as 'NGN' | 'USD')();
+    const currency = this.displayCurrency();
+    return this.commissionService.getSummary(currency)();
   });
 
   hasActivity = computed(() => {
@@ -125,6 +124,14 @@ export class DashboardComponent implements OnInit {
     // Open payment modal when navigating to /dashboard/registration-payment
     if (this.router.url.includes('registration-payment') && this.paymentStatus() === 'UNPAID') {
       this.showPaymentModal.set(true);
+    }
+
+    // Fetch wallets when user is paid (for balance/earnings display)
+    if (this.isPaid()) {
+      this.walletService.fetchWallets().subscribe({
+        next: () => this.cdr.markForCheck(),
+        error: () => {}
+      });
     }
 
     // Listen to navigation events to detect when returning to dashboard

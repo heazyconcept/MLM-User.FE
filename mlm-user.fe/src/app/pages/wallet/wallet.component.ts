@@ -42,16 +42,26 @@ export class WalletComponent implements OnInit {
   isLoading = signal(true);
   isBalanceHidden = signal(false);
   
-  // Get primary wallet (USD preferred for display)
+  // Get primary wallet (prefer user's registration currency)
   primaryWallet = computed(() => {
     const w = this.wallets();
-    return w.find(wallet => wallet.currency === 'USD') || w[0];
+    const userCurrency = this.userService.currentUser()?.currency ?? 'NGN';
+    return w.find(wallet => wallet.currency === userCurrency) || w[0];
   });
 
-  // Check if any wallet has zero balance (for empty state)
-  hasZeroBalance = computed(() => {
+  /** Wallets to display; when empty, returns a placeholder wallet so UI always shows */
+  displayWallets = computed(() => {
     const w = this.wallets();
-    return w.length === 0 || w.every(wallet => wallet.balance === 0);
+    if (w.length > 0) return w;
+    const userCurrency = this.userService.currentUser()?.currency ?? 'NGN';
+    return [{
+      id: 'placeholder',
+      currency: userCurrency as 'NGN' | 'USD',
+      balance: 0,
+      cashBalance: 0,
+      voucherBalance: 0,
+      autoshipBalance: 0
+    }];
   });
 
   ngOnInit() {
@@ -108,6 +118,15 @@ export class WalletComponent implements OnInit {
     const symbol = currency === 'NGN' ? '₦' : '$';
     return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
+
+  /** Returns "--" when amount is 0 or undefined; otherwise formatted currency */
+  formatAmountOrPlaceholder(amount: number | undefined | null, currency: 'NGN' | 'USD' = 'USD'): string {
+    if (amount == null || amount === 0) return '--';
+    return this.formatCurrency(amount, currency);
+  }
+
+  /** User's display currency for sidebar totals (from preferences, fallback to registration) */
+  displayCurrency = this.userService.displayCurrency;
 
   /** Returns mock secondary currency equivalent, e.g. "≈ $1,250.00" or "≈ ₦1,875,000". */
   formatSecondaryEquivalent(amount: number, fromCurrency: 'NGN' | 'USD'): string {

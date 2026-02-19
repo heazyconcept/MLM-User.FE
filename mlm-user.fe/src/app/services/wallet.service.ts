@@ -1,10 +1,23 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { delay, tap } from 'rxjs/operators';
+import { map, tap, catchError } from 'rxjs/operators';
+import { ApiService } from './api.service';
 import { ModalService } from './modal.service';
 import { NotificationService } from './notification.service';
 
+// API response types (OpenAPI has no schema; infer from API.md)
+export type WalletType = 'CASH' | 'VOUCHER' | 'AUTOSHIP';
+
+export interface ApiWalletItem {
+  id: string;
+  type?: WalletType;
+  balance: number;
+  currency?: 'NGN' | 'USD';
+  status?: string;
+  cash_balance?: number;
+  voucher_balance?: number;
+  autoship_balance?: number;
+}
 
 export interface Wallet {
   id: string;
@@ -36,229 +49,196 @@ export interface WithdrawalRequest {
   accountName: string;
 }
 
-const WALLET_KEY = 'mlm_wallets';
-const WITHDRAWAL_HISTORY_KEY = 'mlm_withdrawal_history';
-
 @Injectable({
   providedIn: 'root'
 })
 export class WalletService {
-  private wallets = signal<Wallet[]>([]);
-  private transactions = signal<Transaction[]>([]);
-  private withdrawalRequests = signal<WithdrawalRequest[]>([]);
+  private api = inject(ApiService);
   private modalService = inject(ModalService);
   private notificationService = inject(NotificationService);
 
+  private wallets = signal<Wallet[]>([]);
+  private transactions = signal<Transaction[]>([]);
+  private withdrawalRequests = signal<WithdrawalRequest[]>([]);
 
   readonly allWallets = computed(() => this.wallets());
-
   readonly allTransactions = computed(() => this.transactions());
   readonly allWithdrawals = computed(() => this.withdrawalRequests());
 
-  // Total balance across all wallets (aggregated)
-  readonly totalBalance = computed(() => {
-    const wallets = this.wallets();
-    return wallets.reduce((sum, w) => sum + w.balance, 0);
-  });
-
-  // Total cash balance (withdrawable)
-  readonly totalCashBalance = computed(() => {
-    const wallets = this.wallets();
-    return wallets.reduce((sum, w) => sum + w.cashBalance, 0);
-  });
-
-  // Total voucher balance
-  readonly totalVoucherBalance = computed(() => {
-    const wallets = this.wallets();
-    return wallets.reduce((sum, w) => sum + w.voucherBalance, 0);
-  });
-
-  // Total autoship balance
-  readonly totalAutoshipBalance = computed(() => {
-    const wallets = this.wallets();
-    return wallets.reduce((sum, w) => sum + w.autoshipBalance, 0);
-  });
-
-  constructor() {
-    this.initialLoad();
-  }
-
-  private initialLoad() {
-    // Load wallets
-    const savedWallets = localStorage.getItem(WALLET_KEY);
-    if (savedWallets) {
-      let wallets = JSON.parse(savedWallets) as Wallet[];
-      // Migration: Ensure new fields exist
-      const migrationNeeded = wallets.some(w => w.cashBalance === undefined);
-      if (migrationNeeded) {
-        wallets = wallets.map(w => ({
-          ...w,
-          cashBalance: w.cashBalance ?? (w.balance * 0.6),
-          voucherBalance: w.voucherBalance ?? (w.balance * 0.2),
-          autoshipBalance: w.autoshipBalance ?? (w.balance * 0.2)
-        }));
-        this.persistWallets(wallets);
-      }
-      this.wallets.set(wallets);
-    } else {
-      // Default mock wallets
-      const defaultWallets: Wallet[] = [
-        { id: '1', currency: 'NGN', balance: 250000.50, cashBalance: 150000.50, voucherBalance: 50000, autoshipBalance: 50000 },
-        { id: '2', currency: 'USD', balance: 1250.75, cashBalance: 850.75, voucherBalance: 200, autoshipBalance: 200 }
-      ];
-      this.wallets.set(defaultWallets);
-      this.persistWallets(defaultWallets);
-    }
-
-    // Load withdrawal history
-    const savedHistory = localStorage.getItem(WITHDRAWAL_HISTORY_KEY);
-    if (savedHistory) {
-      this.withdrawalRequests.set(JSON.parse(savedHistory));
-    } else {
-      // Default mock initial history
-      const initialHistory: WithdrawalRequest[] = [
-        { id: 'w1', date: '2023-10-20T10:00:00Z', currency: 'NGN', amount: 5000, status: 'Approved', bankName: 'Access Bank', accountNumber: '1234567890', accountName: 'John Doe' },
-        { id: 'w2', date: '2023-10-21T14:30:00Z', currency: 'USD', amount: 100, status: 'Pending', bankName: 'Global Bank', accountNumber: '9876543210', accountName: 'John Doe' }
-      ];
-      this.withdrawalRequests.set(initialHistory);
-      this.persistWithdrawals(initialHistory);
-    }
-  }
-
-  private persistWallets(wallets: Wallet[]) {
-    localStorage.setItem(WALLET_KEY, JSON.stringify(wallets));
-  }
-
-  private persistWithdrawals(history: WithdrawalRequest[]) {
-    localStorage.setItem(WITHDRAWAL_HISTORY_KEY, JSON.stringify(history));
-  }
-
-
+  readonly totalBalance = computed(() =>
+    this.wallets().reduce((sum, w) => sum + w.balance, 0)
+  );
+  readonly totalCashBalance = computed(() =>
+    this.wallets().reduce((sum, w) => sum + w.cashBalance, 0)
+  );
+  readonly totalVoucherBalance = computed(() =>
+    this.wallets().reduce((sum, w) => sum + w.voucherBalance, 0)
+  );
+  readonly totalAutoshipBalance = computed(() =>
+    this.wallets().reduce((sum, w) => sum + w.autoshipBalance, 0)
+  );
 
   getWallet(currency: 'NGN' | 'USD') {
     return computed(() => this.wallets().find(w => w.currency === currency));
   }
 
-  fetchWallets(): Observable<Wallet[]> {
-    return of(this.wallets()).pipe(delay(800));
+  /**
+   * Maps API response to Wallet[]. Handles:
+   * - Array of per-type wallets (CASH, VOUCHER, AUTOSHIP) grouped by currency
+   * - Single wallet object with cash/voucher/autoship balances
+   */
+  private mapApiWalletsToWallets(raw: unknown): Wallet[] {
+    if (!raw) return [];
+
+    const items = Array.isArray(raw) ? raw : (raw as { wallets?: unknown[] }).wallets ?? [];
+    if (!Array.isArray(items) || items.length === 0) {
+      // Single summary object: { cash, voucher, autoship, currency }
+      const obj = raw as Record<string, unknown>;
+      const cash = Number(obj['cash'] ?? obj['cashBalance'] ?? 0);
+      const voucher = Number(obj['voucher'] ?? obj['voucherBalance'] ?? 0);
+      const autoship = Number(obj['autoship'] ?? obj['autoshipBalance'] ?? 0);
+      const currency = (obj['currency'] ?? 'NGN') as 'NGN' | 'USD';
+      if (cash === 0 && voucher === 0 && autoship === 0) return [];
+      return [{
+        id: '1',
+        currency,
+        balance: cash + voucher + autoship,
+        cashBalance: cash,
+        voucherBalance: voucher,
+        autoshipBalance: autoship
+      }];
+    }
+
+    const byCurrency = new Map<string, { cash: number; voucher: number; autoship: number; id: string }>();
+    for (const item of items as ApiWalletItem[]) {
+      const type = (item.type ?? 'CASH').toUpperCase();
+      const currency = (item.currency ?? 'NGN') as 'NGN' | 'USD';
+      const balance = Number(item.balance ?? 0);
+      const cash = Number(item.cash_balance ?? (type === 'CASH' ? balance : 0));
+      const voucher = Number(item.voucher_balance ?? (type === 'VOUCHER' ? balance : 0));
+      const autoship = Number(item.autoship_balance ?? (type === 'AUTOSHIP' ? balance : 0));
+
+      const key = currency;
+      const existing = byCurrency.get(key);
+      if (existing) {
+        existing.cash += type === 'CASH' ? balance : cash;
+        existing.voucher += type === 'VOUCHER' ? balance : voucher;
+        existing.autoship += type === 'AUTOSHIP' ? balance : autoship;
+      } else {
+        byCurrency.set(key, {
+          id: item.id,
+          cash: type === 'CASH' ? balance : cash,
+          voucher: type === 'VOUCHER' ? balance : voucher,
+          autoship: type === 'AUTOSHIP' ? balance : autoship
+        });
+      }
+    }
+
+    return Array.from(byCurrency.entries()).map(([currency, data]) => ({
+      id: data.id,
+      currency: currency as 'NGN' | 'USD',
+      balance: data.cash + data.voucher + data.autoship,
+      cashBalance: data.cash,
+      voucherBalance: data.voucher,
+      autoshipBalance: data.autoship
+    }));
   }
 
+  /**
+   * Maps API withdrawal item to WithdrawalRequest.
+   */
+  private mapApiWithdrawalToWithdrawal(item: Record<string, unknown>): WithdrawalRequest {
+    const status = String(item['status'] ?? 'PENDING').toUpperCase();
+    let mappedStatus: 'Pending' | 'Approved' | 'Rejected' = 'Pending';
+    if (status === 'APPROVED' || status === 'PAID') mappedStatus = 'Approved';
+    else if (status === 'REJECTED') mappedStatus = 'Rejected';
 
-  fetchTransactions(currency?: 'NGN' | 'USD'): Observable<Transaction[]> {
-    // Mock API transactions
-    const mockTransactions: Transaction[] = [];
+    return {
+      id: String(item['id'] ?? ''),
+      date: String(item['createdAt'] ?? item['date'] ?? new Date().toISOString()),
+      currency: (item['currency'] ?? 'NGN') as 'NGN' | 'USD',
+      amount: Number(item['amount'] ?? 0),
+      status: mappedStatus,
+      bankName: String(item['bankName'] ?? item['bank_name'] ?? ''),
+      accountNumber: String(item['accountNumber'] ?? item['account_number'] ?? ''),
+      accountName: String(item['accountName'] ?? item['account_name'] ?? '')
+    };
+  }
 
-
-
-    const filtered = currency ? mockTransactions.filter(t => t.currency === currency) : mockTransactions;
-    
-    return of(filtered).pipe(
-      delay(1200), // Slightly longer delay to appreciate skeleton loader
-      tap(data => this.transactions.set(data))
+  fetchWallets(): Observable<Wallet[]> {
+    return this.api.get<unknown>('wallets').pipe(
+      map(raw => this.mapApiWalletsToWallets(raw)),
+      tap(wallets => this.wallets.set(wallets)),
+      catchError(err => {
+        if (err?.status === 403) {
+          this.wallets.set([]);
+          return of([]);
+        }
+        throw err;
+      })
     );
   }
 
+  /**
+   * TODO: No transactions endpoint in API.md. Returns empty for now.
+   */
+  fetchTransactions(currency?: 'NGN' | 'USD'): Observable<Transaction[]> {
+    this.transactions.set([]);
+    return of([]);
+  }
 
-  withdraw(params: { 
-    currency: 'NGN' | 'USD', 
-    amount: number,
-    bankName: string,
-    accountNumber: string,
-    accountName: string
+  withdraw(params: {
+    currency: 'NGN' | 'USD';
+    amount: number;
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
   }): Observable<boolean> {
-    const { currency, amount, bankName, accountNumber, accountName } = params;
-    
-    // Mock withdrawal logic
-    return of(true).pipe(
-      delay(1500),
+    const { currency, amount } = params;
+
+    return this.api.post<unknown>('withdrawals/request', { amount }).pipe(
       tap(() => {
-        // Update wallet balance
-        const updatedWallets = this.wallets().map(w => 
-          w.currency === currency ? { ...w, balance: w.balance - amount } : w
-        );
-        this.wallets.set(updatedWallets);
-        this.persistWallets(updatedWallets);
-
-        // Add to withdrawal history
-        const newWithdrawal: WithdrawalRequest = {
-          id: 'wdr-' + Math.random().toString(36).substr(2, 9),
-          date: new Date().toISOString(),
-          currency,
-          amount,
-          status: 'Pending',
-          bankName,
-          accountNumber,
-          accountName
-        };
-
-        const updatedHistory = [newWithdrawal, ...this.withdrawalRequests()];
-        this.withdrawalRequests.set(updatedHistory);
-        this.persistWithdrawals(updatedHistory);
-
-        // Show "Withdrawal Submitted" modal
         this.modalService.open(
           'success',
           'Withdrawal Submitted',
-          `Your withdrawal request of ${currency === 'NGN' ? '₦' : '$'}${amount} has been successfully submitted and is currently pending admin approval.`
+          `Your withdrawal request of ${currency === 'NGN' ? '₦' : '$'}${amount} has been successfully submitted and is currently pending admin approval.`,
+          '/withdrawals'
         );
-
         this.notificationService.add({
           title: 'Withdrawal Submitted',
           message: `Your withdrawal of ${currency === 'NGN' ? '₦' : '$'}${amount} is pending.`,
           type: 'info',
           category: 'wallet'
         });
-
-        // Simulate Mock Admin Approval after 10 seconds
-
-        this.simulateAdminApproval(newWithdrawal.id);
+        this.fetchWallets().subscribe();
+        this.fetchWithdrawals().subscribe();
+      }),
+      map(() => true),
+      catchError(err => {
+        const msg = err?.error?.message ?? (Array.isArray(err?.error?.message) ? err.error.message[0] : null)
+          ?? 'Could not submit withdrawal. Please try again or contact support.';
+        this.modalService.open('error', 'Withdrawal Failed', msg);
+        throw err;
       })
     );
   }
 
-  private simulateAdminApproval(withdrawalId: string) {
-    setTimeout(() => {
-      const history = this.withdrawalRequests();
-      const withdrawalIndex = history.findIndex(w => w.id === withdrawalId);
-      
-      if (withdrawalIndex !== -1) {
-        // 80% chance for approval for testing purposes
-        const isApproved = Math.random() > 0.2;
-        const status = isApproved ? 'Approved' : 'Rejected';
-        
-        const updatedHistory = [...history];
-        updatedHistory[withdrawalIndex] = {
-          ...updatedHistory[withdrawalIndex],
-          status
-        };
-        
-        this.withdrawalRequests.set(updatedHistory);
-        this.persistWithdrawals(updatedHistory);
-
-        // Notify user via modal
-        this.modalService.open(
-          isApproved ? 'success' : 'error',
-          `Withdrawal ${status}`,
-          `Your withdrawal request (${withdrawalId}) has been ${status.toLowerCase()} by the admin.`,
-          '/withdrawals'
-        );
-
-        this.notificationService.add({
-          title: `Withdrawal ${status}`,
-          message: `Request ${withdrawalId} was ${status.toLowerCase()}.`,
-          type: isApproved ? 'success' : 'error',
-          category: 'wallet'
-        });
-      }
-
-    }, 10000); // 10 seconds delay
+  fetchWithdrawals(limit = 20, offset = 0): Observable<WithdrawalRequest[]> {
+    return this.api
+      .get<{ items?: unknown[]; data?: unknown[] } | unknown[]>('withdrawals', { limit, offset })
+      .pipe(
+        map(raw => {
+          const arr = Array.isArray(raw) ? raw : (raw as { items?: unknown[] }).items ?? (raw as { data?: unknown[] }).data ?? [];
+          return (arr as Record<string, unknown>[]).map(item => this.mapApiWithdrawalToWithdrawal(item));
+        }),
+        tap(requests => this.withdrawalRequests.set(requests)),
+        catchError(err => {
+          if (err?.status === 403) {
+            this.withdrawalRequests.set([]);
+            return of([]);
+          }
+          throw err;
+        })
+      );
   }
-
-
-
-  fetchWithdrawals(): Observable<WithdrawalRequest[]> {
-     return of(this.withdrawalRequests()).pipe(delay(800));
-  }
-
 }
-
