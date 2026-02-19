@@ -8,6 +8,7 @@ import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { PaymentService } from '../../../services/payment.service';
 import { UserService } from '../../../services/user.service';
+import { ModalService } from '../../../services/modal.service';
 
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const WALLET_FUNDING_FLOW = 'wallet_funding';
@@ -40,6 +41,7 @@ export class FundWalletComponent {
   private router = inject(Router);
   private paymentService = inject(PaymentService);
   private userService = inject(UserService);
+  private modalService = inject(ModalService);
 
   providerOptions = PROVIDER_OPTIONS;
   fundForm = this.fb.group({
@@ -85,8 +87,11 @@ export class FundWalletComponent {
           this.router.navigate(['/wallet']);
         }
       },
-      error: () => {
+      error: (err) => {
         this.isSubmitting.set(false);
+        const message = err?.error?.message
+          ?? 'We could not initiate your wallet funding. Please try again or contact support.';
+        this.modalService.open('error', 'Payment Initiation Failed', message);
       }
     });
   }
