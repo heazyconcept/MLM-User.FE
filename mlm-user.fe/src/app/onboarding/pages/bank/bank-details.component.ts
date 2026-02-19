@@ -1,9 +1,10 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { AuthInputComponent } from '../../../auth/components/auth-input/auth-input.component';
+import { SelectModule } from 'primeng/select';
+import { OnboardingService } from '../../../services/onboarding.service';
+import { ModalService } from '../../../services/modal.service';
 
 @Component({
   selector: 'app-bank-details',
@@ -11,39 +12,87 @@ import { AuthInputComponent } from '../../../auth/components/auth-input/auth-inp
     CommonModule,
     ReactiveFormsModule,
     RouterModule,
-    ButtonModule,
-    AuthInputComponent
+    SelectModule
   ],
   templateUrl: './bank-details.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class BankDetailsComponent {
+export class BankDetailsComponent implements OnInit {
   private fb = inject(FormBuilder);
   private router = inject(Router);
+  private onboardingService = inject(OnboardingService);
+  private modalService = inject(ModalService);
 
   isLoading = signal<boolean>(false);
 
+  accountTypes = [
+    { label: 'Savings', value: 'savings' },
+    { label: 'Current', value: 'current' }
+  ];
+
   bankForm = this.fb.group({
     bankName: ['', [Validators.required]],
-    accountNumber: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+    accountNumber: ['', [Validators.required, Validators.pattern(/^\d{8,11}$/)]],
     accountName: ['', [Validators.required]],
-    accountType: ['savings']
+    accountType: ['savings' as 'savings' | 'current', [Validators.required]]
   });
 
-  skip() {
+  ngOnInit(): void {
+    this.onboardingService.getBankDetails().subscribe({
+      next: (data) => {
+        const bankName = (data['bankName'] ?? data['bank_name']) as string | undefined;
+        const accountNumber = (data['accountNumber'] ?? data['account_number']) as string | undefined;
+        const accountName = (data['accountName'] ?? data['account_name']) as string | undefined;
+        const accountType = (data['accountType'] ?? data['account_type']) as string | undefined;
+        if (bankName || accountNumber || accountName || accountType) {
+          this.bankForm.patchValue({
+            bankName: bankName ?? '',
+            accountNumber: accountNumber ?? '',
+            accountName: accountName ?? '',
+            accountType: accountType?.toLowerCase() === 'current' ? 'current' : 'savings'
+          });
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  skip(): void {
     this.router.navigate(['/onboarding/preferences']);
   }
 
-  onSubmit() {
-    if (this.bankForm.valid) {
-      this.isLoading.set(true);
-      setTimeout(() => {
+  onSubmit(): void {
+    if (this.bankForm.invalid) {
+      this.bankForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.bankForm.getRawValue();
+    const accountType = (value.accountType === 'current' ? 'CURRENT' : 'SAVINGS') as 'SAVINGS' | 'CURRENT';
+    const payload = {
+      bankName: value.bankName ?? '',
+      accountNumber: value.accountNumber ?? '',
+      accountName: value.accountName ?? '',
+      accountType
+    };
+
+    this.isLoading.set(true);
+    this.onboardingService.updateBankDetails(payload).subscribe({
+      next: () => {
         this.isLoading.set(false);
         this.router.navigate(['/onboarding/preferences']);
-      }, 1000);
-    } else {
-      this.bankForm.markAllAsTouched();
-    }
+      },
+      error: () => {
+        this.isLoading.set(false);
+        if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+          console.error('Bank details update failed');
+        }
+        this.modalService.open(
+          'error',
+          'Could not save',
+          'We couldn\'t save your bank details. Please try again.'
+        );
+      }
+    });
   }
 }
-

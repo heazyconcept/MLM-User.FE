@@ -13,6 +13,7 @@ import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { UserService } from '../../services/user.service';
+import { PaymentService } from '../../services/payment.service';
 import { CommissionService } from '../../services/commission.service';
 import { WalletService } from '../../services/wallet.service';
 import { LoadingService } from '../../services/loading.service';
@@ -44,6 +45,7 @@ import { signal } from '@angular/core';
 export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private userService = inject(UserService);
+  private paymentService = inject(PaymentService);
   private commissionService = inject(CommissionService);
   private walletService = inject(WalletService);
   private loadingService = inject(LoadingService);
@@ -120,6 +122,11 @@ export class DashboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Open payment modal when navigating to /dashboard/registration-payment
+    if (this.router.url.includes('registration-payment') && this.paymentStatus() === 'UNPAID') {
+      this.showPaymentModal.set(true);
+    }
+
     // Listen to navigation events to detect when returning to dashboard
     this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
@@ -129,11 +136,15 @@ export class DashboardComponent implements OnInit {
         if (navEvent.urlAfterRedirects === '/dashboard' || navEvent.urlAfterRedirects.startsWith('/dashboard')) {
           this.cdr.markForCheck();
         }
+        // Open payment modal when navigating to /dashboard/registration-payment
+        if (navEvent.urlAfterRedirects.includes('registration-payment') && this.paymentStatus() === 'UNPAID') {
+          this.showPaymentModal.set(true);
+        }
       });
-    
+
     // Also mark for check on component init
     this.cdr.markForCheck();
-    
+
     this.initCharts();
   }
 
@@ -232,35 +243,43 @@ export class DashboardComponent implements OnInit {
   onPaymentSubmit(): void {
     if (this.paymentForm.valid) {
       this.loadingService.show();
-      
-      setTimeout(() => {
-        this.loadingService.hide();
-        const isSuccess = Math.random() > 0.1;
-        
-        if (isSuccess) {
-          this.userService.updatePaymentStatus('PAID');
+      const user = this.currentUser();
+      const packageName = user?.package ?? 'SILVER';
+      const currency = user?.currency ?? 'NGN';
+      const callbackUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/payment/callback`
+        : undefined;
+
+      this.paymentService.initiateRegistrationPayment(packageName, currency, callbackUrl).subscribe({
+        next: (res) => {
+          this.loadingService.hide();
           this.showPaymentModal.set(false);
-          
-          // Trigger change detection to update the view
           this.cdr.markForCheck();
-          
-          setTimeout(() => {
+          const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
+          if (gatewayUrl) {
+            window.location.href = gatewayUrl;
+          } else if (res.reference) {
+            this.router.navigate(['/auth/register/payment-pending'], {
+              state: { reference: res.reference }
+            });
+          } else {
             this.modalService.open(
-              'success',
-              'Payment Successful',
-              'Your registration fee of ₦5,000 has been paid successfully. You now have full access to all features.'
+              'error',
+              'Payment Initiation Failed',
+              'No payment link was returned. Please try again or contact support.'
             );
-            // Force change detection again after modal
-            this.cdr.markForCheck();
-          }, 100);
-        } else {
+          }
+        },
+        error: () => {
+          this.loadingService.hide();
+          this.cdr.markForCheck();
           this.modalService.open(
             'error',
             'Payment Failed',
-            'Payment processing failed. Please try again or contact support if the problem persists.'
+            'Could not initiate payment. Please try again or contact support if the problem persists.'
           );
         }
-      }, 1500);
+      });
     } else {
       this.paymentForm.markAllAsTouched();
     }

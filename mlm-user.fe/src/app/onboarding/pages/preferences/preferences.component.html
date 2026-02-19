@@ -1,65 +1,116 @@
-<div class="text-center mb-8">
-    <h1 class="text-2xl sm:text-3xl font-semibold text-mlm-warm-900 tracking-tight mb-2">Preferences</h1>
-    <p class="text-mlm-warm-600 text-sm max-w-md mx-auto">Customize your experience</p>
-</div>
-
-<form [formGroup]="prefForm" (ngSubmit)="onSubmit()">
-    <div class="space-y-6">
-        <div>
-            <label class="block text-sm font-semibold text-mlm-warm-800 mb-2">Preferred Language</label>
-            <p-select
-                [options]="languages"
-                formControlName="language"
-                optionLabel="label"
-                placeholder="Select Language"
-                styleClass="w-full !rounded-xl !border-mlm-warm-300 !h-12 !flex !items-center">
-            </p-select>
+<form [formGroup]="prefForm" (ngSubmit)="onSubmit()" class="flex flex-col flex-1 font-dm-sans">
+    <!-- Form Header -->
+    <div class="mb-8">
+        <div class="flex items-center gap-3 mb-1">
+            <div class="w-1 h-7 bg-mlm-primary rounded-full shrink-0"></div>
+            <h1 class="font-sora text-[clamp(22px,3vw,30px)] font-bold text-slate-900 leading-tight tracking-tight">Preferences</h1>
         </div>
+        <p class="text-sm text-slate-500 ml-4 leading-relaxed">Customize your experience — almost done!</p>
+    </div>
 
-        <div>
-            <label class="block text-sm font-semibold text-mlm-warm-800 mb-2">Display Currency</label>
-            <p-select
-                [options]="currencies"
-                formControlName="currency"
-                optionLabel="label"
-                placeholder="Select Currency"
-                styleClass="w-full !rounded-xl !border-mlm-warm-300 !h-12 !flex !items-center">
-            </p-select>
-        </div>
-
-        <div class="space-y-4 pt-2">
-            <label class="block text-sm font-semibold text-mlm-warm-800">Notification Settings</label>
-
-            <div class="flex items-center gap-3 p-4 bg-mlm-background rounded-xl border border-mlm-warm-200 transition-all hover:border-mlm-primary/30">
-                <p-checkbox formControlName="emailNotifications" [binary]="true"></p-checkbox>
-                <div class="flex flex-col">
-                    <span class="text-sm font-semibold text-mlm-warm-700">Email Notifications</span>
-                    <span class="text-xs text-mlm-warm-600">Receive updates and news via email</span>
-                </div>
+    <!-- Form Stack -->
+    <div class="flex flex-col gap-[18px] flex-1">
+        <!-- Notice Banner (onboarding-preview pattern) -->
+        <div class="flex items-start gap-3 p-[14px] rounded-[14px] mb-6 bg-[rgba(201,125,78,0.1)] border border-[rgba(201,125,78,0.2)]">
+            <div class="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0 text-base bg-[rgba(201,125,78,0.15)]">
+                <i class="pi pi-star text-[#C97D4E]"></i>
             </div>
-
-            <div class="flex items-center gap-3 p-4 bg-mlm-background rounded-xl border border-mlm-warm-200 transition-all hover:border-mlm-primary/30">
-                <p-checkbox formControlName="smsNotifications" [binary]="true"></p-checkbox>
-                <div class="flex flex-col">
-                    <span class="text-sm font-semibold text-mlm-warm-700">SMS Notifications</span>
-                    <span class="text-xs text-mlm-warm-600">Receive security alerts via SMS</span>
-                </div>
+            <div>
+                <div class="text-[13px] font-bold mb-0.5 text-[#C97D4E]">One last step!</div>
+                <div class="text-[12px] leading-relaxed text-slate-600">Set your preferences and your account will be ready to go.</div>
             </div>
         </div>
 
-        <div class="mt-8 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-mlm-warm-100">
-            <button type="button"
-                    routerLink="/onboarding/bank"
-                    class="px-4 py-2.5 rounded-xl text-mlm-warm-700 font-semibold hover:bg-mlm-background transition-all duration-200 text-sm w-full sm:w-auto">
-                Back
+        <!-- Localization Section (onboarding-preview pattern) -->
+        <p class="text-[10.5px] font-bold text-slate-400 uppercase tracking-[0.1em] mb-2.5">Localization</p>
+        <div class="bg-gradient-to-br from-[#f9f8f6] to-[#faf9f7] border border-[#ede9e3] rounded-[18px] p-[18px] mb-5">
+            <div>
+                <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">Preferred Language</label>
+                <div class="relative">
+                    <p-select
+                        [options]="languages"
+                        formControlName="language"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Select Language"
+                        styleClass="w-full preferences-select"
+                        [style]="{'height': '48px', 'border': '1.5px solid #ddd0c2', 'border-radius': '12px', 'background': '#fff'}">
+                    </p-select>
+                </div>
+            </div>
+            <div style="margin-top: 14px;">
+                <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">Display Currency</label>
+                <div class="relative">
+                    <p-select
+                        [options]="currencies"
+                        formControlName="currency"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Select Currency"
+                        styleClass="w-full preferences-select"
+                        [style]="{'height': '48px', 'border': '1.5px solid #ddd0c2', 'border-radius': '12px', 'background': '#fff'}">
+                    </p-select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Settings Section (onboarding-preview pattern) -->
+        <p class="text-[10.5px] font-bold text-slate-400 uppercase tracking-[0.1em] mb-2.5">Notification Settings</p>
+        
+        <label class="flex items-center gap-4 p-4 bg-gradient-to-br from-[#f9f8f6] to-[#faf9f7] border-[1.5px] border-[#ede9e3] rounded-2xl cursor-pointer transition-all duration-200 hover:border-[rgba(201,125,78,0.4)] hover:bg-[rgba(201,125,78,0.05)] check-row-label" (click)="toggleCheckbox('emailNotifications'); $event.preventDefault()">
+            <input type="checkbox" formControlName="emailNotifications" class="hidden">
+            <div class="w-5 h-5 rounded-md border-2 border-[#ddd0c2] bg-white flex items-center justify-center flex-shrink-0 transition-all duration-200 text-[11px] text-transparent check-box-custom" [class.bg-mlm-primary]="prefForm.get('emailNotifications')?.value" [class.border-mlm-primary]="prefForm.get('emailNotifications')?.value" [class.text-white]="prefForm.get('emailNotifications')?.value">
+                @if (prefForm.get('emailNotifications')?.value) {
+                    ✓
+                }
+            </div>
+            <div class="w-[38px] h-[38px] rounded-xl bg-[#ede9e3] flex items-center justify-center text-[17px] text-slate-500 flex-shrink-0 transition-all duration-200 check-icon-wrap">
+                <i class="pi pi-envelope"></i>
+            </div>
+            <div class="check-text">
+                <strong class="block text-[13.5px] font-bold text-slate-800">Email Notifications</strong>
+                <span class="text-[12px] text-slate-500">Receive updates, reports, and news via email</span>
+            </div>
+        </label>
+
+        <label class="flex items-center gap-4 p-4 bg-gradient-to-br from-[#f9f8f6] to-[#faf9f7] border-[1.5px] border-[#ede9e3] rounded-2xl cursor-pointer transition-all duration-200 hover:border-[rgba(201,125,78,0.4)] hover:bg-[rgba(201,125,78,0.05)] check-row-label" (click)="toggleCheckbox('smsNotifications'); $event.preventDefault()">
+            <input type="checkbox" formControlName="smsNotifications" class="hidden">
+            <div class="w-5 h-5 rounded-md border-2 border-[#ddd0c2] bg-white flex items-center justify-center flex-shrink-0 transition-all duration-200 text-[11px] text-transparent check-box-custom" [class.bg-mlm-primary]="prefForm.get('smsNotifications')?.value" [class.border-mlm-primary]="prefForm.get('smsNotifications')?.value" [class.text-white]="prefForm.get('smsNotifications')?.value">
+                @if (prefForm.get('smsNotifications')?.value) {
+                    ✓
+                }
+            </div>
+            <div class="w-[38px] h-[38px] rounded-xl bg-[#ede9e3] flex items-center justify-center text-[17px] text-slate-500 flex-shrink-0 transition-all duration-200 check-icon-wrap">
+                <i class="pi pi-mobile"></i>
+            </div>
+            <div class="check-text">
+                <strong class="block text-[13.5px] font-bold text-slate-800">SMS Notifications</strong>
+                <span class="text-[12px] text-slate-500">Receive security alerts and OTPs via SMS</span>
+            </div>
+        </label>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="mt-auto pt-6 border-t border-[#ede9e3]">
+        <div class="flex items-center justify-between gap-3">
+            <button 
+                type="button"
+                routerLink="/onboarding/bank"
+                class="inline-flex items-center justify-center h-[48px] px-6 border-[1.5px] border-[#ddd0c2] rounded-xl font-dm-sans text-[14px] font-semibold text-slate-700 bg-white transition-all duration-200 hover:border-slate-300 hover:bg-slate-50">
+                ← Back
             </button>
-            <p-button
-                label="Finish Setup"
-                styleClass="!px-6 !py-2.5 !bg-mlm-primary !border-mlm-primary !text-white !font-semibold !rounded-xl hover:!bg-mlm-primary/90 transition-all duration-200 text-sm disabled:!opacity-60 disabled:!cursor-not-allowed w-full sm:w-auto"
+            <button 
                 type="submit"
-                [disabled]="isLoading()"
-                [loading]="isLoading()">
-            </p-button>
+                class="inline-flex items-center justify-center h-[48px] px-8 bg-mlm-primary text-white border-none rounded-xl font-sora text-[14px] font-bold cursor-pointer tracking-wide shadow-[0_8px_24px_rgba(73,163,33,0.3)] transition-all duration-150 gap-2 hover:bg-[#3d8a1c] hover:-translate-y-[1px] hover:shadow-[0_12px_28px_rgba(73,163,33,0.35)] active:translate-y-0 disabled:opacity-55 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:bg-mlm-primary"
+                [disabled]="isLoading()">
+                @if (isLoading()) {
+                    <i class="pi pi-spin pi-spinner text-sm"></i>
+                }
+                Finish Setup
+                @if (!isLoading()) {
+                    <i class="pi pi-check text-sm"></i>
+                }
+            </button>
         </div>
     </div>
 </form>

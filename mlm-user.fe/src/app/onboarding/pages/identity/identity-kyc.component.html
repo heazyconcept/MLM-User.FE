@@ -1,62 +1,106 @@
-<div class="text-center mb-8">
-    <h1 class="text-2xl sm:text-3xl font-semibold text-mlm-warm-900 tracking-tight mb-2">Identity Verification</h1>
-    <p class="text-mlm-warm-600 text-sm max-w-md mx-auto">Help us verify your identity for security</p>
-</div>
+<form [formGroup]="kycForm" (ngSubmit)="onSubmit()" class="flex flex-col flex-1 font-dm-sans">
+    <!-- Form Header -->
+    <div class="mb-8">
+        <div class="flex items-center gap-3 mb-1">
+            <div class="w-1 h-7 bg-mlm-primary rounded-full shrink-0"></div>
+            <h1 class="font-sora text-[clamp(22px,3vw,30px)] font-bold text-slate-900 leading-tight tracking-tight">Identity Verification</h1>
+        </div>
+        <p class="text-sm text-slate-500 ml-4 leading-relaxed">Help us verify your identity for security</p>
+    </div>
 
-<form [formGroup]="kycForm" (ngSubmit)="onSubmit()">
-    <div class="space-y-6">
-        <div>
-            <label class="block text-sm font-semibold text-mlm-warm-800 mb-2">ID Type</label>
-            <p-select
-                [options]="idTypes"
-                formControlName="idType"
-                optionLabel="label"
-                placeholder="Select ID Type"
-                styleClass="w-full !rounded-xl !border-mlm-warm-300 !h-12 !flex !items-center">
-            </p-select>
+    <!-- Form Stack -->
+    <div class="flex flex-col gap-[18px] flex-1">
+        <!-- Notice Banner (onboarding-preview pattern) -->
+        <!-- <div class="flex items-start gap-3 p-[14px] rounded-[14px] mb-6 bg-blue-50 border border-blue-200">
+            <div class="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shrink-0 text-base bg-blue-100">
+                <i class="pi pi-shield-check text-blue-900"></i>
+            </div>
+            <div>
+                <div class="text-[13px] font-bold mb-0.5 text-blue-900">Your data is protected</div>
+                <div class="text-[12px] leading-relaxed text-blue-600">Documents are encrypted and used only for identity verification. We never share your information with third parties.</div>
+            </div>
+        </div> -->
+
+        <!-- ID Details Section (onboarding-preview pattern) -->
+        <p class="text-[10.5px] font-bold text-slate-400 uppercase tracking-[0.1em] mb-2.5">ID Details</p>
+        <div class="bg-gradient-to-br from-[#f9f8f6] to-[#faf9f7] border border-[#ede9e3] rounded-[18px] p-[18px] mb-5">
+            <div>
+                <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">ID Type <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <p-select
+                        [options]="idTypes"
+                        formControlName="idType"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Select ID Type"
+                        styleClass="w-full identity-select"
+                        [style]="{'height': '48px', 'border': '1.5px solid #ddd0c2', 'border-radius': '12px', 'background': '#fff'}">
+                    </p-select>
+                </div>
+                @if (kycForm.get('idType')?.invalid && kycForm.get('idType')?.touched) {
+                    <span class="text-[11px] font-semibold text-red-500 mt-1 block">Required</span>
+                }
+            </div>
+            <div style="margin-top: 14px;">
+                <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">ID Number <span class="text-red-500">*</span></label>
+                <div class="relative flex items-center">
+                    <i class="pi pi-id-card absolute left-[14px] text-[14px] text-slate-400 pointer-events-none z-10"></i>
+                    <input
+                        type="text"
+                        class="w-full h-[48px] pl-[42px] pr-[14px] border-[1.5px] border-[#ddd0c2] rounded-xl font-dm-sans text-[14px] text-slate-800 bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-mlm-primary focus:shadow-[0_0_0_4px_rgba(73,163,33,0.1)] placeholder:text-slate-400 placeholder:text-[13.5px]"
+                        placeholder="Enter 11-digit ID number"
+                        formControlName="idNumber"
+                        maxlength="11"
+                        [class.border-red-500]="kycForm.get('idNumber')?.invalid && kycForm.get('idNumber')?.touched">
+                </div>
+                @if (kycForm.get('idNumber')?.touched) {
+                    @if (kycForm.get('idNumber')?.hasError('required')) {
+                        <span class="text-[11px] font-semibold text-red-500 mt-1 block">Required</span>
+                    } @else if (kycForm.get('idNumber')?.hasError('minlength') || kycForm.get('idNumber')?.hasError('maxlength')) {
+                        <span class="text-[11px] font-semibold text-red-500 mt-1 block">ID must be exactly 11 digits</span>
+                    }
+                }
+            </div>
         </div>
 
-        <app-auth-input
-            label="ID Number"
-            placeholder="Enter ID Number"
-            icon="pi-id-card"
-            formControlName="idNumber"
-            [required]="true"
-            [maxLength]="11"
-            [error]="kycForm.get('idNumber')?.touched ?
-                    (kycForm.get('idNumber')?.hasError('required') ? 'Required' :
-                     (kycForm.get('idNumber')?.hasError('minlength') || kycForm.get('idNumber')?.hasError('maxlength') ? 'ID must be exactly 11 digits' : null)) : null">
-        </app-auth-input>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <app-onboarding-file-upload
-                label="Upload ID (Front)"
-                icon="pi-file"
-                placeholder="Select ID Document"
-                (fileSelected)="onFileSelected('idDocument', $event)">
-            </app-onboarding-file-upload>
-
-            <app-onboarding-file-upload
-                label="Selfie with ID"
-                icon="pi-camera"
-                placeholder="Select Selfie"
-                (fileSelected)="onFileSelected('selfie', $event)">
-            </app-onboarding-file-upload>
+        <!-- Upload Documents Section (onboarding-preview pattern) -->
+        <p class="text-[10.5px] font-bold text-slate-400 uppercase tracking-[0.1em] mb-2.5">Upload Documents</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3" style="margin-bottom: 20px;">
+            <div>
+                <label class="block text-[13px] font-semibold text-slate-800 mb-[8px]">ID Front</label>
+                <app-onboarding-file-upload
+                    icon="pi-file"
+                    placeholder="Select ID Document"
+                    (fileSelected)="onFileSelected('idDocument', $event)">
+                </app-onboarding-file-upload>
+            </div>
+            <div>
+                <label class="block text-[13px] font-semibold text-slate-800 mb-[8px]">Selfie with ID</label>
+                <app-onboarding-file-upload
+                    icon="pi-camera"
+                    placeholder="Select Selfie"
+                    (fileSelected)="onFileSelected('selfie', $event)">
+                </app-onboarding-file-upload>
+            </div>
         </div>
+    </div>
 
-        <div class="mt-8 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-mlm-warm-100">
-            <button type="button"
-                    routerLink="/onboarding/contact"
-                    class="px-4 py-2.5 rounded-xl text-mlm-warm-700 font-semibold hover:bg-mlm-background transition-all duration-200 text-sm w-full sm:w-auto">
-                Back
-            </button>
-            <p-button
-                label="Continue"
-                styleClass="!px-6 !py-2.5 !bg-mlm-primary !border-mlm-primary !text-white !font-semibold !rounded-xl hover:!bg-mlm-primary/90 transition-all duration-200 text-sm disabled:!opacity-60 disabled:!cursor-not-allowed w-full sm:w-auto"
-                type="submit"
-                [disabled]="kycForm.invalid || isLoading()"
-                [loading]="isLoading()">
-            </p-button>
+    <!-- Action Area -->
+    <div class="mt-auto pt-8 flex flex-col gap-3.5">
+        <button 
+            type="submit"
+            class="w-full h-[52px] bg-mlm-primary text-white border-none rounded-[14px] font-sora text-[0.95rem] font-bold cursor-pointer tracking-wide shadow-[0_8px_24px_rgba(73,163,33,0.3)] transition-all duration-150 flex items-center justify-center gap-2 hover:bg-[#3d8a1c] hover:-translate-y-[1px] hover:shadow-[0_12px_28px_rgba(73,163,33,0.35)] active:translate-y-0 disabled:opacity-55 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:bg-mlm-primary"
+            [disabled]="kycForm.invalid || isLoading()">
+            @if (isLoading()) {
+                <i class="pi pi-spin pi-spinner text-sm"></i>
+            }
+            Continue
+            @if (!isLoading()) {
+                <i class="pi pi-arrow-right text-sm"></i>
+            }
+        </button>
+        <div class="text-center text-sm text-slate-400">
+            <button type="button" routerLink="/onboarding/contact" class="bg-none border-none text-slate-500 font-semibold cursor-pointer text-sm font-dm-sans p-0 transition-colors duration-200 hover:text-mlm-primary">← Back</button>
         </div>
     </div>
 </form>

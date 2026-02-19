@@ -1,69 +1,17 @@
-<div class="text-center mb-8">
-    <h1 class="text-2xl sm:text-3xl font-semibold text-mlm-warm-900 tracking-tight mb-2">Personal Information</h1>
-    <p class="text-mlm-warm-600 text-sm max-w-md mx-auto">Let's start with your basic details</p>
-</div>
-
-<form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
-    <div class="space-y-5">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <app-auth-input
-                label="First Name"
-                placeholder="Enter first name"
-                icon="pi-user"
-                formControlName="firstName"
-                [required]="true"
-                [error]="profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched ? 'Required' : null">
-            </app-auth-input>
-            <app-auth-input
-                label="Last Name"
-                placeholder="Enter last name"
-                icon="pi-user"
-                formControlName="lastName"
-                [required]="true"
-                [error]="profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched ? 'Required' : null">
-            </app-auth-input>
+<form [formGroup]="profileForm" (ngSubmit)="onSubmit()" class="flex flex-col flex-1 font-dm-sans">
+    <!-- Form Header -->
+    <div class="mb-8">
+        <div class="flex items-center gap-3 mb-1">
+            <div class="w-1 h-7 bg-mlm-primary rounded-full shrink-0"></div>
+            <h1 class="font-sora text-[clamp(22px,3vw,30px)] font-bold text-slate-900 leading-tight tracking-tight">Personal Information</h1>
         </div>
+        <p class="text-sm text-slate-500 ml-4 leading-relaxed">Let's start with your basic details</p>
+    </div>
 
-        <app-auth-input
-            label="Username"
-            placeholder="Username"
-            icon="pi-at"
-            formControlName="username"
-            [required]="true">
-        </app-auth-input>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-semibold text-mlm-warm-800 mb-2">Date of Birth <span class="text-mlm-error">*</span></label>
-                <div class="relative flex items-center">
-                    <i class="pi pi-calendar absolute left-4 text-mlm-warm-400 z-10"></i>
-                    <p-datepicker
-                        formControlName="dob"
-                        placeholder="Select Date of Birth"
-                        [showIcon]="false"
-                        appendTo="body"
-                        styleClass="w-full"
-                        inputStyleClass="w-full !h-12 !pl-11 !rounded-xl !border-mlm-warm-300 focus:!ring-4 focus:!ring-mlm-primary/10 transition-all duration-300">
-                    </p-datepicker>
-                </div>
-                @if (profileForm.get('dob')?.invalid && profileForm.get('dob')?.touched) {
-                    <span class="text-[11px] font-semibold text-mlm-error mt-1 block">Required</span>
-                }
-            </div>
-
-            <div>
-                <label class="block text-sm font-semibold text-mlm-warm-800 mb-2">Gender (Optional)</label>
-                <p-select
-                    [options]="genders"
-                    formControlName="gender"
-                    optionLabel="label"
-                    placeholder="Select gender"
-                    styleClass="w-full !rounded-xl !border-mlm-warm-300 !h-12 !flex !items-center">
-                </p-select>
-            </div>
-        </div>
-
-        <div class="pt-2">
+    <!-- Form Stack -->
+    <div class="flex flex-col gap-[18px] flex-1">
+        <!-- Profile Photo -->
+        <div>
             <app-onboarding-file-upload
                 label="Profile Photo"
                 icon="pi-user"
@@ -73,14 +21,105 @@
             </app-onboarding-file-upload>
         </div>
 
-        <div class="mt-8 pt-4 flex flex-col sm:flex-row items-center justify-end gap-4 border-t border-mlm-warm-100">
-            <p-button
-                label="Continue"
-                styleClass="!px-6 !py-2.5 !bg-mlm-primary !border-mlm-primary !text-white !font-semibold !rounded-xl hover:!bg-mlm-primary/90 transition-all duration-200 text-sm disabled:!opacity-60 disabled:!cursor-not-allowed w-full sm:w-auto"
-                type="submit"
-                [disabled]="profileForm.invalid || isLoading()"
-                [loading]="isLoading()">
-            </p-button>
+        <!-- Full Name Section (onboarding-preview pattern) -->
+        <p class="text-[10.5px] font-bold text-slate-400 uppercase tracking-[0.1em] mb-2.5">Full Name</p>
+        <div class="bg-gradient-to-br from-[#f9f8f6] to-[#faf9f7] border border-[#ede9e3] rounded-[18px] p-[18px] mb-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">First Name <span class="text-red-500">*</span></label>
+                    <div class="relative flex items-center">
+                        <i class="pi pi-user absolute left-[14px] text-[14px] text-slate-400 pointer-events-none z-10"></i>
+                        <input
+                            type="text"
+                            class="w-full h-[48px] pl-[42px] pr-[14px] border-[1.5px] border-[#ddd0c2] rounded-xl font-dm-sans text-[14px] text-slate-800 bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-mlm-primary focus:shadow-[0_0_0_4px_rgba(73,163,33,0.1)] placeholder:text-slate-400 placeholder:text-[13.5px]"
+                            placeholder="Enter first name"
+                            formControlName="firstName"
+                            [class.border-red-500]="profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched">
+                    </div>
+                    @if (profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched) {
+                        <span class="text-[11px] font-semibold text-red-500 mt-1 block">Required</span>
+                    }
+                </div>
+                <div>
+                    <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">Last Name <span class="text-red-500">*</span></label>
+                    <div class="relative flex items-center">
+                        <i class="pi pi-user absolute left-[14px] text-[14px] text-slate-400 pointer-events-none z-10"></i>
+                        <input
+                            type="text"
+                            class="w-full h-[48px] pl-[42px] pr-[14px] border-[1.5px] border-[#ddd0c2] rounded-xl font-dm-sans text-[14px] text-slate-800 bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-mlm-primary focus:shadow-[0_0_0_4px_rgba(73,163,33,0.1)] placeholder:text-slate-400 placeholder:text-[13.5px]"
+                            placeholder="Enter last name"
+                            formControlName="lastName"
+                            [class.border-red-500]="profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched">
+                    </div>
+                    @if (profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched) {
+                        <span class="text-[11px] font-semibold text-red-500 mt-1 block">Required</span>
+                    }
+                </div>
+            </div>
+            <div>
+                <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">Username <span class="text-red-500">*</span></label>
+                <div class="relative flex items-center">
+                    <i class="pi pi-at absolute left-[14px] text-[14px] text-slate-400 pointer-events-none z-10"></i>
+                    <input
+                        type="text"
+                        class="w-full h-[48px] pl-[42px] pr-[14px] border-[1.5px] border-[#ddd0c2] rounded-xl font-dm-sans text-[14px] text-slate-800 bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-mlm-primary focus:shadow-[0_0_0_4px_rgba(73,163,33,0.1)] placeholder:text-slate-400 placeholder:text-[13.5px]"
+                        placeholder="@your_username"
+                        formControlName="username">
+                </div>
+            </div>
         </div>
+
+        <p class="text-[10.5px] font-bold text-slate-400 uppercase tracking-[0.1em] mb-2.5">About You</p>
+        <div class="bg-gradient-to-br from-[#f9f8f6] to-[#faf9f7] border border-[#ede9e3] rounded-[18px] p-[18px] mb-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">Date of Birth <span class="text-red-500">*</span></label>
+                    <div class="relative flex items-center">
+                        <i class="pi pi-calendar absolute left-[14px] text-[14px] text-slate-400 pointer-events-none z-10"></i>
+                        <p-datepicker
+                            formControlName="dob"
+                            placeholder="Select Date of Birth"
+                            [showIcon]="false"
+                            appendTo="body"
+                            styleClass="w-full profile-datepicker"
+                            inputStyleClass="w-full !h-[48px] !pl-[42px] !pr-[14px] !border-[1.5px] !border-[#ddd0c2] !rounded-xl !font-dm-sans !text-[14px] !text-slate-800 !bg-white !outline-none !transition-[border-color,box-shadow] !duration-200 focus:!border-mlm-primary focus:!shadow-[0_0_0_4px_rgba(73,163,33,0.1)]"
+                            [class.border-red-500]="profileForm.get('dob')?.invalid && profileForm.get('dob')?.touched">
+                        </p-datepicker>
+                    </div>
+                    @if (profileForm.get('dob')?.invalid && profileForm.get('dob')?.touched) {
+                        <span class="text-[11px] font-semibold text-red-500 mt-1 block">Required</span>
+                    }
+                </div>
+                <div>
+                    <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">Gender <span class="text-[11px] font-normal text-slate-400">(optional)</span></label>
+                    <div class="relative">
+                        <p-select
+                            [options]="genders"
+                            formControlName="gender"
+                            optionLabel="label"
+                            placeholder="Select gender"
+                            styleClass="w-full profile-select"
+                            [style]="{'height': '48px', 'border': '1.5px solid #ddd0c2', 'border-radius': '12px', 'background': '#fff'}">
+                        </p-select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Area -->
+    <div class="mt-auto pt-8 flex flex-col gap-3.5">
+        <button 
+            type="submit"
+            class="w-full h-[52px] bg-mlm-primary text-white border-none rounded-[14px] font-sora text-[0.95rem] font-bold cursor-pointer tracking-wide shadow-[0_8px_24px_rgba(73,163,33,0.3)] transition-all duration-150 flex items-center justify-center gap-2 hover:bg-[#3d8a1c] hover:-translate-y-[1px] hover:shadow-[0_12px_28px_rgba(73,163,33,0.35)] active:translate-y-0 disabled:opacity-55 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:bg-mlm-primary"
+            [disabled]="profileForm.invalid || isLoading()">
+            @if (isLoading()) {
+                <i class="pi pi-spin pi-spinner text-sm"></i>
+            }
+            Continue
+            @if (!isLoading()) {
+                <i class="pi pi-arrow-right text-sm"></i>
+            }
+        </button>
     </div>
 </form>

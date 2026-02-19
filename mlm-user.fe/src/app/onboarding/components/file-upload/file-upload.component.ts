@@ -5,43 +5,48 @@ import { CommonModule } from '@angular/common';
   selector: 'app-onboarding-file-upload',
   imports: [CommonModule],
   template: `
-    <div class="space-y-2">
+    <div class="flex flex-col gap-[6px]">
       @if (label()) {
-        <label class="block text-sm font-semibold text-slate-500 mb-2">{{ label() }}</label>
+        <label class="text-[0.8rem] font-semibold text-slate-500 flex items-center gap-1">{{ label() }}</label>
       }
-      <div 
+      <div
         (click)="fileInput.click()"
         (dragover)="$event.preventDefault(); isDragging.set(true)"
         (dragleave)="isDragging.set(false)"
         (drop)="onFileDrop($event)"
-        [class]="isDragging() ? 'border-mlm-primary bg-mlm-primary/5' : 'border-slate-300 hover:border-mlm-primary/50 bg-slate-50'"
-        class="relative w-full aspect-square md:aspect-video rounded-2xl border-2 border-dashed transition-all duration-300 flex flex-col items-center justify-center cursor-pointer group overflow-hidden"
+        [class]="isDragging() ? 'border-[#2d7a3a] bg-white' : 'border-[#ede9e3] bg-[#f9f8f6] hover:border-[#2d7a3a]/50'"
+        class="flex items-center gap-[18px] p-[18px] border-[1.5px] rounded-xl cursor-pointer transition-[border-color,background,box-shadow] duration-200 hover:bg-white focus-within:border-[#2d7a3a] focus-within:bg-white focus-within:shadow-[0_0_0_3px_rgba(45,122,58,0.1)]"
       >
-        <input 
-          #fileInput 
-          type="file" 
-          class="hidden" 
-          [accept]="accept()" 
+        <input
+          #fileInput
+          type="file"
+          class="hidden"
+          [accept]="accept()"
           (change)="onFileSelected($event)"
         />
 
-        @if (previewUrl()) {
-          <img [src]="previewUrl()" class="absolute inset-0 w-full h-full object-cover animate-fade-in" />
-          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-            <div class="flex flex-col items-center text-white">
-              <i class="pi pi-camera text-2xl mb-2"></i>
-              <span class="text-xs font-semibold">Change Photo</span>
-            </div>
-          </div>
-        } @else {
-          <div class="flex flex-col items-center text-slate-400 group-hover:text-mlm-primary transition-colors">
-            <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3 group-hover:bg-mlm-primary/10 transition-colors">
-              <i [class]="'pi ' + icon() + ' text-xl'"></i>
-            </div>
-            <span class="text-sm font-semibold">{{ placeholder() }}</span>
-            <span class="text-[11px] mt-1">PDF, JPG, PNG up to 5MB</span>
-          </div>
-        }
+        <!-- Avatar / preview -->
+        <div class="w-[68px] h-[68px] rounded-2xl border-2 border-[#ede9e3] bg-[#ede9e3] flex items-center justify-center shrink-0 overflow-hidden">
+          @if (previewUrl()) {
+            <img [src]="previewUrl()" alt="" class="w-full h-full object-cover" />
+          } @else {
+            <i [class]="'pi ' + icon() + ' text-[26px] text-slate-400'"></i>
+          }
+        </div>
+
+        <!-- Meta + button -->
+        <div class="flex-1 min-w-0">
+          <p class="text-[13.5px] font-bold text-slate-800 mb-0.5">{{ previewUrl() ? 'Profile Photo' : label() || 'Profile Photo' }}</p>
+          <span class="text-[11.5px] text-slate-400 block mb-2.5">JPG, PNG or GIF — max 5MB</span>
+          <button
+            type="button"
+            (click)="fileInput.click(); $event.stopPropagation()"
+            class="inline-flex items-center gap-[7px] py-[7px] px-4 bg-white border-[1.5px] border-[#ede9e3] rounded-[10px] font-dm-sans text-[13px] font-semibold text-slate-600 cursor-pointer transition-all duration-200 hover:border-[#2d7a3a] hover:text-[#2d7a3a] hover:bg-[#e8f5ea]"
+          >
+            <i class="pi pi-paperclip text-sm"></i>
+            {{ previewUrl() ? 'Change photo' : 'Choose photo' }}
+          </button>
+        </div>
       </div>
     </div>
   `,

@@ -6,6 +6,8 @@ import { RouterModule, Router } from '@angular/router';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
 import { AuthService, type RegisterRequest } from '../../services/auth.service';
+import { PaymentService } from '../../services/payment.service';
+import { ReferralService } from '../../services/referral.service';
 import { ModalService } from '../../services/modal.service';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
@@ -28,10 +30,25 @@ import { PasswordModule } from 'primeng/password';
 export class RegisterComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
+  private paymentService = inject(PaymentService);
+  private referralService = inject(ReferralService);
   private router = inject(Router);
   private modalService = inject(ModalService);
 
   isLoading = signal<boolean>(false);
+  referralValid = signal<boolean | null>(null);
+
+  onReferralBlur(): void {
+    const code = this.registerForm.get('referralCode')?.value?.trim();
+    if (!code) {
+      this.referralValid.set(null);
+      return;
+    }
+    this.referralService.validateReferralCode(code).subscribe({
+      next: (res) => this.referralValid.set(res.valid),
+      error: () => this.referralValid.set(false)
+    });
+  }
   currentStep = signal<number>(1);
   totalSteps = signal<number>(2);
 
@@ -150,6 +167,49 @@ export class RegisterComponent {
     }
   }
 
+  private initiateRegistrationPayment(packageName: string, currency: string): void {
+    const callbackUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/auth/payment/callback`
+      : undefined;
+    this.paymentService.initiateRegistrationPayment(packageName, currency, callbackUrl).subscribe({
+      next: (res) => {
+        this.isLoading.set(false);
+        const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
+        if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+          console.debug('[Register] Payment initiate response:', { hasGatewayUrl: !!gatewayUrl, hasReference: !!res.reference, res });
+        }
+        if (gatewayUrl) {
+          window.location.href = gatewayUrl;
+        } else if (res.reference) {
+          this.router.navigate(['/auth/register/payment-pending'], {
+            state: { reference: res.reference }
+          });
+        } else {
+          this.modalService.open(
+            'success',
+            'Account Created',
+            'Your account has been created. Complete your profile to get started.',
+            '/onboarding/profile'
+          );
+          setTimeout(() => this.router.navigate(['/onboarding/profile']), 2000);
+        }
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+          console.error('[Register] Payment initiate failed:', err);
+        }
+        this.modalService.open(
+          'success',
+          'Account Created',
+          'Your account has been created. You can complete your registration payment later.',
+          '/onboarding/profile'
+        );
+        setTimeout(() => this.router.navigate(['/onboarding/profile']), 2000);
+      }
+    });
+  }
+
   onSubmit() {
     if (this.registerForm.valid) {
       this.isLoading.set(true);
@@ -165,16 +225,7 @@ export class RegisterComponent {
 
       this.authService.register(payload).subscribe({
         next: () => {
-          this.isLoading.set(false);
-          this.modalService.open(
-            'success',
-            'Account Created',
-            'Your account has been created successfully. Let\u2019s set up your profile.',
-            '/onboarding/profile'
-          );
-          setTimeout(() => {
-            this.router.navigate(['/onboarding/profile']);
-          }, 2000);
+          this.initiateRegistrationPayment(formValue.package!, formValue.currency!);
         },
         error: (err) => {
           this.isLoading.set(false);

@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, Validators, FormsModule } from '@angu
 import { RouterModule, Router } from '@angular/router';
 import { CheckboxModule } from 'primeng/checkbox';
 import { AuthService } from '../../services/auth.service';
+import { UserService } from '../../services/user.service';
 import { ModalService } from '../../services/modal.service';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
@@ -29,6 +30,7 @@ import { PasswordModule } from 'primeng/password';
 export class LoginModernComponent {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
+  private userService = inject(UserService);
   private router = inject(Router);
   private modalService = inject(ModalService);
   
@@ -46,9 +48,9 @@ export class LoginModernComponent {
       if (email && password) {
         this.isLoading.set(true);
         this.authService.login(email, password).subscribe({
-          next: (result) => {
+          next: () => {
             this.isLoading.set(false);
-            const redirectPath = '/dashboard';
+            const redirectPath = this.userService.onboardingComplete() ? '/dashboard' : '/onboarding/profile';
             
             this.modalService.open(
               'success',

@@ -1,0 +1,36 @@
+:host ::ng-deep {
+  .p-datepicker {
+    border-radius: 12px;
+    border: 1.5px solid #ddd0c2;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .p-select {
+    width: 100%;
+  }
+
+  .profile-select .p-select-label,
+  .p-select .p-select-label {
+    height: 48px;
+    padding: 0 14px;
+    border: 1.5px solid #ddd0c2;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #292524;
+    background: #fff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .profile-select .p-select-label:focus,
+  .profile-select.p-focus .p-select-label,
+  .p-select .p-select-label:focus,
+  .p-select.p-focus .p-select-label {
+    border-color: #49A321;
+    box-shadow: 0 0 0 4px rgba(73, 163, 33, 0.1);
+  }
+
+  .p-select .p-select-trigger {
+    border-left: none;
+  }
+}
