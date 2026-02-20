@@ -30,7 +30,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           <app-stat-card
             label="Total Referrals"
-            [value]="12"
+            [value]="summary().directReferrals"
             icon="pi-users"
             bgClass="bg-mlm-blue-500"
             trend="Growing"
@@ -38,8 +38,8 @@
           </app-stat-card>
 
           <app-stat-card
-            label="Active Members"
-            [value]="8"
+            label="Team Size"
+            [value]="summary().teamSize"
             icon="pi-check-circle"
             bgClass="bg-mlm-success"
             trend="Active"
@@ -48,10 +48,10 @@
 
           <app-stat-card
             label="Earnings from Referrals"
-            [value]="'₦45,000'"
+            [value]="currencySymbol() + (earningsAmount() | number:'1.0-0')"
             icon="pi-money-bill"
             bgClass="bg-brand-gold"
-            trend="This Month"
+            trend="Total"
             trendIcon="pi-calendar">
           </app-stat-card>
         </div>
@@ -134,7 +134,8 @@
           </div>
         </div>
 
-        <!-- Sponsor Info -->
+        <!-- Sponsor Info (only when user has a sponsor) -->
+        @if (hasSponsor()) {
         <div class="relative overflow-hidden bg-white rounded-[2.5rem] border border-gray-100/50 shadow-sm p-8 lg:p-10 transition-all duration-300">
           <i class="pi pi-user absolute" 
              style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.1; pointer-events: none; z-index: 0;"></i>
@@ -157,6 +158,7 @@
             </div>
           </div>
         </div>
+        }
 
         <!-- Tips Section -->
         <div class="relative overflow-hidden bg-gradient-to-br from-mlm-primary/5 to-green-50 rounded-[2.5rem] border border-mlm-primary/10 p-8 lg:p-10">

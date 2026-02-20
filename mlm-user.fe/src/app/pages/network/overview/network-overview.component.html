@@ -1,6 +1,21 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
     <div class="px-4 sm:px-6 lg:px-8 mx-auto">
+      @if (error()) {
+        <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm">
+          {{ error() }}
+        </div>
+      }
+      @if (isLoading()) {
+        <div class="space-y-6">
+          <p-skeleton width="200px" height="2rem"></p-skeleton>
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            @for (i of [1,2,3,4]; track i) {
+              <p-skeleton width="100%" height="120px" borderRadius="12px"></p-skeleton>
+            }
+          </div>
+        </div>
+      } @else {
       <div class="space-y-10 animate-fade-in">
         <!-- Header -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4">
@@ -126,6 +141,7 @@
           </div>
         </div>
       </div>
+      }
     </div>
   </main>
 </div>

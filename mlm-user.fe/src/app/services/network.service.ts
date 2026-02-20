@@ -1,4 +1,9 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { forkJoin, of } from 'rxjs';
+import { tap, catchError, finalize } from 'rxjs/operators';
+import { ReferralService, type DownlineItem } from './referral.service';
+import { UserService } from './user.service';
+import { EarningsService } from './earnings.service';
 
 export interface NetworkSummary {
   teamSize: number;
@@ -52,164 +57,197 @@ export interface DownlineMember {
   providedIn: 'root'
 })
 export class NetworkService {
+  private referralService = inject(ReferralService);
+  private userService = inject(UserService);
+  private earningsService = inject(EarningsService);
 
-  // Mock Data Signals
+  readonly isLoading = signal(false);
+  readonly error = signal<string | null>(null);
+
   readonly referralLink = signal<ReferralLink>({
-    url: 'https://segulah.com/ref/pelumi123',
-    code: 'pelumi123',
-    sponsorName: 'Oluwapelumi'
+    url: '',
+    code: '',
+    sponsorName: ''
   });
 
   readonly networkSummary = signal<NetworkSummary>({
-    teamSize: 142,
-    directReferrals: 3,
-    activeLegs: 2,
-    rank: 'Silver Director',
-    nextRank: 'Gold Director',
-    rankProgress: 65
+    teamSize: 0,
+    directReferrals: 0,
+    activeLegs: 0,
+    rank: '—',
+    nextRank: '—',
+    rankProgress: 0
   });
 
   readonly cpvSummary = signal<CpvSummary>({
-    personalCpv: 150,
-    teamCpv: 4500,
-    requiredCpv: 5000,
-    cycle: 'January 2026'
+    personalCpv: 0,
+    teamCpv: 0,
+    requiredCpv: 0,
+    cycle: ''
   });
 
-  // Mock Matrix Tree (3×2 Matrix: Width = 3, 3 children per node)
-  private _mockMatrix: MatrixNode = {
+  /** Default empty matrix when no data */
+  private _emptyMatrix: MatrixNode = {
     id: 'root',
     username: 'You',
-    package: 'vip',
+    package: null,
     level: 0,
     status: 'active',
-    children: [
-      {
-        id: 'l1',
-        username: 'Sarah_J',
-        package: 'premium',
-        level: 1,
-        status: 'active',
-        position: 'left',
-        children: [
-          {
-            id: 'l1-l2',
-            username: 'Mike_T',
-            package: 'basic',
-            level: 2,
-            status: 'active',
-            position: 'left',
-            children: []
-          },
-          {
-            id: 'l1-c2',
-            username: 'Emma_W',
-            package: 'premium',
-            level: 2,
-            status: 'active',
-            position: 'center',
-            children: []
-          },
-          {
-            id: 'l1-r2',
-            username: 'Empty Slot',
-            package: null,
-            level: 2,
-            status: 'empty',
-            position: 'right',
-            children: []
+    children: []
+  };
+
+  readonly matrixTree = signal<MatrixNode>(this._emptyMatrix);
+  readonly downlineList = signal<DownlineMember[]>([]);
+
+  private _inFlight = false;
+
+  constructor() {}
+
+  fetchNetworkData(): void {
+    if (this._inFlight) return;
+    this._inFlight = true;
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    const refInfo$ = this.referralService.getReferralInfo();
+    const sponsor$ = this.referralService.getSponsor();
+    const downlines$ = this.referralService.getDownlines();
+    const cpv$ = this.earningsService.fetchCpvSummary();
+    const earnings$ = this.earningsService.fetchEarningsSummary();
+
+    forkJoin({
+      refInfo: refInfo$,
+      sponsor: sponsor$,
+      downlines: downlines$,
+      cpv: cpv$,
+      earnings: earnings$
+    })
+      .pipe(
+        tap(({ refInfo, sponsor, downlines, cpv }) => {
+          const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+          const url = refInfo.referralCode ? `${baseUrl}/ref/${refInfo.referralCode}` : '';
+          this.referralLink.set({
+            url,
+            code: refInfo.referralCode,
+            sponsorName: sponsor?.name ?? refInfo.referrerName ?? ''
+          });
+
+          this.downlineList.set(downlines as DownlineMember[]);
+          this.cpvSummary.set({
+            personalCpv: cpv.personalCpv,
+            teamCpv: cpv.teamCpv,
+            requiredCpv: cpv.requiredCpv,
+            cycle: cpv.cycle
+          });
+
+          const user = this.userService.currentUser();
+          const teamSize = downlines.length > 0 ? downlines.reduce((sum, d) => sum + d.teamSize, 0) + downlines.length : 0;
+          const directRefs = user?.directReferrals ?? downlines.filter((d) => d.level === 1).length;
+          const activeLegs = user?.activeLegs ?? Math.min(directRefs, 2);
+          const rank = user?.rank ?? '—';
+          const requiredCpv = cpv.requiredCpv || 1;
+          const rankProgress = requiredCpv > 0 ? Math.min(100, (cpv.teamCpv / requiredCpv) * 100) : 0;
+
+          this.networkSummary.set({
+            teamSize: teamSize || directRefs,
+            directReferrals: directRefs,
+            activeLegs,
+            rank,
+            nextRank: rank,
+            rankProgress
+          });
+
+          this.matrixTree.set(this.buildTreeFromDownlines(downlines));
+        }),
+        catchError((err) => {
+          this.error.set('Failed to load network data. Please try again.');
+          if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+            console.error('[NetworkService] fetchNetworkData failed:', err);
           }
-        ]
-      },
-      {
-        id: 'c1',
-        username: 'David_B',
-        package: 'vip',
+          return of(null);
+        }),
+        finalize(() => {
+          this._inFlight = false;
+          this.isLoading.set(false);
+        })
+      )
+      .subscribe();
+  }
+
+  private buildTreeFromDownlines(downlines: DownlineItem[]): MatrixNode {
+    const level1 = downlines.filter((d) => d.level === 1);
+    const level2 = downlines.filter((d) => d.level === 2);
+    const positions: ('left' | 'center' | 'right')[] = ['left', 'center', 'right'];
+
+    const children: MatrixNode[] = level1.slice(0, 3).map((d, i) => {
+      const pos = positions[i];
+      const childNodes: MatrixNode[] = level2
+        .slice(i * 3, (i + 1) * 3)
+        .map((d2, j) => ({
+          id: d2.id,
+          username: d2.username,
+          package: this.normalizePackage(d2.package),
+          level: 2,
+          status: d2.status,
+          position: positions[j],
+          children: []
+        }));
+      while (childNodes.length < 3) {
+        childNodes.push({
+          id: `empty-${d.id}-${childNodes.length}`,
+          username: 'Empty Slot',
+          package: null,
+          level: 2,
+          status: 'empty',
+          position: positions[childNodes.length],
+          children: []
+        });
+      }
+      return {
+        id: d.id,
+        username: d.username,
+        package: this.normalizePackage(d.package),
         level: 1,
-        status: 'active',
-        position: 'center',
-        children: [
-          {
-            id: 'c1-l2',
-            username: 'Anna_K',
-            package: 'premium',
-            level: 2,
-            status: 'active',
-            position: 'left',
-            children: []
-          },
-          {
-            id: 'c1-c2',
-            username: 'James_W',
-            package: 'basic',
-            level: 2,
-            status: 'active',
-            position: 'center',
-            children: []
-          },
-          {
-            id: 'c1-r2',
-            username: 'Empty Slot',
-            package: null,
-            level: 2,
-            status: 'empty',
-            position: 'right',
-            children: []
-          }
-        ]
-      },
-      {
-        id: 'r1',
+        status: d.status,
+        position: pos,
+        children: childNodes
+      };
+    });
+
+    while (children.length < 3) {
+      children.push({
+        id: `empty-${children.length}`,
         username: 'Empty Slot',
         package: null,
         level: 1,
         status: 'empty',
-        position: 'right',
+        position: positions[children.length],
         children: [
-          {
-            id: 'r1-l2',
-            username: 'Empty Slot',
-            package: null,
-            level: 2,
-            status: 'empty',
-            position: 'left',
-            children: []
-          },
-          {
-            id: 'r1-c2',
-            username: 'Empty Slot',
-            package: null,
-            level: 2,
-            status: 'empty',
-            position: 'center',
-            children: []
-          },
-          {
-            id: 'r1-r2',
-            username: 'Empty Slot',
-            package: null,
-            level: 2,
-            status: 'empty',
-            position: 'right',
-            children: []
-          }
+          { id: `e-${children.length}-0`, username: 'Empty Slot', package: null, level: 2, status: 'empty', position: 'left', children: [] },
+          { id: `e-${children.length}-1`, username: 'Empty Slot', package: null, level: 2, status: 'empty', position: 'center', children: [] },
+          { id: `e-${children.length}-2`, username: 'Empty Slot', package: null, level: 2, status: 'empty', position: 'right', children: [] }
         ]
-      }
-    ]
-  };
+      });
+    }
 
-  readonly matrixTree = signal<MatrixNode>(this._mockMatrix);
+    return {
+      id: 'root',
+      username: 'You',
+      package: null,
+      level: 0,
+      status: 'active',
+      children
+    };
+  }
 
-  readonly downlineList = signal<DownlineMember[]>([
-    { id: '1', username: 'Sarah_J', fullName: 'Sarah Jenkins', joinDate: new Date('2025-11-15'), status: 'active', level: 1, package: 'Premium', totalDirects: 5, teamSize: 45 },
-    { id: '2', username: 'David_B', fullName: 'David Brown', joinDate: new Date('2025-11-20'), status: 'active', level: 1, package: 'VIP', totalDirects: 8, teamSize: 62 },
-    { id: '3', username: 'Mike_T', fullName: 'Mike Tyson', joinDate: new Date('2025-12-01'), status: 'active', level: 2, package: 'Basic', totalDirects: 0, teamSize: 0 },
-    { id: '4', username: 'Emma_W', fullName: 'Emma Wilson', joinDate: new Date('2025-12-02'), status: 'active', level: 2, package: 'Premium', totalDirects: 0, teamSize: 0 },
-    { id: '5', username: 'Anna_K', fullName: 'Anna Kendrick', joinDate: new Date('2025-12-05'), status: 'active', level: 2, package: 'Premium', totalDirects: 2, teamSize: 12 },
-    { id: '6', username: 'James_W', fullName: 'James Wilson', joinDate: new Date('2025-12-10'), status: 'active', level: 2, package: 'Basic', totalDirects: 1, teamSize: 4 },
-  ]);
-
-  constructor() { }
+  private normalizePackage(pkg: string): 'basic' | 'premium' | 'vip' | null {
+    if (!pkg || pkg === '—') return null;
+    const lower = pkg.toLowerCase();
+    if (lower.includes('silver') || lower === 'basic') return 'basic';
+    if (lower.includes('gold') || lower === 'vip') return 'vip';
+    if (lower.includes('platinum') || lower === 'premium') return 'premium';
+    return 'basic';
+  }
 
   getReferralLink() {
     return this.referralLink();

@@ -1,4 +1,5 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, inject, computed } from '@angular/core';
+import { EarningsService } from './earnings.service';
 
 export type CommissionStatus = 'Pending' | 'Approved' | 'Locked';
 export type CommissionType = 'Direct Referral' | 'Community Bonus' | 'Product Bonus' | 'Matching Bonus' | 'Level Commission' | 'Bonus' | 'Leadership Bonus' | 'Merchant Bonus';
@@ -65,86 +66,55 @@ export interface CpvSummary {
   nextMilestoneReward: string;
 }
 
-const COMMISSION_KEY = 'mlm_commissions';
-
 @Injectable({
   providedIn: 'root'
 })
 export class CommissionService {
-  private entries = signal<CommissionEntry[]>([]);
+  private earningsService = inject(EarningsService);
 
-  readonly allEntries = computed(() => this.entries());
-  
-  constructor() {
-    this.initialLoad();
-  }
+  private mapToCommissionEntry = (e: { id: string; date: string; type: string; source: string; amount: number; currency: 'NGN' | 'USD'; status: string }): CommissionEntry => ({
+    id: e.id,
+    date: e.date,
+    type: e.type as CommissionType,
+    source: e.source,
+    amount: e.amount,
+    currency: e.currency,
+    status: e.status as CommissionStatus
+  });
 
-  private initialLoad() {
-    const savedEntries = localStorage.getItem(COMMISSION_KEY);
-    if (savedEntries) {
-      let entries = JSON.parse(savedEntries) as CommissionEntry[];
-      // Migration: Check if we have the new types
-      const hasNewTypes = entries.some(e => e.type === 'Community Bonus' || e.type === 'Matching Bonus');
-      if (!hasNewTypes) {
-        // Reset to defaults to ensure user sees the new widgets
-        const defaultEntries: CommissionEntry[] = [
-          { id: 'c1', date: '2023-10-25T09:00:00Z', type: 'Direct Referral', source: 'Alice Smith', amount: 5000, currency: 'NGN', status: 'Approved' },
-          { id: 'c2', date: '2023-10-26T10:30:00Z', type: 'Community Bonus', source: 'Global Pool', amount: 1500, currency: 'NGN', status: 'Approved' },
-          { id: 'c3', date: '2023-11-01T14:15:00Z', type: 'Direct Referral', source: 'Bob Jones', amount: 25, currency: 'USD', status: 'Approved' },
-          { id: 'c4', date: '2023-11-02T16:00:00Z', type: 'Matching Bonus', source: 'Team A', amount: 1000, currency: 'NGN', status: 'Approved' },
-          { id: 'c5', date: '2023-11-05T12:00:00Z', type: 'Product Bonus', source: 'Health Pack', amount: 500, currency: 'NGN', status: 'Approved' },
-          { id: 'c6', date: '2023-11-10T11:00:00Z', type: 'Leadership Bonus', source: 'Monthly Pool', amount: 2500, currency: 'NGN', status: 'Approved' },
-          { id: 'c7', date: '2023-11-12T09:30:00Z', type: 'Merchant Bonus', source: 'Partner Store', amount: 750, currency: 'NGN', status: 'Pending' }
-        ];
-        entries = defaultEntries;
-        this.saveEntries(defaultEntries);
-      }
-      this.entries.set(entries);
-    } else {
-      // Default mock entries
-      const defaultEntries: CommissionEntry[] = [
-        { id: 'c1', date: '2023-10-25T09:00:00Z', type: 'Direct Referral', source: 'Alice Smith', amount: 5000, currency: 'NGN', status: 'Approved' },
-        { id: 'c2', date: '2023-10-26T10:30:00Z', type: 'Community Bonus', source: 'Global Pool', amount: 1500, currency: 'NGN', status: 'Approved' },
-        { id: 'c3', date: '2023-11-01T14:15:00Z', type: 'Direct Referral', source: 'Bob Jones', amount: 25, currency: 'USD', status: 'Approved' },
-        { id: 'c4', date: '2023-11-02T16:00:00Z', type: 'Matching Bonus', source: 'Team A', amount: 1000, currency: 'NGN', status: 'Approved' },
-        { id: 'c5', date: '2023-11-05T12:00:00Z', type: 'Product Bonus', source: 'Health Pack', amount: 500, currency: 'NGN', status: 'Approved' },
-        { id: 'c6', date: '2023-11-10T11:00:00Z', type: 'Leadership Bonus', source: 'Monthly Pool', amount: 2500, currency: 'NGN', status: 'Approved' },
-        { id: 'c7', date: '2023-11-12T09:30:00Z', type: 'Merchant Bonus', source: 'Partner Store', amount: 750, currency: 'NGN', status: 'Pending' }
-      ];
-      this.entries.set(defaultEntries);
-      this.saveEntries(defaultEntries);
-    }
-  }
-
-  private saveEntries(entries: CommissionEntry[]) {
-    localStorage.setItem(COMMISSION_KEY, JSON.stringify(entries));
-  }
+  readonly allEntries = computed(() =>
+    this.earningsService.earningsList().map(this.mapToCommissionEntry)
+  );
 
   getSummary(currency: 'NGN' | 'USD') {
     return computed(() => {
-      const filtered = this.entries().filter(e => e.currency === currency);
-      const approved = filtered.filter(e => e.status === 'Approved');
-      
+      const summary = this.earningsService.earningsSummary();
+      const list = this.earningsService.earningsList();
+      const filtered = list.filter((e) => e.currency === currency);
+      const approved = filtered.filter((e) => e.status === 'Approved');
+      const pending = filtered.filter((e) => e.status === 'Pending');
       return {
-        totalEarnings: approved.reduce((acc, curr) => acc + curr.amount, 0),
-        pendingCommissions: filtered.filter(e => e.status === 'Pending').reduce((acc, curr) => acc + curr.amount, 0),
+        totalEarnings: summary.totalEarnings || approved.reduce((acc, curr) => acc + curr.amount, 0),
+        pendingCommissions: pending.reduce((acc, curr) => acc + curr.amount, 0),
         approvedCommissions: approved.reduce((acc, curr) => acc + curr.amount, 0),
         withdrawnAmount: 0,
-        directReferralBonus: approved.filter(e => e.type === 'Direct Referral').reduce((acc, curr) => acc + curr.amount, 0),
-        communityBonus: approved.filter(e => e.type === 'Community Bonus').reduce((acc, curr) => acc + curr.amount, 0),
-        productBonus: approved.filter(e => e.type === 'Product Bonus').reduce((acc, curr) => acc + curr.amount, 0),
-        matchingBonus: approved.filter(e => e.type === 'Matching Bonus').reduce((acc, curr) => acc + curr.amount, 0),
-        directReferrals: approved.filter(e => e.type === 'Direct Referral').length
+        directReferralBonus: summary.directReferralBonus ?? approved.filter((e) => e.type === 'Direct Referral').reduce((acc, curr) => acc + curr.amount, 0),
+        communityBonus: summary.communityBonus ?? approved.filter((e) => e.type === 'Community Bonus').reduce((acc, curr) => acc + curr.amount, 0),
+        productBonus: summary.productBonus ?? approved.filter((e) => e.type === 'Product Bonus').reduce((acc, curr) => acc + curr.amount, 0),
+        matchingBonus: summary.matchingBonus ?? approved.filter((e) => e.type === 'Matching Bonus').reduce((acc, curr) => acc + curr.amount, 0),
+        directReferrals: approved.filter((e) => e.type === 'Direct Referral').length
       };
     });
   }
 
   getEntriesByType(type: CommissionType) {
-    return computed(() => this.entries().filter(e => e.type === type));
+    return computed(() =>
+      this.earningsService.earningsList().filter((e) => e.type === type).map(this.mapToCommissionEntry)
+    );
   }
 
   getAllCommissions() {
-    return computed(() => this.entries());
+    return computed(() => this.allEntries());
   }
 
   // Bonus-related methods
@@ -209,38 +179,44 @@ export class CommissionService {
     ]);
   }
 
-  // Ranking-related methods
   getRankInfo() {
-    return computed<RankInfo>(() => ({
-      currentRank: 'Silver Director',
-      currentStage: 2,
-      totalStages: 5,
-      nextRank: 'Gold Director',
-      progressPercentage: 65,
-      requirements: [
-        { label: 'Active Direct Referrals', current: 8, required: 10, completed: false },
-        { label: 'Team CPV', current: 1800, required: 2500, completed: false },
-        { label: 'Personal CPV', current: 250, required: 200, completed: true },
-        { label: 'Active Downline', current: 25, required: 20, completed: true }
-      ],
-      achievedRanks: [
-        { rank: 'Silver Director', achievedDate: '2026-01-05' },
-        { rank: 'Bronze Director', achievedDate: '2025-12-15' },
-        { rank: 'Ruby', achievedDate: '2025-11-20' },
-        { rank: 'Member', achievedDate: '2025-11-01' }
-      ]
-    }));
+    return computed<RankInfo>(() => {
+      const r = this.earningsService.ranking();
+      if (r) {
+        return {
+          currentRank: r.currentRank,
+          currentStage: r.currentStage,
+          totalStages: r.totalStages,
+          nextRank: r.nextRank,
+          progressPercentage: r.progressPercentage,
+          requirements: r.requirements,
+          achievedRanks: r.achievedRanks
+        };
+      }
+      return {
+        currentRank: '—',
+        currentStage: 0,
+        totalStages: 5,
+        nextRank: '—',
+        progressPercentage: 0,
+        requirements: [],
+        achievedRanks: []
+      };
+    });
   }
 
-  // CPV & Milestones methods
   getCpvSummary() {
-    return computed<CpvSummary>(() => ({
-      totalCpv: 2050,
-      personalCpv: 250,
-      teamCpv: 1800,
-      nextMilestoneCpv: 2500,
-      nextMilestoneReward: '₦10,000 Bonus'
-    }));
+    return computed<CpvSummary>(() => {
+      const cpv = this.earningsService.cpvSummary();
+      const totalCpv = cpv.personalCpv + cpv.teamCpv;
+      return {
+        totalCpv,
+        personalCpv: cpv.personalCpv,
+        teamCpv: cpv.teamCpv,
+        nextMilestoneCpv: cpv.requiredCpv || 1,
+        nextMilestoneReward: cpv.requiredCpv ? `Next milestone at ${cpv.requiredCpv} CPV` : '—'
+      };
+    });
   }
 
   getMilestones() {

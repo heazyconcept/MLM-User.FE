@@ -1,6 +1,21 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
     <div class="px-4 sm:px-6 lg:px-8 mx-auto">
+      @if (error()) {
+        <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm">
+          {{ error() }}
+        </div>
+      }
+      @if (isLoading()) {
+        <div class="space-y-6">
+          <p-skeleton width="200px" height="2rem"></p-skeleton>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            @for (i of [1,2,3,4]; track i) {
+              <p-skeleton width="100%" height="100px" borderRadius="12px"></p-skeleton>
+            }
+          </div>
+        </div>
+      } @else {
       <div class="space-y-8 animate-fade-in">
         
         <!-- Header -->
@@ -77,32 +92,32 @@
             <div>
               <div class="flex justify-between text-xs mb-1">
                 <span class="font-medium text-gray-700">From direct referrals</span>
-                <span class="font-semibold text-gray-900">₦{{ earningsContribution.fromDirectReferrals | number:'1.0-0' }}</span>
+                <span class="font-semibold text-gray-900">{{ currencySymbol() }}{{ earningsContribution().fromDirectReferrals | number:'1.0-0' }}</span>
               </div>
               <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div class="h-full bg-mlm-primary rounded-full transition-all" [style.width.%]="getEarningsShare(earningsContribution.fromDirectReferrals)"></div>
+                <div class="h-full bg-mlm-primary rounded-full transition-all" [style.width.%]="getEarningsShare(earningsContribution().fromDirectReferrals)"></div>
               </div>
             </div>
             <div>
               <div class="flex justify-between text-xs mb-1">
                 <span class="font-medium text-gray-700">From team volume (CPV)</span>
-                <span class="font-semibold text-gray-900">₦{{ earningsContribution.fromTeamCpv | number:'1.0-0' }}</span>
+                <span class="font-semibold text-gray-900">{{ currencySymbol() }}{{ earningsContribution().fromTeamCpv | number:'1.0-0' }}</span>
               </div>
               <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div class="h-full bg-green-500 rounded-full transition-all" [style.width.%]="getEarningsShare(earningsContribution.fromTeamCpv)"></div>
+                <div class="h-full bg-green-500 rounded-full transition-all" [style.width.%]="getEarningsShare(earningsContribution().fromTeamCpv)"></div>
               </div>
             </div>
             <div>
               <div class="flex justify-between text-xs mb-1">
                 <span class="font-medium text-gray-700">Personal sales</span>
-                <span class="font-semibold text-gray-900">₦{{ earningsContribution.personalSales | number:'1.0-0' }}</span>
+                <span class="font-semibold text-gray-900">{{ currencySymbol() }}{{ earningsContribution().personalSales | number:'1.0-0' }}</span>
               </div>
               <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div class="h-full bg-blue-500 rounded-full transition-all" [style.width.%]="getEarningsShare(earningsContribution.personalSales)"></div>
+                <div class="h-full bg-blue-500 rounded-full transition-all" [style.width.%]="getEarningsShare(earningsContribution().personalSales)"></div>
               </div>
             </div>
           </div>
-          <p class="text-xs text-gray-500 mt-3">Total: ₦{{ totalEarningsContribution | number:'1.0-0' }}</p>
+          <p class="text-xs text-gray-500 mt-3">Total: {{ currencySymbol() }}{{ totalEarningsContribution() | number:'1.0-0' }}</p>
         </div>
 
         <!-- Progress Bar Section -->
@@ -222,6 +237,7 @@
         }
 
       </div>
+      }
     </div>
   </main>
 </div>

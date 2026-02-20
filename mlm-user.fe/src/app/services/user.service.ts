@@ -26,6 +26,10 @@ export interface User {
   package?: string;
   registrationPaid?: boolean;
   onboardingComplete?: boolean;
+  /** From matrix: direct referrals count */
+  directReferrals?: number;
+  /** From matrix: active legs count */
+  activeLegs?: number;
 }
 
 const USER_DATA_KEY = 'mlm_user_data';
@@ -124,6 +128,8 @@ export class UserService {
       currency: (apiUser['currency'] ?? reg?.['currency']) as 'NGN' | 'USD' | undefined,
       rank: apiUser['rank'] as string | undefined,
       stage: (apiUser['stage'] ?? (apiUser['matrix'] as Record<string, unknown>)?.['currentStage']) as number | undefined,
+      directReferrals: Number((apiUser['matrix'] as Record<string, unknown>)?.['directReferrals'] ?? (apiUser['matrix'] as Record<string, unknown>)?.['direct_referrals'] ?? 0),
+      activeLegs: Number((apiUser['matrix'] as Record<string, unknown>)?.['activeLegs'] ?? (apiUser['matrix'] as Record<string, unknown>)?.['active_legs'] ?? 0),
       isMerchant: apiUser['isMerchant'] as boolean | undefined ?? false,
       package: (apiUser['package'] ?? reg?.['package']) as string | undefined,
       registrationPaid,

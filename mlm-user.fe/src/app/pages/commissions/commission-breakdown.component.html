@@ -1,5 +1,40 @@
 <div class="p-6 lg:p-10 space-y-8 mx-auto">
   
+  @if (!userService.isPaid()) {
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-12 text-center">
+      <div class="max-w-sm mx-auto space-y-4">
+        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+          <i class="pi pi-lock text-gray-400"></i>
+        </div>
+        <h2 class="text-lg font-semibold text-gray-900">Unlock Your Earnings</h2>
+        <p class="text-sm text-gray-500">Complete your registration to view commission breakdown.</p>
+        <a routerLink="/dashboard/registration-payment" 
+           class="inline-flex items-center px-4 py-2 bg-mlm-primary text-white text-sm font-medium rounded-lg hover:bg-mlm-primary/90 transition-colors">
+          Complete Registration
+        </a>
+      </div>
+    </div>
+  } @else if (error()) {
+    <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+      <p class="text-sm text-red-700">{{ error() }}</p>
+    </div>
+  }
+
+  @if (isLoading()) {
+    <div class="space-y-4">
+      <div class="h-8 w-48 bg-gray-200 rounded animate-pulse"></div>
+      <div class="bg-white rounded-xl overflow-hidden">
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="px-6 py-4 border-b border-gray-100 flex gap-4">
+            <p-skeleton width="8rem" height="1rem"></p-skeleton>
+            <p-skeleton width="6rem" height="1rem"></p-skeleton>
+            <p-skeleton width="4rem" height="1rem"></p-skeleton>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+  
   <!-- Header -->
   <div class="flex items-center justify-between">
     <div>
@@ -79,4 +114,5 @@
       }
     </div>
   </div>
+  }
 </div>

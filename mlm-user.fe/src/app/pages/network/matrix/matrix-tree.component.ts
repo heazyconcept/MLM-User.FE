@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NetworkService, MatrixNode } from '../../../services/network.service';
 import { OrganizationChartModule } from 'primeng/organizationchart';
@@ -7,6 +7,7 @@ import { DialogModule } from 'primeng/dialog';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
+import { SkeletonModule } from 'primeng/skeleton';
 
 interface FlatNode {
   id: string;
@@ -20,24 +21,42 @@ interface FlatNode {
 @Component({
   selector: 'app-matrix-tree',
   standalone: true,
-  imports: [CommonModule, OrganizationChartModule, DialogModule, TableModule, ButtonModule, TooltipModule],
+  imports: [CommonModule, OrganizationChartModule, DialogModule, TableModule, ButtonModule, TooltipModule, SkeletonModule],
   templateUrl: './matrix-tree.component.html'
 })
-export class MatrixTreeComponent {
+export class MatrixTreeComponent implements OnInit {
   private networkService = inject(NetworkService);
-  private originalRoot = this.networkService.matrixTree();
-  
+  originalRoot = computed(() => this.networkService.matrixTree());
+
   // Navigation state
-  currentRootNode = signal<MatrixNode>(this.originalRoot);
+  currentRootNode = signal<MatrixNode>(this.networkService.matrixTree());
   navigationStack = signal<MatrixNode[]>([]);
   nodeForModal = signal<MatrixNode | null>(null);
-  
+
   /** Default zoom &lt; 1 so the full tree fits in view on load; user can zoom in from here. */
   zoomLevel = signal(0.5);
 
+  isLoading = this.networkService.isLoading;
+  error = this.networkService.error;
+
+  constructor() {
+    effect(() => {
+      const root = this.originalRoot();
+      if (this.currentRootNode().id === 'root' && root.id === 'root') {
+        this.currentRootNode.set(root);
+      }
+    });
+  }
+
+  ngOnInit(): void {
+    if (!this.isLoading()) {
+      this.networkService.fetchNetworkData();
+    }
+  }
+
   // Computed: check if viewing original root
   isRootView = computed(() => {
-    return this.currentRootNode().id === this.originalRoot.id;
+    return this.currentRootNode().id === this.originalRoot().id;
   });
 
   // Computed: current matrix tree (from currentRootNode) converted to PrimeNG TreeNode format
@@ -126,14 +145,14 @@ export class MatrixTreeComponent {
       this.navigationStack.update(stack => stack.slice(0, -1));
       this.currentRootNode.set(previousNode);
     } else {
-      this.currentRootNode.set(this.originalRoot);
+      this.currentRootNode.set(this.originalRoot());
     }
   }
 
   // Navigate to top (original root)
   navigateToTop() {
     this.navigationStack.set([]);
-    this.currentRootNode.set(this.originalRoot);
+    this.currentRootNode.set(this.originalRoot());
   }
 
   // Convert MatrixNode to PrimeNG TreeNode format

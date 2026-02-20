@@ -49,7 +49,8 @@ export class DownlineListComponent implements OnInit {
   filterLevel = signal<number | 'all'>('all');
   filterPackage = signal<string>('all');
   filterStatus = signal<string>('all');
-  isLoading = signal(true);
+  isLoading = this.networkService.isLoading;
+  error = this.networkService.error;
   skeletonRows = Array(5).fill({});
 
   filteredMembers = computed(() => {
@@ -73,10 +74,9 @@ export class DownlineListComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    // Simulate loading delay
-    setTimeout(() => {
-      this.isLoading.set(false);
-    }, 800);
+    if (!this.isLoading()) {
+      this.networkService.fetchNetworkData();
+    }
   }
 
   getPackageClass(pkg: string): string {

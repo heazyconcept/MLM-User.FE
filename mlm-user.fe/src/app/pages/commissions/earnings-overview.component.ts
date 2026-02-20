@@ -1,14 +1,16 @@
 import { Component, inject, computed, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
-import { RouterLink} from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { ChartModule } from 'primeng/chart';
+import { SkeletonModule } from 'primeng/skeleton';
 import { UserService } from '../../services/user.service';
 import { CommissionService } from '../../services/commission.service';
+import { EarningsService } from '../../services/earnings.service';
 import { EarningsTabsComponent } from './earnings-tabs.component';
 
 @Component({
   selector: 'app-earnings-overview',
-  imports: [CommonModule, RouterLink, DecimalPipe, DatePipe, EarningsTabsComponent, ChartModule],
+  imports: [CommonModule, RouterLink, DecimalPipe, DatePipe, EarningsTabsComponent, ChartModule, SkeletonModule],
   templateUrl: './earnings-overview.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -18,20 +20,25 @@ import { EarningsTabsComponent } from './earnings-tabs.component';
 export class EarningsOverviewComponent implements OnInit {
   userService = inject(UserService);
   commissionService = inject(CommissionService);
+  earningsService = inject(EarningsService);
 
   ngnSummary = this.commissionService.getSummary('NGN');
   usdSummary = this.commissionService.getSummary('USD');
-  
-  recentEntries = computed(() => {
-    return this.commissionService.getAllCommissions()().slice(0, 5);
-  });
+  displayCurrency = this.userService.displayCurrency;
+  currencySymbol = computed(() => (this.displayCurrency() === 'NGN' ? '₦' : '$'));
+  isLoading = this.earningsService.isLoading;
+  error = this.earningsService.error;
 
-  // Chart data and options
+  recentEntries = computed(() => this.commissionService.getAllCommissions()().slice(0, 5));
+
   chartData: any;
   chartOptions: any;
 
   ngOnInit(): void {
     this.initChart();
+    if (this.userService.isPaid()) {
+      this.earningsService.fetchEarningsSectionData();
+    }
   }
 
   private initChart(): void {

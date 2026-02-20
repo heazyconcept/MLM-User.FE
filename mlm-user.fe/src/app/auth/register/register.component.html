@@ -35,7 +35,7 @@
                         {{ step === 1 ? 'Credentials' : 'Membership' }}
                     </span>
                 }
-            </div>
+        </div>
 
             <!-- Header -->
             <div class="mb-8">
@@ -54,12 +54,12 @@
                         Pick the membership that fits you today.
                     </p>
                 }
-            </div>
+                </div>
 
             <!-- Form -->
             <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="flex flex-col flex-1">
                 <!-- Step 1: Credentials -->
-                @if (currentStep() === 1) {
+                    @if (currentStep() === 1) {
                     <div class="form-stack animate-step-in">
                         <!-- Email -->
                         <div class="flex flex-col gap-1.5">
@@ -82,7 +82,7 @@
                             </label>
                             <p-password 
                                 id="reg-password" 
-                                formControlName="password" 
+                                    formControlName="password"
                                 [toggleMask]="true" 
                                 [feedback]="false" 
                                 styleClass="w-full" 
@@ -93,7 +93,7 @@
                                 <small class="text-red-500 text-xs">{{ errorMsg }}</small>
                             }
                             <div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-1">
-                                @for (rule of passwordChecklist(); track rule.key) {
+                                        @for (rule of passwordChecklist(); track rule.key) {
                                     <span
                                         class="flex items-center gap-1.5 text-[11px] transition-colors duration-200"
                                         [class]="rule.met ? 'text-mlm-success' : 'text-slate-400'">
@@ -102,7 +102,7 @@
                                     </span>
                                 }
                             </div>
-                        </div>
+                            </div>
 
                         <!-- Confirm Password -->
                         <div class="flex flex-col gap-1.5">
@@ -122,23 +122,23 @@
                                 <small class="text-red-500 text-xs">Passwords do not match</small>
                             }
                         </div>
-                    </div>
-                }
+                        </div>
+                    }
 
                 <!-- Step 2: Membership -->
                 @if (currentStep() === 2) {
                     <div class="form-stack animate-step-in">
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[0.8rem] font-semibold text-slate-500">Select Package</label>
-                            <p-select
-                                [options]="packages"
-                                formControlName="package"
-                                optionLabel="label"
+                                <p-select
+                                    [options]="packages"
+                                    formControlName="package"
+                                    optionLabel="label"
                                 optionValue="value"
-                                placeholder="Choose your membership"
-                                styleClass="w-full !rounded-xl !border-mlm-warm-300 !shadow-none">
-                            </p-select>
-                            @if (registerForm.get('package')?.invalid && registerForm.get('package')?.touched) {
+                                    placeholder="Choose your membership"
+                                    styleClass="w-full !rounded-xl !border-mlm-warm-300 !shadow-none">
+                                </p-select>
+                                @if (registerForm.get('package')?.invalid && registerForm.get('package')?.touched) {
                                 <small class="text-red-500 text-xs">Please select a package</small>
                             }
                         </div>
@@ -178,20 +178,20 @@
                                     <i class="pi pi-times text-red-500 absolute right-3 top-1/2 -translate-y-1/2 text-sm"></i>
                                 }
                             </div>
-                        </div>
+                            </div>
 
                         <div class="flex items-start gap-3 pt-1">
-                            <p-checkbox formControlName="acceptTerms" [binary]="true" class="mt-0.5"></p-checkbox>
+                                <p-checkbox formControlName="acceptTerms" [binary]="true" class="mt-0.5"></p-checkbox>
                             <label class="text-[0.85rem] text-slate-500 leading-relaxed cursor-pointer">
-                                I agree to the
-                                <a href="#" class="text-mlm-primary font-semibold hover:underline">Terms &amp; Conditions</a>
-                                and confirm that I understand how the platform works.
-                            </label>
+                                    I agree to the
+                                    <a href="#" class="text-mlm-primary font-semibold hover:underline">Terms &amp; Conditions</a>
+                                    and confirm that I understand how the platform works.
+                                </label>
+                            </div>
                         </div>
-                    </div>
-                }
+                    }
 
-                <!-- Action Buttons -->
+                    <!-- Action Buttons -->
                 <div class="mt-auto pt-8 flex flex-col gap-3.5">
                     @if (currentStep() < totalSteps()) {
                         <button type="button"
@@ -223,12 +223,12 @@
                                 &larr; Back to previous step
                             </button>
                         } @else {
-                            Already have an account?
+                                Already have an account?
                             <a routerLink="/auth/login" class="text-mlm-primary font-bold hover:underline">Sign In</a>
                         }
                     </div>
-                </div>
-            </form>
+                    </div>
+                </form>
         </div>
     </div>
 </div>
