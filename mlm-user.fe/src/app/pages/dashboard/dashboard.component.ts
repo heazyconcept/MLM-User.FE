@@ -15,6 +15,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { UserService } from '../../services/user.service';
 import { PaymentService } from '../../services/payment.service';
 import { CommissionService } from '../../services/commission.service';
+import { EarningsService } from '../../services/earnings.service';
 import { WalletService } from '../../services/wallet.service';
 import { LoadingService } from '../../services/loading.service';
 import { ModalService } from '../../services/modal.service';
@@ -47,6 +48,7 @@ export class DashboardComponent implements OnInit {
   private userService = inject(UserService);
   private paymentService = inject(PaymentService);
   private commissionService = inject(CommissionService);
+  private earningsService = inject(EarningsService);
   private walletService = inject(WalletService);
   private loadingService = inject(LoadingService);
   private modalService = inject(ModalService);
@@ -73,11 +75,6 @@ export class DashboardComponent implements OnInit {
   activeSummary = computed(() => {
     const currency = this.displayCurrency();
     return this.commissionService.getSummary(currency)();
-  });
-
-  hasActivity = computed(() => {
-    const summary = this.activeSummary();
-    return summary.totalEarnings > 0 || summary.directReferrals > 0;
   });
 
   recentActivities = this.activityService.getRecentActivities(5);
@@ -126,7 +123,7 @@ export class DashboardComponent implements OnInit {
       this.showPaymentModal.set(true);
     }
 
-    // Fetch wallets when user is paid (for balance/earnings display)
+    // Fetch wallets and earnings when user is paid (for balance/earnings display)
     if (this.isPaid()) {
       this.walletService.fetchWallets().subscribe({
         next: () => this.cdr.markForCheck(),
@@ -139,6 +136,7 @@ export class DashboardComponent implements OnInit {
           );
         }
       });
+      this.earningsService.fetchEarningsSectionData();
     }
 
     // Listen to navigation events to detect when returning to dashboard

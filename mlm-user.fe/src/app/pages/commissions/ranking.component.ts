@@ -1,24 +1,35 @@
-import { Component, inject, ChangeDetectionStrategy, computed } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CommissionService } from '../../services/commission.service';
 import { UserService } from '../../services/user.service';
+import { EarningsService } from '../../services/earnings.service';
 import { EarningsTabsComponent } from './earnings-tabs.component';
+import { SkeletonModule } from 'primeng/skeleton';
 
 @Component({
   selector: 'app-ranking',
-  imports: [CommonModule, RouterLink, DecimalPipe, DatePipe, EarningsTabsComponent],
+  imports: [CommonModule, RouterLink, DecimalPipe, DatePipe, EarningsTabsComponent, SkeletonModule],
   templateUrl: './ranking.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'block bg-gray-50 min-h-screen'
   }
 })
-export class RankingComponent {
+export class RankingComponent implements OnInit {
   userService = inject(UserService);
   private commissionService = inject(CommissionService);
+  private earningsService = inject(EarningsService);
 
   rankInfo = this.commissionService.getRankInfo();
+  isLoading = this.earningsService.isLoading;
+  error = this.earningsService.error;
+
+  ngOnInit(): void {
+    if (this.userService.isPaid()) {
+      this.earningsService.fetchEarningsSectionData();
+    }
+  }
 
   // Segmented progress bar (10 segments)
   get progressSegments(): { filled: boolean }[] {
