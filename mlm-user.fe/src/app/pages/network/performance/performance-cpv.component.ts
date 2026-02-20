@@ -1,40 +1,58 @@
-import { Component, inject, signal, computed, AfterViewInit } from '@angular/core';
+import { Component, inject, signal, computed, AfterViewInit, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { NetworkService } from '../../../services/network.service';
+import { EarningsService } from '../../../services/earnings.service';
+import { UserService } from '../../../services/user.service';
 import { StatCardComponent } from '../../../components/stat-card/stat-card.component';
-
-/** Mock earnings contribution by source (for visual only). */
-const MOCK_EARNINGS_CONTRIBUTION = {
-  fromDirectReferrals: 45000,
-  fromTeamCpv: 120000,
-  personalSales: 28000
-};
+import { SkeletonModule } from 'primeng/skeleton';
 
 @Component({
   selector: 'app-performance-cpv',
   standalone: true,
-  imports: [CommonModule, RouterModule, StatCardComponent],
+  imports: [CommonModule, RouterModule, StatCardComponent, SkeletonModule],
   templateUrl: './performance-cpv.component.html'
 })
-export class PerformanceCpvComponent implements AfterViewInit {
+export class PerformanceCpvComponent implements OnInit, AfterViewInit {
   private networkService = inject(NetworkService);
   private messageService = inject(MessageService);
+  private earningsService = inject(EarningsService);
+  private userService = inject(UserService);
+
   cpv = this.networkService.cpvSummary;
   summary = this.networkService.networkSummary;
-  
-  animatedPercentage = signal(0);
-  /** Mock earnings contribution (read-only) for the Earnings Contribution block. */
-  earningsContribution = MOCK_EARNINGS_CONTRIBUTION;
+  earningsSummary = this.earningsService.earningsSummary;
+  displayCurrency = this.userService.displayCurrency;
+  isLoading = this.networkService.isLoading;
+  error = this.networkService.error;
 
-  get totalEarningsContribution(): number {
-    return this.earningsContribution.fromDirectReferrals + this.earningsContribution.fromTeamCpv + this.earningsContribution.personalSales;
-  }
+  animatedPercentage = signal(0);
+
+  /** Earnings contribution from API (or zeros if not available). */
+  earningsContribution = computed(() => {
+    const s = this.earningsSummary();
+    return {
+      fromDirectReferrals: s.directReferralBonus ?? s.fromDirectReferrals ?? 0,
+      fromTeamCpv: s.fromTeamCpv ?? 0,
+      personalSales: s.personalSales ?? 0
+    };
+  });
+
+  totalEarningsContribution = computed(() => {
+    const e = this.earningsContribution();
+    return e.fromDirectReferrals + e.fromTeamCpv + e.personalSales;
+  });
+
+  currencySymbol = computed(() => (this.displayCurrency() === 'NGN' ? '₦' : '$'));
 
   getEarningsShare(value: number): number {
-    const total = this.totalEarningsContribution;
+    const total = this.totalEarningsContribution();
     return total ? (value / total) * 100 : 0;
+  }
+
+  ngOnInit(): void {
+    this.networkService.fetchNetworkData();
   }
 
   /** True when there is no CPV activity (used for empty state). */
