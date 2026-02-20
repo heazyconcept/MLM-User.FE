@@ -19,6 +19,8 @@ export class NetworkOverviewComponent implements OnInit {
   error = this.networkService.error;
 
   ngOnInit(): void {
-    this.networkService.fetchNetworkData();
+    if (!this.isLoading()) {
+      this.networkService.fetchNetworkData();
+    }
   }
 }

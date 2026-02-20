@@ -74,7 +74,9 @@ export class DownlineListComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.networkService.fetchNetworkData();
+    if (!this.isLoading()) {
+      this.networkService.fetchNetworkData();
+    }
   }
 
   getPackageClass(pkg: string): string {

@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { forkJoin, of } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, finalize } from 'rxjs/operators';
 import { ReferralService, type DownlineItem } from './referral.service';
 import { UserService } from './user.service';
 import { EarningsService } from './earnings.service';
@@ -99,9 +99,13 @@ export class NetworkService {
   readonly matrixTree = signal<MatrixNode>(this._emptyMatrix);
   readonly downlineList = signal<DownlineMember[]>([]);
 
+  private _inFlight = false;
+
   constructor() {}
 
   fetchNetworkData(): void {
+    if (this._inFlight) return;
+    this._inFlight = true;
     this.isLoading.set(true);
     this.error.set(null);
 
@@ -161,9 +165,13 @@ export class NetworkService {
             console.error('[NetworkService] fetchNetworkData failed:', err);
           }
           return of(null);
+        }),
+        finalize(() => {
+          this._inFlight = false;
+          this.isLoading.set(false);
         })
       )
-      .subscribe(() => this.isLoading.set(false));
+      .subscribe();
   }
 
   private buildTreeFromDownlines(downlines: DownlineItem[]): MatrixNode {

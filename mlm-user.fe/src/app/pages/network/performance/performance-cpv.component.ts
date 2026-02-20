@@ -52,7 +52,9 @@ export class PerformanceCpvComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    this.networkService.fetchNetworkData();
+    if (!this.isLoading()) {
+      this.networkService.fetchNetworkData();
+    }
   }
 
   /** True when there is no CPV activity (used for empty state). */

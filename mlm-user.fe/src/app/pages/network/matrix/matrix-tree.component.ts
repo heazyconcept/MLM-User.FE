@@ -49,7 +49,9 @@ export class MatrixTreeComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.networkService.fetchNetworkData();
+    if (!this.isLoading()) {
+      this.networkService.fetchNetworkData();
+    }
   }
 
   // Computed: check if viewing original root
