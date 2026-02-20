@@ -124,12 +124,16 @@ export class ReferralService {
     const lastName = String(raw['lastName'] ?? raw['last_name'] ?? '');
     const fullName = [firstName, lastName].filter(Boolean).join(' ') || String(raw['fullName'] ?? raw['name'] ?? raw['email'] ?? '—');
     const joinedAt = raw['joinedAt'] ?? raw['createdAt'] ?? raw['registeredAt'] ?? raw['created_at'] ?? Date.now();
+    const joinDate = (() => {
+      const d = typeof joinedAt === 'number' ? new Date(joinedAt) : new Date(String(joinedAt));
+      return isNaN(d.getTime()) ? new Date() : d;
+    })();
     const isActive = raw['isActive'] ?? raw['is_active'] ?? raw['status'] !== 'inactive';
     return {
       id: String(raw['id'] ?? raw['userId'] ?? raw['user_id'] ?? ''),
       username: String(raw['username'] ?? raw['email'] ?? raw['referralCode'] ?? raw['referral_code'] ?? '—'),
       fullName,
-      joinDate: new Date(String(joinedAt)),
+      joinDate,
       status: (isActive ? 'active' : 'inactive') as 'active' | 'inactive',
       level: Number(raw['level'] ?? raw['depth'] ?? 1),
       package: String(raw['package'] ?? reg?.['package'] ?? '—'),
