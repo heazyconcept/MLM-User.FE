@@ -35,7 +35,9 @@ export class ReferralLinkComponent implements OnInit {
   currencySymbol = computed(() => (this.displayCurrency() === 'NGN' ? '₦' : '$'));
 
   ngOnInit(): void {
-    this.networkService.fetchNetworkData();
+    if (!this.networkService.isLoading()) {
+      this.networkService.fetchNetworkData();
+    }
   }
 
   onCopySuccess(): void {
