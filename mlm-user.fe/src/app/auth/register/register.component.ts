@@ -11,6 +11,7 @@ import { ReferralService } from '../../services/referral.service';
 import { ModalService } from '../../services/modal.service';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-register',
@@ -234,7 +235,7 @@ export class RegisterComponent implements OnInit {
         password: formValue.password!,
         package: formValue.package!,
         currency: formValue.currency!,
-        ...(formValue.referralCode ? { referralCode: formValue.referralCode } : {})
+        referralCode: formValue.referralCode?.trim() || environment.defaultReferralCode
       };
 
       this.authService.register(payload).subscribe({
