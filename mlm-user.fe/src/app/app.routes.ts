@@ -4,6 +4,10 @@ import { Routes } from '@angular/router';
 export const routes: Routes = [
   { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
   {
+    path: 'ref/:code',
+    loadComponent: () => import('./auth/referral-redirect/referral-redirect.component').then(m => m.ReferralRedirectComponent)
+  },
+  {
     path: 'auth',
     children: [
       { 

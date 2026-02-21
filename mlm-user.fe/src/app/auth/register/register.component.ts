@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
@@ -27,7 +27,7 @@ import { PasswordModule } from 'primeng/password';
   styleUrl: './register.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private paymentService = inject(PaymentService);
@@ -37,6 +37,19 @@ export class RegisterComponent {
 
   isLoading = signal<boolean>(false);
   referralValid = signal<boolean | null>(null);
+
+  ngOnInit(): void {
+    const storedCode = localStorage.getItem('referralCode');
+    if (storedCode) {
+      this.registerForm.patchValue({ referralCode: storedCode });
+      localStorage.removeItem('referralCode');
+      // Auto-validate the pre-filled referral code
+      this.referralService.validateReferralCode(storedCode).subscribe({
+        next: (res) => this.referralValid.set(res.valid),
+        error: () => this.referralValid.set(false)
+      });
+    }
+  }
 
   onReferralBlur(): void {
     const code = this.registerForm.get('referralCode')?.value?.trim();
