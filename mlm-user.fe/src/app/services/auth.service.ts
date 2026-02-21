@@ -20,7 +20,7 @@ export interface RegisterRequest {
 }
 
 export interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -73,8 +73,8 @@ export class AuthService {
     return localStorage.getItem(this.REFRESH_TOKEN_KEY);
   }
 
-  login(email: string, password: string): Observable<{ success: boolean; paymentStatus: PaymentStatus }> {
-    const body: LoginRequest = { email, password };
+  login(username: string, password: string): Observable<{ success: boolean; paymentStatus: PaymentStatus }> {
+    const body: LoginRequest = { username, password };
 
     return this.api.post<AuthResponse>('auth/login', body).pipe(
       tap(tokens => this.storeTokens(tokens)),
@@ -86,7 +86,7 @@ export class AuthService {
       })),
       catchError(err => {
         this.clearTokens();
-        this.audit.logAuthEvent('login', 'failure', email);
+        this.audit.logAuthEvent('login', 'failure', username);
         return throwError(() => err);
       })
     );

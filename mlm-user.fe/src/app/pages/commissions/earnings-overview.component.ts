@@ -1,4 +1,4 @@
-import { Component, inject, computed, ChangeDetectionStrategy, OnInit } from '@angular/core';
+import { Component, inject, computed, ChangeDetectionStrategy, OnInit, effect } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ChartModule } from 'primeng/chart';
@@ -35,23 +35,42 @@ export class EarningsOverviewComponent implements OnInit {
   chartOptions: any;
 
   ngOnInit(): void {
-    this.initChart();
     if (this.userService.isPaid()) {
       this.earningsService.fetchEarningsSectionData();
     }
   }
 
-  private initChart(): void {
+  constructor() {
+    // Rebuilds chart whenever the earnings list signal changes
+    effect(() => {
+      this.commissionService.getAllCommissions()();
+      this.buildChartData();
+    });
+  }
+
+  buildChartData() {
+    const entries = this.commissionService.getAllCommissions()();
+    const symbol = this.currencySymbol();
     const textColorSecondary = '#64748b';
     const surfaceBorder = '#e5e7eb';
-    const symbol = this.userService.displayCurrency() === 'NGN' ? '₦' : '$';
+
+    // Aggregate amounts by date (most recent 30 entries sorted by date)
+    const sorted = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const byDate = new Map<string, number>();
+    for (const e of sorted) {
+      const key = new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      byDate.set(key, (byDate.get(key) ?? 0) + e.amount);
+    }
+
+    const labels = Array.from(byDate.keys()).slice(-15);
+    const data = labels.map((l) => byDate.get(l) ?? 0);
 
     this.chartData = {
-      labels: ['Nov 1', 'Nov 4', 'Nov 8', 'Nov 11', 'Nov 15', 'Nov 18', 'Nov 22', 'Nov 25', 'Nov 30'],
+      labels: labels.length > 0 ? labels : ['No data'],
       datasets: [
         {
           label: 'Earnings',
-          data: [1200, 1900, 1500, 2800, 2200, 3100, 2600, 3500, 4200],
+          data: labels.length > 0 ? data : [0],
           fill: true,
           borderColor: '#49A321',
           backgroundColor: 'rgba(73, 163, 33, 0.1)',

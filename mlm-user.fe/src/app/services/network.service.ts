@@ -114,16 +114,18 @@ export class NetworkService {
     const downlines$ = this.referralService.getDownlines();
     const cpv$ = this.earningsService.fetchCpvSummary();
     const earnings$ = this.earningsService.fetchEarningsSummary();
+    const profile$ = this.userService.fetchProfile().pipe(catchError(() => of(null)));
 
     forkJoin({
       refInfo: refInfo$,
       sponsor: sponsor$,
       downlines: downlines$,
       cpv: cpv$,
-      earnings: earnings$
+      earnings: earnings$,
+      profile: profile$
     })
       .pipe(
-        tap(({ refInfo, sponsor, downlines, cpv }) => {
+        tap(({ refInfo, sponsor, downlines, cpv, profile }) => {
           const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
           const url = refInfo.referralCode ? `${baseUrl}/ref/${refInfo.referralCode}` : '';
           this.referralLink.set({
@@ -140,7 +142,7 @@ export class NetworkService {
             cycle: cpv.cycle
           });
 
-          const user = this.userService.currentUser();
+          const user = profile ?? this.userService.currentUser();
           const teamSize = downlines.length > 0 ? downlines.reduce((sum, d) => sum + d.teamSize, 0) + downlines.length : 0;
           const directRefs = user?.directReferrals ?? downlines.filter((d) => d.level === 1).length;
           const activeLegs = user?.activeLegs ?? Math.min(directRefs, 2);

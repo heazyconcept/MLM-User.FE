@@ -23,11 +23,33 @@ export interface RankingDto {
   achievedRanks: { rank: string; achievedDate: string }[];
 }
 
+export interface CpvMilestoneDto {
+  name: string;
+  cpvRequired: number;
+  reward: string;
+  rewardAmount?: number;
+  achieved: boolean;
+  achievedDate?: string;
+}
+
+export interface CpvHistoryDto {
+  date: string;
+  personalCpv: number;
+  teamCpv: number;
+  totalCpv: number;
+}
+
 export interface CpvSummaryDto {
   personalCpv: number;
   teamCpv: number;
   requiredCpv: number;
   cycle: string;
+  currentStage: number;
+  totalStages: number;
+  cpvCashBonus: number;
+  nextMilestoneName: string;
+  milestones: CpvMilestoneDto[];
+  history: CpvHistoryDto[];
 }
 
 export interface EarningsSummaryDto {
@@ -51,7 +73,13 @@ export class EarningsService {
     personalCpv: 0,
     teamCpv: 0,
     requiredCpv: 0,
-    cycle: ''
+    cycle: '',
+    currentStage: 0,
+    totalStages: 0,
+    cpvCashBonus: 0,
+    nextMilestoneName: '',
+    milestones: [],
+    history: []
   });
 
   private earningsSummarySignal = signal<EarningsSummaryDto>({
@@ -117,10 +145,15 @@ export class EarningsService {
 
   fetchCpvSummary(): Observable<CpvSummaryDto> {
     return this.api.get<Record<string, unknown>>('earnings/cpv').pipe(
+      tap((res) => console.log('[EarningsService] Raw CPV response:', JSON.stringify(res, null, 2))),
       map((res) => this.mapCpvResponse(res)),
       tap((cpv) => this.cpvSignal.set(cpv)),
       catchError(() => {
-        this.cpvSignal.set({ personalCpv: 0, teamCpv: 0, requiredCpv: 0, cycle: '' });
+        this.cpvSignal.set({
+          personalCpv: 0, teamCpv: 0, requiredCpv: 0, cycle: '',
+          currentStage: 0, totalStages: 0, cpvCashBonus: 0,
+          nextMilestoneName: '', milestones: [], history: []
+        });
         return of(this.cpvSignal());
       })
     );
@@ -138,16 +171,51 @@ export class EarningsService {
   }
 
   private mapCpvResponse(raw: Record<string, unknown>): CpvSummaryDto {
-    const cpv = raw['cpv'] as Record<string, unknown> | undefined;
-    const personal = cpv?.['personal'] ?? raw['personalCpv'] ?? raw['personal_cpv'] ?? 0;
-    const team = raw['teamCpv'] ?? raw['team_cpv'] ?? cpv?.['community'] ?? cpv?.['team'] ?? 0;
-    const required = raw['requiredCpv'] ?? raw['required_cpv'] ?? raw['nextMilestoneCpv'] ?? 0;
-    const cycle = raw['cycle'] ?? raw['currentCycle'] ?? raw['current_cycle'] ?? '';
+    // Actual API shape: { totalCpv, lastUpdated, transactions[] }
+    const totalCpv = Number(raw['totalCpv'] ?? 0);
+
+    // API doesn't split into personal/team — put totalCpv as personal for now
+    const personalCpv = totalCpv;
+    const teamCpv = 0;
+
+    const requiredCpv = Number(raw['requiredCpv'] ?? raw['required_cpv'] ?? 0);
+    const cycle = String(raw['cycle'] ?? raw['lastUpdated'] ?? '');
+    const currentStage = Number(raw['currentStage'] ?? raw['stage'] ?? 0);
+    const totalStages = Number(raw['totalStages'] ?? 0);
+    const cpvCashBonus = Number(raw['cpvCashBonus'] ?? raw['cashBonus'] ?? 0);
+    const nextMilestoneName = String(raw['nextMilestoneName'] ?? '');
+
+    // Map milestones if present
+    const rawMilestones = (raw['milestones'] ?? []) as Record<string, unknown>[];
+    const milestones: CpvMilestoneDto[] = rawMilestones.map((m) => ({
+      name: String(m['name'] ?? m['title'] ?? ''),
+      cpvRequired: Number(m['cpvRequired'] ?? m['requiredCpv'] ?? m['threshold'] ?? 0),
+      reward: String(m['reward'] ?? m['rewardName'] ?? ''),
+      rewardAmount: m['rewardAmount'] != null ? Number(m['rewardAmount']) : undefined,
+      achieved: Boolean(m['achieved'] ?? m['completed'] ?? false),
+      achievedDate: m['achievedDate'] ? String(m['achievedDate']) : undefined
+    }));
+
+    // Map transactions as history (API returns transactions[], not history[])
+    const rawTxns = (raw['transactions'] ?? raw['history'] ?? []) as Record<string, unknown>[];
+    const history: CpvHistoryDto[] = rawTxns.map((t) => ({
+      date: String(t['createdAt'] ?? t['date'] ?? ''),
+      personalCpv: Number(t['amount'] ?? 0),
+      teamCpv: 0,
+      totalCpv: Number(t['amount'] ?? 0)
+    }));
+
     return {
-      personalCpv: Number(personal),
-      teamCpv: Number(team),
-      requiredCpv: Number(required),
-      cycle: String(cycle)
+      personalCpv,
+      teamCpv,
+      requiredCpv,
+      cycle,
+      currentStage,
+      totalStages,
+      cpvCashBonus,
+      nextMilestoneName,
+      milestones,
+      history
     };
   }
 

@@ -37,17 +37,17 @@ export class LoginModernComponent {
   isLoading = signal<boolean>(false);
 
   loginForm = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
+    username: ['', [Validators.required, Validators.minLength(3)]],
     password: ['', [Validators.required]],
     rememberMe: [false]
   });
 
   onSubmit() {
     if (this.loginForm.valid) {
-      const { email, password } = this.loginForm.value;
-      if (email && password) {
+      const { username, password } = this.loginForm.value;
+      if (username && password) {
         this.isLoading.set(true);
-        this.authService.login(email, password).subscribe({
+        this.authService.login(username, password).subscribe({
           next: () => {
             this.isLoading.set(false);
             const redirectPath = this.userService.onboardingComplete() ? '/dashboard' : '/onboarding/profile';
@@ -68,7 +68,7 @@ export class LoginModernComponent {
             if (typeof ngDevMode !== 'undefined' && ngDevMode) {
               console.error('Login failed', err);
             }
-            this.modalService.open('error', 'Login Failed', 'Invalid email or password. Please try again.');
+            this.modalService.open('error', 'Login Failed', 'Invalid username or password. Please try again.');
           }
         });
       }

@@ -18,14 +18,14 @@
 
                 <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
                     <div class="space-y-5">
-                        <!-- Email Address Input -->
+                        <!-- Username Input -->
                         <app-auth-input 
-                            label="Email Address or Phone Number" 
-                            placeholder="e.g. name@example.com" 
-                            icon="pi-envelope" 
-                            formControlName="email"
+                            label="Username" 
+                            placeholder="@your_username" 
+                            icon="pi-user" 
+                            formControlName="username"
                             [required]="true"
-                            [error]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched ? 'Please enter a valid email' : null">
+                            [error]="loginForm.get('username')?.invalid && loginForm.get('username')?.touched ? 'Please enter your username' : null">
                         </app-auth-input>
 
                         <!-- Password Input with Toggle -->

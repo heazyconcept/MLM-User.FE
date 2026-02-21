@@ -62,6 +62,9 @@ export interface CpvSummary {
   totalCpv: number;
   personalCpv: number;
   teamCpv: number;
+  currentStage: number;
+  totalStages: number;
+  cpvCashBonus: number;
   nextMilestoneCpv: number;
   nextMilestoneReward: string;
 }
@@ -117,66 +120,110 @@ export class CommissionService {
     return computed(() => this.allEntries());
   }
 
-  // Bonus-related methods
+  // Bonus-related methods — derived from earnings summary
   getBonuses() {
-    return computed<BonusInfo[]>(() => [
-      {
-        id: 'b1',
-        name: 'Direct Referral Bonus',
-        description: 'Earn a percentage of each direct referral\'s registration fee.',
-        qualificationStatus: 'Qualified',
-        earnedStatus: 'Earned',
-        amount: 5000,
-        currency: 'NGN',
-        requirements: ['Active account', 'At least 1 direct referral']
-      },
-      {
-        id: 'b2',
-        name: 'Community Bonus',
-        description: 'Share in the global community pool based on your activity level.',
-        qualificationStatus: 'Qualified',
-        earnedStatus: 'Earned',
-        amount: 1500,
-        currency: 'NGN',
-        requirements: ['Active account', 'Minimum 100 CPV']
-      },
-      {
-        id: 'b3',
-        name: 'Product Purchase Bonus',
-        description: 'Earn from every product purchase in your downline.',
-        qualificationStatus: 'Qualified',
-        earnedStatus: 'Pending',
-        amount: 500,
-        currency: 'NGN',
-        requirements: ['Active account', 'Downline purchases']
-      },
-      {
-        id: 'b4',
-        name: 'Matching Bonus',
-        description: 'Match a percentage of your direct referrals\' earnings.',
-        qualificationStatus: 'In Progress',
-        earnedStatus: 'Locked',
-        requirements: ['Silver rank or higher', '5+ active direct referrals']
-      },
-      {
-        id: 'b5',
-        name: 'Leadership Bonus',
-        description: 'Monthly bonus pool for top-performing leaders.',
-        qualificationStatus: 'Not Qualified',
-        earnedStatus: 'Locked',
-        requirements: ['Gold rank or higher', 'Maintain 1000+ team CPV']
-      },
-      {
-        id: 'b6',
-        name: 'Merchant Bonus',
-        description: 'Special bonuses from partner merchants and stores.',
-        qualificationStatus: 'Qualified',
-        earnedStatus: 'Pending',
-        amount: 750,
-        currency: 'NGN',
-        requirements: ['Active account', 'Partner purchases']
+    return computed<BonusInfo[]>(() => {
+      const summary = this.earningsService.earningsSummary();
+      const bonuses: BonusInfo[] = [];
+
+      if (summary.directReferralBonus) {
+        bonuses.push({
+          id: 'b-direct',
+          name: 'Direct Referral Bonus',
+          description: 'Earn a percentage of each direct referral\'s registration fee.',
+          qualificationStatus: 'Qualified',
+          earnedStatus: 'Earned',
+          amount: summary.directReferralBonus,
+          currency: 'NGN',
+          requirements: ['Active account', 'At least 1 direct referral']
+        });
       }
-    ]);
+
+      if (summary.communityBonus) {
+        bonuses.push({
+          id: 'b-community',
+          name: 'Community Bonus',
+          description: 'Share in the global community pool based on your activity level.',
+          qualificationStatus: 'Qualified',
+          earnedStatus: 'Earned',
+          amount: summary.communityBonus,
+          currency: 'NGN',
+          requirements: ['Active account', 'Minimum 100 CPV']
+        });
+      }
+
+      if (summary.productBonus) {
+        bonuses.push({
+          id: 'b-product',
+          name: 'Product Purchase Bonus',
+          description: 'Earn from every product purchase in your downline.',
+          qualificationStatus: 'Qualified',
+          earnedStatus: 'Earned',
+          amount: summary.productBonus,
+          currency: 'NGN',
+          requirements: ['Active account', 'Downline purchases']
+        });
+      }
+
+      if (summary.matchingBonus) {
+        bonuses.push({
+          id: 'b-matching',
+          name: 'Matching Bonus',
+          description: 'Match a percentage of your direct referrals\' earnings.',
+          qualificationStatus: 'Qualified',
+          earnedStatus: 'Earned',
+          amount: summary.matchingBonus,
+          currency: 'NGN',
+          requirements: ['Silver rank or higher', '5+ active direct referrals']
+        });
+      }
+
+      const cpv = this.earningsService.cpvSummary();
+      if (cpv.cpvCashBonus) {
+        bonuses.push({
+          id: 'b-cpv-cash',
+          name: 'CPV Cash Bonus',
+          description: 'Cash bonus earned from reaching CPV milestones.',
+          qualificationStatus: 'Qualified',
+          earnedStatus: 'Earned',
+          amount: cpv.cpvCashBonus,
+          currency: 'NGN',
+          requirements: ['Reach CPV milestones']
+        });
+      }
+
+      // If no bonuses earned yet, show placeholder cards
+      if (bonuses.length === 0) {
+        bonuses.push(
+          {
+            id: 'b-direct-locked',
+            name: 'Direct Referral Bonus',
+            description: 'Earn a percentage of each direct referral\'s registration fee.',
+            qualificationStatus: 'Not Qualified',
+            earnedStatus: 'Locked',
+            requirements: ['Active account', 'At least 1 direct referral']
+          },
+          {
+            id: 'b-community-locked',
+            name: 'Community Bonus',
+            description: 'Share in the global community pool based on your activity level.',
+            qualificationStatus: 'Not Qualified',
+            earnedStatus: 'Locked',
+            requirements: ['Active account', 'Minimum 100 CPV']
+          },
+          {
+            id: 'b-matching-locked',
+            name: 'Matching Bonus',
+            description: 'Match a percentage of your direct referrals\' earnings.',
+            qualificationStatus: 'Not Qualified',
+            earnedStatus: 'Locked',
+            requirements: ['Silver rank or higher', '5+ active direct referrals']
+          }
+        );
+      }
+
+      return bonuses;
+    });
   }
 
   getRankInfo() {
@@ -209,76 +256,43 @@ export class CommissionService {
     return computed<CpvSummary>(() => {
       const cpv = this.earningsService.cpvSummary();
       const totalCpv = cpv.personalCpv + cpv.teamCpv;
+      // Find the next unachieved milestone
+      const nextMilestone = cpv.milestones.find((m) => !m.achieved);
       return {
         totalCpv,
         personalCpv: cpv.personalCpv,
         teamCpv: cpv.teamCpv,
-        nextMilestoneCpv: cpv.requiredCpv || 1,
-        nextMilestoneReward: cpv.requiredCpv ? `Next milestone at ${cpv.requiredCpv} CPV` : '—'
+        currentStage: cpv.currentStage,
+        totalStages: cpv.totalStages,
+        cpvCashBonus: cpv.cpvCashBonus,
+        nextMilestoneCpv: nextMilestone?.cpvRequired ?? (cpv.requiredCpv || 1),
+        nextMilestoneReward: nextMilestone
+          ? `${nextMilestone.name} — ${nextMilestone.reward}`
+          : (cpv.nextMilestoneName || (cpv.requiredCpv ? `Next milestone at ${cpv.requiredCpv} CPV` : '—'))
       };
     });
   }
 
   getMilestones() {
-    return computed<MilestoneInfo[]>(() => [
-      {
-        id: 'm1',
-        name: 'First 100 CPV',
-        description: 'Reach your first 100 cumulative point value.',
-        cpvRequired: 100,
-        reward: 'Welcome Bonus',
-        rewardAmount: 1000,
-        achieved: true,
-        achievedDate: '2025-11-05'
-      },
-      {
-        id: 'm2',
-        name: '500 CPV Club',
-        description: 'Join the 500 CPV club and unlock special benefits.',
-        cpvRequired: 500,
-        reward: 'Bonus + Badge',
-        rewardAmount: 2500,
-        achieved: true,
-        achievedDate: '2025-11-25'
-      },
-      {
-        id: 'm3',
-        name: '1000 CPV Master',
-        description: 'Reach 1000 CPV to become a CPV Master.',
-        cpvRequired: 1000,
-        reward: 'Exclusive Access',
-        rewardAmount: 5000,
-        achieved: true,
-        achievedDate: '2025-12-20'
-      },
-      {
-        id: 'm4',
-        name: '2500 CPV Elite',
-        description: 'Elite status unlocked at 2500 CPV.',
-        cpvRequired: 2500,
-        reward: '₦10,000 Bonus',
-        rewardAmount: 10000,
-        achieved: false
-      },
-      {
-        id: 'm5',
-        name: '5000 CPV Champion',
-        description: 'Champion level rewards await you.',
-        cpvRequired: 5000,
-        reward: '₦25,000 Bonus + Trip',
-        rewardAmount: 25000,
-        achieved: false
-      },
-      {
-        id: 'm6',
-        name: '10000 CPV Legend',
-        description: 'Legendary status with premium rewards.',
-        cpvRequired: 10000,
-        reward: '₦50,000 Bonus + Car Fund',
-        rewardAmount: 50000,
-        achieved: false
+    return computed<MilestoneInfo[]>(() => {
+      const cpv = this.earningsService.cpvSummary();
+      if (cpv.milestones.length > 0) {
+        return cpv.milestones.map((m, i) => ({
+          id: `m-${i}`,
+          name: m.name,
+          description: m.achieved
+            ? `Achieved — ${m.reward}`
+            : `Reach ${m.cpvRequired} CPV to unlock ${m.reward}`,
+          cpvRequired: m.cpvRequired,
+          reward: m.reward,
+          rewardAmount: m.rewardAmount,
+          achieved: m.achieved,
+          achievedDate: m.achievedDate
+        }));
       }
-    ]);
+      // Fallback: no milestones from API yet
+      return [];
+    });
   }
 }
 
