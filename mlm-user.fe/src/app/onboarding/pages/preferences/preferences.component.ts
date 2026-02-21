@@ -50,6 +50,13 @@ export class PreferencesComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    // Use the registration currency from user profile as the initial default
+    const registrationCurrency = this.userService.currentUser()?.currency;
+    if (registrationCurrency === 'NGN' || registrationCurrency === 'USD') {
+      this.prefForm.patchValue({ currency: registrationCurrency });
+    }
+
+    // Then try to load saved preferences (overrides the above if they exist)
     this.onboardingService.getPreferences().subscribe({
       next: (data) => {
         const lang = (data['preferredLanguage'] ?? data['preferred_language']) as string | undefined;
@@ -57,7 +64,7 @@ export class PreferencesComponent implements OnInit {
         if (lang || currency) {
           this.prefForm.patchValue({
             language: lang ?? 'en',
-            currency: currency ?? 'USD'
+            currency: currency ?? registrationCurrency ?? 'USD'
           });
         }
       },
