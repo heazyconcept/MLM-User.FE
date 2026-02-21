@@ -37,17 +37,17 @@ export class LoginComponent {
   isLoading = signal<boolean>(false);
 
   loginForm = this.fb.group({
-    email: ['pelumi123@gmail.com', [Validators.required, Validators.email]],
-    password: ['Password123#', [Validators.required]],
+    username: ['', [Validators.required, Validators.minLength(3)]],
+    password: ['', [Validators.required]],
     rememberMe: [false]
   });
 
   onSubmit() {
     if (this.loginForm.valid) {
-      const { email, password } = this.loginForm.value;
-      if (email && password) {
+      const { username, password } = this.loginForm.value;
+      if (username && password) {
         this.isLoading.set(true);
-        this.authService.login(email, password).subscribe({
+        this.authService.login(username, password).subscribe({
           next: (result) => {
             this.isLoading.set(false);
             
@@ -83,7 +83,7 @@ export class LoginComponent {
             this.modalService.open(
               'error',
               'Login Failed',
-              'Invalid email or password. Please try again.'
+              'Invalid username or password. Please try again.'
             );
           }
         });

@@ -114,6 +114,15 @@
         <span class="text-xs text-gray-400">{{ getAchievedCount() }} unlocked</span>
       </div>
       
+      @if (milestones().length === 0) {
+        <div class="px-6 py-12 text-center">
+          <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="pi pi-flag text-gray-400"></i>
+          </div>
+          <p class="text-sm font-medium text-gray-700">No milestones yet</p>
+          <p class="text-xs text-gray-400 mt-1">Keep earning CPV to unlock milestones and rewards.</p>
+        </div>
+      } @else {
       <div class="divide-y divide-gray-100">
         @for (milestone of milestones(); track milestone.id) {
           <div class="px-6 py-4 flex items-center gap-4">
@@ -158,6 +167,7 @@
           </div>
         }
       </div>
+      }
     </div>
   }
 </div>
