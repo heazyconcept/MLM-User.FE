@@ -41,7 +41,6 @@ export class ProfileInfoComponent implements OnInit {
   profileForm = this.fb.group({
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
-    username: ['', [Validators.required]],
     dob: [null as Date | null, [Validators.required]],
     gender: ['']
   });
@@ -49,12 +48,11 @@ export class ProfileInfoComponent implements OnInit {
   ngOnInit(): void {
     const user = this.userService.currentUser();
     if (user) {
-      const u = user as unknown as Record<string, unknown>;
       this.profileForm.patchValue({
         firstName: user.firstName ?? '',
-        lastName: user.lastName ?? '',
-        username: String(u['username'] ?? '')
+        lastName: user.lastName ?? ''
       });
+      const u = user as unknown as Record<string, unknown>;
       const dob = u['dateOfBirth'] as string | undefined;
       if (dob) {
         this.profileForm.patchValue({ dob: new Date(dob) });
@@ -78,7 +76,6 @@ export class ProfileInfoComponent implements OnInit {
     const payload: Record<string, unknown> = {
       firstName: str(value.firstName),
       lastName: str(value.lastName),
-      username: str(value.username),
       dateOfBirth: dob instanceof Date ? dob.toISOString().slice(0, 10) : undefined,
       gender: str(value.gender)
     };
