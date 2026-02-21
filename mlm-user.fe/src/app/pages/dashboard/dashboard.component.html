@@ -34,96 +34,6 @@
       <div class="min-h-screen bg-mlm-background">
         <main class="py-10">
           <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-            @if (isPaid() && !hasActivity()) {
-      <!-- State 2: PAID but INACTIVE - Onboarding/Quick Start -->
-      <div class="space-y-10 animate-fade-in">
-        <div class="bg-mlm-text rounded-2xl p-8 text-white">
-          <div class="max-w-2xl">
-            <h2 class="text-3xl font-extrabold mb-4 uppercase tracking-tight">
-              Welcome to the Family,
-              <span class="text-mlm-primary">{{ currentUser()?.firstName }}</span
-              >!
-            </h2>
-            <p class="text-mlm-secondary text-lg mb-8">
-              Your account is active. Now let's get you started with your first commission. Follow
-              these quick steps to launch your business.
-            </p>
-
-            <div class="flex flex-wrap gap-4">
-              <p-button
-                label="COMPLETE PROFILE"
-                icon="pi pi-user-edit"
-                styleClass="!bg-mlm-primary !border-mlm-primary !rounded-xl !font-bold !text-xs !uppercase !tracking-widest"
-                (onClick)="navigateTo('/profile')"
-              ></p-button>
-              <p-button
-                label="BROWSE PRODUCTS"
-                icon="pi pi-shopping-bag"
-                styleClass="!bg-white/10 !border-white/20 !rounded-xl !font-bold !text-xs !uppercase !tracking-widest !text-white hover:!bg-white/20"
-                (onClick)="navigateTo('/marketplace')"
-              ></p-button>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="bg-white p-6 rounded-2xl border border-mlm-secondary/10 shadow-sm space-y-4">
-            <div class="w-12 h-12 bg-mlm-success/10 rounded-xl flex items-center justify-center text-mlm-primary">
-              <i class="pi pi-share-alt text-xl"></i>
-            </div>
-            <h3 class="text-base font-bold text-mlm-text">1. Share Your Link</h3>
-            <p class="text-sm text-mlm-secondary leading-relaxed">
-              Copy your unique referral link and share it with your network to start building your
-              team.
-            </p>
-            <div class="flex flex-wrap gap-3">
-              <button
-                class="text-mlm-primary text-xs font-black uppercase tracking-widest hover:underline"
-              >
-                Copy Link
-              </button>
-              <button
-                (click)="navigateTo('/network/overview')"
-                class="text-mlm-primary text-xs font-black uppercase tracking-widest hover:underline"
-              >
-                View Network
-              </button>
-            </div>
-          </div>
-
-          <div class="bg-white p-6 rounded-2xl border border-mlm-secondary/10 shadow-sm space-y-4">
-            <div class="w-12 h-12 bg-mlm-blue-50 rounded-xl flex items-center justify-center text-mlm-blue-500">
-              <i class="pi pi-shield text-xl"></i>
-            </div>
-            <h3 class="text-base font-bold text-mlm-text">2. Verify Identity</h3>
-            <p class="text-sm text-mlm-secondary leading-relaxed">
-              Ensure your KYC is complete to enable smooth withdrawals of your future earnings.
-            </p>
-            <button
-              class="text-mlm-blue-500 text-xs font-black uppercase tracking-widest hover:underline"
-            >
-              Check KYC Status
-            </button>
-          </div>
-
-          <div class="bg-white p-6 rounded-2xl border border-mlm-secondary/10 shadow-sm space-y-4">
-            <div class="w-12 h-12 bg-mlm-warning/10 rounded-xl flex items-center justify-center text-mlm-warning">
-              <i class="pi pi-play text-xl"></i>
-            </div>
-            <h3 class="text-base font-bold text-mlm-text">3. Watch Tutorials</h3>
-            <p class="text-sm text-mlm-secondary leading-relaxed">
-              Learn how to maximize your earnings with our step-by-step platform guides.
-            </p>
-            <button
-              class="text-mlm-warning text-xs font-black uppercase tracking-widest hover:underline"
-            >
-              Watch Now
-            </button>
-          </div>
-        </div>
-      </div>
-      } @else {
-      <!-- State 3: ACTIVE Dashboard -->
       <div class="space-y-10 animate-fade-in">
         <!-- Enhanced Welcome Header -->
         @if (currentUser(); as user) {
@@ -285,7 +195,6 @@
           }
         </div>
       </div>
-      }
     </div>
   </main>
 </div>
