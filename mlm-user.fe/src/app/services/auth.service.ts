@@ -11,7 +11,8 @@ export interface AuthResponse {
 }
 
 export interface RegisterRequest {
-  email: string;
+  username: string;
+  email?: string;
   password: string;
   package: string;
   currency: string;
@@ -95,11 +96,11 @@ export class AuthService {
     return this.api.post<AuthResponse>('auth/register', data).pipe(
       tap(() => this.userService.clearUser()),
       tap(tokens => this.storeTokens(tokens)),
-      tap(() => this.audit.logAuthEvent('register', 'success', data.email)),
+      tap(() => this.audit.logAuthEvent('register', 'success', data.email ?? data.username)),
       map(() => true),
       catchError(err => {
         this.clearTokens();
-        this.audit.logAuthEvent('register', 'failure', data.email);
+        this.audit.logAuthEvent('register', 'failure', data.email ?? data.username);
         return throwError(() => err);
       })
     );

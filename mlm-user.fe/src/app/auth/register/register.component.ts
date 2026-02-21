@@ -81,14 +81,15 @@ export class RegisterComponent implements OnInit {
 
   registerForm = this.fb.group({
     // Step 1: Account Credentials
-    email: ['', [Validators.required, Validators.email]],
+    username: ['', [Validators.required, Validators.minLength(3)]],
+    email: ['', [Validators.email]],
     password: ['', [Validators.required, this.passwordStrengthValidator]],
     confirmPassword: ['', [Validators.required]],
 
     // Step 2: Membership
     package: ['', [Validators.required]],
     currency: ['', [Validators.required]],
-    referralCode: [''],
+    referralCode: [environment.defaultReferralCode],
     acceptTerms: [false, [Validators.requiredTrue]]
   }, { validators: this.passwordMatchValidator });
 
@@ -142,10 +143,11 @@ export class RegisterComponent implements OnInit {
 
   isStepValid(step: number): boolean {
     if (step === 1) {
-      return !!(this.registerForm.get('email')?.valid &&
+      return !!(this.registerForm.get('username')?.valid &&
                 this.registerForm.get('password')?.valid &&
                 this.registerForm.get('confirmPassword')?.valid &&
-                !this.registerForm.hasError('passwordMismatch'));
+                !this.registerForm.hasError('passwordMismatch') &&
+                (this.registerForm.get('email')?.valid));
     }
     if (step === 2) {
       return !!(this.registerForm.get('package')?.valid &&
@@ -171,6 +173,7 @@ export class RegisterComponent implements OnInit {
 
   markStepAsTouched(step: number) {
     if (step === 1) {
+      this.registerForm.get('username')?.markAsTouched();
       this.registerForm.get('email')?.markAsTouched();
       this.registerForm.get('password')?.markAsTouched();
       this.registerForm.get('confirmPassword')?.markAsTouched();
@@ -231,11 +234,12 @@ export class RegisterComponent implements OnInit {
 
       const formValue = this.registerForm.value;
       const payload: RegisterRequest = {
-        email: formValue.email!,
+        username: formValue.username!,
         password: formValue.password!,
         package: formValue.package!,
         currency: formValue.currency!,
-        referralCode: formValue.referralCode?.trim() || environment.defaultReferralCode
+        referralCode: formValue.referralCode?.trim() || environment.defaultReferralCode,
+        ...(formValue.email ? { email: formValue.email } : {})
       };
 
       this.authService.register(payload).subscribe({
