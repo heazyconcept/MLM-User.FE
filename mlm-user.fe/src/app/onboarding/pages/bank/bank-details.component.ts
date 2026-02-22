@@ -22,7 +22,6 @@ export class BankDetailsComponent implements OnInit {
   private router = inject(Router);
   private onboardingService = inject(OnboardingService);
   private modalService = inject(ModalService);
-
   isLoading = signal<boolean>(false);
 
   accountTypes = [
@@ -39,7 +38,7 @@ export class BankDetailsComponent implements OnInit {
 
   ngOnInit(): void {
     this.onboardingService.getBankDetails().subscribe({
-      next: (data) => {
+      next: (data: Record<string, unknown>) => {
         const bankName = (data['bankName'] ?? data['bank_name']) as string | undefined;
         const accountNumber = (data['accountNumber'] ?? data['account_number']) as string | undefined;
         const accountName = (data['accountName'] ?? data['account_name']) as string | undefined;
@@ -53,7 +52,7 @@ export class BankDetailsComponent implements OnInit {
           });
         }
       },
-      error: () => {}
+      error: () => { /* silently ignore — user will fill in */ }
     });
   }
 

@@ -32,6 +32,7 @@ export class IdentityKycComponent {
   private onboardingService = inject(OnboardingService);
   private modalService = inject(ModalService);
 
+
   isLoading = signal<boolean>(false);
 
   idTypes = [

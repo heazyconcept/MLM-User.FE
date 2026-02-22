@@ -5,7 +5,6 @@ import { SideMenuComponent } from '../../components/side-menu/side-menu.componen
 import { DashboardHeaderComponent } from '../../components/dashboard-header/dashboard-header.component';
 import { LayoutService } from '../../services/layout.service';
 
-
 @Component({
   selector: 'app-dashboard-layout',
   imports: [CommonModule, RouterOutlet, SideMenuComponent, DashboardHeaderComponent],

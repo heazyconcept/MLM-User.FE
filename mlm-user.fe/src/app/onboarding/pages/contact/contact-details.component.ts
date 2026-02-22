@@ -27,6 +27,7 @@ export class ContactDetailsComponent implements OnInit {
   private userService = inject(UserService);
   private modalService = inject(ModalService);
 
+
   isLoading = signal<boolean>(false);
 
   countriesList = Object.values(countries)

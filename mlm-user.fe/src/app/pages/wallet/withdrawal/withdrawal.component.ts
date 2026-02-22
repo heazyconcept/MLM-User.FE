@@ -38,6 +38,7 @@ export class WithdrawalComponent implements OnInit {
   private confirmationService = inject(ConfirmationService);
   private router = inject(Router);
 
+
   currency = signal<'NGN' | 'USD' | null>(null);
   wallet = computed(() => {
     const curr = this.currency();
@@ -67,17 +68,11 @@ export class WithdrawalComponent implements OnInit {
     const data = this.config.data;
     if (data && data.currency) {
       this.currency.set(data.currency);
-      
-      // Fetch wallets to ensure we have current balance
-      this.walletService.fetchWallets().subscribe({
-        next: (wallets) => {
-          const w = wallets.find(wall => wall.currency === data.currency);
-          if (w) {
-            this.withdrawalForm.get('amount')?.addValidators(Validators.max(w.balance));
-            this.withdrawalForm.get('amount')?.updateValueAndValidity();
-          }
-        }
-      });
+      const w = this.walletService.getWallet(data.currency as 'NGN' | 'USD')();
+      if (w) {
+        this.withdrawalForm.get('amount')?.addValidators(Validators.max(w.balance));
+        this.withdrawalForm.get('amount')?.updateValueAndValidity();
+      }
     }
   }
 
@@ -118,11 +113,11 @@ export class WithdrawalComponent implements OnInit {
       accountName: bank.accountName!
     }).subscribe({
       next: () => {
+        this.walletService.fetchWallets().subscribe();
         this.isSubmitting.set(false);
         this.ref.close(true);
         this.router.navigate(['/withdrawals']);
       },
-
       error: () => {
         this.isSubmitting.set(false);
       }

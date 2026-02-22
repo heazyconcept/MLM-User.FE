@@ -3,7 +3,6 @@ import { Observable, of } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { ModalService } from './modal.service';
-import { NotificationService } from './notification.service';
 
 // API response types (OpenAPI has no schema; infer from API.md)
 export type WalletType = 'CASH' | 'VOUCHER' | 'AUTOSHIP';
@@ -55,7 +54,6 @@ export interface WithdrawalRequest {
 export class WalletService {
   private api = inject(ApiService);
   private modalService = inject(ModalService);
-  private notificationService = inject(NotificationService);
 
   private wallets = signal<Wallet[]>([]);
   private transactions = signal<Transaction[]>([]);
@@ -204,12 +202,6 @@ export class WalletService {
           `Your withdrawal request of ${currency === 'NGN' ? '₦' : '$'}${amount} has been successfully submitted and is currently pending admin approval.`,
           '/withdrawals'
         );
-        this.notificationService.add({
-          title: 'Withdrawal Submitted',
-          message: `Your withdrawal of ${currency === 'NGN' ? '₦' : '$'}${amount} is pending.`,
-          type: 'info',
-          category: 'wallet'
-        });
         this.fetchWallets().subscribe();
         this.fetchWithdrawals().subscribe();
       }),

@@ -43,14 +43,14 @@ export class DownlineListComponent implements OnInit {
   
   private networkService = inject(NetworkService);
   private messageService = inject(MessageService);
+
   members = this.networkService.downlineList;
-  
   searchQuery = signal('');
   filterLevel = signal<number | 'all'>('all');
   filterPackage = signal<string>('all');
   filterStatus = signal<string>('all');
-  isLoading = this.networkService.isLoading;
-  error = this.networkService.error;
+  isLoading = computed(() => this.networkService.isLoading());
+  error = computed(() => this.networkService.error() ?? null);
   skeletonRows = Array(5).fill({});
 
   filteredMembers = computed(() => {
@@ -74,9 +74,7 @@ export class DownlineListComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    if (!this.isLoading()) {
-      this.networkService.fetchNetworkData();
-    }
+    this.networkService.fetchNetworkData();
   }
 
   getPackageClass(pkg: string): string {
