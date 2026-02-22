@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { NotificationService, Notification, NotificationCategory } from '../../../services/notification.service';
 
 const CATEGORY_TABS: { value: '' | NotificationCategory; label: string }[] = [
@@ -24,7 +23,7 @@ const READ_FILTER_TABS: { value: 'all' | 'unread' | 'read'; label: string }[] = 
 @Component({
   selector: 'app-notifications-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, DialogModule, ButtonModule, ProgressSpinnerModule],
+  imports: [CommonModule, RouterLink, DialogModule, ButtonModule],
   templateUrl: './notifications-list.component.html',
   styleUrl: './notifications-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
