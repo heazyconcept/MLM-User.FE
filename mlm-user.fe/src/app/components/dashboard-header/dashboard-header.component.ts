@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -27,18 +27,30 @@ import { NotificationService } from '../../services/notification.service';
   templateUrl: './dashboard-header.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DashboardHeaderComponent {
+export class DashboardHeaderComponent implements OnInit {
   private userService = inject(UserService);
   private authService = inject(AuthService);
   private layoutService = inject(LayoutService);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
 
+
   currentUser = this.userService.currentUser;
   notifications = this.notificationService.allNotifications;
   unreadCount = this.notificationService.unreadCount;
-  
+
   notificationsVisible = signal(false);
+
+  ngOnInit(): void {
+    this.notificationService.loadUnreadCount().subscribe();
+  }
+
+  openNotificationsDrawer(): void {
+    this.notificationsVisible.set(true);
+    if (this.notifications().length === 0) {
+      this.notificationService.loadNotifications({ limit: 20 }).subscribe();
+    }
+  }
 
   
   userMenuItems: MenuItem[] = [
@@ -70,13 +82,11 @@ export class DashboardHeaderComponent {
     this.notificationService.markAllAsRead();
   }
 
-  clearNotifications() {
-    this.notificationService.clearAll();
-  }
-
   logout() {
     this.authService.logout().subscribe({
-      next: () => this.router.navigate(['/auth/login']),
+      next: () => {
+        this.router.navigate(['/auth/login']);
+      },
       error: () => this.router.navigate(['/auth/login'])
     });
   }

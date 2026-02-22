@@ -49,6 +49,7 @@ export class PaymentCallbackComponent implements OnInit {
   private userService = inject(UserService);
   private walletService = inject(WalletService);
 
+
   status = signal<'verifying' | 'success' | 'error'>('verifying');
   errorMessage = signal<string>('');
   successMessage = signal<string>('Your registration is now complete. Redirecting you...');
@@ -76,14 +77,8 @@ export class PaymentCallbackComponent implements OnInit {
           if (paymentFlow === WALLET_FUNDING_FLOW) {
             this.successMessage.set('Your wallet has been credited. Redirecting you...');
             this.cdr.markForCheck();
-            this.walletService.fetchWallets().subscribe({
-              next: () => {
-                setTimeout(() => this.router.navigate(['/wallet']), 1500);
-              },
-              error: () => {
-                setTimeout(() => this.router.navigate(['/wallet']), 1500);
-              }
-            });
+            this.walletService.fetchWallets().subscribe();
+            setTimeout(() => this.router.navigate(['/wallet']), 1500);
             return;
           }
         }

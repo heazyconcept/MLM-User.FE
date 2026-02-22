@@ -40,6 +40,7 @@ export class SideMenuComponent {
   private authService = inject(AuthService);
   private layoutService = inject(LayoutService);
 
+
   isPaid = this.userService.isPaid;
   isMerchant = this.userService.isMerchant;
   currentUser = this.userService.currentUser;
@@ -199,8 +200,12 @@ export class SideMenuComponent {
 
   logout(): void {
     this.authService.logout().subscribe({
-      next: () => this.router.navigate(['/auth/login']),
-      error: () => this.router.navigate(['/auth/login'])
+      next: () => {
+        this.router.navigate(['/auth/login']);
+      },
+      error: () => {
+        this.router.navigate(['/auth/login']);
+      }
     });
   }
 

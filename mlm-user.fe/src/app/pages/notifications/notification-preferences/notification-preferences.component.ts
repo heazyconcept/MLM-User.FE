@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { NotificationService, NotificationCategory } from '../../../services/notification.service';
 
 const PREFERENCE_OPTIONS: { key: NotificationCategory; label: string }[] = [
@@ -16,7 +17,7 @@ const PREFERENCE_OPTIONS: { key: NotificationCategory; label: string }[] = [
 @Component({
   selector: 'app-notification-preferences',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, ToggleSwitchModule],
+  imports: [CommonModule, RouterLink, FormsModule, ToggleSwitchModule, ProgressSpinnerModule],
   templateUrl: './notification-preferences.component.html',
   styleUrl: './notification-preferences.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -33,10 +34,20 @@ export class NotificationPreferencesComponent implements OnInit {
     system: true
   });
   savedMessage = signal<string | null>(null);
+  loading = signal<boolean>(true);
 
   ngOnInit(): void {
-    const prefs = this.notificationService.preferences();
-    this.localPrefs.set({ ...prefs });
+    this.notificationService.getPreferences().subscribe({
+      next: (prefs) => {
+        this.localPrefs.set({ ...prefs });
+        this.loading.set(false);
+      },
+      error: () => {
+        const prefs = this.notificationService.preferences();
+        this.localPrefs.set({ ...prefs });
+        this.loading.set(false);
+      }
+    });
   }
 
   setPreference(key: NotificationCategory, value: boolean): void {

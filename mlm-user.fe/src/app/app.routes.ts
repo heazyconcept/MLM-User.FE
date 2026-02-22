@@ -280,6 +280,11 @@ export const routes: Routes = [
             path: 'sessions',
             loadComponent: () => import('./pages/settings/settings-sessions/settings-sessions.component').then(m => m.SettingsSessionsComponent),
             data: { title: 'Sessions' }
+          },
+          {
+            path: 'upgrade',
+            loadComponent: () => import('./pages/settings/package-upgrade/package-upgrade.component').then(m => m.PackageUpgradeComponent),
+            data: { title: 'Upgrade Package' }
           }
         ]
       }

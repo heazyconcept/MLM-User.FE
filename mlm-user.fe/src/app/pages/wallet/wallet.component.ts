@@ -39,7 +39,7 @@ export class WalletComponent implements OnInit {
   totalCashBalance = this.walletService.totalCashBalance;
   totalVoucherBalance = this.walletService.totalVoucherBalance;
   totalAutoshipBalance = this.walletService.totalAutoshipBalance;
-  isLoading = signal(true);
+  isLoading = signal(false);
   isBalanceHidden = signal(false);
   
   // Get primary wallet (prefer user's registration currency)
@@ -66,12 +66,11 @@ export class WalletComponent implements OnInit {
 
   ngOnInit() {
     if (this.isPaid()) {
+      this.isLoading.set(true);
       this.walletService.fetchWallets().subscribe({
         next: () => this.isLoading.set(false),
         error: () => this.isLoading.set(false)
       });
-    } else {
-      this.isLoading.set(false);
     }
   }
 

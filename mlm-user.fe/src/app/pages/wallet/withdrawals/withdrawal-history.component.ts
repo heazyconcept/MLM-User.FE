@@ -22,9 +22,9 @@ export class WithdrawalHistoryComponent implements OnInit {
   private walletService = inject(WalletService);
   private userService = inject(UserService);
   private router = inject(Router);
-  
+
   withdrawals = this.walletService.allWithdrawals;
-  isLoading = signal(true);
+  isLoading = signal(false);
 
   // Filters
   statusFilter = signal<string | null>(null);
@@ -71,7 +71,8 @@ export class WithdrawalHistoryComponent implements OnInit {
   });
 
   ngOnInit() {
-    this.walletService.fetchWithdrawals().subscribe({
+    this.isLoading.set(true);
+    this.walletService.fetchWithdrawals(20, 0).subscribe({
       next: () => this.isLoading.set(false),
       error: () => this.isLoading.set(false)
     });

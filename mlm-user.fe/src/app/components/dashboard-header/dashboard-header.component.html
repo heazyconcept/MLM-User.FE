@@ -12,7 +12,7 @@
             <!-- Notifications -->
             <button type="button"
                     class="relative -m-2.5 p-2.5 text-gray-500 hover:text-mlm-primary hover:bg-gray-50 rounded-lg transition-colors"
-                    (click)="notificationsVisible.set(true)">
+                    (click)="openNotificationsDrawer()">
                 <span class="sr-only">View notifications</span>
                 <i class="pi pi-bell text-xl" aria-hidden="true"></i>
                 @if (unreadCount() > 0) {
@@ -39,10 +39,9 @@
                                 <span class="text-[10px] font-semibold text-mlm-error bg-mlm-error/10 px-2 py-1 rounded-full">{{ unreadCount() }} new</span>
                             }
                         </div>
-                        <div class="flex gap-3">
+                        @if (unreadCount() > 0) {
                             <button type="button" (click)="markAllAsRead()" class="text-xs font-semibold text-mlm-primary hover:underline">Mark all read</button>
-                            <button type="button" (click)="clearNotifications()" class="text-xs font-semibold text-mlm-secondary hover:underline">Clear</button>
-                        </div>
+                        }
                     </div>
                 </ng-template>
 

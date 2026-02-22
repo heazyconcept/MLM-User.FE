@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy, ChangeDetectorRef, signal, effect, OnInit } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, ChangeDetectorRef, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { CardModule } from 'primeng/card';
@@ -47,37 +47,15 @@ export class ProfileComponent implements OnInit {
     accountName: ['']
   });
 
-  constructor() {
-    // Effect to update form when user data changes
-    effect(() => {
-      const user = this.currentUser();
-      if (user && !this.isEditMode()) {
-        this.populateForm(user);
-      }
-    });
-
-    // Initialize form with current user data
+  ngOnInit(): void {
     const user = this.currentUser();
     if (user) {
       this.populateForm(user);
     }
-  }
 
-  ngOnInit(): void {
-    this.userService.fetchProfile().subscribe({
-      next: (user) => {
-        this.populateForm(user);
-        this.cdr.markForCheck();
-        this.fetchBankDetails();
-        this.fetchIdentityDetails();
-      },
-      error: () => {}
-    });
-  }
-
-  private fetchIdentityDetails(): void {
+    // Load identity / KYC status
     this.onboardingService.getIdentity().subscribe({
-      next: (data) => {
+      next: (data: Record<string, unknown>) => {
         const status = (data['kycStatus'] ?? data['status'] ?? data['kyc_status']) as string | undefined;
         if (status && ['PENDING', 'VERIFIED', 'REJECTED'].includes(status.toUpperCase())) {
           this.userService.updateProfile({
@@ -86,13 +64,12 @@ export class ProfileComponent implements OnInit {
           this.cdr.markForCheck();
         }
       },
-      error: () => {}
+      error: () => { /* silently ignore */ }
     });
-  }
 
-  private fetchBankDetails(): void {
+    // Load bank details
     this.onboardingService.getBankDetails().subscribe({
-      next: (data) => {
+      next: (data: Record<string, unknown>) => {
         const bankName = (data['bankName'] ?? data['bank_name']) as string | undefined;
         const accountNumber = (data['accountNumber'] ?? data['account_number']) as string | undefined;
         const accountNumberMasked = (data['accountNumberMasked'] ?? data['account_number_masked']) as string | undefined;
@@ -112,7 +89,7 @@ export class ProfileComponent implements OnInit {
           this.cdr.markForCheck();
         }
       },
-      error: () => {}
+      error: () => { /* silently ignore */ }
     });
   }
 
@@ -193,21 +170,10 @@ export class ProfileComponent implements OnInit {
   }
 
   private handleSaveSuccess(): void {
-    this.userService.fetchProfile().subscribe({
-      next: () => {
-        this.fetchBankDetails();
-        this.fetchIdentityDetails();
-        this.isSaving.set(false);
-        this.isEditMode.set(false);
-        this.cdr.markForCheck();
-        this.modalService.open('success', 'Profile Updated', 'Your profile has been updated successfully.');
-      },
-      error: () => {
-        this.isSaving.set(false);
-        this.isEditMode.set(false);
-        this.cdr.markForCheck();
-        this.modalService.open('success', 'Profile Updated', 'Your profile has been updated successfully.');
-      }
-    });
+    this.userService.fetchProfile().subscribe();
+    this.isSaving.set(false);
+    this.isEditMode.set(false);
+    this.cdr.markForCheck();
+    this.modalService.open('success', 'Profile Updated', 'Your profile has been updated successfully.');
   }
 }

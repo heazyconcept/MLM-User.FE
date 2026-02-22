@@ -19,7 +19,10 @@ export class SettingsPreferencesComponent implements OnInit {
   private userService = inject(UserService);
   private onboardingService = inject(OnboardingService);
 
+
   currentUser = this.userService.currentUser;
+
+
   language = signal<string>('en');
   darkMode = signal<boolean>(false);
   displayCurrency = signal<'NGN' | 'USD'>('NGN');
@@ -56,16 +59,6 @@ export class SettingsPreferencesComponent implements OnInit {
 
     this.displayCurrency.set(this.userService.displayCurrency());
     this.lastSavedDisplayCurrency.set(this.displayCurrency());
-
-    this.onboardingService.getPreferences().subscribe({
-      next: (data) => {
-        const curr = (data['displayCurrency'] ?? data['display_currency']) as 'NGN' | 'USD' | undefined;
-        if (curr === 'NGN' || curr === 'USD') {
-          this.displayCurrency.set(curr);
-          this.lastSavedDisplayCurrency.set(curr);
-        }
-      }
-    });
   }
 
   save(): void {

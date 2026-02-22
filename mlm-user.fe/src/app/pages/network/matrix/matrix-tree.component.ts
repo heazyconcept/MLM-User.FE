@@ -36,8 +36,8 @@ export class MatrixTreeComponent implements OnInit {
   /** Default zoom &lt; 1 so the full tree fits in view on load; user can zoom in from here. */
   zoomLevel = signal(0.5);
 
-  isLoading = this.networkService.isLoading;
-  error = this.networkService.error;
+  isLoading = computed(() => this.networkService.isLoading());
+  error = computed(() => this.networkService.error() ?? null);
 
   constructor() {
     effect(() => {
@@ -49,9 +49,7 @@ export class MatrixTreeComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (!this.isLoading()) {
-      this.networkService.fetchNetworkData();
-    }
+    this.networkService.fetchNetworkData();
   }
 
   // Computed: check if viewing original root
