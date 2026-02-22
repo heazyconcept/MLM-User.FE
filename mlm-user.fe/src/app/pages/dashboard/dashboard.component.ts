@@ -7,7 +7,6 @@ import { ButtonModule } from 'primeng/button';
 import { BadgeModule } from 'primeng/badge';
 import { MessageModule } from 'primeng/message';
 import { ProgressBarModule } from 'primeng/progressbar';
-import { ChartModule } from 'primeng/chart';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
@@ -20,7 +19,6 @@ import { WalletService } from '../../services/wallet.service';
 import { LoadingService } from '../../services/loading.service';
 import { ModalService } from '../../services/modal.service';
 import { ActivityService } from '../../services/activity.service';
-import { StatCardComponent } from '../../components/stat-card/stat-card.component';
 import { OverlayOptions } from 'primeng/api';
 import { signal } from '@angular/core';
 
@@ -28,13 +26,11 @@ import { signal } from '@angular/core';
   selector: 'app-dashboard',
   imports: [
     CommonModule,
-    StatCardComponent,
     CardModule,
     ButtonModule,
     BadgeModule,
     MessageModule,
     ProgressBarModule,
-    ChartModule,
     DialogModule,
     ReactiveFormsModule,
     SelectModule,
@@ -77,12 +73,119 @@ export class DashboardComponent implements OnInit {
     return this.commissionService.getSummary(currency)();
   });
 
+  earningsBreakdown = computed(() => {
+    const summary = this.activeSummary();
+    const total = summary.totalEarnings || 1;
+    return [
+      { label: 'Direct Referral', value: summary.directReferralBonus, color: '#49A321', pct: Math.round((summary.directReferralBonus / total) * 100) },
+      { label: 'Community Bonus', value: summary.communityBonus, color: '#64748b', pct: Math.round((summary.communityBonus / total) * 100) },
+      { label: 'Product Bonus', value: summary.productBonus, color: '#57534e', pct: Math.round((summary.productBonus / total) * 100) },
+      { label: 'Matching Bonus', value: summary.matchingBonus, color: '#49A321', pct: Math.round((summary.matchingBonus / total) * 100) },
+    ];
+  });
+
   recentActivities = this.activityService.getRecentActivities(5);
 
   salesData: any;
   salesOptions: any;
   trafficData: any;
   trafficOptions: any;
+
+  /** Bar chart (last 7 months) and entrance animation */
+  barsAnimated = false;
+  cardsVisible = [false, false, false, false];
+
+  get salesMonths(): string[] {
+    return this.salesData?.labels?.slice(-7) ?? [];
+  }
+
+  get salesValues(): number[] {
+    const d = this.salesData?.datasets?.[0]?.data;
+    return Array.isArray(d) ? d.slice(-7) : [];
+  }
+
+  get barItems(): { value: number; label: string; isLast: boolean }[] {
+    return this.salesValues.map((v, i) => ({
+      value: v,
+      label: this.salesMonths[i] ?? '',
+      isLast: i === this.salesValues.length - 1,
+    }));
+  }
+
+  get statCardsData(): { label: string; value: string; icon: string; gradient: string }[] {
+    const summary = this.activeSummary();
+    const wallet = this.activeWallet();
+    const ngn = this.ngnWallet();
+    const usd = this.usdWallet();
+    const cash = wallet?.cashBalance ?? 0;
+    const sym = this.displayCurrency() === 'NGN' ? '₦' : '$';
+    const symNgn = '₦';
+    const symUsd = '$';
+    const fmt = (n: number) => new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(n);
+    const bgPrimary = 'linear-gradient(180deg,#49A321 0%,#3d8a1c 100%)';
+    const bgMuted = 'linear-gradient(180deg,#64748b 0%,#475569 100%)';
+    return [
+      { label: 'Wallet Balance', value: sym + fmt(cash), icon: 'pi-wallet', gradient: bgPrimary },
+      { label: 'Total Referrals', value: String(summary.directReferrals ?? 0), icon: 'pi-users', gradient: bgMuted },
+      { label: 'Total Commissions', value: symNgn + fmt(summary.totalEarnings ?? 0), icon: 'pi-money-bill', gradient: bgPrimary },
+      { label: 'Orders', value: '0', icon: 'pi-shopping-bag', gradient: bgMuted },
+    ];
+  }
+
+  getBarHeight(val: number): string {
+    const vals = this.salesValues;
+    if (vals.length === 0) return '0%';
+    const max = Math.max(...vals);
+    return this.barsAnimated ? `${(val / max) * 100}%` : '0%';
+  }
+
+  getBarBackground(i: number, isLast: boolean): string {
+    return isLast ? '#49A321' : '#e7e5e4';
+  }
+
+  getBarBorder(_i: number, isLast: boolean): string {
+    return isLast ? 'none' : '1px solid var(--color-mlm-warm-200)';
+  }
+
+  getBarDelay(i: number): string {
+    return `${i * 60}ms`;
+  }
+
+  get sparklinePoints(): string {
+    const vals = this.salesValues;
+    if (vals.length === 0) return '';
+    const max = Math.max(...vals);
+    const min = Math.min(...vals);
+    const W = 200;
+    const H = 48;
+    return vals
+      .map((v, i) => `${(i / (vals.length - 1)) * W},${H - ((v - min) / (max - min || 1)) * H * 0.8 - H * 0.1}`)
+      .join(' ');
+  }
+
+  get sparklineArea(): string {
+    const vals = this.salesValues;
+    if (vals.length === 0) return '';
+    const max = Math.max(...vals);
+    const min = Math.min(...vals);
+    const W = 200;
+    const H = 48;
+    const pts = vals
+      .map((v, i) => `${(i / (vals.length - 1)) * W},${H - ((v - min) / (max - min || 1)) * H * 0.8 - H * 0.1}`)
+      .join(' ');
+    return `0,${H} ${pts} ${W},${H}`;
+  }
+
+  activityBadge(activity: { amount?: number; currency?: string; type: string }): string {
+    if (activity.amount == null) return '';
+    const sym = activity.currency === 'USD' ? '$' : '₦';
+    const n = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(Math.abs(activity.amount));
+    return activity.type === 'Withdrawal' ? `-${sym}${n}` : `+${sym}${n}`;
+  }
+
+  isPositiveActivityBadge(activity: { type: string }): boolean {
+    return activity.type !== 'Withdrawal';
+  }
 
   showPaymentModal = signal(false);
   
@@ -158,6 +261,12 @@ export class DashboardComponent implements OnInit {
     this.cdr.markForCheck();
 
     this.initCharts();
+
+    // Entrance animation for stat cards and bar chart
+    setTimeout(() => { this.barsAnimated = true; this.cdr.markForCheck(); }, 400);
+    [0, 80, 160, 240].forEach((delay, i) => {
+      setTimeout(() => { this.cardsVisible[i] = true; this.cdr.markForCheck(); }, delay + 100);
+    });
   }
 
   private initCharts() {
@@ -367,6 +476,26 @@ export class DashboardComponent implements OnInit {
       default:
         return 'bg-mlm-secondary/10 text-mlm-secondary';
     }
+  }
+
+  getActivityBg(type: string): string {
+    const map: Record<string, string> = {
+      'Earnings Posted': '#f0fdf4',
+      'Wallet Funding': '#f0fdf4',
+      'Withdrawal': '#fef2f2',
+      'Order Placed': '#f5f5f4',
+    };
+    return map[type] ?? '#f5f5f4';
+  }
+
+  getActivityBorder(type: string): string {
+    const map: Record<string, string> = {
+      'Earnings Posted': '#bbf7d0',
+      'Wallet Funding': '#bbf7d0',
+      'Withdrawal': '#fecaca',
+      'Order Placed': '#e7e5e4',
+    };
+    return map[type] ?? '#e7e5e4';
   }
 
   getStatusBadgeClasses(status: string): string {
