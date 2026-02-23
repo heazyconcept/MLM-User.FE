@@ -45,6 +45,11 @@ Thumbs.db
 
 /cursor
 
+# Environment (never commit real values)
+.env
+.env.local
+.env.*.local
+
 # User Documentation & Examples
 01-authentication-access.md
 uiexamples/

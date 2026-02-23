@@ -1,9 +1,16 @@
 <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
   <h2 class="text-lg font-bold text-mlm-text mb-4">Active sessions</h2>
-  <p class="text-sm text-mlm-secondary mb-6 max-w-2xl">Manage devices where you are signed in. Logging out a session is UI-only (no real invalidation).</p>
+  <p class="text-sm text-mlm-secondary mb-6 max-w-2xl">Manage devices where you are signed in. You can revoke a session or log out all other sessions.</p>
 
   <div class="max-w-2xl">
-  @if (sessions().length === 0) {
+  @if (error()) {
+    <p class="text-red-600 text-sm mb-4">{{ error() }}</p>
+  }
+  @if (isLoading()) {
+    <div class="py-12 text-center border-t border-gray-100">
+      <p class="text-mlm-secondary text-sm">Loading sessions…</p>
+    </div>
+  } @else if (sessions().length === 0) {
     <div class="py-12 text-center border-t border-gray-100">
       <p class="text-mlm-text font-semibold">No active sessions</p>
       <p class="text-mlm-secondary text-sm mt-1">You are not signed in on any device.</p>
@@ -25,9 +32,9 @@
           <button
             type="button"
             (click)="logoutSession(session.id)"
-            [disabled]="session.isCurrent"
+            [disabled]="session.isCurrent || revokingSessionId() === session.id"
             class="shrink-0 px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-red-200 disabled:opacity-50 disabled:cursor-not-allowed">
-            Logout
+            {{ revokingSessionId() === session.id ? 'Revoking…' : 'Logout' }}
           </button>
         </li>
       }
@@ -37,8 +44,9 @@
       <button
         type="button"
         (click)="logoutAll()"
-        class="px-5 py-2.5 text-sm font-semibold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-red-200">
-        Logout all other sessions
+        [disabled]="revokingAll()"
+        class="px-5 py-2.5 text-sm font-semibold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors focus:outline-none focus:ring-2 focus:ring-red-200 disabled:opacity-50 disabled:cursor-not-allowed">
+        {{ revokingAll() ? 'Revoking…' : 'Logout all other sessions' }}
       </button>
     </div>
   }

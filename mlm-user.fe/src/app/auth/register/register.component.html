@@ -190,12 +190,17 @@
                                     placeholder="e.g. ABC123 (optional)"
                                     class="reg-input"
                                     (blur)="onReferralBlur()" />
-                                @if (referralValid() === true) {
+                                @if (referralValidating()) {
+                                    <i class="pi pi-spin pi-spinner text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 text-sm"></i>
+                                } @else if (referralValid() === true) {
                                     <i class="pi pi-check text-green-500 absolute right-3 top-1/2 -translate-y-1/2 text-sm"></i>
                                 } @else if (referralValid() === false) {
                                     <i class="pi pi-times text-red-500 absolute right-3 top-1/2 -translate-y-1/2 text-sm"></i>
                                 }
                             </div>
+                            @if (referralValidating()) {
+                                <small class="text-slate-500 text-xs mt-1">Checking code…</small>
+                            }
                             </div>
 
                         <div class="flex items-start gap-3 pt-1">

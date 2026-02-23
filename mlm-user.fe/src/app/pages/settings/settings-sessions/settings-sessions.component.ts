@@ -1,13 +1,7 @@
-import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-export interface SessionItem {
-  id: string;
-  device: string;
-  location?: string;
-  lastActive: string;
-  isCurrent: boolean;
-}
+import { SessionService, SessionItem } from '../../../services/session.service';
+import { ModalService } from '../../../services/modal.service';
 
 @Component({
   selector: 'app-settings-sessions',
@@ -17,17 +11,63 @@ export interface SessionItem {
   styleUrl: './settings-sessions.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class SettingsSessionsComponent {
-  sessions = signal<SessionItem[]>([
-    { id: '1', device: 'Chrome on Windows', location: 'Lagos, Nigeria', lastActive: new Date().toISOString(), isCurrent: true },
-    { id: '2', device: 'Safari on iPhone', location: 'Lagos, Nigeria', lastActive: new Date(Date.now() - 86400000).toISOString(), isCurrent: false }
-  ]);
+export class SettingsSessionsComponent implements OnInit {
+  private sessionService = inject(SessionService);
+  private modalService = inject(ModalService);
+
+  sessions = signal<SessionItem[]>([]);
+  isLoading = signal(true);
+  error = signal<string | null>(null);
+  revokingSessionId = signal<string | null>(null);
+  revokingAll = signal(false);
+
+  ngOnInit(): void {
+    this.sessionService.getSessions().subscribe({
+      next: (list) => {
+        this.sessions.set(list);
+        this.error.set(null);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.error.set('Failed to load sessions. Please try again.');
+        this.isLoading.set(false);
+      }
+    });
+  }
 
   logoutSession(id: string): void {
-    this.sessions.update(list => list.filter(s => s.id !== id));
+    this.revokingSessionId.set(id);
+    this.sessionService.revokeSession(id).subscribe({
+      next: () => {
+        this.sessions.update((list) => list.filter((s) => s.id !== id));
+        this.revokingSessionId.set(null);
+      },
+      error: () => {
+        this.revokingSessionId.set(null);
+        this.modalService.open(
+          'error',
+          'Could not revoke session',
+          'We couldn\'t log out that session. Please try again.'
+        );
+      }
+    });
   }
 
   logoutAll(): void {
-    this.sessions.set([]);
+    this.revokingAll.set(true);
+    this.sessionService.revokeAllSessions().subscribe({
+      next: () => {
+        this.sessions.set([]);
+        this.revokingAll.set(false);
+      },
+      error: () => {
+        this.revokingAll.set(false);
+        this.modalService.open(
+          'error',
+          'Could not revoke sessions',
+          'We couldn\'t log out other sessions. Please try again.'
+        );
+      }
+    });
   }
 }
