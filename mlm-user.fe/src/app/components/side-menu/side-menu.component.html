@@ -44,20 +44,27 @@
               @if (item.route || item.action) {
                 <a 
                   (click)="navigate(item)"
-                  [class.bg-mlm-green-100]="isActiveRoute(item.route)"
-                  [class.text-mlm-primary]="isActiveRoute(item.route)"
+                  [class.bg-mlm-primary]="isActiveRoute(item.route)"
+                  [class.text-white]="isActiveRoute(item.route)"
+                  [class.text-mlm-warm-500]="!isActiveRoute(item.route)"
+                  [class.font-bold]="isActiveRoute(item.route)"
+                  [class.font-medium]="!isActiveRoute(item.route)"
                   [class.opacity-50]="isItemDisabled(item)"
                   [class.cursor-not-allowed]="isItemDisabled(item)"
-                  class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-mlm-text hover:bg-mlm-green-50 transition-colors group cursor-pointer">
-                  <i [class]="item.icon" class="text-lg"></i>
-                  <span class="flex-1 text-sm font-medium">{{ item.label }}</span>
+                  class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition-colors duration-200 group cursor-pointer [&:not(.bg-mlm-primary):hover]:bg-mlm-warm-50">
+                  <i [class]="item.icon" class="text-base shrink-0"></i>
+                  <span class="flex-1 text-sm">{{ item.label }}</span>
                   @if (item.badge) {
-                    <span class="px-2 py-0.5 text-xs font-medium bg-mlm-green-100 text-mlm-primary rounded-full">
+                    <span class="px-2 py-0.5 text-xs font-medium rounded-full shrink-0"
+                          [class.bg-white/20]="isActiveRoute(item.route)"
+                          [class.text-white]="isActiveRoute(item.route)"
+                          [class.bg-mlm-green-100]="!isActiveRoute(item.route)"
+                          [class.text-mlm-primary]="!isActiveRoute(item.route)">
                       {{ item.badge }}
                     </span>
                   }
                   @if (item.children && item.children.length > 0) {
-                    <i class="pi pi-chevron-down text-xs transition-transform duration-200" 
+                    <i class="pi pi-chevron-down text-xs transition-transform duration-200 shrink-0" 
                        [class.rotate-180]="openMenus().has(item.label)"></i>
                   }
                 </a>
@@ -65,7 +72,7 @@
 
               <!-- Submenu -->
               @if (item.children && item.children.length > 0 && openMenus().has(item.label)) {
-                <ul class="mt-1 ml-8 space-y-1 border-l border-gray-200 pl-3">
+                <ul class="mt-1 ml-8 space-y-1 border-l border-mlm-warm-200 pl-3">
                   @for (child of item.children; track child.label) {
                     <li>
                       <a
@@ -73,7 +80,7 @@
                         [class.text-mlm-primary]="isActiveRoute(child.route)"
                         [class.font-semibold]="isActiveRoute(child.route)"
                         [class.opacity-50]="isItemDisabled(child)"
-                        class="block py-1.5 text-sm text-mlm-text hover:text-mlm-primary transition-colors cursor-pointer">
+                        class="block py-1.5 text-sm text-mlm-warm-600 hover:text-mlm-primary transition-colors cursor-pointer">
                         {{ child.label }}
                       </a>
                     </li>
@@ -139,24 +146,31 @@
               @if (item.route || item.action) {
                 <a 
                   (click)="navigate(item)"
-                  [class.bg-mlm-green-100]="isActiveRoute(item.route)"
-                  [class.text-mlm-primary]="isActiveRoute(item.route)"
+                  [class.bg-mlm-primary]="isActiveRoute(item.route)"
+                  [class.text-white]="isActiveRoute(item.route)"
+                  [class.text-mlm-warm-500]="!isActiveRoute(item.route)"
+                  [class.font-bold]="isActiveRoute(item.route)"
+                  [class.font-medium]="!isActiveRoute(item.route)"
                   [class.opacity-50]="isItemDisabled(item)"
                   [class.cursor-not-allowed]="isItemDisabled(item)"
                   [class.justify-center]="collapsed()"
                   [pTooltip]="collapsed() ? item.label : ''"
                   tooltipPosition="right"
-                  class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-mlm-text hover:bg-mlm-green-50 transition-colors group cursor-pointer">
-                  <i [class]="item.icon" class="text-lg"></i>
+                  class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition-colors duration-200 group cursor-pointer [&:not(.bg-mlm-primary):hover]:bg-mlm-warm-50">
+                  <i [class]="item.icon" class="text-base shrink-0"></i>
                   @if (!collapsed()) {
-                    <span class="flex-1 text-sm font-medium">{{ item.label }}</span>
+                    <span class="flex-1 text-sm">{{ item.label }}</span>
                     @if (item.badge) {
-                      <span class="px-2 py-0.5 text-xs font-medium bg-mlm-green-100 text-mlm-primary rounded-full">
+                      <span class="px-2 py-0.5 text-xs font-medium rounded-full shrink-0"
+                            [class.bg-white/20]="isActiveRoute(item.route)"
+                            [class.text-white]="isActiveRoute(item.route)"
+                            [class.bg-mlm-green-100]="!isActiveRoute(item.route)"
+                            [class.text-mlm-primary]="!isActiveRoute(item.route)">
                         {{ item.badge }}
                       </span>
                     }
                     @if (item.children && item.children.length > 0) {
-                      <i class="pi pi-chevron-down text-xs transition-transform duration-200" 
+                      <i class="pi pi-chevron-down text-xs transition-transform duration-200 shrink-0" 
                          [class.rotate-180]="openMenus().has(item.label)"></i>
                     }
                   }
@@ -165,7 +179,7 @@
 
               <!-- Submenu (only when not collapsed) -->
               @if (!collapsed() && item.children && item.children.length > 0 && openMenus().has(item.label)) {
-                <ul class="mt-1 ml-8 space-y-1 border-l border-gray-200 pl-3">
+                <ul class="mt-1 ml-8 space-y-1 border-l border-mlm-warm-200 pl-3">
                   @for (child of item.children; track child.label) {
                     <li>
                       <a
@@ -173,7 +187,7 @@
                         [class.text-mlm-primary]="isActiveRoute(child.route)"
                         [class.font-semibold]="isActiveRoute(child.route)"
                         [class.opacity-50]="isItemDisabled(child)"
-                        class="block py-1.5 text-sm text-mlm-text hover:text-mlm-primary transition-colors cursor-pointer">
+                        class="block py-1.5 text-sm text-mlm-warm-600 hover:text-mlm-primary transition-colors cursor-pointer">
                         {{ child.label }}
                       </a>
                     </li>
