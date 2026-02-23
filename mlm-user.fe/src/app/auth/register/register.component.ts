@@ -38,16 +38,23 @@ export class RegisterComponent implements OnInit {
 
   isLoading = signal<boolean>(false);
   referralValid = signal<boolean | null>(null);
+  referralValidating = signal(false);
 
   ngOnInit(): void {
     const storedCode = localStorage.getItem('referralCode');
     if (storedCode) {
       this.registerForm.patchValue({ referralCode: storedCode });
       localStorage.removeItem('referralCode');
-      // Auto-validate the pre-filled referral code
+      this.referralValidating.set(true);
       this.referralService.validateReferralCode(storedCode).subscribe({
-        next: (res) => this.referralValid.set(res.valid),
-        error: () => this.referralValid.set(false)
+        next: (res) => {
+          this.referralValidating.set(false);
+          this.referralValid.set(res.valid);
+        },
+        error: () => {
+          this.referralValidating.set(false);
+          this.referralValid.set(false);
+        }
       });
     }
   }
@@ -56,11 +63,20 @@ export class RegisterComponent implements OnInit {
     const code = this.registerForm.get('referralCode')?.value?.trim();
     if (!code) {
       this.referralValid.set(null);
+      this.referralValidating.set(false);
       return;
     }
+    this.referralValidating.set(true);
+    this.referralValid.set(null);
     this.referralService.validateReferralCode(code).subscribe({
-      next: (res) => this.referralValid.set(res.valid),
-      error: () => this.referralValid.set(false)
+      next: (res) => {
+        this.referralValidating.set(false);
+        this.referralValid.set(res.valid);
+      },
+      error: () => {
+        this.referralValidating.set(false);
+        this.referralValid.set(false);
+      }
     });
   }
   currentStep = signal<number>(1);
