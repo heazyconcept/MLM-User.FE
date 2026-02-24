@@ -221,9 +221,10 @@ export class DashboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Open payment modal when navigating to /dashboard/registration-payment
+    // Redirect to activation choice when navigating to /dashboard/registration-payment
     if (this.router.url.includes('registration-payment') && this.paymentStatus() === 'UNPAID') {
-      this.showPaymentModal.set(true);
+      this.router.navigate(['/auth/activation']);
+      return;
     }
 
     // Fetch wallets and earnings when user is paid (for balance/earnings display)
@@ -251,9 +252,9 @@ export class DashboardComponent implements OnInit {
         if (navEvent.urlAfterRedirects === '/dashboard' || navEvent.urlAfterRedirects.startsWith('/dashboard')) {
           this.cdr.markForCheck();
         }
-        // Open payment modal when navigating to /dashboard/registration-payment
+        // Redirect to activation choice when navigating to /dashboard/registration-payment
         if (navEvent.urlAfterRedirects.includes('registration-payment') && this.paymentStatus() === 'UNPAID') {
-          this.showPaymentModal.set(true);
+          this.router.navigate(['/auth/activation']);
         }
       });
 
@@ -358,7 +359,7 @@ export class DashboardComponent implements OnInit {
   isLoading = this.loadingService.isLoading;
 
   navigateToPayment(): void {
-    this.showPaymentModal.set(true);
+    this.router.navigate(['/auth/activation']);
   }
 
   onPaymentSubmit(): void {

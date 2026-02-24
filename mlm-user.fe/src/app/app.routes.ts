@@ -14,9 +14,17 @@ export const routes: Routes = [
         path: 'login', 
         loadComponent: () => import('./auth/login-modern/login-modern.component').then(m => m.LoginModernComponent)
       },
-      { 
-        path: 'register', 
-        loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent) 
+      {
+        path: 'register',
+        loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent)
+      },
+      {
+        path: 'activation',
+        loadComponent: () => import('./auth/activation/activation-choice.component').then(m => m.ActivationChoiceComponent)
+      },
+      {
+        path: 'activation/wallet',
+        loadComponent: () => import('./auth/activation/activation-wallet.component').then(m => m.ActivationWalletComponent)
       },
       {
         path: 'forgot-password',

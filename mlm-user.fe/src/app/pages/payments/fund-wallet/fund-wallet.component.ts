@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -15,9 +15,12 @@ const WALLET_FUNDING_FLOW = 'wallet_funding';
 
 type ProviderOption = 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT';
 
-const PROVIDER_OPTIONS: { value: ProviderOption; label: string }[] = [
+const PROVIDER_OPTIONS_NGN: { value: ProviderOption; label: string }[] = [
   { value: 'PAYSTACK', label: 'Paystack (Card, Bank Transfer)' },
-  { value: 'FLUTTERWAVE', label: 'Flutterwave (Card, Mobile Money)' },
+  { value: 'FLUTTERWAVE', label: 'Flutterwave (Card, Mobile Money)' }
+];
+
+const PROVIDER_OPTIONS_USD: { value: ProviderOption; label: string }[] = [
   { value: 'USDT', label: 'USDT (Manual)' }
 ];
 
@@ -43,7 +46,12 @@ export class FundWalletComponent {
   private userService = inject(UserService);
   private modalService = inject(ModalService);
 
-  providerOptions = PROVIDER_OPTIONS;
+  displayCurrency = this.userService.displayCurrency;
+  currencySymbol = computed(() => (this.displayCurrency() === 'NGN' ? '₦' : '$'));
+  providerOptions = computed(() =>
+    this.displayCurrency() === 'NGN' ? PROVIDER_OPTIONS_NGN : PROVIDER_OPTIONS_USD
+  );
+
   fundForm = this.fb.group({
     amount: [null as number | null, [Validators.required, Validators.min(0.01)]],
     provider: ['PAYSTACK' as ProviderOption, Validators.required]
@@ -53,8 +61,16 @@ export class FundWalletComponent {
   showPendingView = signal(false);
   pendingReference = signal('');
 
-  userCurrency = computed(() => this.userService.currentUser()?.currency ?? 'NGN');
-  currencySymbol = computed(() => (this.userCurrency() === 'NGN' ? '₦' : '$'));
+  constructor() {
+    effect(() => {
+      const opts = this.providerOptions();
+      const current = this.fundForm.get('provider')?.value;
+      const valid = opts.some(o => o.value === current);
+      if (!valid && opts.length > 0) {
+        this.fundForm.patchValue({ provider: opts[0].value });
+      }
+    });
+  }
 
   onSubmit(): void {
     if (this.fundForm.invalid) {
@@ -107,7 +123,8 @@ export class FundWalletComponent {
   onBack(): void {
     this.showPendingView.set(false);
     this.pendingReference.set('');
-    this.fundForm.reset({ amount: null, provider: 'PAYSTACK' });
+    const opts = this.providerOptions();
+    this.fundForm.reset({ amount: null, provider: opts[0]?.value ?? 'USDT' });
   }
 
   cancel(): void {

@@ -79,10 +79,10 @@
                             }
                         </div>
 
-                        <!-- Email (optional) -->
+                        <!-- Email -->
                         <div class="flex flex-col gap-1.5">
                             <label for="reg-email" class="text-[0.8rem] font-semibold text-slate-500 flex items-center gap-1">
-                                Email Address <span class="text-[11px] font-normal text-slate-400">(optional)</span>
+                                Email Address <span class="text-red-500 text-[0.9em]">*</span>
                             </label>
                             <input pInputText id="reg-email" formControlName="email"
                                 placeholder="name@example.com"
@@ -201,7 +201,14 @@
                             @if (referralValidating()) {
                                 <small class="text-slate-500 text-xs mt-1">Checking code…</small>
                             }
-                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <label for="reg-placement" class="text-[0.8rem] font-semibold text-slate-500">Placement Parent ID</label>
+                            <input pInputText id="reg-placement" formControlName="placementParentUserId"
+                                placeholder="For spillover placement (optional)"
+                                class="reg-input" />
+                        </div>
 
                         <div class="flex items-start gap-3 pt-1">
                                 <p-checkbox formControlName="acceptTerms" [binary]="true" class="mt-0.5"></p-checkbox>

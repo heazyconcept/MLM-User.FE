@@ -2,16 +2,16 @@ import { Component, inject, signal, computed, ChangeDetectionStrategy, OnInit } 
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
+import { environment } from '../../../environments/environment';
 import { AuthService, type RegisterRequest } from '../../services/auth.service';
-import { PaymentService } from '../../services/payment.service';
+import { UserService } from '../../services/user.service';
 import { ReferralService } from '../../services/referral.service';
 import { ModalService } from '../../services/modal.service';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
-import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-register',
@@ -31,9 +31,10 @@ import { environment } from '../../../environments/environment';
 export class RegisterComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
-  private paymentService = inject(PaymentService);
+  private userService = inject(UserService);
   private referralService = inject(ReferralService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private modalService = inject(ModalService);
 
   isLoading = signal<boolean>(false);
@@ -41,12 +42,17 @@ export class RegisterComponent implements OnInit {
   referralValidating = signal(false);
 
   ngOnInit(): void {
+    // Prefill: query param (?ref=ABC123) or localStorage (from /ref/:code) overrides default
+    const queryRef = this.route.snapshot.queryParamMap.get('ref')?.trim();
     const storedCode = localStorage.getItem('referralCode');
-    if (storedCode) {
-      this.registerForm.patchValue({ referralCode: storedCode });
-      localStorage.removeItem('referralCode');
+    const codeToUse = queryRef || storedCode || environment.defaultReferralCode || '';
+    if (queryRef) {
+      localStorage.setItem('referralCode', queryRef);
+    }
+    this.registerForm.patchValue({ referralCode: codeToUse });
+    if (codeToUse) {
       this.referralValidating.set(true);
-      this.referralService.validateReferralCode(storedCode).subscribe({
+      this.referralService.validateReferralCode(codeToUse).subscribe({
         next: (res) => {
           this.referralValidating.set(false);
           this.referralValid.set(res.valid);
@@ -83,6 +89,7 @@ export class RegisterComponent implements OnInit {
   totalSteps = signal<number>(2);
 
   packages = [
+    { label: 'Nickel', value: 'NICKEL' },
     { label: 'Silver', value: 'SILVER' },
     { label: 'Gold', value: 'GOLD' },
     { label: 'Platinum', value: 'PLATINUM' },
@@ -98,14 +105,15 @@ export class RegisterComponent implements OnInit {
   registerForm = this.fb.group({
     // Step 1: Account Credentials
     username: ['', [Validators.required, Validators.minLength(3)]],
-    email: ['', [Validators.email]],
+    email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, this.passwordStrengthValidator]],
     confirmPassword: ['', [Validators.required]],
 
     // Step 2: Membership
     package: ['', [Validators.required]],
     currency: ['', [Validators.required]],
-    referralCode: [environment.defaultReferralCode],
+    referralCode: [environment.defaultReferralCode ?? ''],
+    placementParentUserId: [''],
     acceptTerms: [false, [Validators.requiredTrue]]
   }, { validators: this.passwordMatchValidator });
 
@@ -163,7 +171,7 @@ export class RegisterComponent implements OnInit {
                 this.registerForm.get('password')?.valid &&
                 this.registerForm.get('confirmPassword')?.valid &&
                 !this.registerForm.hasError('passwordMismatch') &&
-                (this.registerForm.get('email')?.valid));
+                (this.registerForm.get('email')?.valid ?? false));
     }
     if (step === 2) {
       return !!(this.registerForm.get('package')?.valid &&
@@ -200,67 +208,36 @@ export class RegisterComponent implements OnInit {
     }
   }
 
-  private initiateRegistrationPayment(packageName: string, currency: string): void {
-    const callbackUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/payment/callback`
-      : undefined;
-    this.paymentService.initiateRegistrationPayment(packageName, currency, callbackUrl).subscribe({
-      next: (res) => {
-        this.isLoading.set(false);
-        const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
-        if (typeof ngDevMode !== 'undefined' && ngDevMode) {
-          console.debug('[Register] Payment initiate response:', { hasGatewayUrl: !!gatewayUrl, hasReference: !!res.reference, res });
-        }
-        if (gatewayUrl) {
-          window.location.href = gatewayUrl;
-        } else if (res.reference) {
-          this.router.navigate(['/auth/register/payment-pending'], {
-            queryParams: { reference: res.reference },
-            state: { reference: res.reference }
-          });
-        } else {
-          this.modalService.open(
-            'success',
-            'Account Created',
-            'Your account has been created. Complete your profile to get started.',
-            '/onboarding/profile'
-          );
-          setTimeout(() => this.router.navigate(['/onboarding/profile']), 2000);
-        }
-      },
-      error: (err) => {
-        this.isLoading.set(false);
-        if (typeof ngDevMode !== 'undefined' && ngDevMode) {
-          console.error('[Register] Payment initiate failed:', err);
-        }
-        this.modalService.open(
-          'success',
-          'Account Created',
-          'Your account has been created. You can complete your registration payment later.',
-          '/onboarding/profile'
-        );
-        setTimeout(() => this.router.navigate(['/onboarding/profile']), 2000);
-      }
-    });
-  }
-
   onSubmit() {
     if (this.registerForm.valid) {
       this.isLoading.set(true);
 
       const formValue = this.registerForm.value;
+      const code = formValue.referralCode?.trim();
+      const placementId = formValue.placementParentUserId?.trim();
       const payload: RegisterRequest = {
         username: formValue.username!,
+        email: formValue.email!,
         password: formValue.password!,
         package: formValue.package!,
         currency: formValue.currency!,
-        referralCode: formValue.referralCode?.trim() || environment.defaultReferralCode,
-        ...(formValue.email ? { email: formValue.email } : {})
+        ...(code ? { referralCode: code } : {}),
+        ...(placementId ? { placementParentUserId: placementId } : {})
       };
 
       this.authService.register(payload).subscribe({
         next: () => {
-          this.initiateRegistrationPayment(formValue.package!, formValue.currency!);
+          localStorage.removeItem('referralCode');
+          this.userService.fetchProfile().subscribe({
+            next: () => {
+              this.isLoading.set(false);
+              this.router.navigate(['/auth/activation']);
+            },
+            error: () => {
+              this.isLoading.set(false);
+              this.router.navigate(['/auth/activation']);
+            }
+          });
         },
         error: (err) => {
           this.isLoading.set(false);

@@ -4,7 +4,10 @@ import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 
 export interface InitiateRegistrationPaymentResponse {
+  paymentId?: string;
   reference: string;
+  amount?: number;
+  currency?: string;
   authorizationUrl?: string;
   gatewayUrl?: string;
 }
@@ -26,7 +29,8 @@ export class PaymentService {
   initiateRegistrationPayment(
     packageName: string,
     currency: string,
-    callbackUrl?: string
+    callbackUrl?: string,
+    provider?: 'PAYSTACK' | 'USDT'
   ): Observable<InitiateRegistrationPaymentResponse> {
     const body: Record<string, unknown> = { package: packageName, currency };
     // Only send callbackUrl when valid (backend @IsUrl rejects localhost)
@@ -34,11 +38,17 @@ export class PaymentService {
     if (isValidUrl) {
       body['callbackUrl'] = callbackUrl;
     }
+    if (provider) {
+      body['provider'] = provider;
+    }
     return this.api
       .post<Record<string, unknown>>('payments/registration/initiate', body)
       .pipe(
         map((res) => ({
+          paymentId: res['paymentId'] as string | undefined,
           reference: String(res['reference'] ?? res['ref'] ?? ''),
+          amount: res['amount'] as number | undefined,
+          currency: res['currency'] as string | undefined,
           authorizationUrl: res['authorizationUrl'] as string | undefined ?? res['authorization_url'] as string | undefined,
           gatewayUrl: res['gatewayUrl'] as string | undefined ?? res['gateway_url'] as string | undefined
         }))

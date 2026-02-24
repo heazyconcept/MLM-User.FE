@@ -110,7 +110,10 @@ export class UserService {
 
   private mapApiUserToUser(apiUser: Record<string, unknown>): User {
     const reg = apiUser['registration'] as Record<string, unknown> | undefined;
-    const registrationPaid = apiUser['registrationPaid'] === true || reg?.['isPaid'] === true;
+    const registrationPaid =
+      apiUser['isRegistrationPaid'] === true ||
+      apiUser['registrationPaid'] === true ||
+      reg?.['isPaid'] === true;
 
     return {
       id: String(apiUser['id'] ?? ''),

@@ -1,0 +1,59 @@
+<div class="flex min-h-screen bg-white items-center justify-center px-6">
+  <div class="w-full max-w-lg">
+    <div class="mb-8 text-center">
+      <i class="pi pi-credit-card text-5xl text-mlm-primary mb-4"></i>
+      <h1 class="text-xl font-semibold text-slate-900 mb-2">Complete your activation</h1>
+      <p class="text-slate-500 text-sm">
+        Choose how you would like to pay your registration fee to activate your account.
+      </p>
+    </div>
+
+    @if (errorMessage()) {
+      <p-message severity="error" [text]="errorMessage()!" class="w-full mb-4"></p-message>
+    }
+
+    <div class="flex flex-col gap-4 mb-8">
+      <div
+        class="p-4 rounded-xl border-2 cursor-pointer transition-all hover:border-mlm-primary hover:bg-mlm-primary/5"
+        [class.border-mlm-primary]="payingOnline()"
+        [class.bg-mlm-primary/5]="payingOnline()"
+        [class.border-slate-200]="!payingOnline()"
+        (click)="onPayOnline()">
+        <div class="flex items-center gap-3">
+          <i class="pi pi-globe text-2xl text-mlm-primary"></i>
+          <div class="flex-1">
+            <h2 class="font-semibold text-slate-900">Pay online with Paystack</h2>
+            <p class="text-sm text-slate-500">Pay securely via card, bank transfer, or USSD</p>
+          </div>
+          @if (payingOnline()) {
+            <i class="pi pi-spin pi-spinner text-mlm-primary"></i>
+          }
+        </div>
+      </div>
+
+      <div
+        class="p-4 rounded-xl border-2 cursor-pointer transition-all hover:border-mlm-primary hover:bg-mlm-primary/5"
+        [class.border-mlm-primary]="usingWallet()"
+        [class.bg-mlm-primary/5]="usingWallet()"
+        [class.border-slate-200]="!usingWallet()"
+        (click)="onUseWallet()">
+        <div class="flex items-center gap-3">
+          <i class="pi pi-wallet text-2xl text-mlm-primary"></i>
+          <div class="flex-1">
+            <h2 class="font-semibold text-slate-900">Use wallet balance</h2>
+            <p class="text-sm text-slate-500">Transfer from CASH wallet to activate</p>
+          </div>
+          @if (usingWallet()) {
+            <i class="pi pi-spin pi-spinner text-mlm-primary"></i>
+          }
+        </div>
+      </div>
+    </div>
+
+    <p class="text-center">
+      <a routerLink="/onboarding/profile" class="text-slate-500 text-sm hover:text-mlm-primary">
+        Skip for now — complete profile first
+      </a>
+    </p>
+  </div>
+</div>
