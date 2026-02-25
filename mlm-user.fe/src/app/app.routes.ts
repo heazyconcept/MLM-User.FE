@@ -24,7 +24,8 @@ export const routes: Routes = [
       },
       {
         path: 'activation/wallet',
-        loadComponent: () => import('./auth/activation/activation-wallet.component').then(m => m.ActivationWalletComponent)
+        redirectTo: 'activation',
+        pathMatch: 'full'
       },
       {
         path: 'forgot-password',
@@ -198,6 +199,10 @@ export const routes: Routes = [
       {
         path: 'cpv',
         loadComponent: () => import('./pages/commissions/cpv-milestones.component').then(m => m.CpvMilestonesComponent)
+      },
+      {
+        path: 'level-table',
+        loadComponent: () => import('./pages/commissions/level-commission-table.component').then(m => m.LevelCommissionTableComponent)
       }
     ]
   },

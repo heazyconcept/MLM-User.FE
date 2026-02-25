@@ -90,12 +90,32 @@ export class WalletService {
 
     const items = Array.isArray(raw) ? raw : (raw as { wallets?: unknown[] }).wallets ?? [];
     if (!Array.isArray(items) || items.length === 0) {
-      // Single summary object: { cash, voucher, autoship, currency }
+      // Single summary object (multiple possible shapes)
       const obj = raw as Record<string, unknown>;
-      const cash = Number(obj['cash'] ?? obj['cashBalance'] ?? 0);
-      const voucher = Number(obj['voucher'] ?? obj['voucherBalance'] ?? 0);
-      const autoship = Number(obj['autoship'] ?? obj['autoshipBalance'] ?? 0);
-      const currency = (obj['currency'] ?? 'NGN') as 'NGN' | 'USD';
+
+      // Shape A: aggregated balances { cash, voucher, autoship, currency }
+      let cash = Number(obj['cash'] ?? obj['cashBalance'] ?? 0);
+      let voucher = Number(obj['voucher'] ?? obj['voucherBalance'] ?? 0);
+      let autoship = Number(obj['autoship'] ?? obj['autoshipBalance'] ?? 0);
+      let currency = (obj['currency'] ?? 'NGN') as 'NGN' | 'USD';
+
+      // Shape B: separate wallets { cashWallet, voucherWallet, autoshipWallet, registrationWallet }
+      const cashWallet = obj['cashWallet'] as { balance?: unknown; currency?: unknown } | undefined;
+      const voucherWallet = obj['voucherWallet'] as { balance?: unknown; currency?: unknown } | undefined;
+      const autoshipWallet = obj['autoshipWallet'] as { balance?: unknown; currency?: unknown } | undefined;
+
+      if (cashWallet || voucherWallet || autoshipWallet) {
+        const derivedCurrency =
+          (cashWallet?.currency ??
+            voucherWallet?.currency ??
+            autoshipWallet?.currency ??
+            'NGN') as 'NGN' | 'USD';
+        cash = Number(cashWallet?.balance ?? cash ?? 0);
+        voucher = Number(voucherWallet?.balance ?? voucher ?? 0);
+        autoship = Number(autoshipWallet?.balance ?? autoship ?? 0);
+        currency = derivedCurrency;
+      }
+
       if (cash === 0 && voucher === 0 && autoship === 0) return [];
       return [{
         id: '1',

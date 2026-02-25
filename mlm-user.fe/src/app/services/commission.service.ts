@@ -2,7 +2,7 @@ import { Injectable, inject, computed } from '@angular/core';
 import { EarningsService } from './earnings.service';
 
 export type CommissionStatus = 'Pending' | 'Approved' | 'Locked';
-export type CommissionType = 'Direct Referral' | 'Community Bonus' | 'Product Bonus' | 'Matching Bonus' | 'Level Commission' | 'Bonus' | 'Leadership Bonus' | 'Merchant Bonus';
+export type CommissionType = 'Direct Referral' | 'Community Bonus' | 'Product Bonus' | 'Matching Bonus' | 'Level Commission' | 'Bonus' | 'Leadership Bonus' | 'Merchant Bonus' | 'PDPA' | 'CDPA';
 
 export interface CommissionEntry {
   id: string;
@@ -105,6 +105,8 @@ export class CommissionService {
         communityBonus: summary.communityBonus ?? approved.filter((e) => e.type === 'Community Bonus').reduce((acc, curr) => acc + curr.amount, 0),
         productBonus: summary.productBonus ?? approved.filter((e) => e.type === 'Product Bonus').reduce((acc, curr) => acc + curr.amount, 0),
         matchingBonus: summary.matchingBonus ?? approved.filter((e) => e.type === 'Matching Bonus').reduce((acc, curr) => acc + curr.amount, 0),
+        pdpaEarnings: approved.filter((e) => e.type === 'PDPA').reduce((acc, curr) => acc + curr.amount, 0),
+        cdpaEarnings: approved.filter((e) => e.type === 'CDPA').reduce((acc, curr) => acc + curr.amount, 0),
         directReferrals: approved.filter((e) => e.type === 'Direct Referral').length
       };
     });
@@ -124,6 +126,7 @@ export class CommissionService {
   getBonuses() {
     return computed<BonusInfo[]>(() => {
       const summary = this.earningsService.earningsSummary();
+      const matchingStatus = this.earningsService.matchingBonusStatus();
       const bonuses: BonusInfo[] = [];
 
       if (summary.directReferralBonus) {
@@ -165,16 +168,46 @@ export class CommissionService {
         });
       }
 
-      if (summary.matchingBonus) {
+      if (summary.matchingBonus || matchingStatus) {
+        const amount = matchingStatus?.totalAmount ?? summary.matchingBonus ?? 0;
+        const qualified = matchingStatus?.qualified ?? false;
+        const currency = matchingStatus?.currency ?? 'NGN';
+
+        const requirements: string[] = [];
+        if (
+          matchingStatus?.requiredDirectReferrals != null &&
+          matchingStatus.currentDirectReferrals != null
+        ) {
+          requirements.push(
+            `Direct referrals: ${matchingStatus.currentDirectReferrals}/${matchingStatus.requiredDirectReferrals}`
+          );
+        }
+        if (
+          matchingStatus?.requiredSameOrHigherPackage != null &&
+          matchingStatus.currentSameOrHigherPackage != null
+        ) {
+          requirements.push(
+            `Same/higher package referrals: ${matchingStatus.currentSameOrHigherPackage}/${matchingStatus.requiredSameOrHigherPackage}`
+          );
+        }
+        if (requirements.length === 0) {
+          requirements.push('Refer 3 accounts within same or higher package');
+        }
+
+        const qualificationStatus: BonusInfo['qualificationStatus'] =
+          qualified ? 'Qualified' : amount > 0 ? 'In Progress' : 'Not Qualified';
+        const earnedStatus: BonusInfo['earnedStatus'] =
+          amount > 0 && qualified ? 'Earned' : amount > 0 ? 'Pending' : 'Locked';
+
         bonuses.push({
           id: 'b-matching',
           name: 'Matching Bonus',
           description: 'Match a percentage of your direct referrals\' earnings.',
-          qualificationStatus: 'Qualified',
-          earnedStatus: 'Earned',
-          amount: summary.matchingBonus,
-          currency: 'NGN',
-          requirements: ['Silver rank or higher', '5+ active direct referrals']
+          qualificationStatus,
+          earnedStatus,
+          amount,
+          currency,
+          requirements
         });
       }
 

@@ -12,6 +12,10 @@
       </div>
       <h1 class="text-xl font-semibold text-slate-900 mb-2">Payment verified</h1>
       <p class="text-slate-500 mb-6">{{ successMessage() }}</p>
+      <a routerLink="/auth/activation"
+         class="inline-block px-6 py-3 bg-mlm-primary text-white font-semibold rounded-xl hover:bg-mlm-primary/90 transition-all">
+        Go to Activate
+      </a>
     } @else if (status() === 'error') {
       <div class="mb-6">
         <i class="pi pi-times-circle text-5xl text-red-500"></i>

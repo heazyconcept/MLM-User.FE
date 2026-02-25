@@ -1,30 +1,93 @@
-import { Component, inject, ChangeDetectionStrategy, signal, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  inject,
+  ChangeDetectionStrategy,
+  signal,
+  ChangeDetectorRef,
+  OnInit,
+  computed
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { PaymentService } from '../../services/payment.service';
 import { UserService } from '../../services/user.service';
+import { RegistrationService, type RegistrationWallet } from '../../services/registration.service';
+import { getRequiredAmount, REGISTRATION_FEE_NGN, IPV_PERCENT, NGN_TO_USD_RATE } from '../../core/constants/registration.constants';
 
 @Component({
   selector: 'app-activation-choice',
   standalone: true,
-  imports: [CommonModule, RouterModule, ButtonModule, CardModule, MessageModule],
+  imports: [CommonModule, RouterModule, ButtonModule, MessageModule],
   templateUrl: './activation-choice.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ActivationChoiceComponent {
+export class ActivationChoiceComponent implements OnInit {
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
   private paymentService = inject(PaymentService);
   private userService = inject(UserService);
+  private registrationService = inject(RegistrationService);
 
+  registrationWallet = signal<RegistrationWallet | null>(null);
+  loading = signal(true);
   payingOnline = signal(false);
-  usingWallet = signal(false);
+  activating = signal(false);
   errorMessage = signal<string | null>(null);
 
-  onPayOnline(): void {
+  userCurrency = computed(() => this.userService.currentUser()?.currency ?? 'NGN');
+  userPackage = computed(() => this.userService.currentUser()?.package ?? 'NICKEL');
+  requiredAmount = computed(() => getRequiredAmount(this.userPackage(), this.userCurrency()));
+
+  canActivate = computed(() => {
+    const wallet = this.registrationWallet();
+    if (!wallet) return false;
+    return wallet.balance >= this.requiredAmount();
+  });
+
+  voucherCreditAmount = computed(() => {
+    const pkg = this.userPackage();
+    const currency = this.userCurrency();
+    const regNgn = REGISTRATION_FEE_NGN[pkg] ?? REGISTRATION_FEE_NGN['NICKEL'];
+    const ipvNgn = regNgn * IPV_PERCENT;
+    return currency === 'NGN' ? ipvNgn : ipvNgn / NGN_TO_USD_RATE;
+  });
+
+  balanceShortfall = computed(() => {
+    const wallet = this.registrationWallet();
+    if (!wallet) return this.requiredAmount();
+    return Math.max(0, this.requiredAmount() - wallet.balance);
+  });
+
+  ngOnInit(): void {
+    if (this.userService.isPaid()) {
+      this.router.navigate(['/dashboard']);
+      return;
+    }
+    this.loadWallet();
+  }
+
+  private loadWallet(): void {
+    this.loading.set(true);
+    this.errorMessage.set(null);
+    this.cdr.markForCheck();
+
+    this.registrationService.getRegistrationWallet().subscribe({
+      next: (wallet) => {
+        this.registrationWallet.set(wallet);
+        this.loading.set(false);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.registrationWallet.set(null);
+        this.loading.set(false);
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onFundViaPaystack(): void {
     if (this.payingOnline()) return;
     this.payingOnline.set(true);
     this.errorMessage.set(null);
@@ -49,8 +112,6 @@ export class ActivationChoiceComponent {
             queryParams: { reference: res.reference },
             state: { reference: res.reference }
           });
-        } else {
-          this.router.navigate(['/onboarding/profile']);
         }
       },
       error: (err) => {
@@ -68,12 +129,40 @@ export class ActivationChoiceComponent {
     });
   }
 
-  onUseWallet(): void {
-    if (this.usingWallet()) return;
-    this.usingWallet.set(true);
+  onActivate(): void {
+    if (!this.canActivate() || this.activating()) return;
+    this.activating.set(true);
+    this.errorMessage.set(null);
     this.cdr.markForCheck();
-    this.router.navigate(['/auth/activation/wallet']);
-    this.usingWallet.set(false);
-    this.cdr.markForCheck();
+
+    this.registrationService.activate().subscribe({
+      next: () => {
+        this.activating.set(false);
+        this.userService.fetchProfile().subscribe({
+          next: () => this.router.navigate(['/dashboard']),
+          error: () => this.router.navigate(['/dashboard']),
+          complete: () => this.cdr.markForCheck()
+        });
+      },
+      error: (err) => {
+        this.activating.set(false);
+        const msg = err?.error?.message ?? (Array.isArray(err?.error?.message) ? err.error.message?.[0] : null)
+          ?? (typeof err?.error === 'string' ? err.error : null);
+        const msgStr = typeof msg === 'string' ? msg : 'Activation failed. Please try again.';
+        if (msgStr.toLowerCase().includes('already activated')) {
+          this.userService.fetchProfile().subscribe(() => {
+            this.router.navigate(['/dashboard']);
+          });
+          return;
+        }
+        this.errorMessage.set(msgStr);
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  formatAmount(amount: number, currency: 'NGN' | 'USD'): string {
+    const sym = currency === 'NGN' ? '₦' : '$';
+    return `${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
   }
 }

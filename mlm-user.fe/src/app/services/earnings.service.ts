@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Observable, of, forkJoin } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 import { ApiService } from './api.service';
+import { SettingsService } from './settings.service';
 
 export interface EarningsEntryDto {
   id: string;
@@ -52,12 +53,24 @@ export interface CpvSummaryDto {
   history: CpvHistoryDto[];
 }
 
+export interface MatchingBonusStatusDto {
+  qualified: boolean;
+  totalAmount: number;
+  currency: 'NGN' | 'USD';
+  currentDirectReferrals?: number;
+  requiredDirectReferrals?: number;
+  currentSameOrHigherPackage?: number;
+  requiredSameOrHigherPackage?: number;
+}
+
 export interface EarningsSummaryDto {
   totalEarnings: number;
   directReferralBonus: number;
   communityBonus?: number;
   productBonus?: number;
   matchingBonus?: number;
+  pdpaEarnings?: number;
+  cdpaEarnings?: number;
   fromDirectReferrals?: number;
   fromTeamCpv?: number;
   personalSales?: number;
@@ -68,6 +81,7 @@ export interface EarningsSummaryDto {
 })
 export class EarningsService {
   private api = inject(ApiService);
+  private settingsService = inject(SettingsService);
 
   private cpvSignal = signal<CpvSummaryDto>({
     personalCpv: 0,
@@ -87,8 +101,11 @@ export class EarningsService {
     directReferralBonus: 0
   });
 
+  private matchingBonusStatusSignal = signal<MatchingBonusStatusDto | null>(null);
+
   readonly cpvSummary = this.cpvSignal.asReadonly();
   readonly earningsSummary = this.earningsSummarySignal.asReadonly();
+  readonly matchingBonusStatus = this.matchingBonusStatusSignal.asReadonly();
 
   private earningsListSignal = signal<EarningsEntryDto[]>([]);
   private rankingSignal = signal<RankingDto | null>(null);
@@ -105,7 +122,9 @@ export class EarningsService {
       list: this.fetchEarningsList(50, 0),
       summary: this.fetchEarningsSummary(),
       cpv: this.fetchCpvSummary(),
-      ranking: this.fetchRanking()
+      ranking: this.fetchRanking(),
+      matching: this.fetchMatchingBonusStatus(),
+      settings: this.settingsService.fetchAll()
     }).subscribe({
       next: () => this.isLoading.set(false),
       error: (err) => {
@@ -170,6 +189,17 @@ export class EarningsService {
     );
   }
 
+  fetchMatchingBonusStatus(): Observable<MatchingBonusStatusDto | null> {
+    return this.api.get<Record<string, unknown>>('earnings/matching-bonus-status').pipe(
+      map((raw) => this.mapMatchingBonusStatus(raw)),
+      tap((status) => this.matchingBonusStatusSignal.set(status)),
+      catchError(() => {
+        this.matchingBonusStatusSignal.set(null);
+        return of(null);
+      })
+    );
+  }
+
   private mapCpvResponse(raw: Record<string, unknown>): CpvSummaryDto {
     // Actual API shape: { totalCpv, lastUpdated, transactions[] }
     const totalCpv = Number(raw['totalCpv'] ?? 0);
@@ -221,6 +251,7 @@ export class EarningsService {
 
   private mapEarningsResponse(raw: Record<string, unknown>): EarningsSummaryDto {
     const earnings = raw['earnings'] as Record<string, unknown> | undefined;
+    const byType = (raw['byType'] ?? raw['breakdown'] ?? earnings?.['byType']) as Record<string, unknown> | undefined;
     return {
       totalEarnings: Number(earnings?.['totalEarned'] ?? raw['totalEarnings'] ?? raw['total_earnings'] ?? 0),
       directReferralBonus: Number(
@@ -231,9 +262,38 @@ export class EarningsService {
       ),
       productBonus: Number(raw['productBonus'] ?? raw['product_bonus'] ?? 0),
       matchingBonus: Number(raw['matchingBonus'] ?? raw['matching_bonus'] ?? 0),
+      pdpaEarnings: Number(
+        byType?.['PDPA'] ?? raw['pdpaEarnings'] ?? raw['pdpa'] ?? earnings?.['pdpa'] ?? 0
+      ),
+      cdpaEarnings: Number(
+        byType?.['CDPA'] ?? raw['cdpaEarnings'] ?? raw['cdpa'] ?? earnings?.['cdpa'] ?? 0
+      ),
       fromDirectReferrals: Number(raw['fromDirectReferrals'] ?? raw['from_direct_referrals'] ?? 0),
       fromTeamCpv: Number(raw['fromTeamCpv'] ?? raw['from_team_cpv'] ?? 0),
       personalSales: Number(raw['personalSales'] ?? raw['personal_sales'] ?? 0)
+    };
+  }
+
+  private mapMatchingBonusStatus(raw: Record<string, unknown>): MatchingBonusStatusDto {
+    const qualified = Boolean(raw['qualified'] ?? raw['isQualified'] ?? raw['eligible'] ?? false);
+    const currency = String(raw['currency'] ?? 'NGN') === 'USD' ? 'USD' : 'NGN';
+    const totalAmount = Number(
+      raw['totalAmount'] ?? raw['total'] ?? raw['amount'] ?? raw['totalMatchingBonus'] ?? 0
+    );
+
+    const currentDirectReferrals = raw['currentDirectReferrals'] ?? raw['directReferrals'] ?? raw['current'] ?? undefined;
+    const requiredDirectReferrals = raw['requiredDirectReferrals'] ?? raw['required'] ?? undefined;
+    const currentSameOrHigherPackage = raw['currentSameOrHigherPackage'] ?? raw['sameOrHigherPackageCount'] ?? undefined;
+    const requiredSameOrHigherPackage = raw['requiredSameOrHigherPackage'] ?? raw['sameOrHigherPackageRequired'] ?? undefined;
+
+    return {
+      qualified,
+      totalAmount,
+      currency,
+      currentDirectReferrals: currentDirectReferrals != null ? Number(currentDirectReferrals) : undefined,
+      requiredDirectReferrals: requiredDirectReferrals != null ? Number(requiredDirectReferrals) : undefined,
+      currentSameOrHigherPackage: currentSameOrHigherPackage != null ? Number(currentSameOrHigherPackage) : undefined,
+      requiredSameOrHigherPackage: requiredSameOrHigherPackage != null ? Number(requiredSameOrHigherPackage) : undefined
     };
   }
 
@@ -269,8 +329,10 @@ export class EarningsService {
   private normalizeEarningType(type: string): string {
     const t = type.toUpperCase();
     if (t.includes('DIRECT_REFERRAL') || t.includes('DIRECT REFERRAL')) return 'Direct Referral';
-    if (t.includes('COMMUNITY') || t.includes('CDPA')) return 'Community Bonus';
-    if (t.includes('PRODUCT') || t.includes('PDPA')) return 'Product Bonus';
+    if (t === 'PDPA' || t.includes('PERSONAL_DAILY') || t.includes('PERSONAL DAILY')) return 'PDPA';
+    if (t === 'CDPA' || t.includes('COMMUNITY_DAILY') || t.includes('COMMUNITY DAILY')) return 'CDPA';
+    if (t.includes('COMMUNITY')) return 'Community Bonus';
+    if (t.includes('PRODUCT')) return 'Product Bonus';
     if (t.includes('MATCHING')) return 'Matching Bonus';
     if (t.includes('LEADERSHIP')) return 'Leadership Bonus';
     if (t.includes('MERCHANT')) return 'Merchant Bonus';

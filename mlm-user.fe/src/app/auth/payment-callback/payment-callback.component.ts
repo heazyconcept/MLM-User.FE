@@ -39,13 +39,7 @@ export class PaymentCallbackComponent implements OnInit {
       return;
     }
 
-    const gatewayResponse: Record<string, unknown> = {};
-    queryParams.keys.forEach((key) => {
-      const val = queryParams.get(key);
-      if (val != null) gatewayResponse[key] = val;
-    });
-
-    this.paymentService.verifyPayment(reference, Object.keys(gatewayResponse).length > 0 ? gatewayResponse : undefined).subscribe({
+    this.paymentService.verifyPayment(reference).subscribe({
       next: () => {
         this.status.set('success');
         this.cdr.markForCheck();
@@ -63,21 +57,14 @@ export class PaymentCallbackComponent implements OnInit {
           }
         }
 
+        this.successMessage.set('Payment received. Click Activate to complete your registration.');
+        this.cdr.markForCheck();
         this.userService.fetchProfile().subscribe({
           next: () => {
-            const redirectPath = this.userService.onboardingComplete()
-              ? '/dashboard'
-              : '/onboarding/profile';
-            setTimeout(() => this.router.navigate([redirectPath]), 1500);
+            setTimeout(() => this.router.navigate(['/auth/activation']), 2500);
           },
-          error: (err) => {
-            if (typeof ngDevMode !== 'undefined' && ngDevMode) {
-              console.error('[PaymentCallback] fetchProfile after verify failed:', err);
-            }
-            const redirectPath = this.userService.onboardingComplete()
-              ? '/dashboard'
-              : '/onboarding/profile';
-            setTimeout(() => this.router.navigate([redirectPath]), 1500);
+          error: () => {
+            setTimeout(() => this.router.navigate(['/auth/activation']), 2500);
           }
         });
       },

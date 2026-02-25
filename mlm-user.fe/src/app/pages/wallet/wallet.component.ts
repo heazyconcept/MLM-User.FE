@@ -10,7 +10,12 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DialogService } from 'primeng/dynamicdialog';
 import { UserService } from '../../services/user.service';
 import { WalletService, Wallet } from '../../services/wallet.service';
+import { SettingsService } from '../../services/settings.service';
 import { WithdrawalComponent } from './withdrawal/withdrawal.component';
+import {
+  CASHOUT_SPLIT, AUTOSHIP_SPLIT,
+  MONTHLY_AUTOSHIP_USD, AUTOSHIP_ADMIN_FEE_USD, NGN_TO_USD_RATE
+} from '../../core/constants/registration.constants';
 
 @Component({
   selector: 'app-wallet',
@@ -30,6 +35,7 @@ import { WithdrawalComponent } from './withdrawal/withdrawal.component';
 export class WalletComponent implements OnInit {
   private userService = inject(UserService);
   private walletService = inject(WalletService);
+  private settingsService = inject(SettingsService);
   private router = inject(Router);
   private dialogService = inject(DialogService);
 
@@ -67,6 +73,7 @@ export class WalletComponent implements OnInit {
   ngOnInit() {
     if (this.isPaid()) {
       this.isLoading.set(true);
+      this.settingsService.fetchCommissionRules().subscribe();
       this.walletService.fetchWallets().subscribe({
         next: () => this.isLoading.set(false),
         error: () => this.isLoading.set(false)
@@ -110,9 +117,6 @@ export class WalletComponent implements OnInit {
     });
   }
 
-  /** Mock rate for secondary currency display only (no real conversion). */
-  readonly MOCK_RATE_NGN_PER_USD = 1500;
-
   formatCurrency(amount: number, currency: 'NGN' | 'USD' = 'USD'): string {
     const symbol = currency === 'NGN' ? '₦' : '$';
     return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -127,16 +131,33 @@ export class WalletComponent implements OnInit {
   /** User's display currency for sidebar totals (from preferences, fallback to registration) */
   displayCurrency = this.userService.displayCurrency;
 
-  /** Returns mock secondary currency equivalent, e.g. "≈ $1,250.00" or "≈ ₦1,875,000". */
-  formatSecondaryEquivalent(amount: number, fromCurrency: 'NGN' | 'USD'): string {
-    const toAmount = fromCurrency === 'USD'
-      ? amount * this.MOCK_RATE_NGN_PER_USD
-      : amount / this.MOCK_RATE_NGN_PER_USD;
-    const toCurrency = fromCurrency === 'USD' ? 'NGN' : 'USD';
-    const symbol = toCurrency === 'NGN' ? '₦' : '$';
-    const formatted = toAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `≈ ${symbol}${formatted}`;
-  }
+  earningsSplit = computed(() => {
+    const pkg = this.userService.currentUser()?.package ?? 'NICKEL';
+    const rules = this.settingsService.commissionRules();
+    const apiCashout = rules?.cashoutSplit?.[pkg];
+    const apiAutoship = rules?.autoshipSplit?.[pkg];
+    return {
+      cashPct: apiCashout ?? 0,
+      autoshipPct: apiAutoship ?? 0
+    };
+  });
+
+  monthlyAutoship = computed(() => {
+    const pkg = this.userService.currentUser()?.package ?? 'NICKEL';
+    const currency = this.userService.currentUser()?.currency ?? 'NGN';
+    const usd = MONTHLY_AUTOSHIP_USD[pkg] ?? 10;
+    const adminUsd = AUTOSHIP_ADMIN_FEE_USD[pkg] ?? 1;
+    const sym = currency === 'NGN' ? '₦' : '$';
+    const rate = currency === 'NGN' ? NGN_TO_USD_RATE : 1;
+    const fmt = (v: number) => `${sym}${(v * rate).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+    return {
+      amount: fmt(usd),
+      amountUsd: `$${usd}`,
+      adminFee: fmt(adminUsd),
+      adminFeeUsd: `$${adminUsd}`,
+      currency
+    };
+  });
 
   toggleBalanceVisibility() {
     this.isBalanceHidden.update(v => !v);

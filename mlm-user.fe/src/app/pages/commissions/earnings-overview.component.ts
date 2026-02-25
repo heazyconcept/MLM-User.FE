@@ -6,6 +6,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { UserService } from '../../services/user.service';
 import { CommissionService } from '../../services/commission.service';
 import { EarningsService } from '../../services/earnings.service';
+import { SettingsService } from '../../services/settings.service';
 import { EarningsTabsComponent } from './earnings-tabs.component';
 
 @Component({
@@ -21,6 +22,7 @@ export class EarningsOverviewComponent implements OnInit {
   userService = inject(UserService);
   commissionService = inject(CommissionService);
   earningsService = inject(EarningsService);
+  private settingsService = inject(SettingsService);
 
   ngnSummary = this.commissionService.getSummary('NGN');
   usdSummary = this.commissionService.getSummary('USD');
@@ -30,6 +32,25 @@ export class EarningsOverviewComponent implements OnInit {
   error = this.earningsService.error;
 
   recentEntries = computed(() => this.commissionService.getAllCommissions()().slice(0, 5));
+
+  pdpaRate = computed(() => {
+    const pkg = this.userService.currentUser()?.package ?? 'NICKEL';
+    const apiRates = this.settingsService.commissionRules()?.pdpaRates;
+    return apiRates?.[pkg] ?? 0;
+  });
+  cdpaRate = computed(() => {
+    const pkg = this.userService.currentUser()?.package ?? 'NICKEL';
+    const apiRates = this.settingsService.commissionRules()?.cdpaRates;
+    return apiRates?.[pkg] ?? 0;
+  });
+  pdpaEarned = computed(() => {
+    const summary = this.earningsService.earningsSummary();
+    return summary.pdpaEarnings ?? 0;
+  });
+  cdpaEarned = computed(() => {
+    const summary = this.earningsService.earningsSummary();
+    return summary.cdpaEarnings ?? 0;
+  });
 
   chartData: any;
   chartOptions: any;
