@@ -8,11 +8,13 @@ import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { SkeletonModule } from 'primeng/skeleton';
+import { DialogService } from 'primeng/dynamicdialog';
+import { CreateReferralComponent } from '../create-referral/create-referral.component';
 
 interface FlatNode {
   id: string;
   username: string;
-  package: 'basic' | 'premium' | 'vip' | null;
+  package: string | null;
   level: number;
   status: 'active' | 'inactive' | 'empty';
   position?: 'left' | 'center' | 'right';
@@ -22,10 +24,12 @@ interface FlatNode {
   selector: 'app-matrix-tree',
   standalone: true,
   imports: [CommonModule, OrganizationChartModule, DialogModule, TableModule, ButtonModule, TooltipModule, SkeletonModule],
+  providers: [DialogService],
   templateUrl: './matrix-tree.component.html'
 })
 export class MatrixTreeComponent implements OnInit {
   private networkService = inject(NetworkService);
+  private dialogService = inject(DialogService);
   originalRoot = computed(() => this.networkService.matrixTree());
 
   // Navigation state
@@ -33,6 +37,15 @@ export class MatrixTreeComponent implements OnInit {
   navigationStack = signal<MatrixNode[]>([]);
   nodeForModal = signal<MatrixNode | null>(null);
   showMatrixInfo = signal(false);
+
+  openCreateReferralDialog(): void {
+    this.dialogService.open(CreateReferralComponent, {
+      header: 'Create Referral',
+      width: '520px',
+      contentStyle: { 'max-height': '700px', overflow: 'auto' },
+      baseZIndex: 10000
+    });
+  }
 
   /** Default zoom &lt; 1 so the full tree fits in view on load; user can zoom in from here. */
   zoomLevel = signal(0.5);
@@ -228,42 +241,38 @@ export class MatrixTreeComponent implements OnInit {
   }
 
   getPackageLabel(pkg: string | null): string {
-    if (!pkg) return '—';
-    switch (pkg) {
-      case 'vip': return 'Gold';
-      case 'premium': return 'Premium';
-      case 'basic': return 'Silver';
-      default: return pkg;
-    }
+    if (!pkg || pkg === '—') return '—';
+    return pkg.charAt(0) + pkg.slice(1).toLowerCase();
   }
 
   getPackageBadgeClass(pkg: string | null): string {
     if (!pkg) return 'bg-gray-100 text-gray-400';
-    switch (pkg) {
-      case 'vip': return 'bg-amber-50 text-amber-600';
-      case 'premium': return 'bg-violet-50 text-violet-600';
-      case 'basic': return 'bg-slate-100 text-slate-600';
+    switch (pkg.toUpperCase()) {
+      case 'DIAMOND': return 'bg-sky-50 text-sky-600';
+      case 'RUBY': return 'bg-rose-50 text-rose-600';
+      case 'PLATINUM': return 'bg-violet-50 text-violet-600';
+      case 'GOLD': return 'bg-amber-50 text-amber-600';
+      case 'SILVER': return 'bg-slate-100 text-slate-600';
+      case 'NICKEL': return 'bg-stone-100 text-stone-500';
       default: return 'bg-gray-100 text-gray-500';
     }
   }
 
-  // Helper methods for node rendering (from TreeNodeComponent)
+  // Helper methods for node rendering
   getPackageInitial(pkg: string | null): string {
-    if (!pkg) return '';
-    switch (pkg) {
-      case 'vip': return 'G';
-      case 'premium': return 'P';
-      case 'basic': return 'S';
-      default: return pkg.charAt(0).toUpperCase();
-    }
+    if (!pkg || pkg === '—') return '';
+    return pkg.charAt(0).toUpperCase();
   }
 
   getPackageBgClass(pkg: string | null): string {
     if (!pkg) return 'bg-gray-200 text-gray-500';
-    switch (pkg) {
-      case 'vip': return 'bg-amber-400 text-white';
-      case 'premium': return 'bg-violet-500 text-white';
-      case 'basic': return 'bg-slate-400 text-white';
+    switch (pkg.toUpperCase()) {
+      case 'DIAMOND': return 'bg-sky-500 text-white';
+      case 'RUBY': return 'bg-rose-500 text-white';
+      case 'PLATINUM': return 'bg-violet-500 text-white';
+      case 'GOLD': return 'bg-amber-400 text-white';
+      case 'SILVER': return 'bg-slate-400 text-white';
+      case 'NICKEL': return 'bg-stone-400 text-white';
       default: return 'bg-gray-300 text-white';
     }
   }

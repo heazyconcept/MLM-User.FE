@@ -78,9 +78,13 @@ export class DownlineListComponent implements OnInit {
   }
 
   getPackageClass(pkg: string): string {
-    switch (pkg.toLowerCase()) {
-      case 'vip': return 'bg-orange-50 text-orange-600';
-      case 'premium': return 'bg-blue-50 text-blue-600';
+    switch (pkg.toUpperCase()) {
+      case 'DIAMOND': return 'bg-sky-50 text-sky-600';
+      case 'RUBY': return 'bg-rose-50 text-rose-600';
+      case 'PLATINUM': return 'bg-violet-50 text-violet-600';
+      case 'GOLD': return 'bg-amber-50 text-amber-600';
+      case 'SILVER': return 'bg-slate-100 text-slate-600';
+      case 'NICKEL': return 'bg-stone-100 text-stone-500';
       default: return 'bg-gray-100 text-gray-600';
     }
   }

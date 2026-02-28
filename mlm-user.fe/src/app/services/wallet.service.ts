@@ -5,7 +5,27 @@ import { ApiService } from './api.service';
 import { ModalService } from './modal.service';
 
 // API response types (OpenAPI has no schema; infer from API.md)
-export type WalletType = 'CASH' | 'VOUCHER' | 'AUTOSHIP';
+export type WalletType = 'CASH' | 'VOUCHER' | 'AUTOSHIP' | 'REGISTRATION';
+
+export interface AutoshipStatus {
+  nextAutoshipDate: string | null;
+  status: 'Active' | 'Inactive';
+  configuration: {
+    monthlyAutoshipAmountUsd: number;
+    deductFrom: string;
+  };
+}
+
+export interface TransferRequest {
+  fromWalletType: 'CASH';
+  toWalletType: 'REGISTRATION' | 'VOUCHER' | 'AUTOSHIP';
+  amount: number;
+  currency: 'NGN' | 'USD';
+}
+
+export interface TransferResponse {
+  transferId: string;
+}
 
 export interface ApiWalletItem {
   id: string;
@@ -59,10 +79,12 @@ export class WalletService {
   private wallets = signal<Wallet[]>([]);
   private transactions = signal<Transaction[]>([]);
   private withdrawalRequests = signal<WithdrawalRequest[]>([]);
+  private autoshipStatusSignal = signal<AutoshipStatus | null>(null);
 
   readonly allWallets = computed(() => this.wallets());
   readonly allTransactions = computed(() => this.transactions());
   readonly allWithdrawals = computed(() => this.withdrawalRequests());
+  readonly autoshipStatus = this.autoshipStatusSignal.asReadonly();
 
   readonly totalBalance = computed(() =>
     this.wallets().reduce((sum, w) => sum + w.balance, 0)
@@ -275,5 +297,53 @@ export class WalletService {
           throw err;
         })
       );
+  }
+
+  /** GET /wallets/autoship/status */
+  fetchAutoshipStatus(): Observable<AutoshipStatus | null> {
+    return this.api.get<Record<string, unknown>>('wallets/autoship/status').pipe(
+      map(raw => {
+        const config = (raw['configuration'] ?? {}) as Record<string, unknown>;
+        return {
+          nextAutoshipDate: raw['nextAutoshipDate'] ? String(raw['nextAutoshipDate']) : null,
+          status: String(raw['status'] ?? 'Inactive') as 'Active' | 'Inactive',
+          configuration: {
+            monthlyAutoshipAmountUsd: Number(config['monthlyAutoshipAmountUsd'] ?? 10),
+            deductFrom: String(config['deductFrom'] ?? 'AUTOSHIP')
+          }
+        };
+      }),
+      tap(status => this.autoshipStatusSignal.set(status)),
+      catchError(() => {
+        this.autoshipStatusSignal.set(null);
+        return of(null);
+      })
+    );
+  }
+
+  /** POST /wallets/transfer */
+  transferBetweenWallets(request: TransferRequest): Observable<TransferResponse> {
+    return this.api.post<TransferResponse>('wallets/transfer', request).pipe(
+      tap(() => {
+        const sym = request.currency === 'NGN' ? '₦' : '$';
+        const targetLabel = request.toWalletType === 'AUTOSHIP' ? 'Autoship'
+          : request.toWalletType === 'VOUCHER' ? 'Voucher'
+          : 'Registration';
+        this.modalService.open(
+          'success',
+          'Transfer Successful',
+          `${sym}${request.amount.toLocaleString()} has been moved from your Cash wallet to your ${targetLabel} wallet.`,
+          '/wallet'
+        );
+        // Refresh wallets to show updated balances
+        this.fetchWallets().subscribe();
+      }),
+      catchError(err => {
+        const raw = err?.error?.message;
+        const msg = Array.isArray(raw) ? raw[0] : (raw ?? 'Transfer failed. Please try again or contact support.');
+        this.modalService.open('error', 'Transfer Failed', msg);
+        throw err;
+      })
+    );
   }
 }
