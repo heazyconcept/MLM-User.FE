@@ -89,9 +89,6 @@
                           <h3 class="text-base font-semibold text-gray-900">{{ wallet.currency }} Wallet</h3>
                           <div class="text-right">
                             <span class="text-sm font-medium text-gray-900">Total {{ formatAmountOrPlaceholder(wallet.balance, wallet.currency) }}</span>
-                            @if (!isBalanceHidden() && wallet.balance > 0) {
-                              <p class="text-xs text-gray-500 mt-0.5">{{ formatSecondaryEquivalent(wallet.balance, wallet.currency) }}</p>
-                            }
                           </div>
                         </div>
                       </div>
@@ -126,9 +123,6 @@
                           <div class="min-w-0">
                             <p class="text-sm font-medium text-gray-900">Voucher Wallet</p>
                             <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatAmountOrPlaceholder(wallet.voucherBalance, wallet.currency) }}</p>
-                            @if (!isBalanceHidden() && wallet.voucherBalance > 0) {
-                              <p class="text-xs text-gray-500 mt-0.5">{{ formatSecondaryEquivalent(wallet.voucherBalance, wallet.currency) }}</p>
-                            }
                             <span class="text-xs text-gray-500 mt-1 inline-block"
                                   pTooltip="Can only be used for product purchases"
                                   tooltipPosition="top">Non-withdrawable</span>
@@ -146,12 +140,22 @@
                             <div class="min-w-0">
                               <p class="text-sm font-medium text-gray-900">Autoship Wallet</p>
                               <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatAmountOrPlaceholder(wallet.autoshipBalance, wallet.currency) }}</p>
-                              @if (!isBalanceHidden() && wallet.autoshipBalance > 0) {
-                                <p class="text-xs text-gray-500 mt-0.5">{{ formatSecondaryEquivalent(wallet.autoshipBalance, wallet.currency) }}</p>
-                              }
                               <span class="text-xs text-gray-500 mt-1 inline-block"
                                     pTooltip="Auto product credits for recurring orders"
                                     tooltipPosition="top">Non-withdrawable · Recurring orders</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Registration Wallet -->
+                        <div class="px-6 py-4">
+                          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div class="min-w-0">
+                              <p class="text-sm font-medium text-gray-900">Registration Wallet</p>
+                              <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatAmountOrPlaceholder(wallet.registrationBalance, wallet.currency) }}</p>
+                              <span class="text-xs text-gray-500 mt-1 inline-block"
+                                    pTooltip="Funds from your registration package"
+                                    tooltipPosition="top">Non-withdrawable · Registration</span>
                             </div>
                           </div>
                         </div>
@@ -195,9 +199,6 @@
                             <i [class]="'pi text-sm ' + (isBalanceHidden() ? 'pi-eye' : 'pi-eye-slash')"></i>
                           </button>
                         </div>
-                        @if (!isBalanceHidden() && totalBalance() > 0) {
-                          <p class="text-xs opacity-80 mt-1">{{ formatSecondaryEquivalent(totalBalance(), displayCurrency()) }}</p>
-                        }
                         <p class="text-xs opacity-70 mt-1">Across all wallets</p>
                       </div>
 
@@ -238,9 +239,6 @@
                           <span class="text-sm font-bold text-mlm-text block">
                             @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalCashBalance(), displayCurrency()) }} }
                           </span>
-                          @if (!isBalanceHidden() && totalCashBalance() > 0) {
-                            <span class="text-[10px] text-mlm-secondary block mt-0.5">{{ formatSecondaryEquivalent(totalCashBalance(), displayCurrency()) }}</span>
-                          }
                         </span>
                       </div>
 
@@ -259,9 +257,6 @@
                           <span class="text-sm font-bold text-mlm-text block">
                             @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalVoucherBalance(), displayCurrency()) }} }
                           </span>
-                          @if (!isBalanceHidden() && totalVoucherBalance() > 0) {
-                            <span class="text-[10px] text-mlm-secondary block mt-0.5">{{ formatSecondaryEquivalent(totalVoucherBalance(), displayCurrency()) }}</span>
-                          }
                         </span>
                       </div>
 
@@ -280,10 +275,67 @@
                           <span class="text-sm font-bold text-mlm-text block">
                             @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalAutoshipBalance(), displayCurrency()) }} }
                           </span>
-                          @if (!isBalanceHidden() && totalAutoshipBalance() > 0) {
-                            <span class="text-[10px] text-mlm-secondary block mt-0.5">{{ formatSecondaryEquivalent(totalAutoshipBalance(), displayCurrency()) }}</span>
-                          }
                         </span>
+                      </div>
+
+                      <!-- Registration Balance -->
+                      <div class="flex items-center justify-between p-3 bg-blue-50 rounded-xl border border-blue-100">
+                        <div class="flex items-center gap-3">
+                          <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                            <i class="pi pi-id-card text-blue-600 text-sm"></i>
+                          </div>
+                          <div>
+                            <p class="text-xs font-medium text-mlm-text">Registration Balance</p>
+                            <p class="text-[10px] text-blue-600">Registration funds</p>
+                          </div>
+                        </div>
+                        <span class="text-right">
+                          <span class="text-sm font-bold text-mlm-text block">
+                            @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalRegistrationBalance(), displayCurrency()) }} }
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Earnings Split Card -->
+                  <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                    <h3 class="text-sm font-semibold text-mlm-text mb-3">Earnings Split</h3>
+                    <p class="text-[10px] text-gray-500 mb-3">How your earnings are distributed across wallets.</p>
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-600 flex items-center gap-1.5">
+                          <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                          Cash (withdrawable)
+                        </span>
+                        <span class="text-xs font-bold text-gray-900">{{ earningsSplit().cashPct }}%</span>
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-600 flex items-center gap-1.5">
+                          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                          Autoship Voucher
+                        </span>
+                        <span class="text-xs font-bold text-gray-900">{{ earningsSplit().autoshipPct }}%</span>
+                      </div>
+                      <div class="w-full bg-gray-100 rounded-full h-2 mt-1 overflow-hidden flex">
+                        <div class="bg-green-500 h-full rounded-l-full" [style.width.%]="earningsSplit().cashPct"></div>
+                        <div class="bg-amber-500 h-full rounded-r-full" [style.width.%]="earningsSplit().autoshipPct"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Monthly Autoship Card -->
+                  <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                    <h3 class="text-sm font-semibold text-mlm-text mb-3">Monthly Autoship</h3>
+                    <p class="text-[10px] text-gray-500 mb-3">Recurring product subscription to maintain active status.</p>
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-600">Autoship Amount</span>
+                        <span class="text-xs font-bold text-gray-900">{{ monthlyAutoship().amount }}</span>
+                      </div>
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-600">Admin Fee</span>
+                        <span class="text-xs font-bold text-gray-900">{{ monthlyAutoship().adminFee }}</span>
                       </div>
                     </div>
                   </div>

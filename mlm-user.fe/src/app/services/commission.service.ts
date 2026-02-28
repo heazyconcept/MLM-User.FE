@@ -1,8 +1,16 @@
 import { Injectable, inject, computed } from '@angular/core';
-import { EarningsService } from './earnings.service';
+import { EarningsService, StageBonusDto } from './earnings.service';
 
 export type CommissionStatus = 'Pending' | 'Approved' | 'Locked';
-export type CommissionType = 'Direct Referral' | 'Community Bonus' | 'Product Bonus' | 'Matching Bonus' | 'Level Commission' | 'Bonus' | 'Leadership Bonus' | 'Merchant Bonus';
+export type CommissionType =
+  | 'Direct Referral' | 'Community Bonus' | 'Product Bonus'
+  | 'Matching Bonus' | 'Level Commission' | 'Bonus'
+  | 'Leadership Bonus' | 'Merchant Bonus' | 'PDPA' | 'CDPA'
+  | 'Personal Product Commission' | 'Direct Referral Product Commission'
+  | 'Community Product Commission' | 'Repeat Purchase Bonus'
+  | 'Ranking Bonus' | 'CPV Cash Bonus' | 'CPV Milestone'
+  | 'Merchant Personal Product' | 'Merchant Direct Referral Product'
+  | 'Merchant Community Product' | 'Merchant Delivery Bonus';
 
 export interface CommissionEntry {
   id: string;
@@ -45,6 +53,7 @@ export interface RankInfo {
   progressPercentage: number;
   requirements: { label: string; current: number; required: number; completed: boolean }[];
   achievedRanks: { rank: string; achievedDate: string }[];
+  stageBonuses?: StageBonusDto[];
 }
 
 export interface MilestoneInfo {
@@ -54,8 +63,10 @@ export interface MilestoneInfo {
   cpvRequired: number;
   reward: string;
   rewardAmount?: number;
+  materialReward?: string;
   achieved: boolean;
   achievedDate?: string;
+  progressPercent?: number;
 }
 
 export interface CpvSummary {
@@ -105,6 +116,8 @@ export class CommissionService {
         communityBonus: summary.communityBonus ?? approved.filter((e) => e.type === 'Community Bonus').reduce((acc, curr) => acc + curr.amount, 0),
         productBonus: summary.productBonus ?? approved.filter((e) => e.type === 'Product Bonus').reduce((acc, curr) => acc + curr.amount, 0),
         matchingBonus: summary.matchingBonus ?? approved.filter((e) => e.type === 'Matching Bonus').reduce((acc, curr) => acc + curr.amount, 0),
+        pdpaEarnings: approved.filter((e) => e.type === 'PDPA').reduce((acc, curr) => acc + curr.amount, 0),
+        cdpaEarnings: approved.filter((e) => e.type === 'CDPA').reduce((acc, curr) => acc + curr.amount, 0),
         directReferrals: approved.filter((e) => e.type === 'Direct Referral').length
       };
     });
@@ -124,6 +137,7 @@ export class CommissionService {
   getBonuses() {
     return computed<BonusInfo[]>(() => {
       const summary = this.earningsService.earningsSummary();
+      const matchingStatus = this.earningsService.matchingBonusStatus();
       const bonuses: BonusInfo[] = [];
 
       if (summary.directReferralBonus) {
@@ -165,16 +179,40 @@ export class CommissionService {
         });
       }
 
-      if (summary.matchingBonus) {
+      if (summary.matchingBonus || matchingStatus) {
+        const amount = matchingStatus?.totalAmount ?? summary.matchingBonus ?? 0;
+        const qualified = matchingStatus?.qualified ?? false;
+        const currency = matchingStatus?.currency ?? 'NGN';
+
+        const requirements: string[] = [];
+        if (matchingStatus?.message) {
+          requirements.push(matchingStatus.message);
+        } else if (
+          matchingStatus?.requiredSameOrHigherPackage != null &&
+          matchingStatus.currentDirectReferrals != null
+        ) {
+          requirements.push(
+            `Direct referrals with paid registration: ${matchingStatus.currentDirectReferrals}/${matchingStatus.requiredSameOrHigherPackage}`
+          );
+        }
+        if (requirements.length === 0) {
+          requirements.push('Refer 3 accounts with paid registration (same or higher package)');
+        }
+
+        const qualificationStatus: BonusInfo['qualificationStatus'] =
+          qualified ? 'Qualified' : amount > 0 ? 'In Progress' : 'Not Qualified';
+        const earnedStatus: BonusInfo['earnedStatus'] =
+          amount > 0 && qualified ? 'Earned' : amount > 0 ? 'Pending' : 'Locked';
+
         bonuses.push({
           id: 'b-matching',
           name: 'Matching Bonus',
-          description: 'Match a percentage of your direct referrals\' earnings.',
-          qualificationStatus: 'Qualified',
-          earnedStatus: 'Earned',
-          amount: summary.matchingBonus,
-          currency: 'NGN',
-          requirements: ['Silver rank or higher', '5+ active direct referrals']
+          description: 'Match a percentage of your direct referrals\' earnings. Requires 3 direct referrals with paid registration.',
+          qualificationStatus,
+          earnedStatus,
+          amount,
+          currency,
+          requirements
         });
       }
 
@@ -237,7 +275,8 @@ export class CommissionService {
           nextRank: r.nextRank,
           progressPercentage: r.progressPercentage,
           requirements: r.requirements,
-          achievedRanks: r.achievedRanks
+          achievedRanks: r.achievedRanks,
+          stageBonuses: r.stageBonuses
         };
       }
       return {
@@ -250,6 +289,10 @@ export class CommissionService {
         achievedRanks: []
       };
     });
+  }
+
+  getCpvHistory() {
+    return computed(() => this.earningsService.cpvSummary().history);
   }
 
   getCpvSummary() {
@@ -286,8 +329,10 @@ export class CommissionService {
           cpvRequired: m.cpvRequired,
           reward: m.reward,
           rewardAmount: m.rewardAmount,
+          materialReward: m.materialReward,
           achieved: m.achieved,
-          achievedDate: m.achievedDate
+          achievedDate: m.achievedDate,
+          progressPercent: m.progressPercent
         }));
       }
       // Fallback: no milestones from API yet

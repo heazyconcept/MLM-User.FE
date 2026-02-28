@@ -46,6 +46,60 @@
           </div>
         </div>
 
+        <!-- Matrix Info Panel -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <button
+            type="button"
+            class="w-full flex items-center justify-between px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            (click)="showMatrixInfo.set(!showMatrixInfo())">
+            <span class="flex items-center gap-2">
+              <i class="pi pi-info-circle text-mlm-primary"></i>
+              How the Matrix Works
+            </span>
+            <i class="pi text-xs text-gray-400"
+               [class.pi-chevron-down]="!showMatrixInfo()"
+               [class.pi-chevron-up]="showMatrixInfo()"></i>
+          </button>
+          @if (showMatrixInfo()) {
+            <div class="px-5 pb-5 space-y-4 text-sm text-gray-600 border-t border-gray-100 pt-4 animate-fade-in">
+              <div>
+                <h3 class="font-semibold text-gray-900 mb-1">3×1 and 3×2 Team Forced Matrix</h3>
+                <p>Each member refers 3 people directly. The structure fills level by level — your first 3 go under you (Level 1), their referrals go to Level 2, and so on through 13 levels across 6 stages.</p>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900 mb-1">Follow Your Leader</h3>
+                <p>New placements follow the sponsor's position in the matrix. Your downlines are placed directly beneath you, filling left to right.</p>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900 mb-1">Spillover</h3>
+                <p>If you refer more than 3 people, the 4th and beyond "spill over" under your first leg (leftmost), continuing left to right, filling the next available slots in the tree.</p>
+              </div>
+              <div>
+                <h3 class="font-semibold text-gray-900 mb-1">6 Stages, 13 Levels</h3>
+                <div class="mt-2 overflow-x-auto">
+                  <table class="w-full text-xs border-collapse">
+                    <thead>
+                      <tr class="bg-gray-50">
+                        <th class="text-left px-3 py-2 font-semibold text-gray-500">Stage</th>
+                        <th class="text-left px-3 py-2 font-semibold text-gray-500">Rank</th>
+                        <th class="text-left px-3 py-2 font-semibold text-gray-500">Levels</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                      <tr><td class="px-3 py-2">1</td><td class="px-3 py-2">Stakeholder</td><td class="px-3 py-2">1 – 2</td></tr>
+                      <tr><td class="px-3 py-2">2</td><td class="px-3 py-2">Mentor</td><td class="px-3 py-2">3 – 4</td></tr>
+                      <tr><td class="px-3 py-2">3</td><td class="px-3 py-2">Manager</td><td class="px-3 py-2">5 – 7</td></tr>
+                      <tr><td class="px-3 py-2">4</td><td class="px-3 py-2">Director</td><td class="px-3 py-2">8 – 9</td></tr>
+                      <tr><td class="px-3 py-2">5</td><td class="px-3 py-2">Senior Director</td><td class="px-3 py-2">10 – 11</td></tr>
+                      <tr><td class="px-3 py-2">6</td><td class="px-3 py-2">Consultant</td><td class="px-3 py-2">12 – 13</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
         <!-- Desktop: Tree View - use viewport height so full tree can be seen at default zoom -->
         <div class="hidden lg:block flex-1 bg-white rounded-2xl border border-gray-100 relative overflow-hidden shadow-sm min-h-[500px] h-[calc(100vh-12rem)]">
           <!-- Draggable/Scrollable Area -->

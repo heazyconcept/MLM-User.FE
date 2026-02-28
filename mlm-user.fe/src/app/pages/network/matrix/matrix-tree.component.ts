@@ -32,6 +32,7 @@ export class MatrixTreeComponent implements OnInit {
   currentRootNode = signal<MatrixNode>(this.networkService.matrixTree());
   navigationStack = signal<MatrixNode[]>([]);
   nodeForModal = signal<MatrixNode | null>(null);
+  showMatrixInfo = signal(false);
 
   /** Default zoom &lt; 1 so the full tree fits in view on load; user can zoom in from here. */
   zoomLevel = signal(0.5);

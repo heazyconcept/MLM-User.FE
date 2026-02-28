@@ -14,9 +14,18 @@ export const routes: Routes = [
         path: 'login', 
         loadComponent: () => import('./auth/login-modern/login-modern.component').then(m => m.LoginModernComponent)
       },
-      { 
-        path: 'register', 
-        loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent) 
+      {
+        path: 'register',
+        loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent)
+      },
+      {
+        path: 'activation',
+        loadComponent: () => import('./auth/activation/activation-choice.component').then(m => m.ActivationChoiceComponent)
+      },
+      {
+        path: 'activation/wallet',
+        redirectTo: 'activation',
+        pathMatch: 'full'
       },
       {
         path: 'forgot-password',
@@ -190,6 +199,10 @@ export const routes: Routes = [
       {
         path: 'cpv',
         loadComponent: () => import('./pages/commissions/cpv-milestones.component').then(m => m.CpvMilestonesComponent)
+      },
+      {
+        path: 'level-table',
+        loadComponent: () => import('./pages/commissions/level-commission-table.component').then(m => m.LevelCommissionTableComponent)
       }
     ]
   },

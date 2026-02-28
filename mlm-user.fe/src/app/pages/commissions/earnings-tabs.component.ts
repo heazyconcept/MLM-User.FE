@@ -34,6 +34,11 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
            class="py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors">
           CPV
         </a>
+        <a routerLink="/commissions/level-table" 
+           routerLinkActive="border-mlm-primary text-mlm-primary"
+           class="py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors">
+          Level Table
+        </a>
       </nav>
     </div>
   `

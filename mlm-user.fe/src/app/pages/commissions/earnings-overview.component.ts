@@ -6,6 +6,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { UserService } from '../../services/user.service';
 import { CommissionService } from '../../services/commission.service';
 import { EarningsService } from '../../services/earnings.service';
+import { SettingsService } from '../../services/settings.service';
 import { EarningsTabsComponent } from './earnings-tabs.component';
 
 @Component({
@@ -21,6 +22,7 @@ export class EarningsOverviewComponent implements OnInit {
   userService = inject(UserService);
   commissionService = inject(CommissionService);
   earningsService = inject(EarningsService);
+  private settingsService = inject(SettingsService);
 
   ngnSummary = this.commissionService.getSummary('NGN');
   usdSummary = this.commissionService.getSummary('USD');
@@ -30,6 +32,66 @@ export class EarningsOverviewComponent implements OnInit {
   error = this.earningsService.error;
 
   recentEntries = computed(() => this.commissionService.getAllCommissions()().slice(0, 5));
+
+  pdpaRate = computed(() => {
+    // If backend returns rates directly, we could use them here if we map them.
+    // Currently, settingsService returns them from commission rules.
+    const pkg = this.userService.currentUser()?.package ?? 'NICKEL';
+    const apiRates = this.settingsService.commissionRules()?.pdpaRates;
+    return apiRates?.[pkg] ?? 0;
+  });
+  cdpaRate = computed(() => {
+    const pkg = this.userService.currentUser()?.package ?? 'NICKEL';
+    const apiRates = this.settingsService.commissionRules()?.cdpaRates;
+    return apiRates?.[pkg] ?? 0;
+  });
+  pdpaEarned = computed(() => {
+    const summary = this.earningsService.earningsSummary();
+    return summary.pdpaEarnings ?? 0;
+  });
+  cdpaEarned = computed(() => {
+    const summary = this.earningsService.earningsSummary();
+    return summary.cdpaEarnings ?? 0;
+  });
+  pppcEarned = computed(() => {
+    const summary = this.earningsService.earningsSummary();
+    return summary.pppcEarnings ?? 0;
+  });
+  drppcEarned = computed(() => {
+    const summary = this.earningsService.earningsSummary();
+    return summary.drppcEarnings ?? 0;
+  });
+  cppcEarned = computed(() => {
+    const summary = this.earningsService.earningsSummary();
+    return summary.cppcEarnings ?? 0;
+  });
+
+  /** Autoship & Cashout */
+  cashoutPercentage = computed(() => this.earningsService.earningsSummary().cashoutPercentage ?? 65);
+  autoshipPercentage = computed(() => this.earningsService.earningsSummary().autoshipPercentage ?? 35);
+  autoshipBalance = computed(() => this.earningsService.earningsSummary().autoshipBalance ?? 0);
+  cashoutEligible = computed(() => this.earningsService.earningsSummary().cashoutEligible ?? 0);
+  /** Monthly autoship amount in user's display currency */
+  monthlyAutoshipAmount = computed(() => {
+    const usdAmount = this.earningsService.earningsSummary().monthlyAutoshipAmountUsd ?? 10;
+    return this.displayCurrency() === 'NGN' ? usdAmount * 1000 : usdAmount;
+  });
+
+  /** Community Bonus by Level (1-13) */
+  communityBonusByLevel = computed(() => this.earningsService.earningsSummary().communityBonusByLevel ?? []);
+
+  /** Leadership Bonus */
+  leadershipBonus = computed(() => this.earningsService.earningsSummary().leadershipBonus ?? 0);
+
+  cpvSummary = this.earningsService.cpvSummary;
+
+  /** Registration PV received at activation (Instant + Community) */
+  registrationPv = computed(() => {
+    const summary = this.earningsService.earningsSummary();
+    const instant = summary.instantRegistrationPv ?? 0;
+    const community = summary.communityRegistrationPv ?? 0;
+    return { instant, community, total: instant + community };
+  });
 
   chartData: any;
   chartOptions: any;

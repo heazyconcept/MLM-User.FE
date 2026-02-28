@@ -25,6 +25,7 @@ export interface Wallet {
   cashBalance: number;
   voucherBalance: number;
   autoshipBalance: number;
+  registrationBalance: number;
 }
 
 export interface Transaction {
@@ -75,6 +76,9 @@ export class WalletService {
   readonly totalAutoshipBalance = computed(() =>
     this.wallets().reduce((sum, w) => sum + w.autoshipBalance, 0)
   );
+  readonly totalRegistrationBalance = computed(() =>
+    this.wallets().reduce((sum, w) => sum + w.registrationBalance, 0)
+  );
 
   getWallet(currency: 'NGN' | 'USD') {
     return computed(() => this.wallets().find(w => w.currency === currency));
@@ -90,12 +94,47 @@ export class WalletService {
 
     const items = Array.isArray(raw) ? raw : (raw as { wallets?: unknown[] }).wallets ?? [];
     if (!Array.isArray(items) || items.length === 0) {
-      // Single summary object: { cash, voucher, autoship, currency }
+      // Single summary object (multiple possible shapes)
       const obj = raw as Record<string, unknown>;
-      const cash = Number(obj['cash'] ?? obj['cashBalance'] ?? 0);
-      const voucher = Number(obj['voucher'] ?? obj['voucherBalance'] ?? 0);
-      const autoship = Number(obj['autoship'] ?? obj['autoshipBalance'] ?? 0);
-      const currency = (obj['currency'] ?? 'NGN') as 'NGN' | 'USD';
+
+      // Shape A: aggregated balances { cash, voucher, autoship, currency }
+      let cash = Number(obj['cash'] ?? obj['cashBalance'] ?? 0);
+      let voucher = Number(obj['voucher'] ?? obj['voucherBalance'] ?? 0);
+      let autoship = Number(obj['autoship'] ?? obj['autoshipBalance'] ?? 0);
+      let currency = (obj['currency'] ?? 'NGN') as 'NGN' | 'USD';
+
+      // Shape B: separate wallets { cashWallet, voucherWallet, autoshipWallet, registrationWallet }
+      const cashWallet = obj['cashWallet'] as { balance?: unknown; currency?: unknown } | undefined;
+      const voucherWallet = obj['voucherWallet'] as { balance?: unknown; currency?: unknown } | undefined;
+      const autoshipWallet = obj['autoshipWallet'] as { balance?: unknown; currency?: unknown } | undefined;
+
+      const registrationWallet = obj['registrationWallet'] as { balance?: unknown; currency?: unknown } | undefined;
+
+      if (cashWallet || voucherWallet || autoshipWallet || registrationWallet) {
+        const derivedCurrency =
+          (cashWallet?.currency ??
+            voucherWallet?.currency ??
+            autoshipWallet?.currency ??
+            registrationWallet?.currency ??
+            'NGN') as 'NGN' | 'USD';
+        cash = Number(cashWallet?.balance ?? cash ?? 0);
+        voucher = Number(voucherWallet?.balance ?? voucher ?? 0);
+        autoship = Number(autoshipWallet?.balance ?? autoship ?? 0);
+        const registration = Number(registrationWallet?.balance ?? 0);
+        currency = derivedCurrency;
+
+        if (cash === 0 && voucher === 0 && autoship === 0 && registration === 0) return [];
+        return [{
+          id: '1',
+          currency,
+          balance: cash + voucher + autoship + registration,
+          cashBalance: cash,
+          voucherBalance: voucher,
+          autoshipBalance: autoship,
+          registrationBalance: registration
+        }];
+      }
+
       if (cash === 0 && voucher === 0 && autoship === 0) return [];
       return [{
         id: '1',
@@ -103,11 +142,12 @@ export class WalletService {
         balance: cash + voucher + autoship,
         cashBalance: cash,
         voucherBalance: voucher,
-        autoshipBalance: autoship
+        autoshipBalance: autoship,
+        registrationBalance: 0
       }];
     }
 
-    const byCurrency = new Map<string, { cash: number; voucher: number; autoship: number; id: string }>();
+    const byCurrency = new Map<string, { cash: number; voucher: number; autoship: number; registration: number; id: string }>();
     for (const item of items as ApiWalletItem[]) {
       const type = (item.type ?? 'CASH').toUpperCase();
       const currency = (item.currency ?? 'NGN') as 'NGN' | 'USD';
@@ -122,12 +162,14 @@ export class WalletService {
         existing.cash += type === 'CASH' ? balance : cash;
         existing.voucher += type === 'VOUCHER' ? balance : voucher;
         existing.autoship += type === 'AUTOSHIP' ? balance : autoship;
+        existing.registration += type === 'REGISTRATION' ? balance : 0;
       } else {
         byCurrency.set(key, {
           id: item.id,
           cash: type === 'CASH' ? balance : cash,
           voucher: type === 'VOUCHER' ? balance : voucher,
-          autoship: type === 'AUTOSHIP' ? balance : autoship
+          autoship: type === 'AUTOSHIP' ? balance : autoship,
+          registration: type === 'REGISTRATION' ? balance : 0
         });
       }
     }
@@ -135,10 +177,11 @@ export class WalletService {
     return Array.from(byCurrency.entries()).map(([currency, data]) => ({
       id: data.id,
       currency: currency as 'NGN' | 'USD',
-      balance: data.cash + data.voucher + data.autoship,
+      balance: data.cash + data.voucher + data.autoship + data.registration,
       cashBalance: data.cash,
       voucherBalance: data.voucher,
-      autoshipBalance: data.autoship
+      autoshipBalance: data.autoship,
+      registrationBalance: data.registration
     }));
   }
 

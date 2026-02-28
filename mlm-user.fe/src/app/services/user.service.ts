@@ -110,7 +110,10 @@ export class UserService {
 
   private mapApiUserToUser(apiUser: Record<string, unknown>): User {
     const reg = apiUser['registration'] as Record<string, unknown> | undefined;
-    const registrationPaid = apiUser['registrationPaid'] === true || reg?.['isPaid'] === true;
+    const registrationPaid =
+      apiUser['isRegistrationPaid'] === true ||
+      apiUser['registrationPaid'] === true ||
+      reg?.['isPaid'] === true;
 
     return {
       id: String(apiUser['id'] ?? ''),
@@ -125,13 +128,13 @@ export class UserService {
       accountNumber: apiUser['accountNumber'] as string | undefined,
       accountName: apiUser['accountName'] as string | undefined,
       kycStatus: apiUser['kycStatus'] as KycStatus | undefined,
-      currency: (apiUser['currency'] ?? reg?.['currency']) as 'NGN' | 'USD' | undefined,
+      currency: (apiUser['currency'] ?? apiUser['registrationCurrency'] ?? apiUser['registration_currency'] ?? reg?.['currency']) as 'NGN' | 'USD' | undefined,
       rank: apiUser['rank'] as string | undefined,
       stage: (apiUser['stage'] ?? (apiUser['matrix'] as Record<string, unknown>)?.['currentStage']) as number | undefined,
       directReferrals: Number((apiUser['matrix'] as Record<string, unknown>)?.['directReferrals'] ?? (apiUser['matrix'] as Record<string, unknown>)?.['direct_referrals'] ?? 0),
       activeLegs: Number((apiUser['matrix'] as Record<string, unknown>)?.['activeLegs'] ?? (apiUser['matrix'] as Record<string, unknown>)?.['active_legs'] ?? 0),
       isMerchant: apiUser['isMerchant'] as boolean | undefined ?? false,
-      package: (apiUser['package'] ?? reg?.['package']) as string | undefined,
+      package: (apiUser['package'] ?? apiUser['registrationPackage'] ?? apiUser['registration_package'] ?? reg?.['package']) as string | undefined,
       registrationPaid,
       onboardingComplete: apiUser['onboardingComplete'] === true,
     };

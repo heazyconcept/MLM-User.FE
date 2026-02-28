@@ -53,7 +53,7 @@
                     formControlName="amount"
                     inputId="amount"
                     [mode]="'currency'"
-                    [currency]="userCurrency()"
+                    [currency]="displayCurrency()"
                     [currencyDisplay]="'symbol'"
                     [min]="0.01"
                     fluid="true"
@@ -77,7 +77,7 @@
                   <p-select
                     formControlName="provider"
                     inputId="provider"
-                    [options]="providerOptions"
+                    [options]="providerOptions()"
                     optionLabel="label"
                     optionValue="value"
                     placeholder="Select payment method"
