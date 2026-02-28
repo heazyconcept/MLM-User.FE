@@ -12,6 +12,8 @@ import { UserService } from '../../services/user.service';
 import { WalletService, Wallet } from '../../services/wallet.service';
 import { SettingsService } from '../../services/settings.service';
 import { WithdrawalComponent } from './withdrawal/withdrawal.component';
+import { WalletTransferComponent } from './transfer/wallet-transfer.component';
+import { RegistrationFundingComponent } from './registration-funding/registration-funding.component';
 import { MessageService } from 'primeng/api';
 import {
   CASHOUT_SPLIT, AUTOSHIP_SPLIT,
@@ -49,6 +51,7 @@ export class WalletComponent implements OnInit {
   totalVoucherBalance = this.walletService.totalVoucherBalance;
   totalAutoshipBalance = this.walletService.totalAutoshipBalance;
   totalRegistrationBalance = this.walletService.totalRegistrationBalance;
+  autoshipStatus = this.walletService.autoshipStatus;
   isLoading = signal(false);
   isBalanceHidden = signal(false);
   
@@ -83,6 +86,7 @@ export class WalletComponent implements OnInit {
         next: () => this.isLoading.set(false),
         error: () => this.isLoading.set(false)
       });
+      this.walletService.fetchAutoshipStatus().subscribe();
 
       // Show success toast if redirected from wallet funding
       const funded = this.route.snapshot.queryParamMap.get('funded');
@@ -163,7 +167,9 @@ export class WalletComponent implements OnInit {
   monthlyAutoship = computed(() => {
     const pkg = this.userService.currentUser()?.package ?? 'NICKEL';
     const currency = this.userService.currentUser()?.currency ?? 'NGN';
-    const usd = MONTHLY_AUTOSHIP_USD[pkg] ?? 10;
+    // Prefer live autoship status from API
+    const liveStatus = this.autoshipStatus();
+    const usd = liveStatus?.configuration?.monthlyAutoshipAmountUsd ?? MONTHLY_AUTOSHIP_USD[pkg] ?? 10;
     const adminUsd = AUTOSHIP_ADMIN_FEE_USD[pkg] ?? 1;
     const sym = currency === 'NGN' ? '₦' : '$';
     const rate = currency === 'NGN' ? NGN_TO_USD_RATE : 1;
@@ -176,6 +182,34 @@ export class WalletComponent implements OnInit {
       currency
     };
   });
+
+  /** Autoship status for display */
+  autoshipIsActive = computed(() => this.autoshipStatus()?.status === 'Active');
+  nextAutoshipDate = computed(() => {
+    const d = this.autoshipStatus()?.nextAutoshipDate;
+    return d ?? null;
+  });
+
+  /** Open transfer dialog pre-selected to a target wallet */
+  openTransferDialog(toWalletType?: 'AUTOSHIP' | 'VOUCHER' | 'REGISTRATION'): void {
+    this.dialogService.open(WalletTransferComponent, {
+      header: 'Transfer Funds',
+      width: '480px',
+      contentStyle: { 'max-height': '600px', overflow: 'auto' },
+      baseZIndex: 10000,
+      data: { toWalletType: toWalletType ?? 'AUTOSHIP' }
+    });
+  }
+
+  /** Open registration wallet funding dialog */
+  openRegistrationFundingDialog(): void {
+    this.dialogService.open(RegistrationFundingComponent, {
+      header: 'Fund Registration Wallet',
+      width: '480px',
+      contentStyle: { 'max-height': '650px', overflow: 'auto' },
+      baseZIndex: 10000
+    });
+  }
 
   toggleBalanceVisibility() {
     this.isBalanceHidden.update(v => !v);

@@ -7,6 +7,7 @@ import { WalletService } from '../../services/wallet.service';
 
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const WALLET_FUNDING_FLOW = 'wallet_funding';
+const REGISTRATION_FUNDING_FLOW = 'registration_funding';
 
 @Component({
   selector: 'app-payment-callback',
@@ -27,6 +28,7 @@ export class PaymentCallbackComponent implements OnInit {
   errorMessage = signal<string>('');
   successMessage = signal<string>('Your registration is now complete. Redirecting you...');
   isWalletFunding = signal(false);
+  isRegistrationFunding = signal(false);
 
   private cdr = inject(ChangeDetectorRef);
 
@@ -45,6 +47,8 @@ export class PaymentCallbackComponent implements OnInit {
       const paymentFlow = sessionStorage.getItem(PAYMENT_FLOW_KEY);
       if (paymentFlow === WALLET_FUNDING_FLOW) {
         this.isWalletFunding.set(true);
+      } else if (paymentFlow === REGISTRATION_FUNDING_FLOW) {
+        this.isRegistrationFunding.set(true);
       }
     }
 
@@ -57,8 +61,11 @@ export class PaymentCallbackComponent implements OnInit {
           const paymentFlow = sessionStorage.getItem(PAYMENT_FLOW_KEY);
           sessionStorage.removeItem(PAYMENT_FLOW_KEY);
 
-          if (paymentFlow === WALLET_FUNDING_FLOW) {
-            this.successMessage.set('Your wallet has been credited. Redirecting you...');
+          if (paymentFlow === WALLET_FUNDING_FLOW || paymentFlow === REGISTRATION_FUNDING_FLOW) {
+            const msg = paymentFlow === WALLET_FUNDING_FLOW
+              ? 'Your wallet has been credited. Redirecting you...'
+              : 'Your registration wallet has been funded. Redirecting you...';
+            this.successMessage.set(msg);
             this.cdr.markForCheck();
             this.walletService.fetchWallets().subscribe();
             setTimeout(() => this.router.navigate(['/wallet'], { queryParams: { funded: 'true' } }), 1500);
