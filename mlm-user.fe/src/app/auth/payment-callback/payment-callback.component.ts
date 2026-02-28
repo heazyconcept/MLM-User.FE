@@ -26,6 +26,7 @@ export class PaymentCallbackComponent implements OnInit {
   status = signal<'verifying' | 'success' | 'error'>('verifying');
   errorMessage = signal<string>('');
   successMessage = signal<string>('Your registration is now complete. Redirecting you...');
+  isWalletFunding = signal(false);
 
   private cdr = inject(ChangeDetectorRef);
 
@@ -37,6 +38,14 @@ export class PaymentCallbackComponent implements OnInit {
       this.errorMessage.set('No payment reference found. Please try again from the registration flow.');
       this.cdr.markForCheck();
       return;
+    }
+
+    // Detect flow type before verification
+    if (typeof sessionStorage !== 'undefined') {
+      const paymentFlow = sessionStorage.getItem(PAYMENT_FLOW_KEY);
+      if (paymentFlow === WALLET_FUNDING_FLOW) {
+        this.isWalletFunding.set(true);
+      }
     }
 
     this.paymentService.verifyPayment(reference).subscribe({
@@ -52,7 +61,7 @@ export class PaymentCallbackComponent implements OnInit {
             this.successMessage.set('Your wallet has been credited. Redirecting you...');
             this.cdr.markForCheck();
             this.walletService.fetchWallets().subscribe();
-            setTimeout(() => this.router.navigate(['/wallet']), 1500);
+            setTimeout(() => this.router.navigate(['/wallet'], { queryParams: { funded: 'true' } }), 1500);
             return;
           }
         }

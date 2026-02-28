@@ -146,6 +146,19 @@
                             </div>
                           </div>
                         </div>
+
+                        <!-- Registration Wallet -->
+                        <div class="px-6 py-4">
+                          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div class="min-w-0">
+                              <p class="text-sm font-medium text-gray-900">Registration Wallet</p>
+                              <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatAmountOrPlaceholder(wallet.registrationBalance, wallet.currency) }}</p>
+                              <span class="text-xs text-gray-500 mt-1 inline-block"
+                                    pTooltip="Funds from your registration package"
+                                    tooltipPosition="top">Non-withdrawable · Registration</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </section>
                   }
@@ -261,6 +274,24 @@
                         <span class="text-right">
                           <span class="text-sm font-bold text-mlm-text block">
                             @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalAutoshipBalance(), displayCurrency()) }} }
+                          </span>
+                        </span>
+                      </div>
+
+                      <!-- Registration Balance -->
+                      <div class="flex items-center justify-between p-3 bg-blue-50 rounded-xl border border-blue-100">
+                        <div class="flex items-center gap-3">
+                          <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                            <i class="pi pi-id-card text-blue-600 text-sm"></i>
+                          </div>
+                          <div>
+                            <p class="text-xs font-medium text-mlm-text">Registration Balance</p>
+                            <p class="text-[10px] text-blue-600">Registration funds</p>
+                          </div>
+                        </div>
+                        <span class="text-right">
+                          <span class="text-sm font-bold text-mlm-text block">
+                            @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalRegistrationBalance(), displayCurrency()) }} }
                           </span>
                         </span>
                       </div>

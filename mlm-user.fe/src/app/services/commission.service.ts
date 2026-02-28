@@ -1,8 +1,16 @@
 import { Injectable, inject, computed } from '@angular/core';
-import { EarningsService } from './earnings.service';
+import { EarningsService, StageBonusDto } from './earnings.service';
 
 export type CommissionStatus = 'Pending' | 'Approved' | 'Locked';
-export type CommissionType = 'Direct Referral' | 'Community Bonus' | 'Product Bonus' | 'Matching Bonus' | 'Level Commission' | 'Bonus' | 'Leadership Bonus' | 'Merchant Bonus' | 'PDPA' | 'CDPA';
+export type CommissionType =
+  | 'Direct Referral' | 'Community Bonus' | 'Product Bonus'
+  | 'Matching Bonus' | 'Level Commission' | 'Bonus'
+  | 'Leadership Bonus' | 'Merchant Bonus' | 'PDPA' | 'CDPA'
+  | 'Personal Product Commission' | 'Direct Referral Product Commission'
+  | 'Community Product Commission' | 'Repeat Purchase Bonus'
+  | 'Ranking Bonus' | 'CPV Cash Bonus' | 'CPV Milestone'
+  | 'Merchant Personal Product' | 'Merchant Direct Referral Product'
+  | 'Merchant Community Product' | 'Merchant Delivery Bonus';
 
 export interface CommissionEntry {
   id: string;
@@ -45,6 +53,7 @@ export interface RankInfo {
   progressPercentage: number;
   requirements: { label: string; current: number; required: number; completed: boolean }[];
   achievedRanks: { rank: string; achievedDate: string }[];
+  stageBonuses?: StageBonusDto[];
 }
 
 export interface MilestoneInfo {
@@ -54,8 +63,10 @@ export interface MilestoneInfo {
   cpvRequired: number;
   reward: string;
   rewardAmount?: number;
+  materialReward?: string;
   achieved: boolean;
   achievedDate?: string;
+  progressPercent?: number;
 }
 
 export interface CpvSummary {
@@ -174,24 +185,18 @@ export class CommissionService {
         const currency = matchingStatus?.currency ?? 'NGN';
 
         const requirements: string[] = [];
-        if (
-          matchingStatus?.requiredDirectReferrals != null &&
+        if (matchingStatus?.message) {
+          requirements.push(matchingStatus.message);
+        } else if (
+          matchingStatus?.requiredSameOrHigherPackage != null &&
           matchingStatus.currentDirectReferrals != null
         ) {
           requirements.push(
-            `Direct referrals: ${matchingStatus.currentDirectReferrals}/${matchingStatus.requiredDirectReferrals}`
-          );
-        }
-        if (
-          matchingStatus?.requiredSameOrHigherPackage != null &&
-          matchingStatus.currentSameOrHigherPackage != null
-        ) {
-          requirements.push(
-            `Same/higher package referrals: ${matchingStatus.currentSameOrHigherPackage}/${matchingStatus.requiredSameOrHigherPackage}`
+            `Direct referrals with paid registration: ${matchingStatus.currentDirectReferrals}/${matchingStatus.requiredSameOrHigherPackage}`
           );
         }
         if (requirements.length === 0) {
-          requirements.push('Refer 3 accounts within same or higher package');
+          requirements.push('Refer 3 accounts with paid registration (same or higher package)');
         }
 
         const qualificationStatus: BonusInfo['qualificationStatus'] =
@@ -202,7 +207,7 @@ export class CommissionService {
         bonuses.push({
           id: 'b-matching',
           name: 'Matching Bonus',
-          description: 'Match a percentage of your direct referrals\' earnings.',
+          description: 'Match a percentage of your direct referrals\' earnings. Requires 3 direct referrals with paid registration.',
           qualificationStatus,
           earnedStatus,
           amount,
@@ -270,7 +275,8 @@ export class CommissionService {
           nextRank: r.nextRank,
           progressPercentage: r.progressPercentage,
           requirements: r.requirements,
-          achievedRanks: r.achievedRanks
+          achievedRanks: r.achievedRanks,
+          stageBonuses: r.stageBonuses
         };
       }
       return {
@@ -283,6 +289,10 @@ export class CommissionService {
         achievedRanks: []
       };
     });
+  }
+
+  getCpvHistory() {
+    return computed(() => this.earningsService.cpvSummary().history);
   }
 
   getCpvSummary() {
@@ -319,8 +329,10 @@ export class CommissionService {
           cpvRequired: m.cpvRequired,
           reward: m.reward,
           rewardAmount: m.rewardAmount,
+          materialReward: m.materialReward,
           achieved: m.achieved,
-          achievedDate: m.achievedDate
+          achievedDate: m.achievedDate,
+          progressPercent: m.progressPercent
         }));
       }
       // Fallback: no milestones from API yet

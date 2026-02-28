@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, OnInit, signal, computed } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
@@ -12,6 +12,7 @@ import { UserService } from '../../services/user.service';
 import { WalletService, Wallet } from '../../services/wallet.service';
 import { SettingsService } from '../../services/settings.service';
 import { WithdrawalComponent } from './withdrawal/withdrawal.component';
+import { MessageService } from 'primeng/api';
 import {
   CASHOUT_SPLIT, AUTOSHIP_SPLIT,
   MONTHLY_AUTOSHIP_USD, AUTOSHIP_ADMIN_FEE_USD, NGN_TO_USD_RATE
@@ -37,7 +38,9 @@ export class WalletComponent implements OnInit {
   private walletService = inject(WalletService);
   private settingsService = inject(SettingsService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private dialogService = inject(DialogService);
+  private messageService = inject(MessageService);
 
   isPaid = this.userService.isPaid;
   wallets = this.walletService.allWallets;
@@ -45,6 +48,7 @@ export class WalletComponent implements OnInit {
   totalCashBalance = this.walletService.totalCashBalance;
   totalVoucherBalance = this.walletService.totalVoucherBalance;
   totalAutoshipBalance = this.walletService.totalAutoshipBalance;
+  totalRegistrationBalance = this.walletService.totalRegistrationBalance;
   isLoading = signal(false);
   isBalanceHidden = signal(false);
   
@@ -66,7 +70,8 @@ export class WalletComponent implements OnInit {
       balance: 0,
       cashBalance: 0,
       voucherBalance: 0,
-      autoshipBalance: 0
+      autoshipBalance: 0,
+      registrationBalance: 0
     }];
   });
 
@@ -78,6 +83,19 @@ export class WalletComponent implements OnInit {
         next: () => this.isLoading.set(false),
         error: () => this.isLoading.set(false)
       });
+
+      // Show success toast if redirected from wallet funding
+      const funded = this.route.snapshot.queryParamMap.get('funded');
+      if (funded === 'true') {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Wallet Funded',
+          detail: 'Your wallet has been credited successfully.',
+          life: 4000
+        });
+        // Remove the query param without reloading
+        this.router.navigate([], { queryParams: {}, replaceUrl: true });
+      }
     }
   }
 

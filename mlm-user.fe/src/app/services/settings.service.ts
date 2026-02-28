@@ -26,6 +26,17 @@ export interface RankingRule {
   requirements?: Record<string, unknown>;
 }
 
+export interface CpvMilestoneRule {
+  id?: string;
+  threshold: number;
+  rewardType: string;
+  rewardAmount?: number;
+  materialDescription?: string;
+  name?: string;
+  reward?: string;
+  isActive: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -35,18 +46,21 @@ export class SettingsService {
   private commissionRulesSignal = signal<CommissionRulesDto | null>(null);
   private rankingRulesSignal = signal<RankingRule[]>([]);
   private earningTypesSignal = signal<string[]>([]);
+  private cpvMilestoneRulesSignal = signal<CpvMilestoneRule[]>([]);
   private loadedSignal = signal(false);
 
   readonly commissionRules = this.commissionRulesSignal.asReadonly();
   readonly rankingRules = this.rankingRulesSignal.asReadonly();
   readonly earningTypes = this.earningTypesSignal.asReadonly();
+  readonly cpvMilestoneRules = this.cpvMilestoneRulesSignal.asReadonly();
   readonly loaded = this.loadedSignal.asReadonly();
 
   fetchAll(): Observable<boolean> {
     return forkJoin({
       commission: this.fetchCommissionRules(),
       ranking: this.fetchRankingRules(),
-      types: this.fetchEarningTypes()
+      types: this.fetchEarningTypes(),
+      cpvMilestones: this.fetchCpvMilestoneRules()
     }).pipe(
       map(() => {
         this.loadedSignal.set(true);
@@ -95,6 +109,30 @@ export class SettingsService {
       tap((types) => this.earningTypesSignal.set(types)),
       catchError(() => {
         this.earningTypesSignal.set([]);
+        return of([]);
+      })
+    );
+  }
+
+  fetchCpvMilestoneRules(): Observable<CpvMilestoneRule[]> {
+    return this.api.get<unknown>('settings/cpv-milestones').pipe(
+      map((res) => {
+        const raw = res as Record<string, unknown>;
+        const arr = (raw['rules'] ?? raw['milestones'] ?? raw['data'] ?? (Array.isArray(res) ? res : [])) as Record<string, unknown>[];
+        return arr.map((r) => ({
+          id: r['id'] ? String(r['id']) : undefined,
+          threshold: Number(r['threshold'] ?? r['cpvRequired'] ?? 0),
+          rewardType: String(r['rewardType'] ?? r['type'] ?? 'CASH'),
+          rewardAmount: r['rewardAmount'] != null ? Number(r['rewardAmount']) : undefined,
+          materialDescription: r['materialDescription'] ? String(r['materialDescription']) : undefined,
+          name: r['name'] ? String(r['name']) : undefined,
+          reward: r['reward'] ? String(r['reward']) : undefined,
+          isActive: Boolean(r['isActive'] ?? true)
+        }));
+      }),
+      tap((rules) => this.cpvMilestoneRulesSignal.set(rules)),
+      catchError(() => {
+        this.cpvMilestoneRulesSignal.set([]);
         return of([]);
       })
     );

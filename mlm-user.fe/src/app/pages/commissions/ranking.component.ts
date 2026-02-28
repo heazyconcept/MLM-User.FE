@@ -54,6 +54,14 @@ export class RankingComponent implements OnInit {
     return Math.max(0, totalRequired - totalCurrent);
   }
 
+  /** When stage bonuses: next stage's amount to go (NGN). Otherwise null. */
+  getNextStageToGo(): number | null {
+    const bonuses = this.rankInfo().stageBonuses;
+    if (!bonuses?.length) return null;
+    const next = bonuses.find((s) => s.earned < s.bonusAmount && !s.paidAt);
+    return next ? Math.max(0, next.bonusAmount - next.earned) : null;
+  }
+
   getCompletedReqs(): number {
     return this.rankInfo().requirements.filter(r => r.completed).length;
   }

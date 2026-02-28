@@ -3,12 +3,15 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { SkeletonModule } from 'primeng/skeleton';
 import { UserService } from '../../services/user.service';
-import { SettingsService } from '../../services/settings.service';
 import { EarningsTabsComponent } from './earnings-tabs.component';
+import {
+  LEVEL_COMMISSION_TABLE,
+  formatRankingBonus
+} from '../../core/constants/level-commission.constants';
 
 interface LevelRow {
   level: number;
-  stage: number;
+  stageLabel: string;
   rank: string;
   nickel: number;
   silver: number;
@@ -16,7 +19,7 @@ interface LevelRow {
   platinum: number;
   ruby: number;
   diamond: number;
-  rankingBonusUsd: string;
+  rankingBonus: string;
 }
 
 @Component({
@@ -73,14 +76,14 @@ interface LevelRow {
                         {{ pkg }}
                       </th>
                     }
-                    <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ranking Bonus</th>
+                    <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ranking Bonus ({{ displayCurrency() }})</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                   @for (row of levels(); track row.level) {
                     <tr class="hover:bg-gray-50/50 transition-colors">
                       <td class="px-4 py-3 font-medium text-gray-900">{{ row.level }}</td>
-                      <td class="px-4 py-3 text-gray-500">{{ row.stage }}</td>
+                      <td class="px-4 py-3 text-gray-500 text-xs">{{ row.stageLabel }}</td>
                       <td class="px-4 py-3 text-gray-700 font-medium">{{ row.rank }}</td>
                       <td class="text-center px-3 py-3"
                           [class.bg-mlm-primary/5]="isCurrentPkg('Nickel')"
@@ -119,8 +122,8 @@ interface LevelRow {
                         {{ row.diamond }}%
                       </td>
                       <td class="text-right px-4 py-3 font-semibold"
-                          [class.text-amber-600]="row.rankingBonusUsd">
-                        {{ row.rankingBonusUsd || '—' }}
+                          [class.text-amber-600]="row.rankingBonus">
+                        {{ row.rankingBonus || '—' }}
                       </td>
                     </tr>
                   }
@@ -141,29 +144,35 @@ interface LevelRow {
 })
 export class LevelCommissionTableComponent implements OnInit {
   private userService = inject(UserService);
-  private settingsService = inject(SettingsService);
 
-  isLoading = signal(true);
-  dataSource = signal<string>('');
+  isLoading = signal(false);
+  dataSource = signal<string>('Hardcoded (level-table.md)');
   packageColumns = ['Nickel', 'Silver', 'Gold', 'Platinum', 'Ruby', 'Diamond'];
 
+  displayCurrency = this.userService.displayCurrency;
+
   levels = computed(() => {
-    const rules = this.settingsService.commissionRules();
-    if (!rules || !rules.levels || rules.levels.length === 0) {
-      return [] as LevelRow[];
-    }
-    return rules.levels.map(r => ({
-      level: r.level,
-      stage: r.stage,
-      rank: r.rank,
-      nickel: r.percentages['NICKEL'] ?? 0,
-      silver: r.percentages['SILVER'] ?? 0,
-      gold: r.percentages['GOLD'] ?? 0,
-      platinum: r.percentages['PLATINUM'] ?? 0,
-      ruby: r.percentages['RUBY'] ?? 0,
-      diamond: r.percentages['DIAMOND'] ?? 0,
-      rankingBonusUsd: r.rankingBonusUsd ? `$${r.rankingBonusUsd.toLocaleString()}` : ''
-    }));
+    const currency = this.displayCurrency();
+    return LEVEL_COMMISSION_TABLE.map((r) => {
+      const bonus =
+        r.rankingBonusUsd != null
+          ? formatRankingBonus(r.rankingBonusUsd, currency)
+          : r.level === 1
+            ? 'Matching Bonus'
+            : '';
+      return {
+        level: r.level,
+        stageLabel: r.stageLabel,
+        rank: r.rank,
+        nickel: r.percentages['NICKEL'] ?? 0,
+        silver: r.percentages['SILVER'] ?? 0,
+        gold: r.percentages['GOLD'] ?? 0,
+        platinum: r.percentages['PLATINUM'] ?? 0,
+        ruby: r.percentages['RUBY'] ?? 0,
+        diamond: r.percentages['DIAMOND'] ?? 0,
+        rankingBonus: bonus
+      };
+    });
   });
 
   hasLevels = computed(() => this.levels().length > 0);
@@ -175,16 +184,7 @@ export class LevelCommissionTableComponent implements OnInit {
   })();
 
   ngOnInit(): void {
-    this.settingsService.fetchCommissionRules().subscribe({
-      next: (rules) => {
-        this.dataSource.set(rules && rules.levels.length > 0 ? 'Live from API' : 'Default values');
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.dataSource.set('Default values');
-        this.isLoading.set(false);
-      }
-    });
+    // Table uses hardcoded data from level-commission.constants; currency from user preferences
   }
 
   isCurrentPkg(label: string): boolean {
