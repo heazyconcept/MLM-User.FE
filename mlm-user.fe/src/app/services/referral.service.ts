@@ -55,6 +55,8 @@ export interface DownlineItem {
   package: string;
   totalDirects: number;
   teamSize: number;
+  rank?: string;
+  stage?: string;
   profilePhotoUrl?: string;
 }
 
@@ -241,6 +243,8 @@ export class ReferralService {
       package: String(raw['package'] ?? '—'),
       totalDirects: Number(raw['directReferrals'] ?? raw['direct_referrals'] ?? raw['directReferralsCount'] ?? 0),
       teamSize: Number(raw['teamSize'] ?? raw['team_size'] ?? raw['downlineCount'] ?? raw['downline_count'] ?? 0),
+      rank: (raw['rank'] as string | undefined) ?? undefined,
+      stage: (raw['stage'] as string | undefined) ?? undefined,
       profilePhotoUrl: raw['profilePhotoUrl'] as string | undefined
     };
   }

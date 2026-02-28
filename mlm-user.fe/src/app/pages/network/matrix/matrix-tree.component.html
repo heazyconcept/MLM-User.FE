@@ -161,8 +161,8 @@
                         <!-- Username -->
                         <span class="text-xs font-semibold text-gray-800 truncate max-w-full mb-1">{{ node.data.username }}</span>
                         
-                        <!-- Level Badge -->
-                        <span class="text-[10px] font-medium text-blue-500 uppercase tracking-wide">LVL {{ node.data.level }}</span>
+                        <!-- Stage / Rank Badge -->
+                        <span class="text-[10px] font-medium text-blue-500 uppercase tracking-wide">{{ node.data.stage || node.data.rank || getPackageLabel(node.data.package) }}</span>
                       </div>
                     }
                   }
@@ -266,8 +266,20 @@
       <div class="space-y-3 text-sm">
         <p><span class="font-semibold text-gray-500">Username</span><br/><span class="text-gray-900">{{ node.username }}</span></p>
         <p><span class="font-semibold text-gray-500">Package</span><br/><span class="text-gray-900">{{ getPackageLabel(node.package) }}</span></p>
+        @if (node.rank) {
+          <p><span class="font-semibold text-gray-500">Rank</span><br/><span class="text-gray-900">{{ node.rank }}</span></p>
+        }
+        @if (node.stage) {
+          <p><span class="font-semibold text-gray-500">Stage</span><br/><span class="text-gray-900">{{ node.stage }}</span></p>
+        }
         <p><span class="font-semibold text-gray-500">Level</span><br/><span class="text-gray-900">{{ node.level }}</span></p>
         <p><span class="font-semibold text-gray-500">Status</span><br/><span [class]="node.status === 'active' ? 'text-emerald-600' : 'text-gray-500'">{{ node.status === 'active' ? 'Active' : 'Inactive' }}</span></p>
+        @if (node.directReferrals != null) {
+          <p><span class="font-semibold text-gray-500">Direct Referrals</span><br/><span class="text-gray-900">{{ node.directReferrals }}</span></p>
+        }
+        @if (node.teamSize != null) {
+          <p><span class="font-semibold text-gray-500">Team Size</span><br/><span class="text-gray-900">{{ node.teamSize }}</span></p>
+        }
       </div>
     }
   </p-dialog>

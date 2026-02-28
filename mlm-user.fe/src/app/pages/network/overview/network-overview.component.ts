@@ -35,7 +35,8 @@ export class NetworkOverviewComponent implements OnInit {
       header: 'Create Referral',
       width: '520px',
       contentStyle: { 'max-height': '700px', overflow: 'auto' },
-      baseZIndex: 10000
+      baseZIndex: 10000,
+      data: { returnUrl: '/network' }
     });
   }
 }
