@@ -18,6 +18,8 @@ interface FlatNode {
   level: number;
   status: 'active' | 'inactive' | 'empty';
   position?: 'left' | 'center' | 'right';
+  rank?: string;
+  stage?: string;
 }
 
 @Component({
@@ -43,7 +45,8 @@ export class MatrixTreeComponent implements OnInit {
       header: 'Create Referral',
       width: '520px',
       contentStyle: { 'max-height': '700px', overflow: 'auto' },
-      baseZIndex: 10000
+      baseZIndex: 10000,
+      data: { returnUrl: '/network/matrix' }
     });
   }
 
@@ -104,7 +107,9 @@ export class MatrixTreeComponent implements OnInit {
       package: node.package,
       level: node.level,
       status: node.status,
-      position: node.position
+      position: node.position,
+      rank: node.rank,
+      stage: node.stage
     });
     
     if (node.children) {
@@ -283,7 +288,9 @@ export class MatrixTreeComponent implements OnInit {
     }
     const pkg = this.getPackageLabel(node.package);
     const status = node.status.charAt(0).toUpperCase() + node.status.slice(1);
-    return `${node.username} | ${pkg} | Level ${node.level} | ${status}`;
+    const rank = node.rank ?? '—';
+    const stage = node.stage ?? '';
+    return `${node.username} | ${pkg} | ${rank}${stage ? ' | ' + stage : ''} | ${status}`;
   }
 
   isCurrentRoot(nodeId: string): boolean {

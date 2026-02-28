@@ -6,7 +6,7 @@ import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { MessageModule } from 'primeng/message';
-import { DynamicDialogRef, DynamicDialogModule } from 'primeng/dynamicdialog';
+import { DynamicDialogRef, DynamicDialogModule, DynamicDialogConfig } from 'primeng/dynamicdialog';
 import { ReferralService, CreateReferralRequest, PlacementParent } from '../../../services/referral.service';
 import { WalletService } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
@@ -166,6 +166,7 @@ export class CreateReferralComponent implements OnInit {
   private userService = inject(UserService);
   private networkService = inject(NetworkService);
   private modalService = inject(ModalService);
+  private config = inject(DynamicDialogConfig);
 
   isSubmitting = signal(false);
   formError = signal('');
@@ -224,6 +225,9 @@ export class CreateReferralComponent implements OnInit {
     this.referralService.getPlacementParents().subscribe((parents) => {
       this.placementParents.set(parents);
     });
+
+    // Ensure wallet balances are loaded so we can show the registration balance
+    this.walletService.fetchWallets().subscribe();
   }
 
   onSubmit(): void {
@@ -249,11 +253,12 @@ export class CreateReferralComponent implements OnInit {
       next: (res) => {
         this.isSubmitting.set(false);
         this.ref.close(true);
+        const returnUrl = this.config.data?.returnUrl ?? '/network';
         this.modalService.open(
           'success',
           'Referral Created',
           `New member ${username} has been registered and activated under your network.`,
-          '/network'
+          returnUrl
         );
         // Refresh wallet + network data
         this.walletService.fetchWallets().subscribe();
