@@ -126,8 +126,9 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/wallet/wallet.component').then(m => m.WalletComponent)
       },
       {
-        path: 'transactions/:currency',
-        loadComponent: () => import('./pages/wallet/transactions/transaction-history.component').then(m => m.TransactionHistoryComponent)
+        path: 'transactions',
+        loadComponent: () => import('./pages/wallet/transactions/transaction-history.component').then(m => m.TransactionHistoryComponent),
+        data: { title: 'Activity History' }
       }
     ]
   },

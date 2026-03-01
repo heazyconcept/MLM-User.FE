@@ -20,6 +20,20 @@ export interface UpgradeOption {
   benefits?: string[];
 }
 
+export interface PaymentRecord {
+  id: string;
+  userId: string;
+  amount: number;
+  currency: string;
+  type: string;
+  provider: string;
+  reference: string;
+  status: string;
+  verifiedAt: Date | null;
+  packageId?: string;
+  createdAt: Date;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -142,6 +156,33 @@ export class PaymentService {
           authorizationUrl: res['authorizationUrl'] as string | undefined ?? res['authorization_url'] as string | undefined,
           gatewayUrl: res['gatewayUrl'] as string | undefined ?? res['gateway_url'] as string | undefined
         }))
+      );
+  }
+
+  getPayments(limit = 20, offset = 0): Observable<{ items: PaymentRecord[]; total: number }> {
+    return this.api
+      .get<{ data?: any[]; items?: any[]; total?: number; meta?: any }>(`payments`, { limit: String(limit), offset: String(offset) })
+      .pipe(
+        map((res) => {
+          const rawItems = res.data ?? res.items ?? (Array.isArray(res) ? res : []);
+          const total = res.total ?? res.meta?.total ?? rawItems.length;
+          
+          const items: PaymentRecord[] = rawItems.map((item: any) => ({
+            id: item.id || '',
+            userId: item.userId || item.user_id || '',
+            amount: Number(item.amount || 0),
+            currency: item.currency || 'NGN',
+            type: item.type || item.payment_type || 'UNKNOWN',
+            provider: item.provider || item.payment_provider || 'UNKNOWN',
+            reference: item.reference || '',
+            status: item.status || 'PENDING',
+            verifiedAt: item.verifiedAt ? new Date(item.verifiedAt) : null,
+            packageId: item.packageId || item.package_id,
+            createdAt: new Date(item.createdAt || item.created_at || Date.now())
+          }));
+
+          return { items, total };
+        })
       );
   }
 }
