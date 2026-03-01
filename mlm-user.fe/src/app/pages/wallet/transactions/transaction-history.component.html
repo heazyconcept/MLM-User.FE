@@ -2,142 +2,198 @@
   <div class="py-10">
     <div class="px-4 sm:px-6 lg:px-8 mx-auto">
       <!-- Header Area -->
-      <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-7">
+      <div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-7">
         <div class="space-y-2">
           <button (click)="goBack()" class="flex items-center gap-2 text-mlm-primary hover:text-mlm-blue-600 font-semibold transition-colors group mb-2">
             <i class="pi pi-arrow-left text-sm group-hover:-translate-x-1 transition-transform"></i>
             Back to Wallet
           </button>
-          <h1 class="text-2xl font-extrabold text-mlm-text tracking-tight">Transaction History</h1>
-          <p class="text-lg text-mlm-secondary">Track every movement in your <span class="text-mlm-text font-bold">{{ currency() }}</span> wallet.</p>
+          <h1 class="text-2xl font-extrabold text-mlm-text tracking-tight">Activity History</h1>
+          <p class="text-lg text-mlm-secondary">Track payments and system activity.</p>
         </div>
-
-        <div class="flex items-center gap-2.5 px-4 py-2 rounded-full bg-mlm-primary/5 border border-mlm-primary/10 h-fit">
-          <div [class]="'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ' + (currency() === 'NGN' ? 'bg-mlm-blue-100 text-mlm-blue-600' : 'bg-mlm-success/10 text-mlm-success')">
-             {{ currency() === 'NGN' ? '₦' : '$' }}
-          </div>
-          <span class="text-sm font-bold text-mlm-text tracking-tight">{{ currency() }} Wallet</span>
-        </div>
-
       </div>
 
-      <!-- Main Content: Centralized Table Card -->
+      <!-- Tab Navigation -->
+      <div class="flex gap-4 mb-6 border-b border-gray-200">
+        <button 
+          (click)="setTab('payments')"
+          [class.border-mlm-primary]="activeTab() === 'payments'"
+          [class.text-mlm-primary]="activeTab() === 'payments'"
+          [class.border-transparent]="activeTab() !== 'payments'"
+          [class.text-gray-500]="activeTab() !== 'payments'"
+          class="px-4 py-3 font-semibold text-sm border-b-2 transition-colors hover:text-mlm-primary">
+          <i class="pi pi-wallet mr-2"></i>Payments
+        </button>
+        <button 
+          (click)="setTab('audit')"
+          [class.border-mlm-primary]="activeTab() === 'audit'"
+          [class.text-mlm-primary]="activeTab() === 'audit'"
+          [class.border-transparent]="activeTab() !== 'audit'"
+          [class.text-gray-500]="activeTab() !== 'audit'"
+          class="px-4 py-3 font-semibold text-sm border-b-2 transition-colors hover:text-mlm-primary">
+          <i class="pi pi-history mr-2"></i>Audit Logs
+        </button>
+      </div>
+
+      <!-- Main Content -->
       <div class="bg-white rounded-xl border border-mlm-blue-100 overflow-hidden">
-        <p-table 
-          [value]="isLoading() ? skeletonRows : transactions()" 
-          [paginator]="true" 
-          [rows]="10"
-          [responsiveLayout]="'stack'"
-          [breakpoint]="'960px'"
-          styleClass="p-datatable-lg custom-table">
+        
+        <!-- PAYMENTS TABLE -->
+        @if (activeTab() === 'payments') {
+          <p-table 
+            [value]="isLoading() ? skeletonRows : payments()" 
+            [paginator]="true" 
+            [rows]="10"
+            [tableStyle]="{'min-width': '50rem'}"
+            styleClass="p-datatable-sm"
+            [rowHover]="true">
 
-          <ng-template #header>
-            <tr>
-              <th class="bg-gray-50/50 px-8 py-6 text-sm font-bold text-mlm-text border-b border-gray-100 uppercase tracking-wider">
-                <div class="flex items-center gap-3">
-                  <i class="pi pi-calendar text-mlm-primary"></i>
-                  <span>Date & Time</span>
-                </div>
-              </th>
-              <th class="bg-gray-50/50 px-8 py-6 text-sm font-bold text-mlm-text border-b border-gray-100 uppercase tracking-wider">
-                <div class="flex items-center gap-3">
-                  <i class="pi pi-tag text-mlm-primary"></i>
-                  <span>Activity Type</span>
-                </div>
-              </th>
-              <th class="bg-gray-50/50 px-8 py-6 text-sm font-bold text-mlm-text border-b border-gray-100 uppercase tracking-wider">
-                <div class="flex items-center gap-3">
-                  <i class="pi pi-align-left text-mlm-primary"></i>
-                  <span>Description</span>
-                </div>
-              </th>
-              <th class="bg-gray-50/50 px-8 py-6 text-sm font-bold text-mlm-text border-b border-gray-100 uppercase tracking-wider">
-                <div class="flex items-center gap-3">
-                  <i class="pi pi-wallet text-mlm-primary"></i>
-                  <span>Amount</span>
-                </div>
-              </th>
-              <th class="bg-gray-50/50 px-8 py-6 text-sm font-bold text-mlm-text border-b border-gray-100 uppercase tracking-wider">
-                <div class="flex items-center gap-3">
-                  <i class="pi pi-check-circle text-mlm-primary"></i>
-                  <span>Payment Status</span>
-                </div>
-              </th>
-            </tr>
-          </ng-template>
-          
-          <ng-template #body let-tx>
-            @if (isLoading()) {
-              <tr class="animate-pulse">
-                <td class="px-8 py-6 border-b border-gray-50"><p-skeleton width="80%" height="1.25rem"></p-skeleton></td>
-                <td class="px-8 py-6 border-b border-gray-50"><p-skeleton width="70%" height="2rem" borderRadius="10px"></p-skeleton></td>
-                <td class="px-8 py-6 border-b border-gray-50"><p-skeleton width="90%" height="1.25rem"></p-skeleton></td>
-                <td class="px-8 py-6 border-b border-gray-50"><p-skeleton width="60%" height="1.5rem"></p-skeleton></td>
-                <td class="px-8 py-6 border-b border-gray-50"><p-skeleton width="100px" height="1.5rem" borderRadius="20px"></p-skeleton></td>
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Date & Time</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Type</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Amount</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Provider</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700 text-right">Status</th>
               </tr>
-            } @else {
-              <tr class="hover:bg-mlm-blue-50/30 transition-all cursor-default">
-                <td class="px-8 py-6 border-b border-gray-50">
-                  <span class="p-column-title font-bold md:hidden text-mlm-secondary uppercase text-[10px] tracking-widest mb-1 block">Date & Time</span>
-                  <div class="flex flex-col">
-                      <span class="text-sm font-bold text-mlm-text">{{ tx.date | date:'mediumDate' }}</span>
-                      <span class="text-xs text-mlm-secondary font-medium">{{ tx.date | date:'shortTime' }}</span>
-                  </div>
-                </td>
-                <td class="px-8 py-6 border-b border-gray-50">
-                  <span class="p-column-title font-bold md:hidden text-mlm-secondary uppercase text-[10px] tracking-widest mb-1 block">Activity Type</span>
-                  <div class="flex items-center gap-3 bg-gray-50 w-fit px-3 py-1.5 rounded-xl border border-gray-100">
-                    <i [class]="getTypeIcon(tx.type) + ' text-sm'"></i>
-                    <span class="text-sm font-bold text-mlm-text tracking-tight">{{ tx.type }}</span>
-                  </div>
-                </td>
-                <td class="px-8 py-6 border-b border-gray-50">
-                  <span class="p-column-title font-bold md:hidden text-mlm-secondary uppercase text-[10px] tracking-widest mb-1 block">Description</span>
-                  <span class="text-sm font-medium text-mlm-secondary line-clamp-1">{{ tx.description || 'No description provided' }}</span>
-                </td>
-                <td class="px-8 py-6 border-b border-gray-50">
-                  <span class="p-column-title font-bold md:hidden text-mlm-secondary uppercase text-[10px] tracking-widest mb-1 block">Amount</span>
-                  <div class="flex items-center gap-1">
-                      <span [class]="'text-base font-black ' + (tx.type === 'Withdrawal' ? 'text-mlm-error' : 'text-mlm-success')">
-                        {{ tx.type === 'Withdrawal' ? '-' : '+' }}{{ currency() === 'NGN' ? '₦' : '$' }}{{ tx.amount | number:'1.2-2' }}
+            </ng-template>
+            
+            <ng-template pTemplate="body" let-tx>
+              @if (isLoading()) {
+                <tr>
+                  <td>
+                    <div class="flex flex-col gap-2">
+                       <p-skeleton width="80px" height="1rem"></p-skeleton>
+                       <p-skeleton width="100px" height="0.75rem"></p-skeleton>
+                    </div>
+                  </td>
+                  <td><p-skeleton width="60%" height="1.5rem" borderRadius="10px"></p-skeleton></td>
+                  <td><p-skeleton width="50%" height="1.5rem"></p-skeleton></td>
+                  <td><p-skeleton width="50%" height="1.25rem"></p-skeleton></td>
+                  <td class="text-right"><p-skeleton width="80px" height="1.5rem" borderRadius="20px" class="ml-auto"></p-skeleton></td>
+                </tr>
+              } @else {
+                <tr class="p-selectable-row">
+                  <td>
+                    <span class="p-column-title md:hidden text-gray-500 font-semibold mb-1 block text-xs">Date & Time</span>
+                    <div class="flex flex-col gap-1">
+                        <span class="text-sm font-semibold text-gray-900">{{ tx.createdAt | date:'mediumDate' }}</span>
+                        <span class="text-xs text-gray-500">{{ tx.createdAt | date:'shortTime' }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="p-column-title md:hidden text-gray-500 font-semibold mb-1 block text-xs">Type</span>
+                    <div class="flex items-center gap-2">
+                      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700">
+                        <i [class]="getPaymentIcon(tx.type) + ' text-sm'"></i>
                       </span>
+                      <span class="text-sm font-semibold text-gray-900 tracking-tight uppercase">{{ tx.type }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="p-column-title md:hidden text-gray-500 font-semibold mb-1 block text-xs">Amount</span>
+                    <div class="flex items-center gap-1">
+                        <span class="text-sm font-semibold text-gray-900">
+                          {{ tx.currency === 'USD' ? '$' : '₦' }}{{ tx.amount | number:'1.2-2' }}
+                        </span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="p-column-title md:hidden text-gray-500 font-semibold mb-1 block text-xs">Provider</span>
+                    <span class="text-sm text-gray-700">{{ tx.provider }}</span>
+                  </td>
+                  <td class="text-right">
+                    <span class="p-column-title md:hidden text-gray-500 font-semibold mb-1 block text-xs">Status</span>
+                    <app-status-badge [status]="tx.status" size="sm"></app-status-badge>
+                  </td>
+                </tr>
+              }
+            </ng-template>
+
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="5" class="py-24 text-center">
+                  <div class="flex flex-col items-center">
+                    <div class="relative w-48 h-48 mb-6">
+                      <img src="assets/images/empty state.png" alt="No records" class="w-full h-full object-contain">
+                    </div>
+                    <h3 class="text-xl font-bold text-mlm-text mb-2">No Payments Found</h3>
                   </div>
-                </td>
-                <td class="px-8 py-6 border-b border-gray-50">
-                  <span class="p-column-title font-bold md:hidden text-mlm-secondary uppercase text-[10px] tracking-widest mb-1 block">Payment Status</span>
-                  <app-status-badge [status]="tx.status"></app-status-badge>
                 </td>
               </tr>
-            }
-          </ng-template>
+            </ng-template>
+          </p-table>
+        }
 
-          <ng-template #emptymessage>
-            <tr>
-              <td colspan="5" class="py-24 text-center">
-                <div class="flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-                  <div class="relative w-64 h-64 mb-8">
-                    <img src="assets/images/empty state.png" alt="No transactions" class="w-full h-full object-contain">
+        <!-- AUDIT LOGS TABLE -->
+        @if (activeTab() === 'audit') {
+          <p-table 
+            [value]="isLoading() ? skeletonRows : auditLogs()" 
+            [paginator]="true" 
+            [rows]="15"
+            [tableStyle]="{'min-width': '50rem'}"
+            styleClass="p-datatable-sm"
+            [rowHover]="true">
+
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700 w-48">Date & Time</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Action</th>
+                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Entity</th>
+              </tr>
+            </ng-template>
+            
+            <ng-template pTemplate="body" let-log>
+              @if (isLoading()) {
+                <tr>
+                  <td><p-skeleton width="80%" height="1.25rem"></p-skeleton></td>
+                  <td><p-skeleton width="70%" height="1.5rem" borderRadius="10px"></p-skeleton></td>
+                  <td><p-skeleton width="60%" height="1.25rem"></p-skeleton></td>
+                </tr>
+              } @else {
+                <tr class="p-selectable-row">
+                  <td>
+                    <span class="p-column-title md:hidden text-gray-500 font-semibold mb-1 block text-xs">Date & Time</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-semibold text-gray-900">{{ log.createdAt | date:'short' }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="p-column-title md:hidden text-gray-500 font-semibold mb-1 block text-xs">Action</span>
+                    <div class="flex items-center gap-2">
+                      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700">
+                        <i [class]="getAuditIcon(log.action) + ' text-sm'"></i>
+                      </span>
+                      <span class="text-sm font-semibold text-gray-900 tracking-tight uppercase">{{ formatActionName(log.action) }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="p-column-title md:hidden text-gray-500 font-semibold mb-1 block text-xs">Entity</span>
+                    <span class="text-xs font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded">{{ log.entityType || 'SYSTEM' }}</span>
+                    @if (log.entityId) {
+                      <span class="text-xs text-gray-400 ml-2 font-mono">#{{ log.entityId | slice:0:8 }}</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </ng-template>
+
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="3" class="py-24 text-center">
+                  <div class="flex flex-col items-center">
+                    <div class="relative w-40 h-40 mb-6 opacity-50">
+                      <i class="pi pi-history text-6xl text-gray-300"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-mlm-secondary">No Activity Logs Found</h3>
                   </div>
-                  <h3 class="text-xl font-bold text-mlm-text mb-2">No Transactions Found</h3>
-                  <p class="text-mlm-secondary mx-auto leading-relaxed">
-                    It looks like you haven't made any transactions yet.
-                  </p>
-                </div>
-              </td>
-            </tr>
-          </ng-template>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        }
 
-        </p-table>
       </div>
-
-
-      <!-- Footer Help -->
-      <!-- <div class="mt-8 text-center">
-        <p class="text-sm text-mlm-secondary flex items-center justify-center gap-2">
-            <i class="pi pi-question-circle"></i>
-            Need help with a transaction? <a href="#" class="text-mlm-primary font-bold hover:underline">Contact Support</a>
-        </p>
-      </div> -->
     </div>
   </div>
 </div>

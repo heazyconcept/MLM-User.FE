@@ -65,7 +65,7 @@ export class SideMenuComponent {
           route: '/wallet',
           requiresPayment: true,
           children: [
-            { label: 'Transaction History', icon: 'pi pi-history', route: `/wallet/transactions/${currency}`, requiresPayment: true }
+            { label: 'Activity History', icon: 'pi pi-history', route: '/wallet/transactions', requiresPayment: true }
           ]
         },
         { 

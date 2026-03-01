@@ -92,7 +92,7 @@ export class ActivityService {
             date: t.date,
             status: this.mapTransactionStatus(t.status),
             icon: 'pi-arrow-down-left',
-            route: `/wallet/transactions/${t.currency}`
+            route: `/wallet/transactions`
           });
         });
 

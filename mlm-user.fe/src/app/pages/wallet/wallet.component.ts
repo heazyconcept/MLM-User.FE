@@ -119,12 +119,8 @@ export class WalletComponent implements OnInit {
     this.router.navigate(['/marketplace']);
   }
 
-  navigateToTransactions(walletType?: 'cash' | 'voucher' | 'autoship') {
-    if (walletType) {
-      this.router.navigate(['/transactions'], { queryParams: { wallet: walletType } });
-    } else {
-      this.router.navigate(['/transactions']);
-    }
+  navigateToTransactions() {
+    this.router.navigate(['/transactions']);
   }
 
   openWithdrawDialog(wallet: Wallet) {
