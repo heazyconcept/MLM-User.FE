@@ -1,5 +1,5 @@
-import { Component, ContentChild, Input, TemplateRef } from '@angular/core';
-import { TableModule } from 'primeng/table';
+import { Component, ContentChild, Input, TemplateRef, ViewChild } from '@angular/core';
+import { TableModule, Table } from 'primeng/table';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -16,4 +16,10 @@ export class UiTableComponent {
   @Input() rowsPerPageOptions = [10, 20, 50];
 
   @ContentChild('rowTemplate') rowTemplate!: TemplateRef<any>;
+  @ContentChild('emptyTemplate') emptyTemplate?: TemplateRef<any>;
+  @ViewChild(Table) private table!: Table;
+
+  exportCSV(): void {
+    this.table.exportCSV();
+  }
 }
