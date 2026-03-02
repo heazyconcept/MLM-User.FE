@@ -1,0 +1,224 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-10 mx-auto">
+      <div class="space-y-8 animate-fade-in">
+        <!-- Header & Filters Card -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+          <!-- Header Row -->
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900 mb-1">Activity Log</h1>
+              <p class="text-gray-500 text-sm">
+                View combined wallet entries and PV/CPV transactions.
+              </p>
+            </div>
+
+            <!-- Type Toggle -->
+            <div class="flex bg-gray-50 border border-gray-200 rounded-lg p-1">
+              <button
+                (click)="activeTab.set('ledger')"
+                [class]="
+                  activeTab() === 'ledger'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-500 hover:text-gray-700'
+                "
+                class="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-md transition-all"
+              >
+                <i class="pi pi-wallet text-xs"></i>Ledger
+                <span
+                  class="px-2 py-0.5 text-xs rounded-full"
+                  [class]="
+                    activeTab() === 'ledger'
+                      ? 'bg-mlm-primary/10 text-mlm-primary'
+                      : 'bg-gray-200 text-gray-500'
+                  "
+                >
+                  {{ activityService.totalLedger() }}
+                </span>
+              </button>
+              <button
+                (click)="activeTab.set('pv')"
+                [class]="
+                  activeTab() === 'pv'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-500 hover:text-gray-700'
+                "
+                class="flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-md transition-all"
+              >
+                <i class="pi pi-bolt text-xs"></i>PV / CPV
+                <span
+                  class="px-2 py-0.5 text-xs rounded-full"
+                  [class]="
+                    activeTab() === 'pv'
+                      ? 'bg-mlm-primary/10 text-mlm-primary'
+                      : 'bg-gray-200 text-gray-500'
+                  "
+                >
+                  {{ activityService.totalPv() }}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Dropdowns -->
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="relative">
+              <i
+                class="pi pi-calendar absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"
+              ></i>
+              <input
+                type="date"
+                [value]="fromDate()"
+                (input)="fromDate.set($any($event.target).value)"
+                class="bg-gray-50 border border-gray-200 rounded-lg py-2 pl-9 pr-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 cursor-pointer"
+              />
+            </div>
+            <span class="text-sm font-medium text-gray-400">to</span>
+            <div class="relative">
+              <i
+                class="pi pi-calendar absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"
+              ></i>
+              <input
+                type="date"
+                [value]="toDate()"
+                (input)="toDate.set($any($event.target).value)"
+                class="bg-gray-50 border border-gray-200 rounded-lg py-2 pl-9 pr-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 cursor-pointer"
+              />
+            </div>
+
+            <button
+              (click)="applyFilter()"
+              class="px-5 py-2 bg-mlm-primary text-white text-sm font-semibold rounded-lg hover:bg-mlm-primary/90 transition shadow-sm ml-1"
+            >
+              Apply Filter
+            </button>
+
+            @if (fromDate() || toDate()) {
+              <button
+                (click)="clearFilter()"
+                class="flex items-center gap-2 text-sm font-medium text-mlm-primary hover:text-mlm-primary/80 transition-colors ml-2"
+              >
+                <i class="pi pi-filter-slash text-xs"></i>
+                Clear Filters
+              </button>
+            }
+
+            <!-- Results Count -->
+            <span class="text-sm text-gray-500 ml-auto">
+              Page {{ currentPage() }} of {{ totalPages() }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Error State -->
+        @if (activityService.error(); as err) {
+          <div
+            class="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden py-16 text-center"
+          >
+            <div
+              class="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4"
+            >
+              <i class="pi pi-exclamation-triangle text-2xl text-red-500"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Error Loading Data</h3>
+            <p class="text-sm text-gray-500 mb-4">{{ err }}</p>
+            <button
+              (click)="applyFilter()"
+              class="px-4 py-2 bg-mlm-primary text-white text-sm font-semibold rounded-lg hover:bg-mlm-primary/90 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        }
+
+        <!-- Transactions Table -->
+        @if (activeTab() === 'ledger') {
+          <app-ui-table
+            [value]="activityService.ledgerItems()"
+            [headers]="['Date', 'Type', 'Description', 'Amount', 'Wallet']"
+            [loading]="activityService.loading()"
+            [rows]="10"
+          >
+            <ng-template #rowTemplate let-item>
+              <tr class="hover:bg-gray-50/50 transition-colors cursor-pointer">
+                <td class="px-5 py-4">
+                  <div class="flex flex-col">
+                    <span class="font-medium text-gray-900">
+                      {{ item.createdAt | date: 'mediumDate' }}
+                    </span>
+                    <span class="text-xs text-gray-500">
+                      {{ item.createdAt | date: 'shortTime' }}
+                    </span>
+                  </div>
+                </td>
+
+                <td class="px-5 py-4">
+                  <span
+                    class="px-3 py-1 rounded-full text-xs font-semibold"
+                    [class.bg-green-50]="item.direction === 'CREDIT'"
+                    [class.text-green-700]="item.direction === 'CREDIT'"
+                    [class.bg-red-50]="item.direction === 'DEBIT'"
+                    [class.text-red-700]="item.direction === 'DEBIT'"
+                  >
+                    {{ item.direction }}
+                  </span>
+                </td>
+
+                <td class="px-5 py-4 text-gray-700">
+                  {{ activityService.formatSource(item.source) }}
+                </td>
+
+                <td
+                  class="px-5 py-4 font-semibold"
+                  [class.text-green-600]="item.direction === 'CREDIT'"
+                  [class.text-red-600]="item.direction === 'DEBIT'"
+                >
+                  {{ item.direction === 'CREDIT' ? '+' : '-' }}
+                  {{ activityService.formatAmount(item) }}
+                </td>
+
+                <td class="px-5 py-4 uppercase text-xs font-semibold text-gray-500">
+                  {{ activityService.formatWalletType(item.walletType) }}
+                </td>
+              </tr>
+            </ng-template>
+          </app-ui-table>
+        }
+
+        @if (activeTab() === 'pv') {
+          <app-ui-table
+            [value]="activityService.pvItems()"
+            [headers]="['Date', 'Source', 'Points', 'Source ID']"
+            [loading]="activityService.loading()"
+            [rows]="10"
+          >
+            <ng-template #rowTemplate let-item>
+              <tr class="hover:bg-gray-50/50 transition-colors cursor-pointer">
+                <td class="px-5 py-4">
+                  <div class="flex flex-col">
+                    <span class="font-medium text-gray-900">
+                      {{ item.createdAt | date: 'mediumDate' }}
+                    </span>
+                    <span class="text-xs text-gray-500">
+                      {{ item.createdAt | date: 'shortTime' }}
+                    </span>
+                  </div>
+                </td>
+
+                <td class="px-5 py-4 text-gray-700">
+                  {{ activityService.formatSource(item.source) }}
+                </td>
+
+                <td class="px-5 py-4 font-semibold text-gray-900">{{ item.amount }} PV</td>
+
+                <td class="px-5 py-4 font-mono text-gray-500">
+                  {{ item.sourceId ?? '—' }}
+                </td>
+              </tr>
+            </ng-template>
+          </app-ui-table>
+        }
+      </div>
+    </div>
+  </main>
+</div>

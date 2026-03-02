@@ -204,6 +204,11 @@ export const routes: Routes = [
       {
         path: 'level-table',
         loadComponent: () => import('./pages/commissions/level-commission-table.component').then(m => m.LevelCommissionTableComponent)
+      },
+      {
+        path: 'activity',
+        loadComponent: () => import('./pages/commissions/earnings-activity/earnings-activity.component').then(m => m.EarningsActivityComponent),
+        data: { title: 'Activity Log' }
       }
     ]
   },
