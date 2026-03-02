@@ -92,7 +92,16 @@ export class SideMenuComponent {
     {
       title: 'FINANCE',
       items: [
-        { label: 'Commissions', icon: 'pi pi-dollar', route: '/commissions', requiresPayment: true },
+        {
+          label: 'Commissions',
+          icon: 'pi pi-dollar',
+          route: '/commissions',
+          requiresPayment: true,
+          children: [
+            { label: 'Overview', icon: 'pi pi-chart-bar', route: '/commissions', requiresPayment: true },
+            { label: 'Activity Log', icon: 'pi pi-list', route: '/commissions/activity', requiresPayment: true }
+          ]
+        },
         { label: 'Transactions', icon: 'pi pi-arrow-right-arrow-left', route: '/transactions', requiresPayment: true },
         { label: 'Withdrawals', icon: 'pi pi-money-bill', route: '/withdrawals', requiresPayment: true },
         { label: 'Orders', icon: 'pi pi-shopping-bag', route: '/orders', requiresPayment: true }
