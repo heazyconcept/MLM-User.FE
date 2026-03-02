@@ -4,16 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { NetworkService } from '../../../services/network.service';
-import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { Table } from 'primeng/table';
-import { SkeletonModule } from 'primeng/skeleton';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
+import { UiTableComponent } from '../../../components/table/table-component';
 
 @Component({
   selector: 'app-downline-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TableModule, ButtonModule, SkeletonModule, StatusBadgeComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ButtonModule, StatusBadgeComponent, UiTableComponent],
   templateUrl: './downline-list.component.html',
   styles: [`
     /* Table spacing and design */
@@ -39,7 +37,7 @@ import { StatusBadgeComponent } from '../../../components/status-badge/status-ba
   `]
 })
 export class DownlineListComponent implements OnInit {
-  @ViewChild('dt') table!: Table;
+  @ViewChild('dt') table!: UiTableComponent;
   
   private networkService = inject(NetworkService);
   private messageService = inject(MessageService);
@@ -51,7 +49,6 @@ export class DownlineListComponent implements OnInit {
   filterStatus = signal<string>('all');
   isLoading = computed(() => this.networkService.isLoading());
   error = computed(() => this.networkService.error() ?? null);
-  skeletonRows = Array(5).fill({});
 
   filteredMembers = computed(() => {
     const query = this.searchQuery().toLowerCase();

@@ -2,20 +2,19 @@ import { Component, inject, signal, computed, ViewChild, OnInit, ChangeDetection
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { TableModule, Table } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { SkeletonModule } from 'primeng/skeleton';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { 
-  TransactionService, 
-  Transaction, 
-  TransactionType, 
-  WalletType, 
+import {
+  TransactionService,
+  Transaction,
+  TransactionType,
+  WalletType,
   TransactionStatus,
   DateRangePreset,
 } from '../../services/transaction.service';
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
 import { TransactionDetailComponent } from './components/transaction-detail.component';
+import { UiTableComponent } from '../../components/table/table-component';
 
 @Component({
   selector: 'app-transactions',
@@ -23,55 +22,18 @@ import { TransactionDetailComponent } from './components/transaction-detail.comp
   imports: [
     CommonModule,
     FormsModule,
-    TableModule,
     ButtonModule,
-    SkeletonModule,
     DatePipe,
-    StatusBadgeComponent
+    StatusBadgeComponent,
+    UiTableComponent,
   ],
   providers: [DialogService],
   templateUrl: './transactions.component.html',
-  styles: [`
-    :host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
-      padding: 1rem 1.5rem;
-      background-color: #f9fafb;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    :host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
-      padding: 1rem 1.5rem;
-      border-bottom: 1px solid #f3f4f6;
-    }
-    
-    :host ::ng-deep .p-datatable .p-datatable-tbody > tr:hover {
-      background-color: #f9fafb;
-      transition: background-color 0.2s ease;
-      cursor: pointer;
-    }
-
-    :host ::ng-deep .transaction-detail-dialog {
-      .p-dialog {
-        border-radius: 1.5rem;
-        overflow: hidden;
-      }
-      .p-dialog-header {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid #f1f5f9;
-      }
-      .p-dialog-title {
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: #000;
-      }
-      .p-dialog-content {
-        padding: 0 !important;
-      }
-    }
-  `],
+  
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TransactionsComponent implements OnInit {
-  @ViewChild('dt') table!: Table;
+  @ViewChild('dt') table!: UiTableComponent;
 
   private transactionService = inject(TransactionService);
   private dialogService = inject(DialogService);
@@ -87,7 +49,6 @@ export class TransactionsComponent implements OnInit {
 
   // Local state
   searchInput = signal('');
-  skeletonRows = Array(8).fill({});
 
   // Filter options
   dateRangeOptions = [
@@ -192,15 +153,6 @@ export class TransactionsComponent implements OnInit {
 
   exportCSV(): void {
     this.table.exportCSV();
-  }
-
-  getTypeIcon(type: TransactionType): string {
-    switch (type) {
-      case 'Earnings': return 'pi pi-arrow-down-left text-mlm-success';
-      case 'Withdrawal': return 'pi pi-arrow-up-right text-mlm-error';
-      case 'Payment': return 'pi pi-shopping-cart text-mlm-warning';
-      default: return 'pi pi-circle';
-    }
   }
 
   getAmountClass(transaction: Transaction): string {

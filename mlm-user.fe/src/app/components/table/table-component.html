@@ -26,10 +26,14 @@
 
   <!-- EMPTY -->
   <ng-template pTemplate="emptymessage">
-    <tr>
-      <td [attr.colspan]="headers.length" class="py-16 text-center text-gray-500">
-        No records found.
-      </td>
-    </tr>
+    @if (emptyTemplate) {
+      <ng-container [ngTemplateOutlet]="emptyTemplate"></ng-container>
+    } @else {
+      <tr>
+        <td [attr.colspan]="headers.length" class="py-16 text-center text-gray-500">
+          No records found.
+        </td>
+      </tr>
+    }
   </ng-template>
 </p-table>
