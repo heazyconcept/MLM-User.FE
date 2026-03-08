@@ -10,7 +10,7 @@ type WalletType = 'cash' | 'voucher' | 'autoship';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './purchase-summary-modal.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PurchaseSummaryModalComponent {
   private dialogRef = inject(DynamicDialogRef);
@@ -33,20 +33,15 @@ export class PurchaseSummaryModalComponent {
   onConfirm(): void {
     this.isProcessing.set(true);
     setTimeout(() => {
-      const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
       this.dialogRef.close({
-        action: 'order-success',
+        action: 'choose-fulfilment',
         orderData: {
-          orderId,
-          productName: this.product.name,
-          productImage: this.product.images[0],
+          product: this.product,
           quantity: this.quantity,
           wallet: this.selectedWallet,
-          total: this.total,
-          totalPV: this.totalPV
-        }
+        },
       });
-    }, 1500);
+    }, 500);
   }
 
   formatCurrency(amount: number): string {

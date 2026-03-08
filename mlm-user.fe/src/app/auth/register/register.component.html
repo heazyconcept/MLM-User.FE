@@ -79,10 +79,10 @@
                             }
                         </div>
 
-                        <!-- Email (optional) -->
+                        <!-- Email -->
                         <div class="flex flex-col gap-1.5">
                             <label for="reg-email" class="text-[0.8rem] font-semibold text-slate-500 flex items-center gap-1">
-                                Email Address <span class="text-[11px] font-normal text-slate-400">(optional)</span>
+                                Email Address <span class="text-red-500 text-[0.9em]">*</span>
                             </label>
                             <input pInputText id="reg-email" formControlName="email"
                                 placeholder="name@example.com"
@@ -161,6 +161,47 @@
                             }
                         </div>
 
+                        @if (selectedPackageInfo(); as info) {
+                          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
+                            <div class="flex justify-between">
+                              <span class="text-slate-500">Registration Fee</span>
+                              <span class="font-semibold text-slate-900">{{ info.regFee }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                              <span class="text-slate-500">Admin Fee</span>
+                              <span class="font-semibold text-slate-900">{{ info.adminFee }}</span>
+                            </div>
+                            <div class="flex justify-between border-t border-slate-200 pt-2">
+                              <span class="text-slate-500 font-semibold">Total to Activate</span>
+                              <span class="font-bold text-mlm-primary">{{ info.total }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                              <span class="text-slate-500">Product Voucher (60%)</span>
+                              <span class="font-semibold text-green-700">{{ info.ipv }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                              <span class="text-slate-500">Registration PV</span>
+                              <span class="font-semibold text-slate-900">{{ info.regPv }} PV</span>
+                            </div>
+                            <div class="flex justify-between">
+                              <span class="text-slate-500">Community PV</span>
+                              <span class="font-semibold text-slate-900">{{ info.communityPv }} PV</span>
+                            </div>
+                            <div class="flex justify-between">
+                              <span class="text-slate-500">Direct Referral</span>
+                              <span class="font-semibold text-slate-900">{{ info.directRef }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                              <span class="text-slate-500">PDPA Rate</span>
+                              <span class="font-semibold text-slate-900">{{ info.pdpa }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                              <span class="text-slate-500">CDPA Rate</span>
+                              <span class="font-semibold text-slate-900">{{ info.cdpa }}</span>
+                            </div>
+                          </div>
+                        }
+
                         <div class="flex flex-col gap-1.5">
                             <label class="text-[0.8rem] font-semibold text-slate-500">Currency</label>
                             <p-select
@@ -201,7 +242,14 @@
                             @if (referralValidating()) {
                                 <small class="text-slate-500 text-xs mt-1">Checking code…</small>
                             }
-                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <label for="reg-placement" class="text-[0.8rem] font-semibold text-slate-500">Placement Parent ID</label>
+                            <input pInputText id="reg-placement" formControlName="placementParentUserId"
+                                placeholder="For spillover placement (optional)"
+                                class="reg-input" />
+                        </div>
 
                         <div class="flex items-start gap-3 pt-1">
                                 <p-checkbox formControlName="acceptTerms" [binary]="true" class="mt-0.5"></p-checkbox>

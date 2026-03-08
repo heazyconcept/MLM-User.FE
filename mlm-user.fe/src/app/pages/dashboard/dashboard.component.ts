@@ -1,4 +1,12 @@
-import { Component, computed, inject, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, effect } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  OnInit,
+  effect,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
@@ -34,10 +42,10 @@ import { signal } from '@angular/core';
     DialogModule,
     ReactiveFormsModule,
     SelectModule,
-    InputTextModule
+    InputTextModule,
   ],
   templateUrl: './dashboard.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent implements OnInit {
   private router = inject(Router);
@@ -77,10 +85,30 @@ export class DashboardComponent implements OnInit {
     const summary = this.activeSummary();
     const total = summary.totalEarnings || 1;
     return [
-      { label: 'Direct Referral', value: summary.directReferralBonus, color: '#49A321', pct: Math.round((summary.directReferralBonus / total) * 100) },
-      { label: 'Community Bonus', value: summary.communityBonus, color: '#64748b', pct: Math.round((summary.communityBonus / total) * 100) },
-      { label: 'Product Bonus', value: summary.productBonus, color: '#57534e', pct: Math.round((summary.productBonus / total) * 100) },
-      { label: 'Matching Bonus', value: summary.matchingBonus, color: '#49A321', pct: Math.round((summary.matchingBonus / total) * 100) },
+      {
+        label: 'Direct Referral',
+        value: summary.directReferralBonus,
+        color: '#49A321',
+        pct: Math.round((summary.directReferralBonus / total) * 100),
+      },
+      {
+        label: 'Community Bonus',
+        value: summary.communityBonus,
+        color: '#64748b',
+        pct: Math.round((summary.communityBonus / total) * 100),
+      },
+      {
+        label: 'Product Bonus',
+        value: summary.productBonus,
+        color: '#57534e',
+        pct: Math.round((summary.productBonus / total) * 100),
+      },
+      {
+        label: 'Matching Bonus',
+        value: summary.matchingBonus,
+        color: '#49A321',
+        pct: Math.round((summary.matchingBonus / total) * 100),
+      },
     ];
   });
 
@@ -121,13 +149,24 @@ export class DashboardComponent implements OnInit {
     const sym = this.displayCurrency() === 'NGN' ? '₦' : '$';
     const symNgn = '₦';
     const symUsd = '$';
-    const fmt = (n: number) => new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(n);
+    const fmt = (n: number) =>
+      new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(n);
     const bgPrimary = 'linear-gradient(180deg,#49A321 0%,#3d8a1c 100%)';
     const bgMuted = 'linear-gradient(180deg,#64748b 0%,#475569 100%)';
     return [
       { label: 'Wallet Balance', value: sym + fmt(cash), icon: 'pi-wallet', gradient: bgPrimary },
-      { label: 'Total Referrals', value: String(summary.directReferrals ?? 0), icon: 'pi-users', gradient: bgMuted },
-      { label: 'Total Commissions', value: symNgn + fmt(summary.totalEarnings ?? 0), icon: 'pi-money-bill', gradient: bgPrimary },
+      {
+        label: 'Total Referrals',
+        value: String(summary.directReferrals ?? 0),
+        icon: 'pi-users',
+        gradient: bgMuted,
+      },
+      {
+        label: 'Total Commissions',
+        value: symNgn + fmt(summary.totalEarnings ?? 0),
+        icon: 'pi-money-bill',
+        gradient: bgPrimary,
+      },
       { label: 'Orders', value: '0', icon: 'pi-shopping-bag', gradient: bgMuted },
     ];
   }
@@ -159,7 +198,10 @@ export class DashboardComponent implements OnInit {
     const W = 200;
     const H = 48;
     return vals
-      .map((v, i) => `${(i / (vals.length - 1)) * W},${H - ((v - min) / (max - min || 1)) * H * 0.8 - H * 0.1}`)
+      .map(
+        (v, i) =>
+          `${(i / (vals.length - 1)) * W},${H - ((v - min) / (max - min || 1)) * H * 0.8 - H * 0.1}`,
+      )
       .join(' ');
   }
 
@@ -171,7 +213,10 @@ export class DashboardComponent implements OnInit {
     const W = 200;
     const H = 48;
     const pts = vals
-      .map((v, i) => `${(i / (vals.length - 1)) * W},${H - ((v - min) / (max - min || 1)) * H * 0.8 - H * 0.1}`)
+      .map(
+        (v, i) =>
+          `${(i / (vals.length - 1)) * W},${H - ((v - min) / (max - min || 1)) * H * 0.8 - H * 0.1}`,
+      )
       .join(' ');
     return `0,${H} ${pts} ${W},${H}`;
   }
@@ -179,7 +224,9 @@ export class DashboardComponent implements OnInit {
   activityBadge(activity: { amount?: number; currency?: string; type: string }): string {
     if (activity.amount == null) return '';
     const sym = activity.currency === 'USD' ? '$' : '₦';
-    const n = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(Math.abs(activity.amount));
+    const n = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(
+      Math.abs(activity.amount),
+    );
     return activity.type === 'Withdrawal' ? `-${sym}${n}` : `+${sym}${n}`;
   }
 
@@ -188,17 +235,17 @@ export class DashboardComponent implements OnInit {
   }
 
   showPaymentModal = signal(false);
-  
+
   paymentMethods = [
     { label: 'Credit Card', value: 'credit_card' },
     { label: 'Debit Card', value: 'debit_card' },
     { label: 'Bank Transfer', value: 'bank_transfer' },
-    { label: 'Mobile Money', value: 'mobile_money' }
+    { label: 'Mobile Money', value: 'mobile_money' },
   ];
 
   paymentForm = this.fb.group({
     paymentMethod: ['', [Validators.required]],
-    amount: [{ value: 5000, disabled: true }]
+    amount: [{ value: 5000, disabled: true }],
   });
 
   /** Prevents payment select dropdown from closing when dialog/content scrolls */
@@ -206,7 +253,7 @@ export class DashboardComponent implements OnInit {
     listener: (_event: Event, options?: { type?: string; valid?: boolean }) => {
       if (options?.type === 'scroll') return false;
       return options?.valid;
-    }
+    },
   };
 
   constructor() {
@@ -221,9 +268,10 @@ export class DashboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Open payment modal when navigating to /dashboard/registration-payment
+    // Redirect to activation choice when navigating to /dashboard/registration-payment
     if (this.router.url.includes('registration-payment') && this.paymentStatus() === 'UNPAID') {
-      this.showPaymentModal.set(true);
+      this.router.navigate(['/auth/activation']);
+      return;
     }
 
     // Fetch wallets and earnings when user is paid (for balance/earnings display)
@@ -235,25 +283,31 @@ export class DashboardComponent implements OnInit {
           this.modalService.open(
             'error',
             'Wallet Fetch Failed',
-            'Could not load wallet balances. Please refresh the page or contact support if the problem persists.'
+            'Could not load wallet balances. Please refresh the page or contact support if the problem persists.',
           );
-        }
+        },
       });
       this.earningsService.fetchEarningsSectionData();
     }
 
     // Listen to navigation events to detect when returning to dashboard
     this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
+      .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((event: unknown) => {
         const navEvent = event as NavigationEnd;
         // Mark for check when navigating to dashboard to ensure signal updates are detected
-        if (navEvent.urlAfterRedirects === '/dashboard' || navEvent.urlAfterRedirects.startsWith('/dashboard')) {
+        if (
+          navEvent.urlAfterRedirects === '/dashboard' ||
+          navEvent.urlAfterRedirects.startsWith('/dashboard')
+        ) {
           this.cdr.markForCheck();
         }
-        // Open payment modal when navigating to /dashboard/registration-payment
-        if (navEvent.urlAfterRedirects.includes('registration-payment') && this.paymentStatus() === 'UNPAID') {
-          this.showPaymentModal.set(true);
+        // Redirect to activation choice when navigating to /dashboard/registration-payment
+        if (
+          navEvent.urlAfterRedirects.includes('registration-payment') &&
+          this.paymentStatus() === 'UNPAID'
+        ) {
+          this.router.navigate(['/auth/activation']);
         }
       });
 
@@ -263,9 +317,15 @@ export class DashboardComponent implements OnInit {
     this.initCharts();
 
     // Entrance animation for stat cards and bar chart
-    setTimeout(() => { this.barsAnimated = true; this.cdr.markForCheck(); }, 400);
+    setTimeout(() => {
+      this.barsAnimated = true;
+      this.cdr.markForCheck();
+    }, 400);
     [0, 80, 160, 240].forEach((delay, i) => {
-      setTimeout(() => { this.cardsVisible[i] = true; this.cdr.markForCheck(); }, delay + 100);
+      setTimeout(() => {
+        this.cardsVisible[i] = true;
+        this.cdr.markForCheck();
+      }, delay + 100);
     });
   }
 
@@ -281,20 +341,24 @@ export class DashboardComponent implements OnInit {
       datasets: [
         {
           label: 'Revenue',
-          data: [15000, 22000, 18000, 25000, 28000, 35000, 32000, 40000, 45000, 42000, 48000, 55000],
+          data: [
+            15000, 22000, 18000, 25000, 28000, 35000, 32000, 40000, 45000, 42000, 48000, 55000,
+          ],
           fill: true,
           borderColor: '#49A321',
           tension: 0.4,
-          backgroundColor: 'rgba(73, 163, 33, 0.1)'
+          backgroundColor: 'rgba(73, 163, 33, 0.1)',
         },
         {
           label: 'Sales',
-          data: [10000, 15000, 12000, 18000, 20000, 25000, 23000, 28000, 32000, 30000, 35000, 40000],
+          data: [
+            10000, 15000, 12000, 18000, 20000, 25000, 23000, 28000, 32000, 30000, 35000, 40000,
+          ],
           fill: false,
           borderColor: '#3b82f6',
-          tension: 0.4
-        }
-      ]
+          tension: 0.4,
+        },
+      ],
     };
 
     this.salesOptions = {
@@ -305,21 +369,21 @@ export class DashboardComponent implements OnInit {
           labels: {
             color: textColor,
             usePointStyle: true,
-            font: { weight: 'bold', size: 11 }
+            font: { weight: 'bold', size: 11 },
           },
-          position: 'bottom'
-        }
+          position: 'bottom',
+        },
       },
       scales: {
         x: {
           ticks: { color: textColorSecondary, font: { size: 10 } },
-          grid: { color: surfaceBorder, drawBorder: false }
+          grid: { color: surfaceBorder, drawBorder: false },
         },
         y: {
           ticks: { color: textColorSecondary, font: { size: 10 } },
-          grid: { color: surfaceBorder, drawBorder: false }
-        }
-      }
+          grid: { color: surfaceBorder, drawBorder: false },
+        },
+      },
     };
 
     // Traffic Sources (Doughnut)
@@ -330,9 +394,9 @@ export class DashboardComponent implements OnInit {
           data: [540, 325, 702],
           backgroundColor: ['#49A321', '#3b82f6', '#f59e0b'],
           hoverBackgroundColor: ['#3e8a1c', '#2563eb', '#d97706'],
-          borderWidth: 0
-        }
-      ]
+          borderWidth: 0,
+        },
+      ],
     };
 
     this.trafficOptions = {
@@ -342,11 +406,11 @@ export class DashboardComponent implements OnInit {
           labels: {
             color: textColor,
             usePointStyle: true,
-            font: { weight: 'bold', size: 11 }
+            font: { weight: 'bold', size: 11 },
           },
-          position: 'bottom'
-        }
-      }
+          position: 'bottom',
+        },
+      },
     };
   }
 
@@ -358,7 +422,7 @@ export class DashboardComponent implements OnInit {
   isLoading = this.loadingService.isLoading;
 
   navigateToPayment(): void {
-    this.showPaymentModal.set(true);
+    this.router.navigate(['/auth/activation']);
   }
 
   onPaymentSubmit(): void {
@@ -367,41 +431,44 @@ export class DashboardComponent implements OnInit {
       const user = this.currentUser();
       const packageName = user?.package ?? 'SILVER';
       const currency = user?.currency ?? 'NGN';
-      const callbackUrl = typeof window !== 'undefined'
-        ? `${window.location.origin}/auth/payment/callback`
-        : undefined;
+      const callbackUrl =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/payment/callback`
+          : undefined;
 
-      this.paymentService.initiateRegistrationPayment(packageName, currency, callbackUrl).subscribe({
-        next: (res) => {
-          this.loadingService.hide();
-          this.showPaymentModal.set(false);
-          this.cdr.markForCheck();
-          const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
-          if (gatewayUrl) {
-            window.location.href = gatewayUrl;
-          } else if (res.reference) {
-            this.router.navigate(['/auth/register/payment-pending'], {
-              queryParams: { reference: res.reference },
-              state: { reference: res.reference }
-            });
-          } else {
+      this.paymentService
+        .initiateRegistrationPayment(packageName, currency, callbackUrl)
+        .subscribe({
+          next: (res) => {
+            this.loadingService.hide();
+            this.showPaymentModal.set(false);
+            this.cdr.markForCheck();
+            const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
+            if (gatewayUrl) {
+              window.location.href = gatewayUrl;
+            } else if (res.reference) {
+              this.router.navigate(['/auth/register/payment-pending'], {
+                queryParams: { reference: res.reference },
+                state: { reference: res.reference },
+              });
+            } else {
+              this.modalService.open(
+                'error',
+                'Payment Initiation Failed',
+                'No payment link was returned. Please try again or contact support.',
+              );
+            }
+          },
+          error: () => {
+            this.loadingService.hide();
+            this.cdr.markForCheck();
             this.modalService.open(
               'error',
-              'Payment Initiation Failed',
-              'No payment link was returned. Please try again or contact support.'
+              'Payment Failed',
+              'Could not initiate payment. Please try again or contact support if the problem persists.',
             );
-          }
-        },
-        error: () => {
-          this.loadingService.hide();
-          this.cdr.markForCheck();
-          this.modalService.open(
-            'error',
-            'Payment Failed',
-            'Could not initiate payment. Please try again or contact support if the problem persists.'
-          );
-        }
-      });
+          },
+        });
     } else {
       this.paymentForm.markAllAsTouched();
     }
@@ -415,18 +482,27 @@ export class DashboardComponent implements OnInit {
     if (!rank) {
       return { bgClass: 'bg-mlm-secondary', icon: 'pi-star' };
     }
-    
+
     const rankLower = rank.toLowerCase();
-    
+
     switch (rankLower) {
       case 'silver':
-        return { bgClass: 'bg-gradient-to-r from-mlm-secondary to-mlm-secondary/80', icon: 'pi-star' };
+        return {
+          bgClass: 'bg-gradient-to-r from-mlm-secondary to-mlm-secondary/80',
+          icon: 'pi-star',
+        };
       case 'gold':
         return { bgClass: 'bg-gradient-to-r from-brand-gold to-mlm-warning', icon: 'pi-star-fill' };
       case 'platinum':
-        return { bgClass: 'bg-gradient-to-r from-mlm-secondary/60 to-mlm-secondary', icon: 'pi-star-fill' };
+        return {
+          bgClass: 'bg-gradient-to-r from-mlm-secondary/60 to-mlm-secondary',
+          icon: 'pi-star-fill',
+        };
       case 'ruby':
-        return { bgClass: 'bg-gradient-to-r from-mlm-red-500 to-mlm-red-400', icon: 'pi-star-fill' };
+        return {
+          bgClass: 'bg-gradient-to-r from-mlm-red-500 to-mlm-red-400',
+          icon: 'pi-star-fill',
+        };
       case 'diamond':
         return { bgClass: 'bg-gradient-to-r from-mlm-blue-400 to-mlm-blue-500', icon: 'pi-gem' };
       default:
@@ -482,7 +558,7 @@ export class DashboardComponent implements OnInit {
     const map: Record<string, string> = {
       'Earnings Posted': '#f0fdf4',
       'Wallet Funding': '#f0fdf4',
-      'Withdrawal': '#fef2f2',
+      Withdrawal: '#fef2f2',
       'Order Placed': '#f5f5f4',
     };
     return map[type] ?? '#f5f5f4';
@@ -492,7 +568,7 @@ export class DashboardComponent implements OnInit {
     const map: Record<string, string> = {
       'Earnings Posted': '#bbf7d0',
       'Wallet Funding': '#bbf7d0',
-      'Withdrawal': '#fecaca',
+      Withdrawal: '#fecaca',
       'Order Placed': '#e7e5e4',
     };
     return map[type] ?? '#e7e5e4';
@@ -512,4 +588,3 @@ export class DashboardComponent implements OnInit {
     }
   }
 }
-

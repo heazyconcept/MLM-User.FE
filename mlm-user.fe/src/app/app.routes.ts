@@ -5,326 +5,537 @@ export const routes: Routes = [
   { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
   {
     path: 'ref/:code',
-    loadComponent: () => import('./auth/referral-redirect/referral-redirect.component').then(m => m.ReferralRedirectComponent)
+    loadComponent: () =>
+      import('./auth/referral-redirect/referral-redirect.component').then(
+        (m) => m.ReferralRedirectComponent,
+      ),
   },
   {
     path: 'auth',
     children: [
-      { 
-        path: 'login', 
-        loadComponent: () => import('./auth/login-modern/login-modern.component').then(m => m.LoginModernComponent)
+      {
+        path: 'login',
+        loadComponent: () =>
+          import('./auth/login-modern/login-modern.component').then((m) => m.LoginModernComponent),
       },
-      { 
-        path: 'register', 
-        loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent) 
+      {
+        path: 'register',
+        loadComponent: () =>
+          import('./auth/register/register.component').then((m) => m.RegisterComponent),
+      },
+      {
+        path: 'activation',
+        loadComponent: () =>
+          import('./auth/activation/activation-choice.component').then(
+            (m) => m.ActivationChoiceComponent,
+          ),
+      },
+      {
+        path: 'activation/wallet',
+        redirectTo: 'activation',
+        pathMatch: 'full',
       },
       {
         path: 'forgot-password',
-        loadComponent: () => import('./auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent)
+        loadComponent: () =>
+          import('./auth/forgot-password/forgot-password.component').then(
+            (m) => m.ForgotPasswordComponent,
+          ),
       },
       {
         path: 'reset-password',
-        loadComponent: () => import('./auth/reset-password/reset-password.component').then(m => m.ResetPasswordComponent)
+        loadComponent: () =>
+          import('./auth/reset-password/reset-password.component').then(
+            (m) => m.ResetPasswordComponent,
+          ),
       },
       {
         path: 'payment/callback',
-        loadComponent: () => import('./auth/payment-callback/payment-callback.component').then(m => m.PaymentCallbackComponent)
+        loadComponent: () =>
+          import('./auth/payment-callback/payment-callback.component').then(
+            (m) => m.PaymentCallbackComponent,
+          ),
       },
       {
         path: 'register/payment-pending',
-        loadComponent: () => import('./auth/payment-pending/payment-pending.component').then(m => m.PaymentPendingComponent)
+        loadComponent: () =>
+          import('./auth/payment-pending/payment-pending.component').then(
+            (m) => m.PaymentPendingComponent,
+          ),
       },
       {
         path: 'logout',
-        redirectTo: 'login'
-      }
-    ]
+        redirectTo: 'login',
+      },
+    ],
   },
   {
     path: 'onboarding',
-    loadComponent: () => import('./onboarding/layouts/onboarding-layout/onboarding-layout.component').then(m => m.OnboardingLayoutComponent),
+    loadComponent: () =>
+      import('./onboarding/layouts/onboarding-layout/onboarding-layout.component').then(
+        (m) => m.OnboardingLayoutComponent,
+      ),
     children: [
       { path: '', redirectTo: 'profile', pathMatch: 'full' },
-      { 
-        path: 'profile', 
-        loadComponent: () => import('./onboarding/pages/profile/profile.component').then(m => m.ProfileInfoComponent) 
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./onboarding/pages/profile/profile.component').then(
+            (m) => m.ProfileInfoComponent,
+          ),
       },
-      { 
-        path: 'contact', 
-        loadComponent: () => import('./onboarding/pages/contact/contact-details.component').then(m => m.ContactDetailsComponent) 
+      {
+        path: 'contact',
+        loadComponent: () =>
+          import('./onboarding/pages/contact/contact-details.component').then(
+            (m) => m.ContactDetailsComponent,
+          ),
       },
-      { 
-        path: 'identity', 
-        loadComponent: () => import('./onboarding/pages/identity/identity-kyc.component').then(m => m.IdentityKycComponent) 
+      {
+        path: 'identity',
+        loadComponent: () =>
+          import('./onboarding/pages/identity/identity-kyc.component').then(
+            (m) => m.IdentityKycComponent,
+          ),
       },
-      { 
-        path: 'bank', 
-        loadComponent: () => import('./onboarding/pages/bank/bank-details.component').then(m => m.BankDetailsComponent) 
+      {
+        path: 'bank',
+        loadComponent: () =>
+          import('./onboarding/pages/bank/bank-details.component').then(
+            (m) => m.BankDetailsComponent,
+          ),
       },
-      { 
-        path: 'preferences', 
-        loadComponent: () => import('./onboarding/pages/preferences/preferences.component').then(m => m.PreferencesComponent) 
-      }
-    ]
+      {
+        path: 'preferences',
+        loadComponent: () =>
+          import('./onboarding/pages/preferences/preferences.component').then(
+            (m) => m.PreferencesComponent,
+          ),
+      },
+    ],
   },
   {
     path: 'dashboard',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent)
+        loadComponent: () =>
+          import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
         path: 'registration-payment',
-        loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent)
-      }
-    ]
+        loadComponent: () =>
+          import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
+      },
+    ],
   },
   {
     path: 'profile',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent)
-      }
-    ]
+        loadComponent: () =>
+          import('./pages/profile/profile.component').then((m) => m.ProfileComponent),
+      },
+    ],
   },
   { path: 'shop', redirectTo: 'marketplace', pathMatch: 'full' },
   {
     path: 'marketplace',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/shop/shop.component').then(m => m.ShopComponent),
-        data: { title: 'Marketplace' }
+        loadComponent: () => import('./pages/shop/shop.component').then((m) => m.ShopComponent),
+        data: { title: 'Marketplace' },
       },
       {
         path: 'product/:id',
-        loadComponent: () => import('./pages/shop/product-detail-page/product-detail-page.component').then(m => m.ProductDetailPageComponent),
-        data: { title: 'Product' }
-      }
-    ]
+        loadComponent: () =>
+          import('./pages/shop/product-detail-page/product-detail-page.component').then(
+            (m) => m.ProductDetailPageComponent,
+          ),
+        data: { title: 'Product' },
+      },
+    ],
   },
   {
     path: 'wallet',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/wallet/wallet.component').then(m => m.WalletComponent)
+        loadComponent: () =>
+          import('./pages/wallet/wallet.component').then((m) => m.WalletComponent),
       },
       {
-        path: 'transactions/:currency',
-        loadComponent: () => import('./pages/wallet/transactions/transaction-history.component').then(m => m.TransactionHistoryComponent)
-      }
-    ]
+        path: 'transactions',
+        loadComponent: () =>
+          import('./pages/wallet/transactions/transaction-history.component').then(
+            (m) => m.TransactionHistoryComponent,
+          ),
+        data: { title: 'Activity History' },
+      },
+    ],
   },
   {
     path: 'payments',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       {
         path: 'fund',
-        loadComponent: () => import('./pages/payments/fund-wallet/fund-wallet.component').then(m => m.FundWalletComponent),
-        data: { title: 'Fund Wallet' }
-      }
-    ]
+        loadComponent: () =>
+          import('./pages/payments/fund-wallet/fund-wallet.component').then(
+            (m) => m.FundWalletComponent,
+          ),
+        data: { title: 'Fund Wallet' },
+      },
+    ],
   },
-
 
   {
     path: 'network',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       { path: '', redirectTo: 'overview', pathMatch: 'full' },
       {
         path: 'overview',
-        loadComponent: () => import('./pages/network/overview/network-overview.component').then(m => m.NetworkOverviewComponent),
-        data: { title: 'Network Overview' }
+        loadComponent: () =>
+          import('./pages/network/overview/network-overview.component').then(
+            (m) => m.NetworkOverviewComponent,
+          ),
+        data: { title: 'Network Overview' },
       },
       {
         path: 'referrals',
-        loadComponent: () => import('./pages/network/referrals/referral-link.component').then(m => m.ReferralLinkComponent),
-        data: { title: 'Referral Link' }
+        loadComponent: () =>
+          import('./pages/network/referrals/referral-link.component').then(
+            (m) => m.ReferralLinkComponent,
+          ),
+        data: { title: 'Referral Link' },
       },
       {
         path: 'matrix',
-        loadComponent: () => import('./pages/network/matrix/matrix-tree.component').then(m => m.MatrixTreeComponent),
-        data: { title: 'Matrix Tree' }
+        loadComponent: () =>
+          import('./pages/network/matrix/matrix-tree.component').then((m) => m.MatrixTreeComponent),
+        data: { title: 'Matrix Tree' },
       },
       {
         path: 'downline',
-        loadComponent: () => import('./pages/network/downline/downline-list.component').then(m => m.DownlineListComponent),
-        data: { title: 'Downline List' }
+        loadComponent: () =>
+          import('./pages/network/downline/downline-list.component').then(
+            (m) => m.DownlineListComponent,
+          ),
+        data: { title: 'Downline List' },
       },
       {
         path: 'performance',
-        loadComponent: () => import('./pages/network/performance/performance-cpv.component').then(m => m.PerformanceCpvComponent),
-        data: { title: 'Performance Stats' }
-      }
-    ]
+        loadComponent: () =>
+          import('./pages/network/performance/performance-cpv.component').then(
+            (m) => m.PerformanceCpvComponent,
+          ),
+        data: { title: 'Performance Stats' },
+      },
+    ],
   },
   {
     path: 'commissions',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/commissions/earnings-overview.component').then(m => m.EarningsOverviewComponent)
+        loadComponent: () =>
+          import('./pages/commissions/earnings-overview.component').then(
+            (m) => m.EarningsOverviewComponent,
+          ),
       },
       {
         path: 'breakdown',
-        loadComponent: () => import('./pages/commissions/commission-breakdown.component').then(m => m.CommissionBreakdownComponent)
+        loadComponent: () =>
+          import('./pages/commissions/commission-breakdown.component').then(
+            (m) => m.CommissionBreakdownComponent,
+          ),
       },
       {
         path: 'bonuses',
-        loadComponent: () => import('./pages/commissions/bonuses.component').then(m => m.BonusesComponent)
+        loadComponent: () =>
+          import('./pages/commissions/bonuses.component').then((m) => m.BonusesComponent),
       },
       {
         path: 'ranking',
-        loadComponent: () => import('./pages/commissions/ranking.component').then(m => m.RankingComponent)
+        loadComponent: () =>
+          import('./pages/commissions/ranking.component').then((m) => m.RankingComponent),
       },
       {
         path: 'cpv',
-        loadComponent: () => import('./pages/commissions/cpv-milestones.component').then(m => m.CpvMilestonesComponent)
-      }
-    ]
+        loadComponent: () =>
+          import('./pages/commissions/cpv-milestones.component').then(
+            (m) => m.CpvMilestonesComponent,
+          ),
+      },
+      {
+        path: 'level-table',
+        loadComponent: () =>
+          import('./pages/commissions/level-commission-table.component').then(
+            (m) => m.LevelCommissionTableComponent,
+          ),
+      },
+      {
+        path: 'activity',
+        loadComponent: () =>
+          import('./pages/commissions/earnings-activity/earnings-activity.component').then(
+            (m) => m.EarningsActivityComponent,
+          ),
+        data: { title: 'Activity Log' },
+      },
+    ],
   },
   {
     path: 'transactions',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/transactions/transactions.component').then(m => m.TransactionsComponent),
-        data: { title: 'Transactions' }
-      }
-    ]
+        loadComponent: () =>
+          import('./pages/transactions/transactions.component').then(
+            (m) => m.TransactionsComponent,
+          ),
+        data: { title: 'Transactions' },
+      },
+    ],
   },
   {
     path: 'withdrawals',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/wallet/withdrawals/withdrawal-history.component').then(m => m.WithdrawalHistoryComponent),
-        data: { title: 'Withdrawals' }
-      }
-    ]
+        loadComponent: () =>
+          import('./pages/wallet/withdrawals/withdrawal-history.component').then(
+            (m) => m.WithdrawalHistoryComponent,
+          ),
+        data: { title: 'Withdrawals' },
+      },
+    ],
   },
   {
     path: 'orders',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/orders/orders-overview/orders-overview.component').then(m => m.OrdersOverviewComponent),
-        data: { title: 'Orders' }
+        loadComponent: () =>
+          import('./pages/orders/orders-overview/orders-overview.component').then(
+            (m) => m.OrdersOverviewComponent,
+          ),
+        data: { title: 'Orders' },
       },
       {
         path: 'preview',
-        loadComponent: () => import('./pages/orders/order-preview/order-preview.component').then(m => m.OrderPreviewComponent),
-        data: { title: 'Fulfilment options' }
+        loadComponent: () =>
+          import('./pages/orders/order-preview/order-preview.component').then(
+            (m) => m.OrderPreviewComponent,
+          ),
+        data: { title: 'Fulfilment options' },
       },
       {
         path: ':id',
-        loadComponent: () => import('./pages/orders/order-detail/order-detail.component').then(m => m.OrderDetailComponent),
-        data: { title: 'Order details' }
-      }
-    ]
+        loadComponent: () =>
+          import('./pages/orders/order-detail/order-detail.component').then(
+            (m) => m.OrderDetailComponent,
+          ),
+        data: { title: 'Order details' },
+      },
+    ],
   },
   {
     path: 'notifications',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/notifications/notifications-list/notifications-list.component').then(m => m.NotificationsListComponent),
-        data: { title: 'Notifications' }
+        loadComponent: () =>
+          import('./pages/notifications/notifications-list/notifications-list.component').then(
+            (m) => m.NotificationsListComponent,
+          ),
+        data: { title: 'Notifications' },
       },
       {
         path: 'preferences',
-        loadComponent: () => import('./pages/notifications/notification-preferences/notification-preferences.component').then(m => m.NotificationPreferencesComponent),
-        data: { title: 'Notification Preferences' }
-      }
-    ]
+        loadComponent: () =>
+          import('./pages/notifications/notification-preferences/notification-preferences.component').then(
+            (m) => m.NotificationPreferencesComponent,
+          ),
+        data: { title: 'Notification Preferences' },
+      },
+    ],
   },
   {
     path: 'settings',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       {
         path: '',
-        loadComponent: () => import('./pages/settings/settings-shell/settings-shell.component').then(m => m.SettingsShellComponent),
+        loadComponent: () =>
+          import('./pages/settings/settings-shell/settings-shell.component').then(
+            (m) => m.SettingsShellComponent,
+          ),
         children: [
           { path: '', redirectTo: 'account', pathMatch: 'full' },
           {
             path: 'account',
-            loadComponent: () => import('./pages/settings/settings-account/settings-account.component').then(m => m.SettingsAccountComponent),
-            data: { title: 'Account' }
+            loadComponent: () =>
+              import('./pages/settings/settings-account/settings-account.component').then(
+                (m) => m.SettingsAccountComponent,
+              ),
+            data: { title: 'Account' },
           },
           {
             path: 'security',
-            loadComponent: () => import('./pages/settings/settings-security/settings-security.component').then(m => m.SettingsSecurityComponent),
-            data: { title: 'Security' }
+            loadComponent: () =>
+              import('./pages/settings/settings-security/settings-security.component').then(
+                (m) => m.SettingsSecurityComponent,
+              ),
+            data: { title: 'Security' },
           },
           {
             path: 'preferences',
-            loadComponent: () => import('./pages/settings/settings-preferences/settings-preferences.component').then(m => m.SettingsPreferencesComponent),
-            data: { title: 'Preferences' }
+            loadComponent: () =>
+              import('./pages/settings/settings-preferences/settings-preferences.component').then(
+                (m) => m.SettingsPreferencesComponent,
+              ),
+            data: { title: 'Preferences' },
           },
           {
             path: 'sessions',
-            loadComponent: () => import('./pages/settings/settings-sessions/settings-sessions.component').then(m => m.SettingsSessionsComponent),
-            data: { title: 'Sessions' }
+            loadComponent: () =>
+              import('./pages/settings/settings-sessions/settings-sessions.component').then(
+                (m) => m.SettingsSessionsComponent,
+              ),
+            data: { title: 'Sessions' },
           },
           {
             path: 'upgrade',
-            loadComponent: () => import('./pages/settings/package-upgrade/package-upgrade.component').then(m => m.PackageUpgradeComponent),
-            data: { title: 'Upgrade Package' }
-          }
-        ]
-      }
-    ]
+            loadComponent: () =>
+              import('./pages/settings/package-upgrade/package-upgrade.component').then(
+                (m) => m.PackageUpgradeComponent,
+              ),
+            data: { title: 'Upgrade Package' },
+          },
+        ],
+      },
+    ],
   },
   {
     path: 'merchant',
-    loadComponent: () => import('./layouts/dashboard-layout/dashboard-layout.component').then(m => m.DashboardLayoutComponent),
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
+        path: 'apply',
+        loadComponent: () =>
+          import('./pages/merchant/merchant-apply/merchant-apply.component').then(
+            (m) => m.MerchantApplyComponent,
+          ),
+        data: { title: 'Become a Merchant' },
+      },
+      {
         path: 'dashboard',
-        loadComponent: () => import('./pages/merchant/merchant-dashboard/merchant-dashboard.component').then(m => m.MerchantDashboardComponent),
-        data: { title: 'Merchant Dashboard' }
+        loadComponent: () =>
+          import('./pages/merchant/merchant-dashboard/merchant-dashboard.component').then(
+            (m) => m.MerchantDashboardComponent,
+          ),
+        data: { title: 'Merchant Dashboard' },
       },
       {
         path: 'inventory',
-        loadComponent: () => import('./pages/merchant/merchant-inventory/merchant-inventory.component').then(m => m.MerchantInventoryComponent),
-        data: { title: 'Merchant Inventory' }
+        loadComponent: () =>
+          import('./pages/merchant/merchant-inventory/merchant-inventory.component').then(
+            (m) => m.MerchantInventoryComponent,
+          ),
+        data: { title: 'Merchant Inventory' },
       },
       {
         path: 'orders',
-        loadComponent: () => import('./pages/merchant/merchant-orders/merchant-orders.component').then(m => m.MerchantOrdersComponent),
-        data: { title: 'Merchant Orders' }
+        loadComponent: () =>
+          import('./pages/merchant/merchant-orders/merchant-orders.component').then(
+            (m) => m.MerchantOrdersComponent,
+          ),
+        data: { title: 'Merchant Orders' },
       },
       {
         path: 'orders/:id',
-        loadComponent: () => import('./pages/merchant/merchant-order-detail/merchant-order-detail.component').then(m => m.MerchantOrderDetailComponent),
-        data: { title: 'Order Fulfilment' }
+        loadComponent: () =>
+          import('./pages/merchant/merchant-order-detail/merchant-order-detail.component').then(
+            (m) => m.MerchantOrderDetailComponent,
+          ),
+        data: { title: 'Order Fulfilment' },
       },
       {
         path: 'deliveries',
-        loadComponent: () => import('./pages/merchant/merchant-deliveries/merchant-deliveries.component').then(m => m.MerchantDeliveriesComponent),
-        data: { title: 'Merchant Deliveries' }
+        loadComponent: () =>
+          import('./pages/merchant/merchant-deliveries/merchant-deliveries.component').then(
+            (m) => m.MerchantDeliveriesComponent,
+          ),
+        data: { title: 'Merchant Deliveries' },
       },
       {
         path: 'earnings',
-        loadComponent: () => import('./pages/merchant/merchant-earnings/merchant-earnings.component').then(m => m.MerchantEarningsComponent),
-        data: { title: 'Merchant Earnings' }
-      }
-    ]
-  }
+        loadComponent: () =>
+          import('./pages/merchant/merchant-earnings/merchant-earnings.component').then(
+            (m) => m.MerchantEarningsComponent,
+          ),
+        data: { title: 'Merchant Earnings' },
+      },
+      {
+        path: 'allocations',
+        loadComponent: () =>
+          import('./pages/merchant/merchant-allocations/merchant-allocations.component').then(
+            (m) => m.MerchantAllocationsComponent,
+          ),
+        data: { title: 'Merchant Allocations' },
+      },
+    ],
+  },
 ];

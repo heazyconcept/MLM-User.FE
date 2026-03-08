@@ -1,7 +1,18 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy, ChangeDetectionStrategy, effect } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  OnInit,
+  OnDestroy,
+  ChangeDetectionStrategy,
+  effect,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService, Product } from '../../../services/product.service';
+import { OrderService } from '../../../services/order.service';
+import { MessageService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
 import { ProductGalleryComponent } from '../../../components/product-gallery/product-gallery.component';
 import { QuantitySelectorComponent } from '../../../components/quantity-selector/quantity-selector.component';
@@ -23,21 +34,25 @@ type WalletType = 'cash' | 'voucher' | 'autoship';
     QuantitySelectorComponent,
     BadgeComponent,
     DrawerModule,
-    OrderPreviewComponent
+    OrderPreviewComponent,
   ],
   templateUrl: './product-detail-page.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductDetailPageComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private productService = inject(ProductService);
+  private orderService = inject(OrderService);
+  private messageService = inject(MessageService);
   private dialogService = inject(DialogService);
 
   product = signal<Product | null>(null);
   selectedWallet = signal<WalletType>('cash');
   quantity = signal(1);
   fulfilmentDrawerVisible = signal(false);
+  pendingOrderData = signal<any>(null);
+  orderSubmitting = signal(false);
 
   private bodyOverflowPrevious = '';
 
@@ -67,7 +82,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
   walletOptions = [
     { type: 'cash' as WalletType, label: 'Cash', icon: 'pi-wallet' },
     { type: 'voucher' as WalletType, label: 'Voucher', icon: 'pi-ticket' },
-    { type: 'autoship' as WalletType, label: 'Autoship', icon: 'pi-sync' }
+    { type: 'autoship' as WalletType, label: 'Autoship', icon: 'pi-sync' },
   ];
 
   ngOnInit(): void {
@@ -76,17 +91,18 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
       this.router.navigate(['/marketplace']);
       return;
     }
-    const p = this.productService.getProductById(id);
-    if (!p) {
-      this.router.navigate(['/marketplace']);
-      return;
-    }
-    this.product.set(p);
-    this.productService.selectProduct(p);
-    const eligible = p.eligibleWallets;
-    if (eligible.length && !eligible.includes(this.selectedWallet())) {
-      this.selectedWallet.set(eligible[0]);
-    }
+    this.productService.getProductById(id).subscribe((p) => {
+      if (!p) {
+        this.router.navigate(['/marketplace']);
+        return;
+      }
+      this.product.set(p);
+      this.productService.selectProduct(p);
+      const eligible = p.eligibleWallets;
+      if (eligible.length && !eligible.includes(this.selectedWallet())) {
+        this.selectedWallet.set(eligible[0]);
+      }
+    });
   }
 
   selectWallet(wallet: WalletType): void {
@@ -121,37 +137,102 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
       data: {
         product: p,
         selectedWallet: this.selectedWallet(),
-        quantity: this.quantity()
+        quantity: this.quantity(),
       },
       header: 'Purchase Summary',
       width: '90vw',
       style: { maxWidth: '420px' },
-      baseZIndex: 10000
+      baseZIndex: 10000,
     });
     if (ref) {
-      ref.onClose.subscribe((result: { action?: string; orderData?: unknown } | undefined) => {
-        if (result?.action === 'order-success' && result.orderData) {
-          const successRef = this.dialogService.open(OrderSuccessComponent, {
-            data: result.orderData,
-            header: '',
-            width: '90vw',
-            style: { maxWidth: '450px' },
-            baseZIndex: 10001,
-            closable: false,
-            closeOnEscape: false
-          });
-          if (successRef) {
-            successRef.onClose.subscribe((successResult: { action?: string } | undefined) => {
-              if (successResult?.action === 'choose-fulfilment') {
-                this.fulfilmentDrawerVisible.set(true);
-              } else if (successResult?.action === 'view-orders') {
-                this.router.navigate(['/orders']);
-              }
-            });
-          }
+      ref.onClose.subscribe((result: { action?: string; orderData?: any } | undefined) => {
+        if (result?.action === 'choose-fulfilment' && result.orderData) {
+          this.pendingOrderData.set(result.orderData);
+          this.fulfilmentDrawerVisible.set(true);
         }
       });
     }
+  }
+
+  submitOrder(fulfilmentDetails: any): void {
+    const orderData = this.pendingOrderData();
+    if (!orderData) return;
+
+    const isPickup = fulfilmentDetails.fulfilmentOption === 'pickup';
+    const selectedMerchantId = fulfilmentDetails.selectedPickupId;
+
+    if (isPickup && !selectedMerchantId) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Pickup location required',
+        detail: 'Please select a pickup location before confirming.',
+      });
+      return;
+    }
+
+    const payload = {
+      items: [{ productId: orderData.product.id, quantity: orderData.quantity }],
+      paymentMethod: 'WALLET',
+      fulfilmentMode: isPickup ? 'PICKUP' : 'OFFLINE_DELIVERY',
+      selectedMerchantId: isPickup ? selectedMerchantId : undefined,
+      deliveryAddress:
+        fulfilmentDetails.fulfilmentOption === 'delivery'
+          ? fulfilmentDetails.deliveryAddress
+          : undefined,
+      deliveryDisclaimerAccepted: true,
+    };
+
+    this.orderSubmitting.set(true);
+    this.orderService.createOrder(payload).subscribe({
+      next: (order) => {
+        this.orderService.payOrderWithWallet(order.id).subscribe({
+          next: () => {
+            this.orderSubmitting.set(false);
+            this.fulfilmentDrawerVisible.set(false);
+            const successRef = this.dialogService.open(OrderSuccessComponent, {
+              data: {
+                orderId: order.id,
+                productName: orderData.product.name,
+                productImage: orderData.product.images[0],
+                quantity: orderData.quantity,
+                wallet: orderData.wallet,
+                total: order.total,
+                totalPV: orderData.product.pv * orderData.quantity,
+              },
+              header: '',
+              width: '90vw',
+              style: { maxWidth: '450px' },
+              closable: false,
+              closeOnEscape: false,
+            });
+            if (successRef) {
+              successRef.onClose.subscribe((res) => {
+                if (res?.action === 'view-orders') this.router.navigate(['/orders']);
+                else if (res?.action === 'continue') this.router.navigate(['/marketplace']);
+              });
+            }
+          },
+          error: (err) => {
+            this.orderSubmitting.set(false);
+            console.error('Payment failed', err);
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Payment failed',
+              detail: err?.error?.message ?? 'Could not complete payment. Please try again.',
+            });
+          },
+        });
+      },
+      error: (err) => {
+        this.orderSubmitting.set(false);
+        console.error('Order creation failed', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Order failed',
+          detail: err?.error?.message ?? 'Could not create order. Please try again.',
+        });
+      },
+    });
   }
 
   formatCurrency(amount: number): string {

@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe, LowerCasePipe } from '@angular/common';
-import { RouterLink, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { TooltipModule } from 'primeng/tooltip';
@@ -11,7 +11,7 @@ import { StatusBadgeComponent } from '../../../components/status-badge/status-ba
 @Component({
   selector: 'app-withdrawal-history',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, DecimalPipe, DatePipe, LowerCasePipe, TableModule, TooltipModule, StatusBadgeComponent],
+  imports: [CommonModule, FormsModule, DecimalPipe, DatePipe, LowerCasePipe, TableModule, TooltipModule, StatusBadgeComponent],
   templateUrl: './withdrawal-history.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {

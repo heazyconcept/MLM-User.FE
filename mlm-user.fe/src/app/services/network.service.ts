@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { forkJoin, of } from 'rxjs';
 import { tap, catchError, finalize } from 'rxjs/operators';
-import { ReferralService, type DownlineItem } from './referral.service';
+import { ReferralService, type DownlineItem, type SponsorInfo, type PlacementInfo, type UplineNode } from './referral.service';
 import { UserService } from './user.service';
 import { EarningsService } from './earnings.service';
 
@@ -30,7 +30,7 @@ export interface ReferralLink {
 export interface MatrixNode {
   id: string;
   username: string;
-  package: 'basic' | 'premium' | 'vip' | null; // null for empty slot
+  package: string | null;
   level: number;
   status: 'active' | 'inactive' | 'empty';
   avatar?: string;
@@ -38,7 +38,11 @@ export interface MatrixNode {
   parentId?: string;
   leftId?: string;
   rightId?: string;
-  position?: 'left' | 'center' | 'right'; 
+  position?: 'left' | 'center' | 'right';
+  rank?: string;
+  stage?: string;
+  directReferrals?: number;
+  teamSize?: number;
 }
 
 export interface DownlineMember {
@@ -51,6 +55,8 @@ export interface DownlineMember {
   package: string;
   totalDirects: number;
   teamSize: number;
+  rank?: string;
+  stage?: string;
 }
 
 @Injectable({
@@ -98,6 +104,9 @@ export class NetworkService {
 
   readonly matrixTree = signal<MatrixNode>(this._emptyMatrix);
   readonly downlineList = signal<DownlineMember[]>([]);
+  readonly sponsorInfo = signal<SponsorInfo | null>(null);
+  readonly placementInfo = signal<PlacementInfo | null>(null);
+  readonly uplineChain = signal<UplineNode[]>([]);
 
   private _inFlight = false;
 
@@ -112,6 +121,8 @@ export class NetworkService {
     const refInfo$ = this.referralService.getReferralInfo();
     const sponsor$ = this.referralService.getSponsor();
     const downlines$ = this.referralService.getDownlines();
+    const placement$ = this.referralService.getPlacement();
+    const upline$ = this.referralService.getUpline();
     const cpv$ = this.earningsService.fetchCpvSummary();
     const earnings$ = this.earningsService.fetchEarningsSummary();
     const profile$ = this.userService.fetchProfile().pipe(catchError(() => of(null)));
@@ -120,19 +131,25 @@ export class NetworkService {
       refInfo: refInfo$,
       sponsor: sponsor$,
       downlines: downlines$,
+      placement: placement$,
+      upline: upline$,
       cpv: cpv$,
       earnings: earnings$,
       profile: profile$
     })
       .pipe(
-        tap(({ refInfo, sponsor, downlines, cpv, profile }) => {
+        tap(({ refInfo, sponsor, downlines, placement, upline, cpv, profile }) => {
           const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
           const url = refInfo.referralCode ? `${baseUrl}/ref/${refInfo.referralCode}` : '';
           this.referralLink.set({
             url,
             code: refInfo.referralCode,
-            sponsorName: sponsor?.name ?? refInfo.referrerName ?? ''
+            sponsorName: sponsor?.sponsorEmail ?? refInfo.referrerName ?? ''
           });
+
+          this.sponsorInfo.set(sponsor);
+          this.placementInfo.set(placement);
+          this.uplineChain.set(upline);
 
           this.downlineList.set(downlines as DownlineMember[]);
           this.cpvSummary.set({
@@ -159,7 +176,7 @@ export class NetworkService {
             rankProgress
           });
 
-          this.matrixTree.set(this.buildTreeFromDownlines(downlines));
+          this.matrixTree.set(this.buildTreeFromDownlines(downlines, profile as any));
         }),
         catchError((err) => {
           this.error.set('Failed to load network data. Please try again.');
@@ -176,24 +193,33 @@ export class NetworkService {
       .subscribe();
   }
 
-  private buildTreeFromDownlines(downlines: DownlineItem[]): MatrixNode {
+  private buildTreeFromDownlines(downlines: DownlineItem[], profile?: Record<string, unknown> | null): MatrixNode {
     const level1 = downlines.filter((d) => d.level === 1);
     const level2 = downlines.filter((d) => d.level === 2);
     const positions: ('left' | 'center' | 'right')[] = ['left', 'center', 'right'];
 
+    // Distribute L2 children using each L1 member's actual totalDirects count
+    let l2Offset = 0;
     const children: MatrixNode[] = level1.slice(0, 3).map((d, i) => {
       const pos = positions[i];
+      const childCount = Math.min(d.totalDirects, 3); // max 3 per slot in ternary tree
       const childNodes: MatrixNode[] = level2
-        .slice(i * 3, (i + 1) * 3)
+        .slice(l2Offset, l2Offset + childCount)
         .map((d2, j) => ({
           id: d2.id,
           username: d2.username,
-          package: this.normalizePackage(d2.package),
+          package: d2.package ?? null,
           level: 2,
           status: d2.status,
           position: positions[j],
+          rank: d2.rank,
+          stage: d2.stage,
+          directReferrals: d2.totalDirects,
+          teamSize: d2.teamSize,
           children: []
         }));
+      l2Offset += childCount;
+
       while (childNodes.length < 3) {
         childNodes.push({
           id: `empty-${d.id}-${childNodes.length}`,
@@ -208,10 +234,14 @@ export class NetworkService {
       return {
         id: d.id,
         username: d.username,
-        package: this.normalizePackage(d.package),
+        package: d.package ?? null,
         level: 1,
         status: d.status,
         position: pos,
+        rank: d.rank,
+        stage: d.stage,
+        directReferrals: d.totalDirects,
+        teamSize: d.teamSize,
         children: childNodes
       };
     });
@@ -232,23 +262,20 @@ export class NetworkService {
       });
     }
 
+    // Root node — pull rank/stage from profile if available
+    const rootRank = profile ? String((profile as any)['rank'] ?? '') : undefined;
+    const rootStage = profile ? String((profile as any)['stage'] ?? '') : undefined;
+
     return {
       id: 'root',
       username: 'You',
       package: null,
       level: 0,
       status: 'active',
+      rank: rootRank || undefined,
+      stage: rootStage || undefined,
       children
     };
-  }
-
-  private normalizePackage(pkg: string): 'basic' | 'premium' | 'vip' | null {
-    if (!pkg || pkg === '—') return null;
-    const lower = pkg.toLowerCase();
-    if (lower.includes('silver') || lower === 'basic') return 'basic';
-    if (lower.includes('gold') || lower === 'vip') return 'vip';
-    if (lower.includes('platinum') || lower === 'premium') return 'premium';
-    return 'basic';
   }
 
   getReferralLink() {

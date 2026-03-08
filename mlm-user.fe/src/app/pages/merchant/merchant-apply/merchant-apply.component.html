@@ -1,0 +1,137 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto">
+      <div class="mb-10">
+        <a
+          routerLink="/merchant/dashboard"
+          class="text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80 inline-flex items-center gap-1 mb-4"
+        >
+          <i class="pi pi-arrow-left" aria-hidden="true"></i> Back
+        </a>
+        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Become a Merchant</h1>
+        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
+        <p class="text-mlm-secondary text-sm">
+          Apply to start selling products and earning commissions
+        </p>
+      </div>
+
+      @if (loading()) {
+        <div class="flex items-center justify-center py-20">
+          <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
+        </div>
+      } @else if (isMerchant()) {
+        <!-- Already applied -->
+        <div class="bg-white rounded-lg border border-green-200 shadow-sm p-8 text-center">
+          <div
+            class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6"
+          >
+            <i class="pi pi-check-circle text-3xl text-green-500" aria-hidden="true"></i>
+          </div>
+          <h2 class="text-xl font-bold text-mlm-text mb-2">Application Submitted</h2>
+          <p class="text-mlm-secondary text-sm mb-2">
+            Status: <strong>{{ profile()?.status }}</strong>
+          </p>
+          <p class="text-mlm-secondary text-sm mb-6">
+            Your application is being reviewed. You'll be notified once it's approved.
+          </p>
+          <a
+            routerLink="/merchant/dashboard"
+            class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors"
+          >
+            Go to Dashboard
+          </a>
+        </div>
+      } @else {
+        <!-- Application form -->
+        @if (error(); as err) {
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p class="text-red-700 text-sm">{{ err }}</p>
+          </div>
+        }
+
+        <!-- Tier cards -->
+        @if (categoryConfig().length > 0) {
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            @for (cfg of categoryConfig(); track cfg.merchantType) {
+              <button
+                class="p-4 rounded-lg border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-mlm-primary/20"
+                [class]="
+                  selectedType() === cfg.merchantType
+                    ? 'border-mlm-primary bg-mlm-primary/5 shadow-md'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                "
+                (click)="selectedType.set(cfg.merchantType)"
+              >
+                <h3 class="font-bold text-mlm-text mb-2">{{ getTypeLabel(cfg.merchantType) }}</h3>
+                <dl class="space-y-1 text-sm">
+                  <div class="flex justify-between">
+                    <dt class="text-mlm-secondary">Registration fee</dt>
+                    <dd class="font-semibold text-mlm-text">${{ cfg.registrationFeeUsd }}</dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-mlm-secondary">Product commission</dt>
+                    <dd class="font-semibold text-mlm-text">{{ cfg.productCommissionPct }}%</dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-mlm-secondary">Delivery commission</dt>
+                    <dd class="font-semibold text-mlm-text">{{ cfg.deliveryCommissionPct }}%</dd>
+                  </div>
+                </dl>
+              </button>
+            }
+          </div>
+        }
+
+        <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+          <div class="space-y-6">
+            <div>
+              <label
+                for="merchant-type"
+                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
+                >Merchant Type</label
+              >
+              <select
+                id="merchant-type"
+                [ngModel]="selectedType()"
+                (ngModelChange)="selectedType.set($event)"
+                class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+              >
+                @for (t of merchantTypes; track t) {
+                  <option [value]="t">{{ getTypeLabel(t) }}</option>
+                }
+              </select>
+            </div>
+
+            <div>
+              <label
+                for="service-areas"
+                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
+                >Service Areas</label
+              >
+              <input
+                id="service-areas"
+                type="text"
+                placeholder="e.g. Lagos, Abuja, Port Harcourt"
+                [ngModel]="serviceAreasInput()"
+                (ngModelChange)="serviceAreasInput.set($event)"
+                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+              />
+              <p class="text-xs text-mlm-secondary mt-1">
+                Comma-separated list of cities or regions you'll serve
+              </p>
+            </div>
+
+            <p-button
+              label="Submit Application"
+              icon="pi pi-send"
+              [loading]="actionLoading()"
+              [disabled]="!serviceAreasInput().trim()"
+              (onClick)="onSubmit()"
+              styleClass="w-full !bg-mlm-primary !border-mlm-primary"
+            ></p-button>
+          </div>
+        </div>
+      }
+    </div>
+  </main>
+</div>

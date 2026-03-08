@@ -4,16 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { NetworkService } from '../../../services/network.service';
-import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { Table } from 'primeng/table';
-import { SkeletonModule } from 'primeng/skeleton';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
+import { UiTableComponent } from '../../../components/table/table-component';
 
 @Component({
   selector: 'app-downline-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TableModule, ButtonModule, SkeletonModule, StatusBadgeComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ButtonModule, StatusBadgeComponent, UiTableComponent],
   templateUrl: './downline-list.component.html',
   styles: [`
     /* Table spacing and design */
@@ -39,7 +37,7 @@ import { StatusBadgeComponent } from '../../../components/status-badge/status-ba
   `]
 })
 export class DownlineListComponent implements OnInit {
-  @ViewChild('dt') table!: Table;
+  @ViewChild('dt') table!: UiTableComponent;
   
   private networkService = inject(NetworkService);
   private messageService = inject(MessageService);
@@ -51,7 +49,6 @@ export class DownlineListComponent implements OnInit {
   filterStatus = signal<string>('all');
   isLoading = computed(() => this.networkService.isLoading());
   error = computed(() => this.networkService.error() ?? null);
-  skeletonRows = Array(5).fill({});
 
   filteredMembers = computed(() => {
     const query = this.searchQuery().toLowerCase();
@@ -78,9 +75,13 @@ export class DownlineListComponent implements OnInit {
   }
 
   getPackageClass(pkg: string): string {
-    switch (pkg.toLowerCase()) {
-      case 'vip': return 'bg-orange-50 text-orange-600';
-      case 'premium': return 'bg-blue-50 text-blue-600';
+    switch (pkg.toUpperCase()) {
+      case 'DIAMOND': return 'bg-sky-50 text-sky-600';
+      case 'RUBY': return 'bg-rose-50 text-rose-600';
+      case 'PLATINUM': return 'bg-violet-50 text-violet-600';
+      case 'GOLD': return 'bg-amber-50 text-amber-600';
+      case 'SILVER': return 'bg-slate-100 text-slate-600';
+      case 'NICKEL': return 'bg-stone-100 text-stone-500';
       default: return 'bg-gray-100 text-gray-600';
     }
   }

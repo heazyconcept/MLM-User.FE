@@ -4,7 +4,10 @@ import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 
 export interface InitiateRegistrationPaymentResponse {
+  paymentId?: string;
   reference: string;
+  amount?: number;
+  currency?: string;
   authorizationUrl?: string;
   gatewayUrl?: string;
 }
@@ -17,6 +20,20 @@ export interface UpgradeOption {
   benefits?: string[];
 }
 
+export interface PaymentRecord {
+  id: string;
+  userId: string;
+  amount: number;
+  currency: string;
+  type: string;
+  provider: string;
+  reference: string;
+  status: string;
+  verifiedAt: Date | null;
+  packageId?: string;
+  createdAt: Date;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -26,7 +43,8 @@ export class PaymentService {
   initiateRegistrationPayment(
     packageName: string,
     currency: string,
-    callbackUrl?: string
+    callbackUrl?: string,
+    provider?: 'PAYSTACK' | 'USDT'
   ): Observable<InitiateRegistrationPaymentResponse> {
     const body: Record<string, unknown> = { package: packageName, currency };
     // Only send callbackUrl when valid (backend @IsUrl rejects localhost)
@@ -34,11 +52,17 @@ export class PaymentService {
     if (isValidUrl) {
       body['callbackUrl'] = callbackUrl;
     }
+    if (provider) {
+      body['provider'] = provider;
+    }
     return this.api
       .post<Record<string, unknown>>('payments/registration/initiate', body)
       .pipe(
         map((res) => ({
+          paymentId: res['paymentId'] as string | undefined,
           reference: String(res['reference'] ?? res['ref'] ?? ''),
+          amount: res['amount'] as number | undefined,
+          currency: res['currency'] as string | undefined,
           authorizationUrl: res['authorizationUrl'] as string | undefined ?? res['authorization_url'] as string | undefined,
           gatewayUrl: res['gatewayUrl'] as string | undefined ?? res['gateway_url'] as string | undefined
         }))
@@ -57,6 +81,28 @@ export class PaymentService {
     }
     return this.api
       .post<Record<string, unknown>>('payments/wallet-funding/initiate', body)
+      .pipe(
+        map((res) => ({
+          reference: String(res['reference'] ?? res['ref'] ?? ''),
+          authorizationUrl: res['authorizationUrl'] as string | undefined ?? res['authorization_url'] as string | undefined,
+          gatewayUrl: res['gatewayUrl'] as string | undefined ?? res['gateway_url'] as string | undefined
+        }))
+      );
+  }
+
+  /** POST /payments/registration-wallet-funding/initiate */
+  initiateRegistrationWalletFunding(
+    amount: number,
+    provider: 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT',
+    callbackUrl?: string
+  ): Observable<InitiateRegistrationPaymentResponse> {
+    const body: Record<string, unknown> = { amount, provider };
+    const isValidUrl = callbackUrl && /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(callbackUrl);
+    if (isValidUrl) {
+      body['callbackUrl'] = callbackUrl;
+    }
+    return this.api
+      .post<Record<string, unknown>>('payments/registration-wallet-funding/initiate', body)
       .pipe(
         map((res) => ({
           reference: String(res['reference'] ?? res['ref'] ?? ''),
@@ -110,6 +156,33 @@ export class PaymentService {
           authorizationUrl: res['authorizationUrl'] as string | undefined ?? res['authorization_url'] as string | undefined,
           gatewayUrl: res['gatewayUrl'] as string | undefined ?? res['gateway_url'] as string | undefined
         }))
+      );
+  }
+
+  getPayments(limit = 20, offset = 0): Observable<{ items: PaymentRecord[]; total: number }> {
+    return this.api
+      .get<{ data?: any[]; items?: any[]; total?: number; meta?: any }>(`payments`, { limit: String(limit), offset: String(offset) })
+      .pipe(
+        map((res) => {
+          const rawItems = res.data ?? res.items ?? (Array.isArray(res) ? res : []);
+          const total = res.total ?? res.meta?.total ?? rawItems.length;
+          
+          const items: PaymentRecord[] = rawItems.map((item: any) => ({
+            id: item.id || '',
+            userId: item.userId || item.user_id || '',
+            amount: Number(item.amount || 0),
+            currency: item.currency || 'NGN',
+            type: item.type || item.payment_type || 'UNKNOWN',
+            provider: item.provider || item.payment_provider || 'UNKNOWN',
+            reference: item.reference || '',
+            status: item.status || 'PENDING',
+            verifiedAt: item.verifiedAt ? new Date(item.verifiedAt) : null,
+            packageId: item.packageId || item.package_id,
+            createdAt: new Date(item.createdAt || item.created_at || Date.now())
+          }));
+
+          return { items, total };
+        })
       );
   }
 }

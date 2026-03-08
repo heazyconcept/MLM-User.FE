@@ -92,18 +92,18 @@ export class PreferencesComponent implements OnInit {
     this.onboardingService.updatePreferences(payload).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.modalService.open(
-          'success',
-          'Setup Complete!',
-          'Your profile has been successfully set up. You are now ready to explore your dashboard.',
-          '/dashboard'
-        );
+        const isPaid = this.userService.isPaid();
+        const redirectPath = isPaid ? '/dashboard' : '/auth/activation';
+        const message = isPaid
+          ? 'Your profile has been successfully set up. You are now ready to explore your dashboard.'
+          : 'Your profile has been set up. Complete your activation to unlock all features.';
+        this.modalService.open('success', 'Setup Complete!', message, redirectPath);
         this.userService.fetchProfile().subscribe({
           next: () => {},
           error: () => {}
         });
         setTimeout(() => {
-          this.router.navigate(['/dashboard']);
+          this.router.navigate([redirectPath]);
         }, 2000);
       },
       error: () => {

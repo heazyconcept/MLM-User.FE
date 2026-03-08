@@ -36,7 +36,7 @@ const USER_DATA_KEY = 'mlm_user_data';
 const DISPLAY_CURRENCY_KEY = 'mlm_display_currency';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class UserService {
   private api = inject(ApiService);
@@ -69,26 +69,29 @@ export class UserService {
 
   fetchProfile(): Observable<User> {
     return this.api.get<Record<string, unknown>>('users/me').pipe(
-      map(response => this.mapApiUserToUser(response)),
-      tap(user => {
+      map((response) => this.mapApiUserToUser(response)),
+      tap((user) => {
         this.user.set(user);
         this.persistUserData(user);
       }),
-      switchMap(user => this.fetchPreferences().pipe(map(() => user))),
-      catchError(err => {
+      switchMap((user) => this.fetchPreferences().pipe(map(() => user))),
+      catchError((err) => {
         const persisted = this.getPersistedUserData();
         if (persisted) {
           this.user.set(persisted);
         }
         throw err;
-      })
+      }),
     );
   }
 
   fetchPreferences(): Observable<'NGN' | 'USD'> {
     return this.api.get<Record<string, unknown>>('users/me/preferences').pipe(
-      map(data => {
-        const curr = (data['displayCurrency'] ?? data['display_currency']) as 'NGN' | 'USD' | undefined;
+      map((data) => {
+        const curr = (data['displayCurrency'] ?? data['display_currency']) as
+          | 'NGN'
+          | 'USD'
+          | undefined;
         const fallback = this.user()?.currency ?? 'NGN';
         const value = (curr === 'NGN' || curr === 'USD' ? curr : fallback) as 'NGN' | 'USD';
         this.displayCurrencySignal.set(value);
@@ -99,7 +102,7 @@ export class UserService {
         const fallback = this.user()?.currency ?? 'NGN';
         this.displayCurrencySignal.set(fallback);
         return of(fallback);
-      })
+      }),
     );
   }
 
@@ -110,7 +113,12 @@ export class UserService {
 
   private mapApiUserToUser(apiUser: Record<string, unknown>): User {
     const reg = apiUser['registration'] as Record<string, unknown> | undefined;
-    const registrationPaid = apiUser['registrationPaid'] === true || reg?.['isPaid'] === true;
+    const registrationPaid =
+      apiUser['isRegistrationPaid'] === true ||
+      apiUser['registrationPaid'] === true ||
+      reg?.['isPaid'] === true;
+
+    const role = apiUser['role'] as string | undefined;
 
     return {
       id: String(apiUser['id'] ?? ''),
@@ -119,19 +127,35 @@ export class UserService {
       lastName: String(apiUser['lastName'] ?? apiUser['last_name'] ?? ''),
       paymentStatus: registrationPaid ? 'PAID' : 'UNPAID',
       profileCompletionPercentage: Number(apiUser['profileCompletionPercentage'] ?? 0),
-      phoneNumber: apiUser['phoneNumber'] as string | undefined ?? apiUser['phone'] as string | undefined,
+      phoneNumber:
+        (apiUser['phoneNumber'] as string | undefined) ?? (apiUser['phone'] as string | undefined),
       address: apiUser['address'] as string | undefined,
       bankName: apiUser['bankName'] as string | undefined,
       accountNumber: apiUser['accountNumber'] as string | undefined,
       accountName: apiUser['accountName'] as string | undefined,
       kycStatus: apiUser['kycStatus'] as KycStatus | undefined,
-      currency: (apiUser['currency'] ?? reg?.['currency']) as 'NGN' | 'USD' | undefined,
+      currency: (apiUser['currency'] ??
+        apiUser['registrationCurrency'] ??
+        apiUser['registration_currency'] ??
+        reg?.['currency']) as 'NGN' | 'USD' | undefined,
       rank: apiUser['rank'] as string | undefined,
-      stage: (apiUser['stage'] ?? (apiUser['matrix'] as Record<string, unknown>)?.['currentStage']) as number | undefined,
-      directReferrals: Number((apiUser['matrix'] as Record<string, unknown>)?.['directReferrals'] ?? (apiUser['matrix'] as Record<string, unknown>)?.['direct_referrals'] ?? 0),
-      activeLegs: Number((apiUser['matrix'] as Record<string, unknown>)?.['activeLegs'] ?? (apiUser['matrix'] as Record<string, unknown>)?.['active_legs'] ?? 0),
-      isMerchant: apiUser['isMerchant'] as boolean | undefined ?? false,
-      package: (apiUser['package'] ?? reg?.['package']) as string | undefined,
+      stage: (apiUser['stage'] ??
+        (apiUser['matrix'] as Record<string, unknown>)?.['currentStage']) as number | undefined,
+      directReferrals: Number(
+        (apiUser['matrix'] as Record<string, unknown>)?.['directReferrals'] ??
+          (apiUser['matrix'] as Record<string, unknown>)?.['direct_referrals'] ??
+          0,
+      ),
+      activeLegs: Number(
+        (apiUser['matrix'] as Record<string, unknown>)?.['activeLegs'] ??
+          (apiUser['matrix'] as Record<string, unknown>)?.['active_legs'] ??
+          0,
+      ),
+      isMerchant: role === 'MERCHANT' || apiUser['isMerchant'] === true,
+      package: (apiUser['package'] ??
+        apiUser['registrationPackage'] ??
+        apiUser['registration_package'] ??
+        reg?.['package']) as string | undefined,
       registrationPaid,
       onboardingComplete: apiUser['onboardingComplete'] === true,
     };
@@ -180,7 +204,22 @@ export class UserService {
     }
   }
 
-  updateProfile(profileData: Partial<Pick<User, 'firstName' | 'lastName' | 'phoneNumber' | 'address' | 'bankName' | 'accountNumber' | 'accountName' | 'currency' | 'kycStatus'>>): void {
+  updateProfile(
+    profileData: Partial<
+      Pick<
+        User,
+        | 'firstName'
+        | 'lastName'
+        | 'phoneNumber'
+        | 'address'
+        | 'bankName'
+        | 'accountNumber'
+        | 'accountName'
+        | 'currency'
+        | 'kycStatus'
+      >
+    >,
+  ): void {
     const currentUser = this.user();
     if (currentUser) {
       const updatedUser = { ...currentUser, ...profileData };

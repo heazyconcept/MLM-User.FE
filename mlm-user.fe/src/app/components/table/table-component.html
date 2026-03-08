@@ -1,0 +1,39 @@
+<p-table
+  [value]="value"
+  [paginator]="true"
+  [rows]="rows"
+  [rowsPerPageOptions]="rowsPerPageOptions"
+  [loading]="loading"
+  responsiveLayout="scroll"
+  styleClass="ui-clean-table"
+>
+  <!-- HEADER -->
+  <ng-template pTemplate="header">
+    <tr>
+      @for (h of headers; track $index) {
+        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+          {{ h }}
+        </th>
+      }
+    </tr>
+  </ng-template>
+
+  <!-- BODY -->
+  <ng-template pTemplate="body" let-row>
+    <ng-container [ngTemplateOutlet]="rowTemplate" [ngTemplateOutletContext]="{ $implicit: row }">
+    </ng-container>
+  </ng-template>
+
+  <!-- EMPTY -->
+  <ng-template pTemplate="emptymessage">
+    @if (emptyTemplate) {
+      <ng-container [ngTemplateOutlet]="emptyTemplate"></ng-container>
+    } @else {
+      <tr>
+        <td [attr.colspan]="headers.length" class="py-16 text-center text-gray-500">
+          No records found.
+        </td>
+      </tr>
+    }
+  </ng-template>
+</p-table>

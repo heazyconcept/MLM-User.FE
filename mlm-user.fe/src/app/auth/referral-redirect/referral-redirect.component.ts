@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 @Component({
   selector: 'app-referral-redirect',
   standalone: true,
-  template: `<div class="flex items-center justify-center min-h-screen"><p class="text-slate-500">Redirecting…</p></div>`
+  templateUrl: './referral-redirect.component.html'
 })
 export class ReferralRedirectComponent {
   private route = inject(ActivatedRoute);

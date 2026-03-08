@@ -1,0 +1,96 @@
+<div class="flex min-h-screen bg-white items-center justify-center px-6">
+  <div class="w-full max-w-md">
+    <div class="mb-8 text-center">
+      <i class="pi pi-wallet text-5xl text-mlm-primary mb-4"></i>
+      <h1 class="text-xl font-semibold text-slate-900 mb-2">Activate with wallet balance</h1>
+      <p class="text-slate-500 text-sm">
+        Transfer from your CASH wallet to your Registration wallet, then activate.
+      </p>
+    </div>
+
+    @if (errorMessage()) {
+      <p-message severity="error" [text]="errorMessage()!" class="w-full mb-4"></p-message>
+    }
+
+    @if (registrationWallet(); as wallet) {
+      <div class="bg-slate-50 rounded-xl p-4 mb-6">
+        <p class="text-xs font-medium text-slate-500 mb-1">Registration wallet balance</p>
+        <p class="text-xl font-semibold text-slate-900">
+          {{ formatAmount(wallet.balance, wallet.currency) }}
+        </p>
+      </div>
+
+      <div class="bg-amber-50 rounded-xl p-4 mb-6">
+        <p class="text-xs font-medium text-amber-800 mb-1">Required to activate</p>
+        <p class="text-lg font-semibold text-amber-900">
+          {{ formatAmount(requiredAmount(), userCurrency()) }}
+        </p>
+      </div>
+
+      @if (cashBalance() > 0) {
+        <form [formGroup]="transferForm" (ngSubmit)="onTransfer()" class="mb-6">
+          <p class="text-sm font-medium text-slate-700 mb-2">Transfer from CASH to Registration</p>
+          <div class="flex gap-2">
+            <p-inputNumber
+              formControlName="amount"
+              [min]="0.01"
+              [maxFractionDigits]="2"
+              [minFractionDigits]="0"
+              placeholder="Amount"
+              styleClass="flex-1">
+            </p-inputNumber>
+            <p-select
+              formControlName="currency"
+              [options]="currencyOptions"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-24">
+            </p-select>
+          </div>
+          @if (transferForm.get('amount')?.invalid && transferForm.get('amount')?.touched) {
+            <small class="text-red-500 text-xs">Enter a valid amount</small>
+          }
+          <p-button
+            type="submit"
+            label="Transfer"
+            icon="pi pi-arrow-right-arrow-left"
+            [loading]="transferring()"
+            [disabled]="!transferForm.valid"
+            class="mt-2">
+          </p-button>
+        </form>
+      } @else {
+        <p class="text-slate-500 text-sm mb-6">
+          You have no CASH balance to transfer.
+          <a routerLink="/payments/fund" class="text-mlm-primary font-semibold hover:underline">Add funds</a>
+          to your wallet first, or
+          <a routerLink="/auth/activation" class="text-mlm-primary font-semibold hover:underline">pay online</a>.
+        </p>
+      }
+
+      <p-button
+        label="Activate"
+        icon="pi pi-check"
+        [loading]="activating()"
+        [disabled]="!canActivate()"
+        (onClick)="onActivate()"
+        class="w-full">
+      </p-button>
+    } @else if (loading()) {
+      <div class="flex justify-center py-8">
+        <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary"></i>
+      </div>
+    } @else {
+      <p class="text-slate-500 text-sm mb-6">
+        Could not load registration wallet. Please try again or
+        <a routerLink="/auth/activation" class="text-mlm-primary font-semibold hover:underline">pay online</a>.
+      </p>
+    }
+
+    <p class="mt-6 text-center">
+      <a routerLink="/auth/activation" class="text-slate-500 text-sm hover:text-mlm-primary">
+        Back to activation options
+      </a>
+    </p>
+  </div>
+</div>

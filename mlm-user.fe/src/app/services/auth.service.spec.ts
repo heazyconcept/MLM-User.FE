@@ -75,6 +75,7 @@ describe('AuthService', () => {
       const mockAuth: AuthResponse = { accessToken: 'acc_new', refreshToken: 'ref_new' };
 
       service.register({
+        username: 'newuser',
         email: 'new@example.com',
         password: 'StrongP@ss1',
         package: 'GOLD',
@@ -85,6 +86,7 @@ describe('AuthService', () => {
 
       const req = httpMock.expectOne(r => r.url === `${baseUrl}/auth/register` && r.method === 'POST');
       expect(req.request.body).toEqual({
+        username: 'newuser',
         email: 'new@example.com',
         password: 'StrongP@ss1',
         package: 'GOLD',
@@ -100,6 +102,7 @@ describe('AuthService', () => {
       const mockAuth: AuthResponse = { accessToken: 'a', refreshToken: 'r' };
 
       service.register({
+        username: 'refuser',
         email: 'ref@example.com',
         password: 'StrongP@ss1',
         package: 'SILVER',

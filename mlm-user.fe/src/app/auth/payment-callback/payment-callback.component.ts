@@ -7,39 +7,13 @@ import { WalletService } from '../../services/wallet.service';
 
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const WALLET_FUNDING_FLOW = 'wallet_funding';
+const REGISTRATION_FUNDING_FLOW = 'registration_funding';
 
 @Component({
   selector: 'app-payment-callback',
   standalone: true,
   imports: [CommonModule, RouterModule],
-  template: `
-    <div class="flex min-h-screen bg-white items-center justify-center px-6">
-      <div class="w-full max-w-md text-center">
-        @if (status() === 'verifying') {
-          <div class="mb-6">
-            <i class="pi pi-spin pi-spinner text-5xl text-mlm-primary"></i>
-          </div>
-          <h1 class="text-xl font-semibold text-slate-900 mb-2">Verifying your payment</h1>
-          <p class="text-slate-500">Please wait while we confirm your registration payment.</p>
-        } @else if (status() === 'success') {
-          <div class="mb-6">
-            <i class="pi pi-check-circle text-5xl text-green-500"></i>
-          </div>
-          <h1 class="text-xl font-semibold text-slate-900 mb-2">Payment verified</h1>
-          <p class="text-slate-500 mb-6">{{ successMessage() }}</p>
-        } @else if (status() === 'error') {
-          <div class="mb-6">
-            <i class="pi pi-times-circle text-5xl text-red-500"></i>
-          </div>
-          <h1 class="text-xl font-semibold text-slate-900 mb-2">Verification failed</h1>
-          <p class="text-slate-500 mb-6">{{ errorMessage() }}</p>
-          <a routerLink="/onboarding/profile" class="text-mlm-primary font-semibold hover:underline">
-            Continue to complete your profile
-          </a>
-        }
-      </div>
-    </div>
-  `,
+  templateUrl: './payment-callback.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PaymentCallbackComponent implements OnInit {
@@ -53,16 +27,29 @@ export class PaymentCallbackComponent implements OnInit {
   status = signal<'verifying' | 'success' | 'error'>('verifying');
   errorMessage = signal<string>('');
   successMessage = signal<string>('Your registration is now complete. Redirecting you...');
+  isWalletFunding = signal(false);
+  isRegistrationFunding = signal(false);
 
   private cdr = inject(ChangeDetectorRef);
 
   ngOnInit(): void {
-    const reference = this.route.snapshot.queryParamMap.get('reference');
+    const queryParams = this.route.snapshot.queryParamMap;
+    const reference = queryParams.get('reference') ?? queryParams.get('trxref');
     if (!reference) {
       this.status.set('error');
       this.errorMessage.set('No payment reference found. Please try again from the registration flow.');
       this.cdr.markForCheck();
       return;
+    }
+
+    // Detect flow type before verification
+    if (typeof sessionStorage !== 'undefined') {
+      const paymentFlow = sessionStorage.getItem(PAYMENT_FLOW_KEY);
+      if (paymentFlow === WALLET_FUNDING_FLOW) {
+        this.isWalletFunding.set(true);
+      } else if (paymentFlow === REGISTRATION_FUNDING_FLOW) {
+        this.isRegistrationFunding.set(true);
+      }
     }
 
     this.paymentService.verifyPayment(reference).subscribe({
@@ -74,30 +61,26 @@ export class PaymentCallbackComponent implements OnInit {
           const paymentFlow = sessionStorage.getItem(PAYMENT_FLOW_KEY);
           sessionStorage.removeItem(PAYMENT_FLOW_KEY);
 
-          if (paymentFlow === WALLET_FUNDING_FLOW) {
-            this.successMessage.set('Your wallet has been credited. Redirecting you...');
+          if (paymentFlow === WALLET_FUNDING_FLOW || paymentFlow === REGISTRATION_FUNDING_FLOW) {
+            const msg = paymentFlow === WALLET_FUNDING_FLOW
+              ? 'Your wallet has been credited. Redirecting you...'
+              : 'Your registration wallet has been funded. Redirecting you...';
+            this.successMessage.set(msg);
             this.cdr.markForCheck();
             this.walletService.fetchWallets().subscribe();
-            setTimeout(() => this.router.navigate(['/wallet']), 1500);
+            setTimeout(() => this.router.navigate(['/wallet'], { queryParams: { funded: 'true' } }), 1500);
             return;
           }
         }
 
+        this.successMessage.set('Payment received. Click Activate to complete your registration.');
+        this.cdr.markForCheck();
         this.userService.fetchProfile().subscribe({
           next: () => {
-            const redirectPath = this.userService.onboardingComplete()
-              ? '/dashboard'
-              : '/onboarding/profile';
-            setTimeout(() => this.router.navigate([redirectPath]), 1500);
+            setTimeout(() => this.router.navigate(['/auth/activation']), 2500);
           },
-          error: (err) => {
-            if (typeof ngDevMode !== 'undefined' && ngDevMode) {
-              console.error('[PaymentCallback] fetchProfile after verify failed:', err);
-            }
-            const redirectPath = this.userService.onboardingComplete()
-              ? '/dashboard'
-              : '/onboarding/profile';
-            setTimeout(() => this.router.navigate([redirectPath]), 1500);
+          error: () => {
+            setTimeout(() => this.router.navigate(['/auth/activation']), 2500);
           }
         });
       },
