@@ -1,6 +1,27 @@
-# MLMUSERFE
+# MLM User Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.3.
+Angular 21 SPA for an MLM platform. Users register, activate (Paystack or wallet), complete onboarding, and access dashboard, wallet, network, earnings, marketplace, orders, and settings.
+
+**See [DEVELOPER_ONBOARDING.md](./DEVELOPER_ONBOARDING.md)** for project scope, implementation status, and developer onboarding.
+
+### Implementation Status (Summary)
+
+| Area | Status |
+|------|--------|
+| Auth, registration, activation (Paystack + wallet) | ✅ Integrated |
+| Onboarding, profile, dashboard | ✅ Integrated |
+| Wallet, network, earnings | ✅ Integrated |
+| Withdrawals, marketplace, orders, notifications | ⚠️ UI ready; API integration varies |
+
+---
+
+## Environment
+
+- **Local:** Edit `src/environments/environment.ts` and `environment.development.ts` and set `apiUrl` (and `defaultReferralCode` if needed). You can keep values in `.env` for reference; the app reads from the environment files.
+- **Render:** Set `API_URL` and optionally `DEFAULT_REFERRAL_CODE` in the Render dashboard (Environment). To inject them into the app at build time, set the build command to run a quick step before `ng build`, for example:
+  `node -e "const e=process.env; require('fs').writeFileSync('src/environments/environment.ts', 'export const environment = { production: true, apiUrl: \\'' + (e.API_URL||'').replace(/'/g, \"\\\\'\") + '\\', defaultReferralCode: \\'' + (e.DEFAULT_REFERRAL_CODE||'REF000000') + '\\' };');" && npm run build`
+
+Never commit real API URLs; use placeholders or empty strings in the committed env files.
 
 ## Development server
 

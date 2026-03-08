@@ -1,0 +1,86 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div class="mb-10">
+        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Allocations</h1>
+        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
+        <p class="text-mlm-secondary text-sm">Pending stock allocations assigned to you</p>
+      </div>
+
+      <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+        @if (loading()) {
+          <div class="flex items-center justify-center py-20">
+            <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
+          </div>
+        } @else if (error(); as err) {
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p class="text-red-700 text-sm">{{ err }}</p>
+          </div>
+        } @else if (allocations().length === 0) {
+          <div class="flex flex-col items-center justify-center py-20 text-center">
+            <div
+              class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6"
+            >
+              <i class="pi pi-inbox text-4xl text-mlm-warm-400" aria-hidden="true"></i>
+            </div>
+            <h2 class="text-xl font-bold text-mlm-text mb-2">No pending allocations</h2>
+            <p class="text-mlm-secondary text-sm mb-6 max-w-md">
+              When products are allocated to you, they'll appear here for you to accept.
+            </p>
+            <a
+              routerLink="/merchant/inventory"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2"
+            >
+              View Inventory
+            </a>
+          </div>
+        } @else {
+          <ul class="divide-y divide-gray-100" role="list">
+            @for (alloc of allocations(); track alloc.id) {
+              <li class="py-5">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                      <span class="font-bold text-mlm-text">{{ alloc.product.name }}</span>
+                      <span
+                        class="text-xs px-2 py-0.5 rounded-full"
+                        [class]="
+                          alloc.status === 'PENDING'
+                            ? 'bg-amber-50 text-amber-600'
+                            : 'bg-green-50 text-green-600'
+                        "
+                      >
+                        {{ alloc.status }}
+                      </span>
+                    </div>
+                    <p class="text-sm text-mlm-secondary">
+                      SKU: {{ alloc.product.sku }} · Qty: {{ alloc.quantity }} ·
+                      {{ formatDate(alloc.createdAt) }}
+                    </p>
+                  </div>
+                  <div class="shrink-0">
+                    @if (alloc.status === 'PENDING') {
+                      <p-button
+                        label="Accept"
+                        icon="pi pi-check"
+                        [loading]="actionLoading()"
+                        (onClick)="accept(alloc.id)"
+                        styleClass="!bg-mlm-primary !border-mlm-primary"
+                      ></p-button>
+                    } @else {
+                      <span
+                        class="inline-flex items-center gap-1 text-sm text-green-600 font-semibold"
+                      >
+                        <i class="pi pi-check-circle" aria-hidden="true"></i> Accepted
+                      </span>
+                    }
+                  </div>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+  </main>
+</div>

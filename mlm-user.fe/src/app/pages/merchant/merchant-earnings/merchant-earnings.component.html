@@ -4,42 +4,159 @@
       <div class="mb-10">
         <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Merchant Earnings</h1>
         <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
-        <p class="text-mlm-secondary text-sm">Earnings breakdown, sales commissions, and delivery bonuses</p>
+        <p class="text-mlm-secondary text-sm">
+          Earnings breakdown: merchant sales and network commissions
+        </p>
       </div>
 
-      <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
-        @if (earnings().totalEarnings === 0 && earnings().salesCommissions === 0 && earnings().deliveryBonuses === 0) {
-          <div class="flex flex-col items-center justify-center py-20 text-center border-t border-gray-200 pt-12">
-            <div class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6">
+      @if (loading()) {
+        <div class="flex items-center justify-center py-20">
+          <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
+        </div>
+      } @else if (error(); as err) {
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p class="text-red-700 text-sm">{{ err }}</p>
+        </div>
+      } @else if (!earnings()) {
+        <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+          <div class="flex flex-col items-center justify-center py-20 text-center">
+            <div
+              class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6"
+            >
               <i class="pi pi-chart-line text-4xl text-mlm-warm-400" aria-hidden="true"></i>
             </div>
-            <h2 class="text-xl font-bold text-mlm-text mb-2">No merchant earnings yet</h2>
+            <h2 class="text-xl font-bold text-mlm-text mb-2">No earnings data yet</h2>
             <p class="text-mlm-secondary text-sm mb-6 max-w-md">
               Your earnings from sales and deliveries will appear here.
             </p>
-            <a
-              routerLink="/marketplace"
-              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2">
-              Explore Marketplace
-            </a>
           </div>
-        } @else {
-          <div class="space-y-6">
-            <div class="flex items-center justify-between border-b border-gray-200 pb-4">
-              <span class="text-mlm-secondary font-medium">Total earnings</span>
-              <span class="text-2xl font-bold text-mlm-primary">{{ formatCurrency(earnings().totalEarnings) }}</span>
+        </div>
+      } @else {
+        @if (earnings(); as e) {  
+          <div class="bg-white rounded-2xl border border-transparent overflow-hidden mb-6">
+            <!-- Top: Total figures side by side -->
+            <div
+              class="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100"
+            >
+              <!-- Merchant total -->
+              <div class="p-7">
+                <p class="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">
+                  Merchant Earnings
+                </p>
+                <p
+                  class="text-4xl font-extrabold tracking-tight text-mlm-primary leading-none mb-4"
+                >
+                  {{ formatCurrency(e.merchantEarnings.totalEarnings) }}
+                </p>
+                <div class="flex gap-5">
+                  <div>
+                    <p
+                      class="text-[10px] font-semibold uppercase tracking-wider text-gray-300 mb-0.5"
+                    >
+                      Available
+                    </p>
+                    <p class="text-sm font-bold text-green-600">
+                      {{ formatCurrency(e.merchantEarnings.availableEarnings) }}
+                    </p>
+                  </div>
+                  <div>
+                    <p
+                      class="text-[10px] font-semibold uppercase tracking-wider text-gray-300 mb-0.5"
+                    >
+                      Pending
+                    </p>
+                    <p class="text-sm font-bold text-amber-500">
+                      {{ formatCurrency(e.merchantEarnings.pendingEarnings) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Network total -->
+              <div class="p-7">
+                <p class="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-2">
+                  Network Earnings
+                </p>
+                <p
+                  class="text-4xl font-extrabold tracking-tight text-mlm-blue-500 leading-none mb-4"
+                >
+                  {{ formatCurrency(e.networkEarnings.totalEarnings) }}
+                </p>
+                <div class="flex gap-5">
+                  <div>
+                    <p
+                      class="text-[10px] font-semibold uppercase tracking-wider text-gray-300 mb-0.5"
+                    >
+                      Available
+                    </p>
+                    <p class="text-sm font-bold text-green-600">
+                      {{ formatCurrency(e.networkEarnings.availableEarnings) }}
+                    </p>
+                  </div>
+                  <div>
+                    <p
+                      class="text-[10px] font-semibold uppercase tracking-wider text-gray-300 mb-0.5"
+                    >
+                      Pending
+                    </p>
+                    <p class="text-sm font-bold text-amber-500">
+                      {{ formatCurrency(e.networkEarnings.pendingEarnings) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="flex items-center justify-between border-b border-gray-200 pb-4">
-              <span class="text-mlm-secondary font-medium">Sales commissions</span>
-              <span class="text-lg font-semibold text-mlm-text">{{ formatCurrency(earnings().salesCommissions) }}</span>
-            </div>
-            <div class="flex items-center justify-between pb-4">
-              <span class="text-mlm-secondary font-medium">Delivery bonuses</span>
-              <span class="text-lg font-semibold text-mlm-text">{{ formatCurrency(earnings().deliveryBonuses) }}</span>
+
+            <!-- Divider -->
+            <div class="border-t border-gray-100"></div>
+
+            <!-- Bottom: Breakdowns side by side -->
+            <div
+              class="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100"
+            >
+              <!-- Merchant breakdown -->
+              <div class="p-7">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-gray-300 mb-4">
+                  Breakdown
+                </p>
+                <div class="space-y-3">
+                  @for (entry of e.merchantEarnings.byType | keyvalue; track entry.key) {
+                    <div class="flex items-center justify-between">
+                      <span class="flex items-center gap-2 text-sm text-mlm-secondary font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full bg-mlm-primary flex-shrink-0"></span>
+                        {{ formatTypeLabel(entry.key) }}
+                      </span>
+                      <span class="text-sm font-bold text-mlm-text font-mono">
+                        {{ formatCurrency(entry.value) }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Network breakdown -->
+              <div class="p-7">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-gray-300 mb-4">
+                  Breakdown
+                </p>
+                <div class="space-y-3">
+                  @for (entry of e.networkEarnings.byType | keyvalue; track entry.key) {
+                    <div class="flex items-center justify-between">
+                      <span class="flex items-center gap-2 text-sm text-mlm-secondary font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full bg-mlm-blue-500 flex-shrink-0"></span>
+                        {{ formatTypeLabel(entry.key) }}
+                      </span>
+                      <span class="text-sm font-bold text-mlm-text font-mono">
+                        {{ formatCurrency(entry.value) }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
             </div>
           </div>
         }
-      </div>
+      }
     </div>
   </main>
 </div>

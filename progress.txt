@@ -1,0 +1,95 @@
+================================================================================
+MLM USER FRONTEND - BUILD PROGRESS
+================================================================================
+Last updated: 2026-02-18 (auth API integration completed)
+================================================================================
+
+OVERALL STATE
+-------------
+- Angular 21 SPA with PrimeNG + Tailwind. Standalone components, signals, lazy-loaded routes.
+- UI-first: auth, dashboard, wallet, network, commissions, orders, notifications, settings, merchant flows are implemented with mock data and localStorage where needed.
+- Backend: not integrated; all APIs are simulated. Ready for backend swap when endpoints exist.
+
+ROUTES IMPLEMENTED
+------------------
+[OK] / -> redirect auth/login
+[OK] auth/login, register, forgot-password, reset-password, verify, logout redirect
+[OK] onboarding (profile, contact, identity, bank, preferences)
+[OK] dashboard
+[OK] profile
+[OK] marketplace, marketplace/product/:id
+[OK] wallet, wallet/transactions/:currency
+[OK] network (overview, referrals, matrix, downline, performance)
+[OK] commissions (overview, breakdown, bonuses, ranking, cpv)
+[OK] transactions
+[OK] withdrawals
+[OK] orders, orders/preview, orders/:id
+[OK] notifications, notifications/preferences
+[OK] settings (account, security, preferences, sessions)
+[OK] merchant (dashboard, inventory, orders, orders/:id, deliveries, earnings)
+
+LAYOUTS
+-------
+[OK] DashboardLayoutComponent (sidebar + header + outlet)
+[OK] OnboardingLayoutComponent (onboarding steps)
+[OK] SettingsShellComponent (settings sub-nav)
+
+AUTH & STATE
+------------
+[OK] AuthService: login, register, logout, refreshToken, forgotPassword, resetPassword — INTEGRATED with real API (https://segulah-api.onrender.com)
+[OK] UserService: user profile fetched from GET /users/me after login, localStorage persistence
+[OK] auth.interceptor (Bearer token + 401 refresh retry), loading.interceptor, error.interceptor — all registered
+[OK] Token management: accessToken + refreshToken stored in localStorage
+[ ] Route guards: auth guard for protected routes (partially or fully in place; verify)
+[ ] Onboarding guard / redirect when onboarding incomplete (product-specific)
+
+FEATURES (high level)
+---------------------
+[OK] Login/register/forgot/reset UI — INTEGRATED with real API (email verification removed)
+[OK] Dashboard: summary cards, earnings snapshot, wallet snapshot, network snapshot, activity, notifications preview
+[OK] Wallet: balances (Cash/Voucher/Autoship), transactions list, withdrawal request and history
+[OK] Network: overview, referral link, matrix tree, downline list, performance/CPV
+[OK] Commissions: overview, breakdown, bonuses, ranking, CPV milestones
+[OK] Marketplace: product list, filters, product detail, purchase flow (mock)
+[OK] Orders: list, preview (fulfilment options), order detail with timeline
+[OK] Notifications: list, read/unread, preferences
+[OK] Settings: account, security, preferences, sessions
+[OK] Merchant: dashboard, inventory, orders, order detail, deliveries, earnings
+[OK] Profile (top-level) and onboarding steps
+
+SERVICES
+--------
+[OK] auth.service, user.service, wallet.service, order.service, product.service
+[OK] commission.service, notification.service, transaction.service
+[OK] merchant.service, layout.service, modal.service
+
+SHARED COMPONENTS
+-----------------
+[OK] badge, copy-button, filter-bar, loading, modal, order-card, side-menu, stat-card, status-badge
+[OK] dashboard-header, inventory-row, location-selector, order-timeline, product-gallery, quantity-selector, product-card, etc.
+
+DESIGN & THEMING
+----------------
+[OK] Tailwind theme: mlm-primary, brand greens, mlm-warm, mlm-teal, mlm-blue, mlm-red, semantic colors
+[OK] styles.css: @theme and :root tokens, Geist/Outfit/Poppins fonts
+[OK] PrimeNG Aura preset override (primary green) in app.config.ts
+[OK] Dark mode: selector-based (.dark)
+
+DOCUMENTATION
+-------------
+[OK] Specs: 01 (auth), 03 (dashboard), 04 (network), 05 (wallets), 07 (earnings), 08 (withdrawals), 10 (marketplace), 11 (orders), 13 (notifications), 14 (settings)
+[OK] best-practices.md (Angular, TS, a11y, Tailwind)
+[OK] DESIGN_SYSTEM.md, FRONTEND_GUIDELINES.md, APP_FLOW.md, PRD.md, TECH_STACK.md, progress.txt, LESSONS.md
+
+PENDING / NOT DONE
+------------------
+- Registration payment: Frontend done; BLOCKED waiting for backend (see REGISTRATION_PAYMENT_REQUIREMENTS.md)
+- Backend integration: AUTH + ONBOARDING DONE; wallets, earnings, orders, etc. still need API integration
+- See INTEGRATION_STATUS.md for next priorities
+- Route guards: confirm auth and onboarding guards and redirects
+- E2E tests: not in package.json; add if required
+- PWA/offline: not implemented
+- i18n: not configured
+- Strict CSP or security headers: not defined in app
+
+================================================================================

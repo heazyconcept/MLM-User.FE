@@ -7,30 +7,99 @@
         <p class="text-mlm-secondary text-sm">Assigned orders and fulfilment</p>
       </div>
 
+      <!-- Filters -->
+      <div class="flex flex-wrap items-center gap-3 mb-6">
+        <select
+          class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="onStatusFilterChange($event)"
+        >
+          <option value="">All statuses</option>
+          @for (s of orderStatuses; track s) {
+            <option [value]="s">{{ getStatusLabel(s) }}</option>
+          }
+        </select>
+        <span class="text-sm text-mlm-secondary">{{ ordersTotal() }} order(s)</span>
+      </div>
+
       <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
-        @if (filteredOrders().length === 0) {
-          <div class="flex flex-col items-center justify-center py-20 text-center border-t border-gray-200 pt-12">
-            <div class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6">
+        @if (loading()) {
+          <div class="flex items-center justify-center py-20">
+            <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
+          </div>
+        } @else if (error(); as err) {
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p class="text-red-700 text-sm">{{ err }}</p>
+          </div>
+        } @else if (orders().length === 0) {
+          <div class="flex flex-col items-center justify-center py-20 text-center">
+            <div
+              class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6"
+            >
               <i class="pi pi-shopping-bag text-4xl text-mlm-warm-400" aria-hidden="true"></i>
             </div>
             <h2 class="text-xl font-bold text-mlm-text mb-2">No assigned orders</h2>
             <p class="text-mlm-secondary text-sm mb-6 max-w-md">
               Orders assigned to you will appear here.
             </p>
-            <a
-              routerLink="/marketplace"
-              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2">
-              Explore Marketplace
-            </a>
           </div>
         } @else {
-          <ul class="border-t border-gray-200" role="list">
-            @for (order of filteredOrders(); track order.id) {
-              <li class="border-b border-gray-200 last:border-b-0">
-                <app-order-card [order]="order" baseRoute="/merchant/orders"></app-order-card>
+          <ul class="border-t border-gray-200 divide-y divide-gray-100" role="list">
+            @for (order of orders(); track order.id) {
+              <li>
+                <a
+                  [routerLink]="'/merchant/orders/' + order.id"
+                  class="flex items-center justify-between gap-4 py-4 px-2 hover:bg-gray-50/50 transition-colors rounded-lg"
+                >
+                  <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                      <span class="text-sm font-bold text-mlm-text"
+                        >{{ order.id | slice: 0 : 12 }}…</span
+                      >
+                      <app-status-badge
+                        [status]="getStatusLabel(order.status)"
+                        size="sm"
+                      ></app-status-badge>
+                      <span
+                        class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-mlm-secondary"
+                        >{{ getFulfilmentLabel(order.fulfilmentMode) }}</span
+                      >
+                    </div>
+                    <p class="text-sm text-mlm-secondary">
+                      {{ order.user.email }} · {{ formatDate(order.createdAt) }}
+                    </p>
+                    <p class="text-xs text-mlm-secondary mt-1">{{ order.items.length }} item(s)</p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <span class="font-bold text-mlm-text">{{
+                      formatCurrency(order.totalAmount, order.currency)
+                    }}</span>
+                  </div>
+                </a>
               </li>
             }
           </ul>
+
+          <!-- Pagination -->
+          @if (ordersTotal() > pageSize) {
+            <div class="flex items-center justify-between border-t border-gray-200 pt-4 mt-4">
+              <button
+                class="text-sm font-semibold text-mlm-primary disabled:text-gray-300 disabled:cursor-not-allowed"
+                [disabled]="currentPage() <= 1"
+                (click)="prevPage()"
+              >
+                ← Previous
+              </button>
+              <span class="text-sm text-mlm-secondary">Page {{ currentPage() }}</span>
+              <button
+                class="text-sm font-semibold text-mlm-primary disabled:text-gray-300 disabled:cursor-not-allowed"
+                [disabled]="currentPage() * pageSize >= ordersTotal()"
+                (click)="nextPage()"
+              >
+                Next →
+              </button>
+            </div>
+          }
         }
       </div>
     </div>

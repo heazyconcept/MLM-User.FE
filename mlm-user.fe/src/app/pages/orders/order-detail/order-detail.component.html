@@ -6,7 +6,8 @@
           <a
             routerLink="/orders"
             class="text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80 inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 rounded"
-            aria-label="Back to orders">
+            aria-label="Back to orders"
+          >
             <i class="pi pi-arrow-left" aria-hidden="true"></i>
             Back to Orders
           </a>
@@ -18,27 +19,37 @@
             <p class="text-sm text-mlm-secondary mb-4">{{ formatDate(o.date) }}</p>
             <div class="flex flex-wrap items-center gap-3">
               <app-status-badge [status]="o.status" size="lg"></app-status-badge>
-              <span class="text-lg font-bold text-mlm-text">{{ formatCurrency(o.total, o.currency) }}</span>
+              <span class="text-lg font-bold text-mlm-text">{{
+                formatCurrency(o.total, o.currency)
+              }}</span>
             </div>
           </div>
 
           <div class="border-b border-gray-200 pb-6 mb-6">
-            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">Items</h2>
+            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
+              Items
+            </h2>
             <ul class="space-y-3" role="list">
               @for (item of o.items; track item.name + item.quantity) {
-                <li class="flex justify-between items-start gap-4 py-3 border-b border-gray-100 last:border-0">
+                <li
+                  class="flex justify-between items-start gap-4 py-3 border-b border-gray-100 last:border-0"
+                >
                   <div>
                     <span class="font-semibold text-mlm-text">{{ item.name }}</span>
                     <span class="text-sm text-mlm-secondary block">Qty: {{ item.quantity }}</span>
                   </div>
-                  <span class="font-semibold text-mlm-text shrink-0">{{ formatCurrency(item.price * item.quantity, o.currency) }}</span>
+                  <span class="font-semibold text-mlm-text shrink-0">{{
+                    formatCurrency(item.price * item.quantity, o.currency)
+                  }}</span>
                 </li>
               }
             </ul>
           </div>
 
           <div class="border-b border-gray-200 pb-6 mb-6">
-            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">Payment &amp; Fulfilment</h2>
+            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
+              Payment &amp; Fulfilment
+            </h2>
             <dl class="space-y-3 text-sm">
               <div class="flex justify-between">
                 <dt class="text-mlm-secondary">Payment method</dt>
@@ -46,7 +57,9 @@
               </div>
               <div class="flex justify-between">
                 <dt class="text-mlm-secondary">Fulfilment</dt>
-                <dd class="font-semibold text-mlm-text">{{ getFulfilmentLabel(o.fulfilmentMethod) }}</dd>
+                <dd class="font-semibold text-mlm-text">
+                  {{ getFulfilmentLabel(o.fulfilmentMethod) }}
+                </dd>
               </div>
               @if (o.fulfilmentMethod === 'delivery' && o.deliveryAddress) {
                 <div>
@@ -56,7 +69,9 @@
                 @if (o.deliveryFee != null) {
                   <div class="flex justify-between">
                     <dt class="text-mlm-secondary">Delivery fee</dt>
-                    <dd class="font-semibold text-mlm-text">{{ formatCurrency(o.deliveryFee!, o.currency) }}</dd>
+                    <dd class="font-semibold text-mlm-text">
+                      {{ formatCurrency(o.deliveryFee!, o.currency) }}
+                    </dd>
                   </div>
                 }
               }
@@ -65,15 +80,56 @@
                   <dt class="text-mlm-secondary mb-1">Pickup location</dt>
                   <dd class="font-medium text-mlm-text">{{ o.pickupLocationName }}</dd>
                   @if (o.pickupLocationDistance) {
-                    <dd class="text-mlm-secondary text-xs mt-0.5">{{ o.pickupLocationDistance }} away</dd>
+                    <dd class="text-mlm-secondary text-xs mt-0.5">
+                      {{ o.pickupLocationDistance }} away
+                    </dd>
                   }
                 </div>
               }
             </dl>
           </div>
 
+          <div class="pb-6 border-b border-gray-200 mb-6">
+            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
+              Order Actions
+            </h2>
+            <div class="flex flex-wrap gap-4">
+              @if (o.status === 'Pending') {
+                <button
+                  (click)="onPay()"
+                  [disabled]="isProcessing()"
+                  class="px-6 py-2 bg-mlm-primary text-white font-bold rounded hover:bg-opacity-90 disabled:opacity-50 transition-colors"
+                >
+                  Pay with Cash Wallet
+                </button>
+                <button
+                  (click)="onCancel()"
+                  [disabled]="isProcessing()"
+                  class="px-6 py-2 bg-mlm-error text-white font-bold rounded hover:bg-opacity-90 disabled:opacity-50 transition-colors"
+                >
+                  Cancel Order
+                </button>
+              }
+              @if (
+                o.status === 'Processing' ||
+                o.status === 'Ready for Pickup' ||
+                o.status === 'Out for Delivery'
+              ) {
+                <button
+                  (click)="onConfirmReceived()"
+                  [disabled]="isProcessing()"
+                  class="px-6 py-2 bg-mlm-secondary text-white font-bold rounded hover:bg-opacity-90 disabled:opacity-50 transition-colors"
+                >
+                  Confirm Received
+                </button>
+              }
+            </div>
+          </div>
+
           <div class="pb-6">
-            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">Order timeline</h2>
+            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
+              Order timeline
+            </h2>
             <app-order-timeline [currentStatus]="o.status"></app-order-timeline>
           </div>
         </div>

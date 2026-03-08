@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onboarding Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #C97D4E;
+    --primary-light: #F2E4D6;
+    --primary-dark: #A86337;
+    --warm-50: #FDFAF7;
+    --warm-100: #F7F1EA;
+    --warm-200: #EDE3D8;
+    --warm-300: #DDD0C2;
+    --warm-400: #C4AE97;
+    --warm-500: #A08268;
+    --warm-600: #7D6252;
+    --warm-700: #5C4740;
+    --warm-800: #3D2F2A;
+    --warm-900: #231A17;
+    --green-50: #EFFDF4;
+    --green-200: #BBF7D0;
+    --green-600: #16A34A;
+    --blue-50: #EFF6FF;
+    --blue-200: #BFDBFE;
+    --blue-600: #2563EB;
+    --error: #DC2626;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: 'DM Sans', sans-serif;
+    background: #1A120E;
+    color: var(--warm-900);
+  }
+
+  /* ── PAGE SHELL ── */
+  .shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* LEFT PANEL */
+  .left-panel {
+    background: linear-gradient(155deg, #3D2F2A 0%, #1A120E 60%, #0D0907 100%);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 52px 56px;
+  }
+  .left-panel::before {
+    content: '';
+    position: absolute;
+    top: -120px; left: -80px;
+    width: 420px; height: 420px;
+    background: radial-gradient(circle, rgba(201,125,78,0.22) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .left-panel::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; right: -60px;
+    width: 340px; height: 340px;
+    background: radial-gradient(circle, rgba(201,125,78,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .brand-logo {
+    width: 40px; height: 40px;
+    background: var(--primary);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 20px; color: #fff; font-weight: 700;
+  }
+  .brand-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; color: #fff; font-weight: 600; letter-spacing: -0.3px;
+  }
+
+  .left-hero { position: relative; z-index: 1; }
+  .left-hero h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 3vw, 42px);
+    color: #fff; line-height: 1.18; font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .left-hero h2 em { color: var(--primary); font-style: normal; }
+  .left-hero p {
+    font-size: 15px; color: rgba(255,255,255,0.52);
+    line-height: 1.7; max-width: 340px;
+  }
+
+  .steps-list { position: relative; z-index: 1; }
+  .steps-list-item {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 14px 0;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .steps-list-item:last-child { border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .step-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 1px;
+    font-size: 11px; color: rgba(255,255,255,0.35); font-weight: 600;
+    transition: all 0.35s;
+  }
+  .step-dot.done {
+    background: rgba(201,125,78,0.2);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+  .step-dot.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    box-shadow: 0 0 0 6px rgba(201,125,78,0.18);
+  }
+  .step-label { font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,0.38); transition: color 0.35s; }
+  .step-label.active { color: #fff; }
+  .step-label.done { color: rgba(201,125,78,0.7); }
+  .step-sublabel { font-size: 12px; color: rgba(255,255,255,0.22); margin-top: 2px; }
+
+  /* RIGHT PANEL */
+  .right-panel {
+    background: var(--warm-50);
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+  .right-inner {
+    flex: 1;
+    max-width: 540px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 56px 40px;
+  }
+
+  /* STEP NAV DOTS (mobile-style compact) */
+  .step-pills {
+    display: flex; gap: 6px; margin-bottom: 40px;
+  }
+  .pill {
+    height: 4px; border-radius: 99px;
+    background: var(--warm-200);
+    transition: all 0.4s ease;
+    flex: 1;
+  }
+  .pill.done { background: rgba(201,125,78,0.4); }
+  .pill.active { background: var(--primary); flex: 2; }
+
+  /* PAGE HEADER */
+  .page-header { margin-bottom: 32px; }
+  .page-header-accent {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 4px;
+  }
+  .accent-bar {
+    width: 4px; height: 30px; background: var(--primary);
+    border-radius: 99px; flex-shrink: 0;
+  }
+  .page-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(22px, 3vw, 30px);
+    font-weight: 700; color: var(--warm-900);
+    letter-spacing: -0.5px; line-height: 1.1;
+  }
+  .page-sub {
+    font-size: 14px; color: var(--warm-500);
+    margin-left: 16px; padding-left: 2px; margin-top: 4px;
+  }
+
+  /* NOTICE BANNERS */
+  .notice {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    margin-bottom: 24px;
+  }
+  .notice.blue { background: var(--blue-50); border: 1px solid var(--blue-200); }
+  .notice.green { background: var(--green-50); border: 1px solid var(--green-200); }
+  .notice.primary { background: var(--primary-light); border: 1px solid rgba(201,125,78,0.25); }
+  .notice-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    font-size: 16px;
+  }
+  .notice.blue .notice-icon { background: #DBEAFE; }
+  .notice.green .notice-icon { background: #DCFCE7; }
+  .notice.primary .notice-icon { background: rgba(201,125,78,0.15); }
+  .notice-title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+  .notice.blue .notice-title { color: #1E40AF; }
+  .notice.green .notice-title { color: #15803D; }
+  .notice.primary .notice-title { color: var(--primary-dark); }
+  .notice-text { font-size: 12px; line-height: 1.6; }
+  .notice.blue .notice-text { color: #3B82F6; }
+  .notice.green .notice-text { color: #16A34A; }
+  .notice.primary .notice-text { color: var(--warm-600); }
+
+  /* SECTION LABELS */
+  .section-label {
+    font-size: 10.5px; font-weight: 700;
+    color: var(--warm-400); letter-spacing: 0.1em;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+
+  /* FIELD CARD */
+  .field-card {
+    background: linear-gradient(135deg, var(--warm-100) 0%, var(--warm-50) 100%);
+    border: 1px solid var(--warm-200);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 20px;
+  }
+
+  /* FORM FIELDS */
+  .field-group { margin-bottom: 16px; }
+  .field-group:last-child { margin-bottom: 0; }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  label.field-label {
+    display: block;
+    font-size: 13px; font-weight: 600; color: var(--warm-800);
+    margin-bottom: 7px;
+  }
+  label.field-label .req { color: var(--error); }
+  label.field-label .opt { font-size: 11px; font-weight: 400; color: var(--warm-400); }
+
+  .input-wrap {
+    position: relative; display: flex; align-items: center;
+  }
+  .input-icon {
+    position: absolute; left: 14px;
+    font-size: 14px; color: var(--warm-400); pointer-events: none;
+    z-index: 1;
+  }
+  .field-input {
+    width: 100%; height: 48px;
+    padding: 0 14px 0 42px;
+    border: 1.5px solid var(--warm-300);
+    border-radius: 12px;
+    background: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; color: var(--warm-800);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  .field-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(201,125,78,0.1);
+  }
+  .field-input::placeholder { color: var(--warm-400); font-size: 13.5px; }
+  .field-input.no-icon { padding-left: 14px; }
+  .field-select {
+    width: 100%; height: 48px;
+    padding: 0 14px;
+    border: 1.5px solid var(--warm-300);
+    border-radius: 12px;
+    background: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; color: var(--warm-800);
+    outline: none; cursor: pointer;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23A08268' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .field-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(201,125,78,0.1);
+  }
+  .field-error { font-size: 11px; font-weight: 600; color: var(--error); margin-top: 5px; }
+
+  /* PROFILE PHOTO BLOCK */
+  .photo-block {
+    display: flex; align-items: center; gap: 18px;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--warm-100) 0%, var(--warm-50) 100%);
+    border: 1px solid var(--warm-200);
+    border-radius: 18px;
+    margin-bottom: 20px;
+  }
+  .photo-avatar {
+    width: 68px; height: 68px; border-radius: 16px;
+    background: var(--warm-200); border: 2px solid var(--warm-300);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 26px; color: var(--warm-400); overflow: hidden;
+  }
+  .photo-meta p { font-size: 13.5px; font-weight: 700; color: var(--warm-800); margin-bottom: 2px; }
+  .photo-meta span { font-size: 11.5px; color: var(--warm-400); display: block; margin-bottom: 10px; }
+  .upload-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 16px;
+    background: #fff; border: 1.5px solid var(--warm-300);
+    border-radius: 10px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--warm-700);
+    transition: all 0.2s;
+  }
+  .upload-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+  /* UPLOAD ZONE */
+  .upload-zone {
+    border: 1.5px dashed var(--warm-300);
+    border-radius: 14px; padding: 22px 16px;
+    text-align: center; cursor: pointer;
+    transition: all 0.2s; background: #fff;
+  }
+  .upload-zone:hover { border-color: var(--primary); background: var(--primary-light); }
+  .upload-zone-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--warm-100); margin: 0 auto 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--warm-500);
+  }
+  .upload-zone p { font-size: 13px; font-weight: 600; color: var(--warm-700); margin-bottom: 2px; }
+  .upload-zone span { font-size: 11px; color: var(--warm-400); }
+
+  /* CHECKBOX ROWS */
+  .check-row {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--warm-100) 0%, var(--warm-50) 100%);
+    border: 1.5px solid var(--warm-200);
+    border-radius: 16px; cursor: pointer;
+    transition: all 0.2s; margin-bottom: 10px;
+  }
+  .check-row:hover { border-color: rgba(201,125,78,0.4); background: var(--primary-light); }
+  .check-row input[type=checkbox] { display: none; }
+  .check-box {
+    width: 20px; height: 20px; border-radius: 6px;
+    border: 2px solid var(--warm-300); background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.2s; font-size: 11px; color: transparent;
+  }
+  .check-row:has(input:checked) .check-box {
+    background: var(--primary); border-color: var(--primary); color: #fff;
+  }
+  .check-icon-wrap {
+    width: 38px; height: 38px; border-radius: 12px;
+    background: var(--warm-200); display: flex; align-items: center;
+    justify-content: center; font-size: 17px; color: var(--warm-500);
+    flex-shrink: 0; transition: all 0.2s;
+  }
+  .check-row:hover .check-icon-wrap { background: rgba(201,125,78,0.15); color: var(--primary); }
+  .check-text strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--warm-800); }
+  .check-text span { font-size: 12px; color: var(--warm-500); }
+
+  /* INFO HINT */
+  .info-hint {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px; background: var(--warm-100);
+    border: 1px solid var(--warm-200); border-radius: 12px;
+    font-size: 12px; color: var(--warm-500); line-height: 1.5; margin-bottom: 16px;
+  }
+  .info-hint span { font-size: 16px; flex-shrink: 0; }
+
+  /* FOOTER ACTIONS */
+  .form-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 24px; margin-top: 8px;
+    border-top: 1px solid var(--warm-200);
+    gap: 12px; flex-wrap: wrap;
+  }
+  .btn-back {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 12px;
+    border: 1.5px solid var(--warm-200);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px; font-weight: 600; color: var(--warm-600);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-back:hover { background: var(--warm-100); border-color: var(--warm-300); color: var(--warm-800); }
+  .btn-continue {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 12px 26px; border-radius: 12px;
+    background: var(--primary);
+    border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 700; color: #fff;
+    transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(201,125,78,0.35);
+  }
+  .btn-continue:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(201,125,78,0.42); }
+  .btn-continue:active { transform: translateY(0); }
+  .btn-finish {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    box-shadow: 0 6px 20px rgba(201,125,78,0.4);
+  }
+
+  .step-count { text-align: center; font-size: 12px; color: var(--warm-400); margin-top: 18px; }
+  .skip-link { text-align: center; font-size: 12px; color: var(--warm-400); margin-top: 10px; }
+  .skip-link a { color: var(--warm-400); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .skip-link a:hover { color: var(--warm-600); }
+
+  /* ── STEP PAGES ── */
+  .step-page { display: none; animation: fadeSlide 0.35s ease; }
+  .step-page.active { display: block; }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateX(14px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  /* NAV TABS (demo only) */
+  .demo-nav {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    padding: 14px 20px;
+    background: rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(8px);
+  }
+  .demo-tab {
+    padding: 6px 14px; border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.45);
+    background: transparent; cursor: pointer; transition: all 0.2s;
+  }
+  .demo-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .demo-tab:hover:not(.active) { border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.7); }
+
+  /* LEFT PANEL STEP LIST */
+  .left-steps-wrap { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+  /* RESPONSIVE */
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .left-panel { display: none; }
+    .right-inner { padding: 36px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- DEMO NAV -->
+<div class="demo-nav">
+  <button class="demo-tab active" onclick="showStep(0,this)">① Profile</button>
+  <button class="demo-tab" onclick="showStep(1,this)">② Contact</button>
+  <button class="demo-tab" onclick="showStep(2,this)">③ Identity</button>
+  <button class="demo-tab" onclick="showStep(3,this)">④ Bank</button>
+  <button class="demo-tab" onclick="showStep(4,this)">⑤ Preferences</button>
+</div>
+
+<div class="shell">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div class="brand">
+      <div class="brand-logo">M</div>
+      <span class="brand-name">MLM Platform</span>
+    </div>
+
+    <div class="left-steps-wrap">
+      <div class="left-hero" style="margin-bottom:40px;">
+        <h2>Build your<br><em>earning profile</em><br>in minutes.</h2>
+        <p>Complete each step below to unlock your full dashboard — payouts, team tracking, and performance insights.</p>
+      </div>
+
+      <div class="steps-list">
+        <div class="steps-list-item" id="ls-0">
+          <div class="step-dot active" id="ld-0">✓</div>
+          <div>
+            <div class="step-label active" id="ll-0">Personal Information</div>
+            <div class="step-sublabel">Name, DOB, profile photo</div>
+          </div>
+        </div>
+        <div class="steps-list-item" id="ls-1">
+          <div class="step-dot" id="ld-1">2</div>
+          <div>
+            <div class="step-label" id="ll-1">Contact Details</div>
+            <div class="step-sublabel">Phone, email, address</div>
+          </div>
+        </div>
+        <div class="steps-list-item" id="ls-2">
+          <div class="step-dot" id="ld-2">3</div>
+          <div>
+            <div class="step-label" id="ll-2">Identity Verification</div>
+            <div class="step-sublabel">ID document & selfie</div>
+          </div>
+        </div>
+        <div class="steps-list-item" id="ls-3">
+          <div class="step-dot" id="ld-3">4</div>
+          <div>
+            <div class="step-label" id="ll-3">Bank Details</div>
+            <div class="step-sublabel">Payout account info</div>
+          </div>
+        </div>
+        <div class="steps-list-item" id="ls-4">
+          <div class="step-dot" id="ld-4">5</div>
+          <div>
+            <div class="step-label" id="ll-4">Preferences</div>
+            <div class="step-sublabel">Language, currency, alerts</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:11px;color:rgba(255,255,255,0.18);">🔒 256-bit encrypted. Your data is safe.</p>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="right-inner">
+
+      <!-- PROGRESS PILLS -->
+      <div class="step-pills" id="pills">
+        <div class="pill active" id="pill-0"></div>
+        <div class="pill" id="pill-1"></div>
+        <div class="pill" id="pill-2"></div>
+        <div class="pill" id="pill-3"></div>
+        <div class="pill" id="pill-4"></div>
+      </div>
+
+      <!-- ════ STEP 1: PROFILE ════ -->
+      <div class="step-page active" id="step-0">
+        <div class="page-header">
+          <div class="page-header-accent">
+            <div class="accent-bar"></div>
+            <h1 class="page-title">Personal Information</h1>
+          </div>
+          <p class="page-sub">Let's start with your basic details</p>
+        </div>
+
+        <!-- Photo block -->
+        <div class="photo-block">
+          <div class="photo-avatar">👤</div>
+          <div class="photo-meta">
+            <p>Profile Photo</p>
+            <span>JPG, PNG or GIF — max 5MB</span>
+            <button class="upload-btn">📎 Choose photo</button>
+          </div>
+        </div>
+
+        <!-- Names -->
+        <p class="section-label">Full Name</p>
+        <div class="field-card">
+          <div class="field-grid" style="margin-bottom:16px;">
+            <div class="field-group">
+              <label class="field-label">First Name <span class="req">*</span></label>
+              <div class="input-wrap"><span class="input-icon">👤</span><input type="text" class="field-input" placeholder="Enter first name"></div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Last Name <span class="req">*</span></label>
+              <div class="input-wrap"><span class="input-icon">👤</span><input type="text" class="field-input" placeholder="Enter last name"></div>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Username <span class="req">*</span></label>
+            <div class="input-wrap"><span class="input-icon">@</span><input type="text" class="field-input" placeholder="@your_username"></div>
+          </div>
+        </div>
+
+        <p class="section-label">About You</p>
+        <div class="field-card">
+          <div class="field-grid">
+            <div class="field-group">
+              <label class="field-label">Date of Birth <span class="req">*</span></label>
+              <div class="input-wrap"><span class="input-icon">📅</span><input type="date" class="field-input"></div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Gender <span class="opt">(optional)</span></label>
+              <select class="field-select">
+                <option value="">Select gender</option>
+                <option>Male</option><option>Female</option><option>Prefer not to say</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <div></div>
+          <button class="btn-continue" onclick="showStep(1, document.querySelectorAll('.demo-tab')[1])">Continue to Contact <span>→</span></button>
+        </div>
+        <div class="step-count">Step 1 of 5</div>
+      </div>
+
+      <!-- ════ STEP 2: CONTACT ════ -->
+      <div class="step-page" id="step-1">
+        <div class="page-header">
+          <div class="page-header-accent">
+            <div class="accent-bar"></div>
+            <h1 class="page-title">Contact Details</h1>
+          </div>
+          <p class="page-sub">Where can we reach you?</p>
+        </div>
+
+        <p class="section-label">Contact Info</p>
+        <div class="field-card">
+          <div class="field-group">
+            <label class="field-label">Email Address</label>
+            <div class="input-wrap"><span class="input-icon">✉️</span><input type="email" class="field-input" placeholder="you@example.com" value="sarah.johnson@gmail.com"></div>
+          </div>
+          <div class="field-group" style="margin-top:14px;">
+            <label class="field-label">Phone Number <span class="req">*</span></label>
+            <div class="input-wrap"><span class="input-icon">📞</span><input type="tel" class="field-input" placeholder="+234 800 000 0000"></div>
+          </div>
+        </div>
+
+        <p class="section-label">Home Address</p>
+        <div class="field-card">
+          <div class="field-group">
+            <label class="field-label">Street Address <span class="req">*</span></label>
+            <div class="input-wrap"><span class="input-icon">📍</span><input type="text" class="field-input" placeholder="Enter your full street address"></div>
+          </div>
+          <div class="field-grid" style="margin:14px 0;">
+            <div class="field-group">
+              <label class="field-label">City <span class="req">*</span></label>
+              <div class="input-wrap"><span class="input-icon">🏙</span><input type="text" class="field-input" placeholder="City"></div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">State <span class="req">*</span></label>
+              <div class="input-wrap"><span class="input-icon">🗺</span><input type="text" class="field-input" placeholder="State"></div>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Country <span class="req">*</span></label>
+            <select class="field-select">
+              <option value="">Select Country</option>
+              <option selected>Nigeria</option><option>Ghana</option><option>Kenya</option><option>South Africa</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <button class="btn-back" onclick="showStep(0, document.querySelectorAll('.demo-tab')[0])">← Back</button>
+          <button class="btn-continue" onclick="showStep(2, document.querySelectorAll('.demo-tab')[2])">Continue to Identity →</button>
+        </div>
+        <div class="step-count">Step 2 of 5</div>
+      </div>
+
+      <!-- ════ STEP 3: IDENTITY ════ -->
+      <div class="step-page" id="step-2">
+        <div class="page-header">
+          <div class="page-header-accent">
+            <div class="accent-bar"></div>
+            <h1 class="page-title">Identity Verification</h1>
+          </div>
+          <p class="page-sub">Help us verify your identity for security</p>
+        </div>
+
+        <div class="notice blue">
+          <div class="notice-icon">🔒</div>
+          <div>
+            <div class="notice-title">Your data is protected</div>
+            <div class="notice-text">Documents are encrypted and used only for identity verification. We never share your information with third parties.</div>
+          </div>
+        </div>
+
+        <p class="section-label">ID Details</p>
+        <div class="field-card">
+          <div class="field-group">
+            <label class="field-label">ID Type <span class="req">*</span></label>
+            <select class="field-select">
+              <option value="">Select ID Type</option>
+              <option>National ID (NIN)</option>
+              <option>Driver's License</option>
+              <option>Voter's Card</option>
+              <option>International Passport</option>
+            </select>
+          </div>
+          <div class="field-group" style="margin-top:14px;">
+            <label class="field-label">ID Number <span class="req">*</span></label>
+            <div class="input-wrap"><span class="input-icon">🪪</span><input type="text" class="field-input" placeholder="Enter 11-digit ID number" maxlength="11"></div>
+          </div>
+        </div>
+
+        <p class="section-label">Upload Documents</p>
+        <div class="field-grid" style="margin-bottom:20px; gap:14px;">
+          <div>
+            <label class="field-label" style="margin-bottom:8px;">ID Front <span class="req">*</span></label>
+            <div class="upload-zone">
+              <div class="upload-zone-icon">🪪</div>
+              <p>Upload ID Front</p>
+              <span>JPG, PNG, PDF — max 10MB</span>
+            </div>
+          </div>
+          <div>
+            <label class="field-label" style="margin-bottom:8px;">Selfie with ID <span class="req">*</span></label>
+            <div class="upload-zone">
+              <div class="upload-zone-icon">🤳</div>
+              <p>Upload Selfie</p>
+              <span>Clear, well-lit photo</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <button class="btn-back" onclick="showStep(1, document.querySelectorAll('.demo-tab')[1])">← Back</button>
+          <button class="btn-continue" onclick="showStep(3, document.querySelectorAll('.demo-tab')[3])">Continue to Bank →</button>
+        </div>
+        <div class="step-count">Step 3 of 5</div>
+      </div>
+
+      <!-- ════ STEP 4: BANK ════ -->
+      <div class="step-page" id="step-3">
+        <div class="page-header">
+          <div class="page-header-accent">
+            <div class="accent-bar"></div>
+            <h1 class="page-title">Bank Details</h1>
+          </div>
+          <p class="page-sub">Where should we send your earnings?</p>
+        </div>
+
+        <div class="notice green">
+          <div class="notice-icon">💳</div>
+          <div>
+            <div class="notice-title">Earnings & Payouts</div>
+            <div class="notice-text">Your commissions and bonuses will be sent directly to this account. Ensure details match your bank records exactly.</div>
+          </div>
+        </div>
+
+        <p class="section-label">Account Details</p>
+        <div class="field-card">
+          <div class="field-group">
+            <label class="field-label">Bank Name <span class="req">*</span></label>
+            <div class="input-wrap"><span class="input-icon">🏦</span><input type="text" class="field-input" placeholder="Enter or select bank name"></div>
+          </div>
+          <div class="field-group" style="margin-top:14px;">
+            <label class="field-label">Account Number <span class="req">*</span></label>
+            <div class="input-wrap"><span class="input-icon">#</span><input type="text" class="field-input" placeholder="10-digit account number" maxlength="10"></div>
+          </div>
+          <div class="field-group" style="margin-top:14px;">
+            <label class="field-label">Account Name <span class="req">*</span></label>
+            <div class="input-wrap"><span class="input-icon">👤</span><input type="text" class="field-input" placeholder="Full name as registered at bank"></div>
+          </div>
+        </div>
+
+        <div class="info-hint">
+          <span>ℹ️</span>
+          Account name must match your registered bank name exactly to avoid payment delays.
+        </div>
+
+        <div class="form-footer">
+          <button class="btn-back" onclick="showStep(2, document.querySelectorAll('.demo-tab')[2])">← Back</button>
+          <button class="btn-continue" onclick="showStep(4, document.querySelectorAll('.demo-tab')[4])">Continue to Preferences →</button>
+        </div>
+        <div class="skip-link"><a>Skip for now — add bank details later</a></div>
+        <div class="step-count">Step 4 of 5</div>
+      </div>
+
+      <!-- ════ STEP 5: PREFERENCES ════ -->
+      <div class="step-page" id="step-4">
+        <div class="page-header">
+          <div class="page-header-accent">
+            <div class="accent-bar"></div>
+            <h1 class="page-title">Preferences</h1>
+          </div>
+          <p class="page-sub">Customize your experience — almost done!</p>
+        </div>
+
+        <div class="notice primary">
+          <div class="notice-icon">⭐</div>
+          <div>
+            <div class="notice-title">One last step!</div>
+            <div class="notice-text">Set your preferences and your account will be ready to go.</div>
+          </div>
+        </div>
+
+        <p class="section-label">Localization</p>
+        <div class="field-card">
+          <div class="field-group">
+            <label class="field-label">Preferred Language</label>
+            <select class="field-select">
+              <option selected>English</option><option>French</option><option>Hausa</option><option>Yoruba</option><option>Igbo</option>
+            </select>
+          </div>
+          <div class="field-group" style="margin-top:14px;">
+            <label class="field-label">Display Currency</label>
+            <select class="field-select">
+              <option selected>Nigerian Naira (₦)</option><option>US Dollar ($)</option><option>British Pound (£)</option><option>Euro (€)</option>
+            </select>
+          </div>
+        </div>
+
+        <p class="section-label">Notification Settings</p>
+
+        <label class="check-row">
+          <input type="checkbox" checked>
+          <div class="check-box">✓</div>
+          <div class="check-icon-wrap">✉️</div>
+          <div class="check-text">
+            <strong>Email Notifications</strong>
+            <span>Receive updates, reports, and news via email</span>
+          </div>
+        </label>
+
+        <label class="check-row">
+          <input type="checkbox" checked>
+          <div class="check-box">✓</div>
+          <div class="check-icon-wrap">📱</div>
+          <div class="check-text">
+            <strong>SMS Notifications</strong>
+            <span>Receive security alerts and OTPs via SMS</span>
+          </div>
+        </label>
+
+        <div class="form-footer">
+          <button class="btn-back" onclick="showStep(3, document.querySelectorAll('.demo-tab')[3])">← Back</button>
+          <button class="btn-continue btn-finish">Finish Setup ✓</button>
+        </div>
+        <div class="step-count">Step 5 of 5 — Final step</div>
+      </div>
+
+    </div><!-- /right-inner -->
+  </div><!-- /right-panel -->
+</div><!-- /shell -->
+
+<script>
+  const stepLabels = ['Personal Information','Contact Details','Identity Verification','Bank Details','Preferences'];
+  const stepSubs   = ['Name, DOB, profile photo','Phone, email, address','ID document & selfie','Payout account info','Language, currency, alerts'];
+  const stepNums   = ['✓','2','3','4','5'];
+
+  function showStep(n, tabEl) {
+    // Step pages
+    document.querySelectorAll('.step-page').forEach((p,i) => p.classList.toggle('active', i===n));
+    // Demo tabs
+    document.querySelectorAll('.demo-tab').forEach((t,i) => t.classList.toggle('active', i===n));
+    // Pills
+    for(let i=0;i<5;i++){
+      const p = document.getElementById('pill-'+i);
+      p.classList.remove('active','done');
+      if(i===n) p.classList.add('active');
+      else if(i<n) p.classList.add('done');
+    }
+    // Left panel dots
+    for(let i=0;i<5;i++){
+      const dot = document.getElementById('ld-'+i);
+      const lbl = document.getElementById('ll-'+i);
+      dot.classList.remove('active','done');
+      lbl.classList.remove('active','done');
+      if(i===n){ dot.classList.add('active'); dot.textContent='✓'; lbl.classList.add('active'); }
+      else if(i<n){ dot.classList.add('done'); dot.textContent='✓'; lbl.classList.add('done'); }
+      else { dot.textContent=i+1; }
+    }
+  }
+
+  // Checkbox interactivity
+  document.querySelectorAll('.check-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const cb = row.querySelector('input[type=checkbox]');
+      const box = row.querySelector('.check-box');
+      cb.checked = !cb.checked;
+      box.textContent = cb.checked ? '✓' : '';
+    });
+  });
+</script>
+</body>
+</html>
