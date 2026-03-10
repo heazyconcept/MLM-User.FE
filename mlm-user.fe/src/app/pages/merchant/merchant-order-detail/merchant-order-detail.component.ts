@@ -1,36 +1,69 @@
-import { Component, inject, signal, OnInit, computed, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { MerchantService } from '../../../services/merchant.service';
-import type { Order } from '../../../services/order.service';
+import { FormsModule } from '@angular/forms';
+import { MerchantService, type MerchantOrder } from '../../../services/merchant.service';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
-import { OrderTimelineComponent } from '../../../components/order-timeline/order-timeline.component';
 import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-merchant-order-detail',
-  imports: [CommonModule, RouterLink, StatusBadgeComponent, OrderTimelineComponent, ButtonModule],
+  imports: [CommonModule, RouterLink, FormsModule, StatusBadgeComponent, ButtonModule],
   templateUrl: './merchant-order-detail.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MerchantOrderDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private merchantService = inject(MerchantService);
 
-  order = signal<Order | null>(null);
+  order = this.merchantService.orderDetail;
+  loading = this.merchantService.loading;
+  actionLoading = this.merchantService.actionLoading;
+  error = this.merchantService.error;
 
-  canMarkReady = computed(() => {
+  // Confirm delivery form
+  proofUrl = signal('');
+  deliveryNotes = signal('');
+  showConfirmForm = signal(false);
+
+  // Action visibility computed from order state
+  canMarkReadyForPickup = computed(() => {
     const o = this.order();
-    return o && (o.status === 'Pending' || o.status === 'Processing');
+    return o && o.fulfilmentMode === 'PICKUP' && o.status === 'ASSIGNED_TO_MERCHANT';
   });
-  canMarkShipped = computed(() => {
+
+  canMarkDeliveryRequested = computed(() => {
     const o = this.order();
-    return o && o.status === 'Ready for Pickup';
+    return o && o.fulfilmentMode === 'OFFLINE_DELIVERY' && o.status === 'ASSIGNED_TO_MERCHANT';
   });
-  canMarkCompleted = computed(() => {
+
+  canMarkSent = computed(() => {
     const o = this.order();
-    return o && (o.status === 'Out for Delivery' || o.status === 'Ready for Pickup');
+    return o && (o.status === 'READY_FOR_PICKUP' || o.status === 'OFFLINE_DELIVERY_REQUESTED');
+  });
+
+  canConfirmDelivery = computed(() => {
+    const o = this.order();
+    return (
+      o &&
+      (o.status === 'READY_FOR_PICKUP' ||
+        o.status === 'OFFLINE_DELIVERY_REQUESTED' ||
+        o.status === 'PAID' ||
+        o.status === 'SENT')
+    );
+  });
+
+  isDelivered = computed(() => {
+    const o = this.order();
+    return o?.status === 'DELIVERED';
   });
 
   ngOnInit(): void {
@@ -39,55 +72,60 @@ export class MerchantOrderDetailComponent implements OnInit {
       this.router.navigate(['/merchant/orders']);
       return;
     }
-    const o = this.merchantService.getOrderById(id);
-    if (!o) {
-      this.router.navigate(['/merchant/orders']);
-      return;
-    }
-    this.order.set(o);
+    this.merchantService.fetchOrderById(id);
+  }
+
+  markReadyForPickup(): void {
+    const o = this.order();
+    if (o) this.merchantService.markReadyForPickup(o.id);
+  }
+
+  markDeliveryRequested(): void {
+    const o = this.order();
+    if (o) this.merchantService.markDeliveryRequested(o.id);
+  }
+
+  markSent(): void {
+    const o = this.order();
+    if (o) this.merchantService.markSent(o.id);
+  }
+
+  toggleConfirmForm(): void {
+    this.showConfirmForm.update((v) => !v);
+  }
+
+  submitConfirmDelivery(): void {
+    const o = this.order();
+    if (!o) return;
+    const body: { proof?: string; notes?: string } = {};
+    const proof = this.proofUrl().trim();
+    const notes = this.deliveryNotes().trim();
+    if (proof) body.proof = proof;
+    if (notes) body.notes = notes;
+    this.merchantService.confirmDelivery(o.id, body);
+    this.showConfirmForm.set(false);
   }
 
   formatDate(iso: string): string {
-    const d = new Date(iso);
-    return d.toLocaleDateString('en-NG', {
+    return new Date(iso).toLocaleDateString('en-NG', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   }
 
-  formatCurrency(amount: number, currency: 'NGN' | 'USD'): string {
-    return currency === 'NGN' ? `₦${amount.toLocaleString('en-US')}` : `$${amount.toLocaleString('en-US')}`;
+  formatCurrency(amount: number, currency: string): string {
+    return this.merchantService.formatCurrency(amount, currency);
   }
 
-  getFulfilmentLabel(method: Order['fulfilmentMethod']): string {
-    return method === 'pickup' ? 'Pickup' : 'Home Delivery';
+  getStatusLabel(status: string): string {
+    return this.merchantService.getStatusLabel(status as any);
   }
 
-  markAsReady(): void {
-    const o = this.order();
-    if (o && (o.status === 'Pending' || o.status === 'Processing')) {
-      this.merchantService.updateOrderStatus(o.id, 'Ready for Pickup');
-      this.order.set({ ...o, status: 'Ready for Pickup' });
-    }
-  }
-
-  markAsShipped(): void {
-    const o = this.order();
-    if (o && o.status === 'Ready for Pickup') {
-      this.merchantService.updateOrderStatus(o.id, 'Out for Delivery');
-      this.order.set({ ...o, status: 'Out for Delivery' });
-    }
-  }
-
-  markAsCompleted(): void {
-    const o = this.order();
-    if (o && (o.status === 'Out for Delivery' || o.status === 'Ready for Pickup')) {
-      this.merchantService.updateOrderStatus(o.id, 'Delivered');
-      this.order.set({ ...o, status: 'Delivered' });
-    }
+  getFulfilmentLabel(mode: string): string {
+    return mode === 'PICKUP' ? 'Pickup' : 'Delivery';
   }
 }

@@ -1,0 +1,4 @@
+---
+When creating an Angular component, always create a separate file for this(html and ts)
+alwaysApply: true
+---

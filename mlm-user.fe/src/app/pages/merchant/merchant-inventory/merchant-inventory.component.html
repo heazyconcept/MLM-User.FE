@@ -8,31 +8,121 @@
       </div>
 
       <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
-        @if (inventory().length === 0) {
-          <div class="flex flex-col items-center justify-center py-20 text-center border-t border-gray-200 pt-12">
-            <div class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6">
+        @if (loading()) {
+          <div class="flex items-center justify-center py-20">
+            <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
+          </div>
+        } @else if (error(); as err) {
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p class="text-red-700 text-sm">{{ err }}</p>
+          </div>
+        } @else if (inventory().length === 0) {
+          <div class="flex flex-col items-center justify-center py-20 text-center">
+            <div
+              class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6"
+            >
               <i class="pi pi-box text-4xl text-mlm-warm-400" aria-hidden="true"></i>
             </div>
             <h2 class="text-xl font-bold text-mlm-text mb-2">No inventory</h2>
             <p class="text-mlm-secondary text-sm mb-6 max-w-md">
-              Add products to start managing your merchant inventory.
+              Accept allocations to add products to your inventory.
             </p>
             <a
-              routerLink="/marketplace"
-              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2">
-              Add Product
+              routerLink="/merchant/allocations"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2"
+            >
+              View Allocations
             </a>
           </div>
         } @else {
-          <ul class="border-t border-gray-200" role="list">
+          <!-- Desktop table -->
+          <div class="hidden md:block overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="border-b border-gray-200">
+                  <th
+                    class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest"
+                  >
+                    Product
+                  </th>
+                  <th
+                    class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest"
+                  >
+                    SKU
+                  </th>
+                  <th
+                    class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center"
+                  >
+                    Stock
+                  </th>
+                  <th
+                    class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center"
+                  >
+                    Status
+                  </th>
+                  <th
+                    class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-right"
+                  >
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                @for (item of inventory(); track item.productId) {
+                  <tr class="hover:bg-gray-50/50 transition-colors">
+                    <td class="py-4 px-4 font-semibold text-mlm-text">{{ item.productName }}</td>
+                    <td class="py-4 px-4 text-sm text-mlm-secondary">{{ item.productSku }}</td>
+                    <td class="py-4 px-4 text-center font-semibold text-mlm-text">
+                      {{ item.stockQuantity }}
+                    </td>
+                    <td class="py-4 px-4 text-center">
+                      <span
+                        class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full {{
+                          getStockStatusClass(item.stockStatus)
+                        }}"
+                      >
+                        {{ getStockStatusLabel(item.stockStatus) }}
+                      </span>
+                    </td>
+                    <td class="py-4 px-4 text-right">
+                      <button
+                        class="text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80 transition-colors"
+                        (click)="onEditStock(item)"
+                      >
+                        Edit stock
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile cards -->
+          <ul class="md:hidden divide-y divide-gray-100" role="list">
             @for (item of inventory(); track item.productId) {
-              <li>
-                <app-inventory-row
-                  [productId]="item.productId"
-                  [productName]="item.productName"
-                  [stockQuantity]="item.stockQuantity"
-                  [status]="item.status"
-                  (editStock)="onEditStock($event)"></app-inventory-row>
+              <li class="py-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-semibold text-mlm-text">{{ item.productName }}</span>
+                  <span
+                    class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full {{
+                      getStockStatusClass(item.stockStatus)
+                    }}"
+                  >
+                    {{ getStockStatusLabel(item.stockStatus) }}
+                  </span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-mlm-secondary"
+                    >SKU: {{ item.productSku }} · Stock: {{ item.stockQuantity }}</span
+                  >
+                  <button
+                    class="text-sm font-semibold text-mlm-primary"
+                    (click)="onEditStock(item)"
+                  >
+                    Edit
+                  </button>
+                </div>
               </li>
             }
           </ul>
@@ -41,6 +131,7 @@
     </div>
   </main>
 
+  <!-- Edit stock modal -->
   <p-dialog
     [visible]="editModalVisible()"
     (visibleChange)="editModalVisible.set($event)"
@@ -50,32 +141,58 @@
     [draggable]="false"
     [resizable]="false"
     (onHide)="onCloseModal()"
-    styleClass="rounded-xl">
+    styleClass="rounded-xl"
+  >
     <div class="py-2">
-      @if (editingItem(); as item) {
-        <p class="text-sm text-mlm-secondary mb-4">{{ item.productName }}</p>
-        <label for="edit-qty" class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2">Quantity</label>
-        <p-inputNumber
-          id="edit-qty"
-          [ngModel]="editQuantity()"
-          (ngModelChange)="editQuantity.set($event)"
-          [min]="0"
-          [showButtons]="true"
-          inputId="edit-qty"
-          class="w-full"></p-inputNumber>
-        <div class="flex gap-3 mt-6">
-          <p-button
-            label="Save"
-            icon="pi pi-check"
-            (onClick)="onSaveStock()"
-            styleClass="flex-1 !bg-mlm-primary !border-mlm-primary"></p-button>
-          <p-button
-            label="Cancel"
-            severity="secondary"
-            (onClick)="onCloseModal()"
-            styleClass="flex-1"></p-button>
-        </div>
-      }
+      <p class="text-sm text-mlm-secondary mb-4">{{ editProductName() }}</p>
+
+      <label
+        for="edit-qty"
+        class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
+        >Quantity</label
+      >
+      <p-inputNumber
+        id="edit-qty"
+        [ngModel]="editQuantity()"
+        (ngModelChange)="editQuantity.set($event)"
+        [min]="0"
+        [showButtons]="true"
+        inputId="edit-qty"
+        class="w-full"
+      ></p-inputNumber>
+
+      <label
+        for="edit-status"
+        class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2 mt-4"
+        >Status</label
+      >
+      <select
+        id="edit-status"
+        [ngModel]="editStatus()"
+        (ngModelChange)="editStatus.set($event)"
+        class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+      >
+        <option value="">Keep current</option>
+        @for (s of stockStatuses; track s) {
+          <option [value]="s">{{ getStockStatusLabel(s) }}</option>
+        }
+      </select>
+
+      <div class="flex gap-3 mt-6">
+        <p-button
+          label="Save"
+          icon="pi pi-check"
+          [loading]="actionLoading()"
+          (onClick)="onSaveStock()"
+          styleClass="flex-1 !bg-mlm-primary !border-mlm-primary"
+        ></p-button>
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          (onClick)="onCloseModal()"
+          styleClass="flex-1"
+        ></p-button>
+      </div>
     </div>
   </p-dialog>
 </div>

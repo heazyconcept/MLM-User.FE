@@ -25,11 +25,19 @@
           @if (fulfilmentOption() === 'pickup') {
             <div class="pb-5 pt-4 border-t border-gray-200 px-4">
               <h3 class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">Select pickup location</h3>
-              <app-location-selector
-                [locations]="pickupLocations"
-                [selectedId]="selectedPickupId()"
-                (locationSelect)="onLocationSelect($event)">
-              </app-location-selector>
+              @if (pickupLocationsLoading()) {
+                <p class="text-sm text-mlm-secondary py-2">Loading pickup locations…</p>
+              } @else if (pickupLocationsError()) {
+                <p class="text-sm text-red-600 py-2">{{ pickupLocationsError() }}</p>
+              } @else if (pickupLocations().length === 0) {
+                <p class="text-sm text-mlm-secondary py-2">No pickup locations available. Choose delivery instead.</p>
+              } @else {
+                <app-location-selector
+                  [locations]="pickupLocations()"
+                  [selectedId]="selectedPickupId()"
+                  (locationSelect)="onLocationSelect($event)">
+                </app-location-selector>
+              }
             </div>
           }
         </div>
@@ -78,8 +86,14 @@
         <button
           type="button"
           (click)="onConfirm()"
-          class="w-full py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2">
-          Confirm
+          [disabled]="!canConfirm()"
+          class="w-full py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2">
+          @if (submitting()) {
+            <span class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" aria-hidden="true"></span>
+            <span>Creating order…</span>
+          } @else {
+            {{ fulfilmentOption() === 'pickup' && !selectedPickupId() ? 'Select a pickup location' : 'Confirm' }}
+          }
         </button>
         </div>
       </div>

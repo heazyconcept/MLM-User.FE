@@ -1,70 +1,451 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
     <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div class="mb-10">
-        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Merchant Dashboard</h1>
-        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
-        <p class="text-mlm-secondary text-sm">Manage products, orders, and earnings</p>
-      </div>
+      <!-- Loading state -->
+      @if (loading()) {
+        <div class="flex items-center justify-center py-20">
+          <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
+        </div>
+      }
 
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4 mb-10">
-        <app-merchant-stat-card
-          title="Total merchant sales"
-          [value]="formatCurrency(totalMerchantSales())"
-          icon="pi pi-shopping-cart"
-          variant="bg-mlm-primary"></app-merchant-stat-card>
-        <app-merchant-stat-card
-          title="Pending fulfilments"
-          [value]="pendingFulfilmentsCount()"
-          icon="pi pi-clock"
-          variant="bg-mlm-blue-500"></app-merchant-stat-card>
-        <app-merchant-stat-card
-          title="Inventory summary"
-          [value]="inventorySummary().total + ' products'"
-          [subtitle]="inventorySummary().lowOrOut + ' low or out'"
-          icon="pi pi-box"
-          variant="bg-mlm-blue-700"></app-merchant-stat-card>
-        <app-merchant-stat-card
-          title="Merchant earnings"
-          [value]="formatCurrency(earnings().totalEarnings)"
-          icon="pi pi-money-bill"
-          variant="bg-brand-gold"></app-merchant-stat-card>
-      </div>
+      <!-- Error state -->
+      @if (error(); as err) {
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p class="text-red-700 text-sm">{{ err }}</p>
+        </div>
+      }
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <a
-          routerLink="/merchant/inventory"
-          class="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:border-mlm-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
-          <div class="w-10 h-10 rounded-xl bg-mlm-primary/10 flex items-center justify-center">
-            <i class="pi pi-box text-mlm-primary" aria-hidden="true"></i>
+      <!-- Not a merchant yet -->
+      @if (!loading() && !isMerchant()) {
+        <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-8 text-center">
+          <div
+            class="w-20 h-20 bg-mlm-primary/10 rounded-full flex items-center justify-center mx-auto mb-6"
+          >
+            <i class="pi pi-shop text-3xl text-mlm-primary" aria-hidden="true"></i>
           </div>
-          <span class="font-semibold text-mlm-text">Inventory</span>
-        </a>
-        <a
-          routerLink="/merchant/orders"
-          class="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:border-mlm-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
-          <div class="w-10 h-10 rounded-xl bg-mlm-blue-50 flex items-center justify-center">
-            <i class="pi pi-shopping-bag text-mlm-blue-500" aria-hidden="true"></i>
+          <h2 class="text-xl font-bold text-mlm-text mb-2">Become a Merchant</h2>
+          <p class="text-mlm-secondary text-sm mb-6 max-w-md mx-auto">
+            Apply to become a merchant and start selling products, managing orders, and earning
+            commissions.
+          </p>
+          <a
+            routerLink="/merchant/apply"
+            class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2"
+          >
+            Apply Now
+          </a>
+        </div>
+      }
+
+      <!-- Pending approval -->
+      @if (!loading() && isMerchant() && merchantStatus() === 'PENDING') {
+        <div class="bg-white rounded-lg border border-amber-200 shadow-sm p-8 text-center">
+          <div
+            class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6"
+          >
+            <i class="pi pi-clock text-3xl text-amber-500" aria-hidden="true"></i>
           </div>
-          <span class="font-semibold text-mlm-text">Orders</span>
-        </a>
-        <a
-          routerLink="/merchant/deliveries"
-          class="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:border-mlm-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
-          <div class="w-10 h-10 rounded-xl bg-mlm-success/10 flex items-center justify-center">
-            <i class="pi pi-truck text-mlm-success" aria-hidden="true"></i>
+          <h2 class="text-xl font-bold text-mlm-text mb-2">Application Pending</h2>
+          <p class="text-mlm-secondary text-sm mb-6 max-w-md mx-auto">
+            Your merchant application is being reviewed. You'll be notified once it's approved.
+          </p>
+        </div>
+      }
+
+      <!-- Suspended -->
+      @if (!loading() && merchantStatus() === 'SUSPENDED') {
+        <div class="bg-white rounded-lg border border-red-200 shadow-sm p-8 text-center">
+          <div
+            class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6"
+          >
+            <i class="pi pi-ban text-3xl text-red-500" aria-hidden="true"></i>
           </div>
-          <span class="font-semibold text-mlm-text">Deliveries</span>
-        </a>
-        <a
-          routerLink="/merchant/earnings"
-          class="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:border-mlm-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
-          <div class="w-10 h-10 rounded-xl bg-mlm-warning/10 flex items-center justify-center">
-            <i class="pi pi-chart-line text-mlm-warning" aria-hidden="true"></i>
+          <h2 class="text-xl font-bold text-mlm-text mb-2">Account Suspended</h2>
+          <p class="text-mlm-secondary text-sm mb-6 max-w-md mx-auto">
+            Your merchant account has been suspended. Please contact support for more information.
+          </p>
+        </div>
+      }
+
+      <!-- Active merchant dashboard -->
+      @if (!loading() && isActiveMerchant()) {
+        <div class="space-y-6 animate-fade-in">
+          <!-- Welcome header -->
+          @if (profile(); as profileData) {
+            <div class="flex items-center justify-between mb-8">
+              <div>
+                <h1 class="font-extrabold text-mlm-warm-900 tracking-tight text-2xl">
+                  Good morning 👋
+                </h1>
+                <p class="text-mlm-warm-500 mt-1 text-[13px]">
+                  Your store sales are up
+                  <strong class="text-mlm-primary">12%</strong> this month
+                </p>
+              </div>
+            </div>
+          }
+
+          <!-- Wallet hero -->
+          <div class="rounded-2xl mb-6 bg-mlm-primary">
+            <div class="grid grid-cols-1 lg:grid-cols-[1fr_1fr_1.5fr] p-8 gap-8">
+              <div>
+                <p class="font-bold text-white/80 uppercase mb-3 text-[11px] tracking-widest">
+                  Total Merchant Sales
+                </p>
+                <p
+                  class="text-white font-extrabold font-mono text-4xl tracking-tight leading-tight mb-2"
+                >
+                  {{ displayCurrency() === 'NGN' ? '₦' : '$' }}
+                  {{ totalMerchantSales() | number: '1.0-0' }}
+                </p>
+
+                <div class="flex gap-2.5 mt-6">
+                  <button
+                    type="button"
+                    routerLink="/merchant/earnings"
+                    class="px-5 py-2.5 rounded-xl font-bold text-mlm-primary bg-white text-sm transition-opacity hover:opacity-90"
+                  >
+                    Withdraw
+                  </button>
+                  <button
+                    type="button"
+                    routerLink="/merchant/orders"
+                    class="px-5 py-2.5 rounded-xl font-semibold text-white text-sm border border-white/40 transition-opacity hover:opacity-90"
+                  >
+                    Orders
+                  </button>
+                </div>
+              </div>
+
+              <!-- Quick Links matching UI layout -->
+              <div class="py-0 px-6 border-l border-white/20">
+                <div class="mb-6">
+                  <p class="font-bold text-white/80 uppercase mb-1.5 text-[11px] tracking-wide">
+                    Pending Orders
+                  </p>
+                  <p class="text-white font-bold font-mono text-[22px]">
+                    {{ pendingFulfilmentsCount() }}
+                  </p>
+                </div>
+                <div>
+                  <p class="font-bold text-white/80 uppercase mb-1.5 text-[11px] tracking-wide">
+                    Products Low/Out
+                  </p>
+                  <p class="text-white font-bold font-mono text-[22px]">
+                    {{ inventorySummary().lowOrOut }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="py-0 px-6 border-l border-white/20">
+                <p class="font-bold text-white/80 uppercase mb-3 text-[11px] tracking-wide">
+                  7-Day Sales Trend
+                </p>
+                <div class="h-14">
+                  <svg viewBox="0 0 200 48" class="w-full h-full" preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="dashboardSparkGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#fff" stop-opacity="0.2" />
+                        <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <polygon [attr.points]="sparklineArea" fill="url(#dashboardSparkGrad)" />
+                    <polyline
+                      [attr.points]="sparklinePoints"
+                      fill="none"
+                      stroke="#fff"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div class="flex items-center gap-2 mt-3">
+                  <span class="text-white font-bold rounded-full px-2.5 py-0.5 text-xs bg-white/20"
+                    >↑ 15%</span
+                  >
+                  <span class="text-white/80 text-xs">vs last week</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <span class="font-semibold text-mlm-text">Earnings</span>
-        </a>
-      </div>
+
+          <!-- Stat cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            @for (card of statCardsData; track card.label; let i = $index) {
+              <div
+                class="rounded-2xl p-5 transition-all duration-300 border border-transparent"
+                [style.background]="card.gradient"
+                [style.opacity]="cardsVisible[i] ? '1' : '0'"
+                [style.transform]="cardsVisible[i] ? 'translateY(0)' : 'translateY(12px)'"
+              >
+                <div class="text-2xl mb-2.5 text-white">
+                  <i [class]="'pi ' + card.icon"></i>
+                </div>
+                <p class="font-bold uppercase text-white/80 mb-1.5 text-[11px] tracking-wide">
+                  {{ card.label }}
+                </p>
+                <p
+                  class="text-white font-extrabold font-mono text-[22px] tracking-tight leading-tight"
+                >
+                  {{ card.value }}
+                </p>
+              </div>
+            }
+          </div>
+
+          <!-- Earnings Growth + Earnings Breakdown -->
+          <div class="grid gap-5 mb-6 grid-cols-1 lg:grid-cols-[1.5fr_1fr]">
+            <div class="bg-white rounded-2xl p-6 border border-mlm-warm-200">
+              <div class="flex items-start justify-between mb-5">
+                <div>
+                  <p class="font-bold text-mlm-warm-900 text-sm">Sales Overview</p>
+                  <p class="text-mlm-warm-500 mt-0.5 text-xs">Last 7 months</p>
+                </div>
+                <select
+                  class="rounded-xl px-3 py-1.5 text-mlm-warm-600 font-medium border border-mlm-warm-200 outline-none cursor-pointer bg-mlm-background text-xs"
+                >
+                  <option>Monthly</option>
+                  <option>Weekly</option>
+                </select>
+              </div>
+              <div class="flex items-end gap-2.5 px-1 h-[210px]">
+                @for (bar of barItems; track bar.label; let i = $index) {
+                  <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                    <div
+                      class="w-full rounded-t-xl rounded-b transition-all duration-700"
+                      [style.height]="getBarHeight(bar.value)"
+                      [style.background]="getBarBackground(i, bar.isLast)"
+                      [style.border]="getBarBorder(i, bar.isLast)"
+                      [style.transition-delay]="getBarDelay(i)"
+                    ></div>
+                    <span class="font-medium text-mlm-warm-500 text-[10px]">{{ bar.label }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 border border-mlm-warm-200">
+              <p class="font-bold text-mlm-warm-900 text-sm mb-5">Earnings Breakdown</p>
+              @for (item of earningsBreakdown(); track item.label) {
+                <div class="mb-4">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-2 h-2 rounded-full shrink-0"
+                        [style.background]="item.color"
+                      ></div>
+                      <span class="text-mlm-warm-600 font-medium text-[13px]">{{
+                        item.label
+                      }}</span>
+                    </div>
+                    <span class="font-bold text-mlm-warm-900 font-mono text-[13px]">
+                      {{ displayCurrency() === 'NGN' ? '₦' : '$'
+                      }}{{ item.value | number: '1.0-0' }}
+                    </span>
+                  </div>
+                  <div class="h-1.5 rounded-full overflow-hidden bg-mlm-warm-100">
+                    <div
+                      class="h-full rounded-full transition-[width] duration-300"
+                      [style.width.%]="item.pct"
+                      [style.background]="item.color"
+                    ></div>
+                  </div>
+                </div>
+              }
+              <div
+                class="flex items-center justify-between mt-5 px-4 py-3.5 rounded-xl border border-mlm-green-200 bg-mlm-green-50"
+              >
+                <span class="font-bold text-mlm-warm-900 text-[13px]">Total Earnings</span>
+                <span class="font-extrabold text-mlm-primary font-mono text-[17px]">
+                  {{ displayCurrency() === 'NGN' ? '₦' : '$'
+                  }}{{ earnings()?.merchantEarnings?.totalEarnings ?? 0 | number: '1.0-0' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Navigation — Option A (Compact Dock) -->
+
+          <div class="flex items-center justify-between mb-h6">
+            <h2 class="text-lg font-bold text-mlm-warm-900">Quick Actions</h2>
+          </div>
+          <div
+            class="flex w-full items-stretch gap-1 bg-white border border-transparent rounded-2xl p-1.5 mb-6"
+          >
+            <!-- Inventory -->
+            <a
+              routerLink="/merchant/inventory"
+              routerLinkActive="bg-gray-100 text-gray-900"
+              class="flex-1 group flex flex-col items-center gap-1.5 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all focus:outline-none focus:ring-2 focus:ring-gray-200"
+            >
+              <div
+                class="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="icon icon-tabler icons-tabler-outline icon-tabler-folder-plus"
+                >
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path
+                    d="M12 19h-7a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2h4l3 3h7a2 2 0 0 1 2 2v3.5"
+                  />
+                  <path d="M16 19h6" />
+                  <path d="M19 16v6" />
+                </svg>
+              </div>
+              <span class="text-[11px] font-semibold">Inventory</span>
+            </a>
+
+            <!-- Orders -->
+            <a
+              routerLink="/merchant/orders"
+              routerLinkActive="bg-gray-100 text-gray-900"
+              class="flex-1 group relative flex flex-col items-center gap-1.5 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all focus:outline-none focus:ring-2 focus:ring-gray-200"
+            >
+              <div
+                class="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform"
+              >
+                <i class="pi pi-shopping-bag text-gray-800 text-base" aria-hidden="true"></i>
+              </div>
+              <span class="text-[11px] font-semibold">Orders</span>
+              <span
+                *ngIf="pendingOrders > 0"
+                class="absolute top-2 sm:right-3 right-1 bg-gray-800 text-white text-[9px] font-bold px-1.5 py-px rounded-full leading-none"
+                >{{ pendingOrders }}</span
+              >
+            </a>
+
+            <!-- Deliveries -->
+            <a
+              routerLink="/merchant/deliveries"
+              routerLinkActive="bg-gray-100 text-gray-900"
+              class="flex-1 group flex flex-col items-center gap-1.5 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all focus:outline-none focus:ring-2 focus:ring-gray-200"
+            >
+              <div
+                class="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="icon icon-tabler icons-tabler-outline icon-tabler-truck-delivery"
+                >
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                  <path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                  <path d="M5 17h-2v-4m-1 -8h11v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5" />
+                  <path d="M3 9l4 0" />
+                </svg>
+              </div>
+              <span class="text-[11px] font-semibold">Deliveries</span>
+            </a>
+
+            <!-- Earnings -->
+            <a
+              routerLink="/merchant/earnings"
+              routerLinkActive="bg-gray-100 text-gray-900"
+              class="flex-1 group flex flex-col items-center gap-1.5 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all focus:outline-none focus:ring-2 focus:ring-gray-200"
+            >
+              <div
+                class="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform"
+              >
+                <i class="pi pi-chart-line text-gray-800 text-base" aria-hidden="true"></i>
+              </div>
+              <span class="text-[11px] font-semibold">Earnings</span>
+            </a>
+
+            <!-- Allocations -->
+            <a
+              routerLink="/merchant/allocations"
+              routerLinkActive="bg-gray-100 text-gray-900"
+              class="flex-1 group relative flex flex-col items-center gap-1.5 py-3 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all focus:outline-none focus:ring-2 focus:ring-gray-200"
+            >
+              <div
+                class="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform"
+              >
+                <i class="pi pi-inbox text-gray-800 text-base" aria-hidden="true"></i>
+              </div>
+              <span class="text-[11px] font-semibold">Allocations</span>
+              <span
+                *ngIf="unreadAllocations > 0"
+                class="absolute top-2 sm:right-3 right-1 bg-gray-800 text-white text-[9px] font-bold px-1.5 py-px rounded-full leading-none"
+                >{{ unreadAllocations }}</span
+              >
+            </a>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="bg-white rounded-2xl p-6 border border-transparent">
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <p class="font-bold text-mlm-warm-900 text-sm">Recent Activity</p>
+                <p class="text-mlm-warm-500 mt-0.5 text-xs">
+                  Your latest merchant transactions &amp; events
+                </p>
+              </div>
+              <button
+                type="button"
+                routerLink="/merchant/orders"
+                class="px-4 py-2 rounded-xl text-mlm-warm-600 font-semibold border border-mlm-warm-200 bg-mlm-background text-xs transition-opacity hover:opacity-80"
+              >
+                View orders →
+              </button>
+            </div>
+            @if (recentActivities().length > 0) {
+              <div class="flex flex-col gap-0.5">
+                @for (activity of recentActivities(); track activity.id) {
+                  <div
+                    class="flex items-center gap-3.5 px-3 py-3 rounded-xl cursor-pointer hover:bg-mlm-warm-50 transition-colors duration-150"
+                  >
+                    <div
+                      class="flex items-center justify-center w-11 h-11 rounded-2xl shrink-0 text-lg border"
+                      [style.background]="getActivityBg(activity.type)"
+                      [style.border-color]="getActivityBorder(activity.type)"
+                    >
+                      <i [class]="'pi ' + activity.icon" class="text-mlm-warm-700"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="font-semibold text-mlm-warm-900 text-[13px]">
+                        {{ activity.title }}
+                      </p>
+                      <p class="text-mlm-warm-500 mt-0.5 text-xs">{{ activity.description }}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                      @if (activity.amount != null) {
+                        <span
+                          class="inline-block font-extrabold font-mono rounded-full px-2.5 py-0.5 border text-[13px] text-mlm-green-700 bg-mlm-green-50 border-mlm-green-200"
+                        >
+                          {{ activityBadge(activity) }}
+                        </span>
+                      }
+                      <p class="text-mlm-warm-400 mt-1 text-[11px]">
+                        {{ formatActivityDate(activity.date) }}
+                      </p>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="text-sm text-mlm-warm-500 py-8 text-center">No recent activity</p>
+            }
+          </div>
+        </div>
+      }
     </div>
   </main>
 </div>

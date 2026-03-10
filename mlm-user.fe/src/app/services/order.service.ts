@@ -1,4 +1,7 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { ApiService } from './api.service';
+import { Observable, of } from 'rxjs';
+import { map, catchError, tap } from 'rxjs/operators';
 
 export type OrderFulfilmentMethod = 'pickup' | 'delivery';
 
@@ -37,102 +40,12 @@ const ORDER_STATUSES: OrderStatus[] = [
   'Ready for Pickup',
   'Out for Delivery',
   'Delivered',
-  'Cancelled'
+  'Cancelled',
 ];
 
-const MOCK_ORDERS: Order[] = [
-  {
-    id: 'ORD-001',
-    date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    items: [
-      { name: 'Premium Multivitamin Complex', quantity: 2, price: 15000 },
-      { name: 'Omega-3 Fish Oil Capsules', quantity: 1, price: 12000 }
-    ],
-    total: 45000,
-    currency: 'NGN',
-    fulfilmentMethod: 'delivery',
-    status: 'Delivered',
-    paymentMethod: 'Cash',
-    deliveryAddress: '12 Marina Street, Lagos Island, Lagos',
-    deliveryFee: 1500
-  },
-  {
-    id: 'ORD-002',
-    date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    items: [
-      { name: 'Luxury Skincare Set', quantity: 1, price: 45000 }
-    ],
-    total: 45000,
-    currency: 'NGN',
-    fulfilmentMethod: 'pickup',
-    status: 'Ready for Pickup',
-    paymentMethod: 'Voucher',
-    pickupLocationName: 'Lagos Central Store',
-    pickupLocationDistance: '2.5 km'
-  },
-  {
-    id: 'ORD-003',
-    date: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    items: [
-      { name: 'Smart Fitness Tracker', quantity: 1, price: 35000 },
-      { name: 'Organic Protein Powder', quantity: 1, price: 22500 }
-    ],
-    total: 59000,
-    currency: 'NGN',
-    fulfilmentMethod: 'delivery',
-    status: 'Out for Delivery',
-    paymentMethod: 'Cash',
-    deliveryAddress: '45 Adeola Odeku, Victoria Island, Lagos',
-    deliveryFee: 2000
-  },
-  {
-    id: 'ORD-004',
-    date: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    items: [
-      { name: 'Monthly Wellness Subscription', quantity: 1, price: 25000 }
-    ],
-    total: 25000,
-    currency: 'NGN',
-    fulfilmentMethod: 'delivery',
-    status: 'Processing',
-    paymentMethod: 'Autoship',
-    deliveryAddress: '8 Bourdillon Road, Ikoyi, Lagos',
-    deliveryFee: 1000
-  },
-  {
-    id: 'ORD-005',
-    date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    items: [
-      { name: 'Essential Oil Diffuser Set', quantity: 1, price: 18500 }
-    ],
-    total: 18500,
-    currency: 'NGN',
-    fulfilmentMethod: 'pickup',
-    status: 'Cancelled',
-    paymentMethod: 'Cash',
-    pickupLocationName: 'Ikeja Store',
-    pickupLocationDistance: '5.1 km'
-  },
-  {
-    id: 'ORD-006',
-    date: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    items: [
-      { name: 'Collagen Beauty Powder', quantity: 2, price: 19500 }
-    ],
-    total: 39000,
-    currency: 'NGN',
-    fulfilmentMethod: 'delivery',
-    status: 'Pending',
-    paymentMethod: 'Voucher',
-    deliveryAddress: '22 Ajose Adeogun, Victoria Island, Lagos',
-    deliveryFee: 1500
-  }
-];
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class OrderService {
+  private api = inject(ApiService);
   private listState = signal<Order[]>([]);
   private selectedOrderState = signal<Order | null>(null);
   private fulfilmentOptionState = signal<'pickup' | 'delivery'>('delivery');
@@ -153,7 +66,7 @@ export class OrderService {
       result = result.filter(
         (o) =>
           o.id.toLowerCase().includes(query) ||
-          o.items.some((i) => i.name.toLowerCase().includes(query))
+          o.items.some((i) => i.name.toLowerCase().includes(query)),
       );
     }
     if (statusFilter) {
@@ -180,12 +93,100 @@ export class OrderService {
     this.fulfilmentOptionState.set(option);
   }
 
-  getOrderById(id: string): Order | undefined {
-    return this.listState().find((o) => o.id === id);
+  getOrderById(id: string, forceRefresh = false): Observable<Order | undefined> {
+    if (!forceRefresh) {
+      const existing = this.listState().find((o) => o.id === id);
+      if (existing) return of(existing);
+    }
+
+    return this.api.get<any>(`orders/${id}`).pipe(
+      map((res) => this.mapOrder(res)),
+      tap((mapped) => {
+        const list = [...this.listState()];
+        const idx = list.findIndex((o) => o.id === id);
+        if (idx >= 0) list[idx] = mapped;
+        else list.unshift(mapped);
+        this.listState.set(list);
+      }),
+      catchError(() => of(undefined)),
+    );
   }
 
-  loadOrders(): void {
-    this.listState.set([...MOCK_ORDERS]);
+  loadOrders(filters?: any): void {
+    let url = 'orders';
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.fromDate) params.append('fromDate', filters.fromDate);
+    if (filters?.toDate) params.append('toDate', filters.toDate);
+    if (filters?.limit) params.append('limit', filters.limit);
+    if (filters?.offset) params.append('offset', filters.offset);
+    const qs = params.toString();
+    if (qs) url += `?${qs}`;
+
+    this.api.get<any>(url).subscribe({
+      next: (res) => {
+        if (res && res.orders) {
+          const mapped = res.orders.map((o: any) => this.mapOrder(o));
+          this.listState.set(mapped);
+        } else {
+          this.listState.set([]);
+        }
+      },
+      error: (err) => console.error('Failed to load orders', err),
+    });
+  }
+
+  createOrder(payload: any): Observable<Order> {
+    return this.api.post<any>('orders', payload).pipe(map((res) => this.mapOrder(res)));
+  }
+
+  payOrderWithWallet(id: string): Observable<void> {
+    return this.api.post<void>(`orders/${id}/pay-wallet`, {});
+  }
+
+  cancelOrder(id: string): Observable<Order> {
+    return this.api.post<any>(`orders/${id}/cancel`, {}).pipe(map((res) => this.mapOrder(res)));
+  }
+
+  confirmOrderReceived(id: string): Observable<void> {
+    return this.api.post<void>(`orders/${id}/confirm-received`, {});
+  }
+
+  private mapOrder(o: any): Order {
+    return {
+      id: o.id,
+      date: o.createdAt || new Date().toISOString(),
+      items: o.items
+        ? o.items.map((i: any) => ({
+            name: i.productName,
+            quantity: i.quantity,
+            price: i.unitPrice,
+          }))
+        : [],
+      total: o.totalAmount || 0,
+      currency: o.currency || 'NGN',
+      fulfilmentMethod: o.fulfilmentMode?.toLowerCase() === 'pickup' ? 'pickup' : 'delivery',
+      status: this.mapStatus(o.status),
+      paymentMethod: o.paymentMethod || 'Cash',
+      deliveryAddress: o.deliveryAddress || undefined,
+      pickupLocationName: o.selectedMerchantId ? 'Merchant Center' : undefined,
+    };
+  }
+
+  private mapStatus(backendStatus: string): OrderStatus {
+    switch (backendStatus) {
+      case 'PENDING':
+      case 'CREATED':
+        return 'Pending';
+      case 'PAID':
+        return 'Processing';
+      case 'DELIVERED':
+        return 'Delivered';
+      case 'CANCELLED':
+        return 'Cancelled';
+      default:
+        return 'Pending';
+    }
   }
 
   clearFilters(): void {

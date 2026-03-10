@@ -1,10 +1,15 @@
 <div
-  [class]="'relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02] ' + (variant() || 'bg-mlm-primary')">
+  [class]="
+    'relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02] ' +
+    (variant() || 'bg-mlm-primary')
+  "
+>
   @if (icon(); as iconClass) {
     <i
       [class]="iconClass"
       class="absolute text-[150px] -bottom-5 -right-5 opacity-25 pointer-events-none z-0"
-      aria-hidden="true"></i>
+      aria-hidden="true"
+    ></i>
   }
   <div class="relative z-10 flex flex-col gap-2">
     <span class="text-xs font-bold uppercase tracking-wider opacity-90" [attr.aria-label]="title()">

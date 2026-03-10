@@ -2,43 +2,66 @@
   <main class="py-10">
     <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <div class="mb-10">
-        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Delivery Assignments</h1>
+        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Delivery History</h1>
         <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
-        <p class="text-mlm-secondary text-sm">Assigned deliveries and customer info</p>
+        <p class="text-mlm-secondary text-sm">Orders you've confirmed as delivered</p>
       </div>
 
       <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
-        @if (deliveries().length === 0) {
-          <div class="flex flex-col items-center justify-center py-20 text-center border-t border-gray-200 pt-12">
-            <div class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6">
+        @if (loading()) {
+          <div class="flex items-center justify-center py-20">
+            <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
+          </div>
+        } @else if (error(); as err) {
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p class="text-red-700 text-sm">{{ err }}</p>
+          </div>
+        } @else if (deliveries().length === 0) {
+          <div class="flex flex-col items-center justify-center py-20 text-center">
+            <div
+              class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6"
+            >
               <i class="pi pi-truck text-4xl text-mlm-warm-400" aria-hidden="true"></i>
             </div>
-            <h2 class="text-xl font-bold text-mlm-text mb-2">No assigned deliveries</h2>
+            <h2 class="text-xl font-bold text-mlm-text mb-2">No delivery confirmations yet</h2>
             <p class="text-mlm-secondary text-sm mb-6 max-w-md">
-              Delivery assignments will appear here when orders are ready.
+              Confirmed deliveries will appear here.
             </p>
             <a
               routerLink="/merchant/orders"
-              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2">
+              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2"
+            >
               View Orders
             </a>
           </div>
         } @else {
-          <ul class="border-t border-gray-200" role="list">
+          <p class="text-sm text-mlm-secondary mb-4">{{ deliveriesTotal() }} confirmation(s)</p>
+          <ul class="border-t border-gray-200 divide-y divide-gray-100" role="list">
             @for (d of deliveries(); track d.id) {
-              <li class="border-b border-gray-200 last:border-b-0 py-5 hover:bg-gray-50/50 transition-colors">
+              <li class="py-5 hover:bg-gray-50/50 transition-colors">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div class="flex-1 min-w-0">
                     <div class="flex flex-wrap items-center gap-2 mb-1">
-                      <span class="text-sm font-bold text-mlm-text">Order {{ d.orderId }}</span>
-                      <app-status-badge [status]="d.status" size="sm"></app-status-badge>
+                      <span class="text-sm font-bold text-mlm-text"
+                        >Order {{ d.orderId | slice: 0 : 12 }}…</span
+                      >
+                      <app-status-badge status="Delivered" size="sm"></app-status-badge>
                     </div>
-                    <p class="font-semibold text-mlm-text">{{ d.customerName }}</p>
-                    @if (d.address) {
-                      <p class="text-sm text-mlm-secondary truncate" [title]="d.address">{{ d.address }}</p>
+                    <p class="text-sm text-mlm-secondary">Confirmed by: {{ d.confirmedBy }}</p>
+                    <p class="text-xs text-mlm-secondary mt-1">{{ formatDate(d.createdAt) }}</p>
+                    @if (d.notes) {
+                      <p class="text-sm text-mlm-text mt-2 italic">"{{ d.notes }}"</p>
                     }
-                    @if (d.phone) {
-                      <p class="text-xs text-mlm-secondary">{{ d.phone }}</p>
+                  </div>
+                  <div class="shrink-0">
+                    @if (d.proof) {
+                      <a
+                        [href]="d.proof"
+                        target="_blank"
+                        class="text-sm text-mlm-primary hover:underline inline-flex items-center gap-1"
+                      >
+                        <i class="pi pi-external-link" aria-hidden="true"></i> View proof
+                      </a>
                     }
                   </div>
                 </div>

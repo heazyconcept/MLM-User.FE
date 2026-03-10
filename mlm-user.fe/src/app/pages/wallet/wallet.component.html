@@ -1,7 +1,6 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-8">
     <div class="px-4 sm:px-6 lg:px-8 mx-auto">
-
       @if (!isPaid()) {
         <!-- Access Restricted State -->
         <div class="max-w-3xl mx-auto">
@@ -13,13 +12,15 @@
               <div class="space-y-1">
                 <h3 class="text-lg font-semibold text-gray-900">Complete registration</h3>
                 <p class="text-gray-500 text-sm max-w-md">
-                  Pay your registration fee to access your wallet, view transactions, and make withdrawals.
+                  Pay your registration fee to access your wallet, view transactions, and make
+                  withdrawals.
                 </p>
               </div>
               <button
                 type="button"
                 (click)="navigateToPayment()"
-                class="px-5 py-2.5 bg-mlm-primary text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors">
+                class="px-5 py-2.5 bg-mlm-primary text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors"
+              >
                 Pay Registration Fee
               </button>
             </div>
@@ -60,293 +61,397 @@
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h1 class="text-2xl font-bold text-gray-900">My Wallet</h1>
-                <p class="text-gray-500 text-sm mt-1">Manage your balances and withdraw your earnings.</p>
+                <p class="text-gray-500 text-sm mt-1">
+                  Manage your balances and withdraw your earnings.
+                </p>
               </div>
               <div class="flex flex-wrap gap-2">
                 <button
                   (click)="navigateToFunding()"
-                  class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors">
+                  class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                >
                   Fund wallet
                 </button>
                 <button
                   (click)="navigateToTransactions()"
-                  class="inline-flex items-center gap-2 px-4 py-2.5 bg-mlm-primary text-white text-sm font-medium rounded-xl hover:opacity-90 transition-colors">
+                  class="inline-flex items-center gap-2 px-4 py-2.5 bg-mlm-primary text-white text-sm font-medium rounded-xl hover:opacity-90 transition-colors"
+                >
                   View Transactions
                 </button>
               </div>
             </div>
 
-            <!-- Main Grid: Wallet Cards + Right Sidebar (always shown; "--" for empty balances) -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
-              <!-- Left Section: Wallet Type Cards -->
-              <div class="lg:col-span-2 space-y-6">
-                @for (wallet of displayWallets(); track wallet.id) {
-                    <section class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                      <!-- Card header -->
-                      <div class="px-6 py-4 border-b border-gray-100">
-                        <div class="flex items-center justify-between">
-                          <h3 class="text-base font-semibold text-gray-900">{{ wallet.currency }} Wallet</h3>
-                          <div class="text-right">
-                            <span class="text-sm font-medium text-gray-900">Total {{ formatAmountOrPlaceholder(wallet.balance, wallet.currency) }}</span>
-                          </div>
+            <!-- Main Layout Restructured -->
+            <div class="space-y-8 mt-6">
+              <!-- Top Banner: Total Balance & Breakdown -->
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Total Balance Card -->
+                <div
+                  class="bg-gradient-to-br from-mlm-primary to-brand-green-dark rounded-2xl p-6 text-white shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[180px]"
+                >
+                  <!-- Background Pattern -->
+                  <div class="absolute inset-0 opacity-10">
+                    <div
+                      class="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-1/2 translate-x-1/4"
+                    ></div>
+                    <div
+                      class="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-1/2 -translate-x-1/4"
+                    ></div>
+                  </div>
+
+                  <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-4">
+                      <div class="flex items-center gap-2">
+                        <div
+                          class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm"
+                        >
+                          <i class="pi pi-wallet text-xl"></i>
+                        </div>
+                        <span class="text-sm font-medium opacity-90">Total Balance</span>
+                      </div>
+                      <button
+                        (click)="toggleBalanceVisibility()"
+                        class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                      >
+                        <i
+                          [class]="'pi text-sm ' + (isBalanceHidden() ? 'pi-eye' : 'pi-eye-slash')"
+                        ></i>
+                      </button>
+                    </div>
+
+                    <div class="mb-4">
+                      <p class="text-4xl font-extrabold tracking-tight">
+                        @if (isBalanceHidden()) {
+                          {{ getHiddenBalance() }}
+                        } @else {
+                          {{ formatAmountOrPlaceholder(totalBalance(), displayCurrency()) }}
+                        }
+                      </p>
+                      <p class="text-xs opacity-70 mt-1">Across all wallets</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mt-auto">
+                      <button
+                        (click)="navigateToWithdrawals()"
+                        class="py-2.5 px-4 bg-white/20 hover:bg-white/30 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2 backdrop-blur-sm"
+                      >
+                        <i class="pi pi-history text-xs"></i>
+                        History
+                      </button>
+                      <button
+                        (click)="navigateToFunding()"
+                        class="py-2.5 px-4 bg-white text-mlm-primary hover:bg-brand-green-light rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <i class="pi pi-plus text-xs"></i>
+                        Fund
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="lg:col-span-2 bg-white rounded-2xl border border-transparent p-6 flex flex-col justify-center"
+                >
+                  <h3 class="text-sm font-semibold text-mlm-text mb-4">Balance Breakdown</h3>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <!-- Cash Balance -->
+                    <div
+                      class="flex items-center justify-between p-3.5 bg-mlm-green-50 rounded-xl border border-mlm-green-100 transition-colors hover:border-mlm-green-200"
+                    >
+                      <div class="flex items-center gap-3">
+                        <!-- Icon removed -->
+                        <div>
+                          <p class="text-xs font-semibold text-mlm-text">Cash Balance</p>
+                          <p class="text-[10px] text-gray-500 font-medium">Withdrawable</p>
                         </div>
                       </div>
+                      <span class="text-right">
+                        <span class="text-base font-bold text-gray-900 block">
+                          @if (isBalanceHidden()) {
+                            ••••••
+                          } @else {
+                            {{ formatAmountOrPlaceholder(totalCashBalance(), displayCurrency()) }}
+                          }
+                        </span>
+                      </span>
+                    </div>
 
-                      <div class="divide-y divide-gray-100">
-                        <!-- Cash Wallet -->
-                        <div class="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                          <div class="min-w-0">
-                            <p class="text-sm font-medium text-gray-900">Cash Wallet</p>
-                            <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatAmountOrPlaceholder(wallet.cashBalance, wallet.currency) }}</p>
-                            <span class="text-xs text-gray-500 mt-1 inline-block"
-                                  pTooltip="Can be withdrawn to your bank account"
-                                  tooltipPosition="top">Withdrawable</span>
+                    <!-- Voucher Balance -->
+                    <div
+                      class="flex items-center justify-between p-3.5 bg-mlm-warm-50 rounded-xl border border-mlm-warm-200 transition-colors hover:border-mlm-warm-300"
+                    >
+                      <div class="flex items-center gap-3">
+                        <!-- Icon removed -->
+                        <div>
+                          <p class="text-xs font-semibold text-mlm-text">Voucher Balance</p>
+                          <p class="text-[10px] text-gray-500 font-medium">Products only</p>
+                        </div>
+                      </div>
+                      <span class="text-right">
+                        <span class="text-base font-bold text-gray-900 block">
+                          @if (isBalanceHidden()) {
+                            ••••••
+                          } @else {
+                            {{
+                              formatAmountOrPlaceholder(totalVoucherBalance(), displayCurrency())
+                            }}
+                          }
+                        </span>
+                      </span>
+                    </div>
+
+                    <!-- Autoship Balance -->
+                    <div
+                      class="flex items-center justify-between p-3.5 bg-mlm-teal-50 rounded-xl border border-mlm-teal-100 transition-colors hover:border-mlm-teal-200"
+                    >
+                      <div class="flex items-center gap-3">
+                        <!-- Icon removed -->
+                        <div>
+                          <p class="text-xs font-semibold text-mlm-text">Autoship Balance</p>
+                          <p class="text-[10px] text-gray-500 font-medium">Recurring orders</p>
+                        </div>
+                      </div>
+                      <span class="text-right">
+                        <span class="text-base font-bold text-gray-900 block">
+                          @if (isBalanceHidden()) {
+                            ••••••
+                          } @else {
+                            {{
+                              formatAmountOrPlaceholder(totalAutoshipBalance(), displayCurrency())
+                            }}
+                          }
+                        </span>
+                      </span>
+                    </div>
+
+                    <!-- Registration Balance -->
+                    <div
+                      class="flex items-center justify-between p-3.5 bg-blue-50 rounded-xl border border-blue-100 transition-colors hover:border-blue-200"
+                    >
+                      <div class="flex items-center gap-3">
+                        <!-- Icon removed -->
+                        <div>
+                          <p class="text-xs font-semibold text-mlm-text">Registration Balance</p>
+                          <p class="text-[10px] text-gray-500 font-medium">Registration funds</p>
+                        </div>
+                      </div>
+                      <span class="text-right">
+                        <span class="text-base font-bold text-gray-900 block">
+                          @if (isBalanceHidden()) {
+                            ••••••
+                          } @else {
+                            {{
+                              formatAmountOrPlaceholder(
+                                totalRegistrationBalance(),
+                                displayCurrency()
+                              )
+                            }}
+                          }
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mid Section: Wallets Loop & Right Sidebar -->
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Section: Wallet Groups -->
+                <div class="lg:col-span-2 space-y-10">
+                  @for (wallet of displayWallets(); track wallet.id) {
+                    <div class="space-y-6">
+                      <!-- Currency Header -->
+                      <div class="flex items-center justify-between px-1">
+                        <h3 class="text-lg font-bold text-gray-900 tracking-tight">
+                          {{ wallet.currency }} Wallets
+                        </h3>
+                        <span
+                          class="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full"
+                          >Total:
+                          {{ formatAmountOrPlaceholder(wallet.balance, wallet.currency) }}</span
+                        >
+                      </div>
+
+                      <!-- Sub-Wallets Grid -->
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <!-- Cash Card -->
+                        <div
+                          class="bg-white rounded-2xl p-5 border border-transparent flex flex-col h-full hover:border-mlm-green-200 transition-colors group"
+                        >
+                          <div class="flex items-start justify-end mb-4">
+                            <span
+                              class="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-100 px-2 py-1 rounded-md"
+                              >Withdrawable</span
+                            >
                           </div>
-                          <div class="flex gap-2 shrink-0">
+                          <div class="mb-5 flex-1">
+                            <h4 class="text-sm font-semibold text-gray-500">Cash Wallet</h4>
+                            <p class="text-2xl font-extrabold text-gray-900 mt-1 tracking-tight">
+                              {{ formatAmountOrPlaceholder(wallet.cashBalance, wallet.currency) }}
+                            </p>
+                          </div>
+                          <div class="grid grid-cols-2 gap-2 mt-auto">
                             <button
                               (click)="openWithdrawDialog(wallet)"
                               [disabled]="wallet.cashBalance <= 0 || wallet.id === 'placeholder'"
-                              class="px-4 py-2 text-sm font-medium text-white bg-mlm-primary rounded-lg hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                              class="w-full py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg hover:bg-brand-green-dark transition-colors disabled:opacity-50"
+                            >
                               Withdraw
                             </button>
                             <button
                               (click)="navigateToFunding()"
-                              class="px-4 py-2 text-sm font-medium text-mlm-secondary bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                              class="w-full py-2 bg-gray-50 text-gray-700 text-xs font-bold rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                            >
                               Fund
                             </button>
                           </div>
                         </div>
 
-                        <!-- Voucher Wallet -->
-                        <div class="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                          <div class="min-w-0">
-                            <p class="text-sm font-medium text-gray-900">Voucher Wallet</p>
-                            <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatAmountOrPlaceholder(wallet.voucherBalance, wallet.currency) }}</p>
-                            <span class="text-xs text-gray-500 mt-1 inline-block"
-                                  pTooltip="Can only be used for product purchases"
-                                  tooltipPosition="top">Non-withdrawable</span>
+                        <!-- Voucher Card -->
+                        <div
+                          class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col h-full hover:border-mlm-warm-300 transition-colors group"
+                        >
+                          <div class="flex items-start justify-end mb-4">
+                            <span
+                              class="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-100 px-2 py-1 rounded-md"
+                              >Products Only</span
+                            >
                           </div>
-                          <div class="flex gap-2 shrink-0">
+                          <div class="mb-5 flex-1">
+                            <h4 class="text-sm font-semibold text-gray-500">Voucher Wallet</h4>
+                            <p class="text-2xl font-extrabold text-gray-900 mt-1 tracking-tight">
+                              {{
+                                formatAmountOrPlaceholder(wallet.voucherBalance, wallet.currency)
+                              }}
+                            </p>
+                          </div>
+                          <div class="grid grid-cols-2 gap-2 mt-auto">
                             <button
                               (click)="openTransferDialog('VOUCHER')"
                               [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
-                              class="px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                              class="w-full py-2 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50"
+                            >
                               Top Up
                             </button>
                             <button
                               (click)="navigateToMarketplace()"
-                              class="px-4 py-2 text-sm font-medium text-white bg-mlm-primary rounded-lg hover:opacity-90 transition-colors">
-                              Browse Products
+                              class="w-full py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg hover:bg-brand-green-dark transition-colors"
+                            >
+                              Browse
                             </button>
                           </div>
                         </div>
 
-                        <!-- Autoship Wallet -->
-                        <div class="px-6 py-4">
-                          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <div class="min-w-0">
-                              <p class="text-sm font-medium text-gray-900">Autoship Wallet</p>
-                              <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatAmountOrPlaceholder(wallet.autoshipBalance, wallet.currency) }}</p>
-                              <span class="text-xs text-gray-500 mt-1 inline-block"
-                                    pTooltip="Auto product credits for recurring orders"
-                                    tooltipPosition="top">Non-withdrawable · Recurring orders</span>
-                            </div>
+                        <!-- Autoship Card -->
+                        <div
+                          class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col h-full hover:border-mlm-teal-200 transition-colors group"
+                        >
+                          <div class="flex items-start justify-end mb-4">
+                            <span
+                              class="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-100 px-2 py-1 rounded-md"
+                              pTooltip="Auto product credits"
+                              tooltipPosition="top"
+                              >Recurring</span
+                            >
+                          </div>
+                          <div class="mb-5 flex-1">
+                            <h4 class="text-sm font-semibold text-gray-500">Autoship Wallet</h4>
+                            <p class="text-2xl font-extrabold text-gray-900 mt-1 tracking-tight">
+                              {{
+                                formatAmountOrPlaceholder(wallet.autoshipBalance, wallet.currency)
+                              }}
+                            </p>
+                          </div>
+                          <div class="mt-auto">
                             <button
                               (click)="openTransferDialog('AUTOSHIP')"
                               [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
-                              class="px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0 w-fit">
+                              class="w-full py-2 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50"
+                            >
                               Top Up
                             </button>
                           </div>
                         </div>
 
-                        <!-- Registration Wallet -->
-                        <div class="px-6 py-4">
-                          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <div class="min-w-0">
-                              <p class="text-sm font-medium text-gray-900">Registration Wallet</p>
-                              <p class="text-xl font-semibold text-gray-900 mt-0.5">{{ formatAmountOrPlaceholder(wallet.registrationBalance, wallet.currency) }}</p>
-                              <span class="text-xs text-gray-500 mt-1 inline-block"
-                                    pTooltip="Funds from your registration package"
-                                    tooltipPosition="top">Non-withdrawable · Registration</span>
-                            </div>
-                            <div class="flex gap-2 shrink-0">
-                              <button
-                                (click)="openTransferDialog('REGISTRATION')"
-                                [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
-                                class="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                Pay from Cash
-                              </button>
-                              <button
-                                (click)="openRegistrationFundingDialog()"
-                                class="px-4 py-2 text-sm font-medium text-white bg-mlm-primary rounded-lg hover:opacity-90 transition-colors">
-                                Fund
-                              </button>
-                            </div>
+                        <!-- Registration Card -->
+                        <div
+                          class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm flex flex-col h-full hover:border-blue-200 transition-colors group"
+                        >
+                          <div class="flex items-start justify-end mb-4">
+                            <span
+                              class="text-[10px] font-bold uppercase tracking-wider text-gray-600 bg-gray-100 px-2 py-1 rounded-md"
+                              >Registration</span
+                            >
+                          </div>
+                          <div class="mb-5 flex-1">
+                            <h4 class="text-sm font-semibold text-gray-500">Registration Wallet</h4>
+                            <p class="text-2xl font-extrabold text-gray-900 mt-1 tracking-tight">
+                              {{
+                                formatAmountOrPlaceholder(
+                                  wallet.registrationBalance,
+                                  wallet.currency
+                                )
+                              }}
+                            </p>
+                          </div>
+                          <div class="grid grid-cols-2 gap-2 mt-auto">
+                            <button
+                              (click)="openTransferDialog('REGISTRATION')"
+                              [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
+                              class="w-full py-2 bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+                            >
+                              Pay from Cash
+                            </button>
+                            <button
+                              (click)="openRegistrationFundingDialog()"
+                              class="w-full py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg hover:bg-brand-green-dark transition-colors"
+                            >
+                              Fund
+                            </button>
                           </div>
                         </div>
                       </div>
-                    </section>
+                    </div>
                   }
                 </div>
 
-                <!-- Right Sidebar: Total Balance -->
-                <div class="space-y-4">
-                  
-                  <!-- Total Balance Card -->
-                  <div class="bg-gradient-to-br from-mlm-primary to-brand-green-dark rounded-2xl p-6 text-white shadow-sm relative overflow-hidden">
-                    <!-- Background Pattern -->
-                    <div class="absolute inset-0 opacity-10">
-                      <div class="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-1/2 translate-x-1/4"></div>
-                      <div class="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-1/2 -translate-x-1/4"></div>
-                    </div>
-                    
-                    <div class="relative z-10">
-                      <div class="flex items-center gap-2 mb-4">
-                        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                          <i class="pi pi-wallet text-xl"></i>
-                        </div>
-                        <span class="text-sm font-medium opacity-90">Total Balance</span>
-                      </div>
-                      
-                      <div class="mb-6">
-                        <div class="flex items-center gap-3">
-                          <p class="text-3xl font-bold">
-                            @if (isBalanceHidden()) {
-                              {{ getHiddenBalance() }}
-                            } @else {
-                              {{ formatAmountOrPlaceholder(totalBalance(), displayCurrency()) }}
-                            }
-                          </p>
-                          <!-- Eye Toggle Button -->
-                          <button 
-                            (click)="toggleBalanceVisibility()"
-                            class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
-                            <i [class]="'pi text-sm ' + (isBalanceHidden() ? 'pi-eye' : 'pi-eye-slash')"></i>
-                          </button>
-                        </div>
-                        <p class="text-xs opacity-70 mt-1">Across all wallets</p>
-                      </div>
-
-                      <div class="grid grid-cols-2 gap-3">
-                        <button 
-                          (click)="navigateToWithdrawals()"
-                          class="py-2.5 px-4 bg-white/20 hover:bg-white/30 rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2">
-                          <i class="pi pi-history text-xs"></i>
-                          History
-                        </button>
-                        <button 
-                          (click)="navigateToFunding()"
-                          class="py-2.5 px-4 bg-white text-mlm-primary hover:bg-brand-green-light rounded-xl text-xs font-semibold transition-colors flex items-center justify-center gap-2">
-                          <i class="pi pi-plus text-xs"></i>
-                          Fund
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Balance Breakdown -->
-                  <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                    <h3 class="text-sm font-semibold text-mlm-text mb-4">Balance Breakdown</h3>
-                    
-                    <div class="space-y-3">
-                      <!-- Cash Balance -->
-                      <div class="flex items-center justify-between p-3 bg-mlm-green-50 rounded-xl border border-mlm-green-100">
-                        <div class="flex items-center gap-3">
-                          <div class="w-8 h-8 rounded-lg bg-mlm-green-100 flex items-center justify-center">
-                            <i class="pi pi-wallet text-mlm-green-600 text-sm"></i>
-                          </div>
-                          <div>
-                            <p class="text-xs font-medium text-mlm-text">Cash Balance</p>
-                            <p class="text-[10px] text-mlm-green-600">Withdrawable</p>
-                          </div>
-                        </div>
-                        <span class="text-right">
-                          <span class="text-sm font-bold text-mlm-text block">
-                            @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalCashBalance(), displayCurrency()) }} }
-                          </span>
-                        </span>
-                      </div>
-
-                      <!-- Voucher Balance -->
-                      <div class="flex items-center justify-between p-3 bg-mlm-warm-50 rounded-xl border border-mlm-warm-200">
-                        <div class="flex items-center gap-3">
-                          <div class="w-8 h-8 rounded-lg bg-mlm-warm-100 flex items-center justify-center">
-                            <i class="pi pi-ticket text-brand-gold text-sm"></i>
-                          </div>
-                          <div>
-                            <p class="text-xs font-medium text-mlm-text">Voucher Balance</p>
-                            <p class="text-[10px] text-mlm-warm-500">Products only</p>
-                          </div>
-                        </div>
-                        <span class="text-right">
-                          <span class="text-sm font-bold text-mlm-text block">
-                            @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalVoucherBalance(), displayCurrency()) }} }
-                          </span>
-                        </span>
-                      </div>
-
-                      <!-- Autoship Balance -->
-                      <div class="flex items-center justify-between p-3 bg-mlm-teal-50 rounded-xl border border-mlm-teal-100">
-                        <div class="flex items-center gap-3">
-                          <div class="w-8 h-8 rounded-lg bg-mlm-teal-100 flex items-center justify-center">
-                            <i class="pi pi-sync text-mlm-teal-600 text-sm"></i>
-                          </div>
-                          <div>
-                            <p class="text-xs font-medium text-mlm-text">Autoship Balance</p>
-                            <p class="text-[10px] text-mlm-teal-600">Recurring orders</p>
-                          </div>
-                        </div>
-                        <span class="text-right">
-                          <span class="text-sm font-bold text-mlm-text block">
-                            @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalAutoshipBalance(), displayCurrency()) }} }
-                          </span>
-                        </span>
-                      </div>
-
-                      <!-- Registration Balance -->
-                      <div class="flex items-center justify-between p-3 bg-blue-50 rounded-xl border border-blue-100">
-                        <div class="flex items-center gap-3">
-                          <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                            <i class="pi pi-id-card text-blue-600 text-sm"></i>
-                          </div>
-                          <div>
-                            <p class="text-xs font-medium text-mlm-text">Registration Balance</p>
-                            <p class="text-[10px] text-blue-600">Registration funds</p>
-                          </div>
-                        </div>
-                        <span class="text-right">
-                          <span class="text-sm font-bold text-mlm-text block">
-                            @if (isBalanceHidden()) { •••••• } @else { {{ formatAmountOrPlaceholder(totalRegistrationBalance(), displayCurrency()) }} }
-                          </span>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
+                <!-- Right Sidebar -->
+                <div class="space-y-6">
                   <!-- Earnings Split Card -->
                   <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
                     <h3 class="text-sm font-semibold text-mlm-text mb-3">Earnings Split</h3>
-                    <p class="text-[10px] text-gray-500 mb-3">How your earnings are distributed across wallets.</p>
+                    <p class="text-[10px] text-gray-500 mb-3">
+                      How your earnings are distributed across wallets.
+                    </p>
                     <div class="space-y-2">
                       <div class="flex items-center justify-between">
                         <span class="text-xs text-gray-600 flex items-center gap-1.5">
                           <span class="w-2 h-2 rounded-full bg-green-500"></span>
                           Cash (withdrawable)
                         </span>
-                        <span class="text-xs font-bold text-gray-900">{{ earningsSplit().cashPct }}%</span>
+                        <span class="text-xs font-bold text-gray-900"
+                          >{{ earningsSplit().cashPct }}%</span
+                        >
                       </div>
                       <div class="flex items-center justify-between">
                         <span class="text-xs text-gray-600 flex items-center gap-1.5">
                           <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                           Autoship Voucher
                         </span>
-                        <span class="text-xs font-bold text-gray-900">{{ earningsSplit().autoshipPct }}%</span>
+                        <span class="text-xs font-bold text-gray-900"
+                          >{{ earningsSplit().autoshipPct }}%</span
+                        >
                       </div>
                       <div class="w-full bg-gray-100 rounded-full h-2 mt-1 overflow-hidden flex">
-                        <div class="bg-green-500 h-full rounded-l-full" [style.width.%]="earningsSplit().cashPct"></div>
-                        <div class="bg-amber-500 h-full rounded-r-full" [style.width.%]="earningsSplit().autoshipPct"></div>
+                        <div
+                          class="bg-green-500 h-full rounded-l-full"
+                          [style.width.%]="earningsSplit().cashPct"
+                        ></div>
+                        <div
+                          class="bg-amber-500 h-full rounded-r-full"
+                          [style.width.%]="earningsSplit().autoshipPct"
+                        ></div>
                       </div>
                     </div>
                   </div>
@@ -356,25 +461,41 @@
                     <div class="flex items-center justify-between mb-3">
                       <h3 class="text-sm font-semibold text-mlm-text">Autoship Status</h3>
                       @if (autoshipIsActive()) {
-                        <span class="px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-700 rounded-full uppercase">Active</span>
+                        <span
+                          class="px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-700 rounded-full uppercase"
+                          >Active</span
+                        >
                       } @else {
-                        <span class="px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-gray-500 rounded-full uppercase">Inactive</span>
+                        <span
+                          class="px-2 py-0.5 text-[10px] font-bold bg-gray-100 text-gray-500 rounded-full uppercase"
+                          >Inactive</span
+                        >
                       }
                     </div>
-                    <p class="text-[10px] text-gray-500 mb-3">Recurring product subscription to maintain active status.</p>
+                    <p class="text-[10px] text-gray-500 mb-3">
+                      Recurring product subscription to maintain active status.
+                    </p>
                     <div class="space-y-2">
                       <div class="flex items-center justify-between">
                         <span class="text-xs text-gray-600">Monthly Amount</span>
-                        <span class="text-xs font-bold text-gray-900">{{ monthlyAutoship().amount }}</span>
+                        <span class="text-xs font-bold text-gray-900">{{
+                          monthlyAutoship().amount
+                        }}</span>
                       </div>
                       <div class="flex items-center justify-between">
                         <span class="text-xs text-gray-600">Admin Fee</span>
-                        <span class="text-xs font-bold text-gray-900">{{ monthlyAutoship().adminFee }}</span>
+                        <span class="text-xs font-bold text-gray-900">{{
+                          monthlyAutoship().adminFee
+                        }}</span>
                       </div>
                       @if (nextAutoshipDate()) {
-                        <div class="flex items-center justify-between pt-1 border-t border-gray-100">
+                        <div
+                          class="flex items-center justify-between pt-1 border-t border-gray-100"
+                        >
                           <span class="text-xs text-gray-600">Next Billing</span>
-                          <span class="text-xs font-bold text-gray-900">{{ nextAutoshipDate() | date:'MMM d, yyyy' }}</span>
+                          <span class="text-xs font-bold text-gray-900">{{
+                            nextAutoshipDate() | date: 'MMM d, yyyy'
+                          }}</span>
                         </div>
                       }
                       <div class="flex items-center justify-between">
@@ -387,13 +508,16 @@
                   <!-- Currency Info -->
                   <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
                     <div class="flex items-start gap-3">
-                      <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                      <div
+                        class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0"
+                      >
                         <i class="pi pi-globe text-mlm-secondary text-sm"></i>
                       </div>
                       <div>
                         <p class="text-xs font-semibold text-mlm-text mb-1">Currency Display</p>
                         <p class="text-[10px] text-mlm-secondary leading-relaxed">
-                          Balances are displayed in your registration currency. Currency conversion is not supported.
+                          Balances are displayed in your registration currency. Currency conversion
+                          is not supported.
                         </p>
                       </div>
                     </div>
@@ -401,33 +525,46 @@
                 </div>
               </div>
 
-            <!-- Quick Info / Business Rules -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex items-start gap-4">
-                <div class="bg-gray-100 p-3 rounded-lg shrink-0">
-                  <i class="pi pi-info-circle text-gray-500 text-sm" aria-hidden="true"></i>
+              <!-- Quick Info / Business Rules -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div
+                  class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-start gap-4"
+                >
+                  <div class="bg-gray-100 p-3 rounded-lg shrink-0">
+                    <i class="pi pi-info-circle text-gray-500 text-sm" aria-hidden="true"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <h4 class="font-semibold text-gray-900 text-sm">Currency Locked</h4>
+                    <p class="text-xs text-gray-500 mt-1">
+                      Earnings stay in their original currency. No internal conversion is supported.
+                    </p>
+                  </div>
                 </div>
-                <div class="min-w-0">
-                  <h4 class="font-semibold text-gray-900 text-sm">Currency Locked</h4>
-                  <p class="text-xs text-gray-500 mt-1">Earnings stay in their original currency. No internal conversion is supported.</p>
+                <div
+                  class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-start gap-4"
+                >
+                  <div class="bg-gray-100 p-3 rounded-lg shrink-0">
+                    <i class="pi pi-clock text-gray-500 text-sm" aria-hidden="true"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <h4 class="font-semibold text-gray-900 text-sm">Processing Time</h4>
+                    <p class="text-xs text-gray-500 mt-1">
+                      Withdrawals are processed within 24-48 business hours.
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex items-start gap-4">
-                <div class="bg-gray-100 p-3 rounded-lg shrink-0">
-                  <i class="pi pi-clock text-gray-500 text-sm" aria-hidden="true"></i>
-                </div>
-                <div class="min-w-0">
-                  <h4 class="font-semibold text-gray-900 text-sm">Processing Time</h4>
-                  <p class="text-xs text-gray-500 mt-1">Withdrawals are processed within 24-48 business hours.</p>
-                </div>
-              </div>
-              <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex items-start gap-4">
-                <div class="bg-gray-100 p-3 rounded-lg shrink-0">
-                  <i class="pi pi-shield text-gray-500 text-sm" aria-hidden="true"></i>
-                </div>
-                <div class="min-w-0">
-                  <h4 class="font-semibold text-gray-900 text-sm">Secure Transactions</h4>
-                  <p class="text-xs text-gray-500 mt-1">All transactions are encrypted and audited for your security.</p>
+                <div
+                  class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-start gap-4"
+                >
+                  <div class="bg-gray-100 p-3 rounded-lg shrink-0">
+                    <i class="pi pi-shield text-gray-500 text-sm" aria-hidden="true"></i>
+                  </div>
+                  <div class="min-w-0">
+                    <h4 class="font-semibold text-gray-900 text-sm">Secure Transactions</h4>
+                    <p class="text-xs text-gray-500 mt-1">
+                      All transactions are encrypted and audited for your security.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

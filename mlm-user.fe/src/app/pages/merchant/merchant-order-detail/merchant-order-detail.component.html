@@ -1,104 +1,239 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
     <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      @if (order(); as o) {
+      @if (loading()) {
+        <div class="flex items-center justify-center py-20">
+          <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
+        </div>
+      } @else if (error(); as err) {
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p class="text-red-700 text-sm">{{ err }}</p>
+        </div>
+      } @else if (order(); as o) {
         <div class="mb-6">
           <a
             routerLink="/merchant/orders"
             class="text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80 inline-flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 rounded"
-            aria-label="Back to merchant orders">
+            aria-label="Back to merchant orders"
+          >
             <i class="pi pi-arrow-left" aria-hidden="true"></i>
             Back to Orders
           </a>
         </div>
 
         <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+          <!-- Header -->
           <div class="border-b border-gray-200 pb-6 mb-6">
-            <h1 class="text-2xl font-bold text-mlm-text mb-2">Order {{ o.id }}</h1>
-            <p class="text-sm text-mlm-secondary mb-4">{{ formatDate(o.date) }}</p>
+            <h1 class="text-2xl font-bold text-mlm-text mb-2">Order {{ o.id | slice: 0 : 12 }}…</h1>
+            <p class="text-sm text-mlm-secondary mb-4">{{ formatDate(o.createdAt) }}</p>
             <div class="flex flex-wrap items-center gap-3">
-              <app-status-badge [status]="o.status" size="lg"></app-status-badge>
-              <span class="text-lg font-bold text-mlm-text">{{ formatCurrency(o.total, o.currency) }}</span>
+              <app-status-badge [status]="getStatusLabel(o.status)" size="lg"></app-status-badge>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-mlm-secondary">{{
+                getFulfilmentLabel(o.fulfilmentMode)
+              }}</span>
+              <span class="text-lg font-bold text-mlm-text">{{
+                formatCurrency(o.totalAmount, o.currency)
+              }}</span>
             </div>
           </div>
 
+          <!-- Customer info -->
           <div class="border-b border-gray-200 pb-6 mb-6">
-            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">Items</h2>
+            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
+              Customer
+            </h2>
+            <p class="text-sm text-mlm-text">{{ o.user.email }}</p>
+            @if (o.deliveryAddress) {
+              <p class="text-sm text-mlm-secondary mt-1">{{ o.deliveryAddress }}</p>
+            }
+          </div>
+
+          <!-- Items -->
+          <div class="border-b border-gray-200 pb-6 mb-6">
+            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
+              Items
+            </h2>
             <ul class="space-y-3" role="list">
-              @for (item of o.items; track item.name + item.quantity) {
-                <li class="flex justify-between items-start gap-4 py-3 border-b border-gray-100 last:border-0">
+              @for (item of o.items; track item.id) {
+                <li
+                  class="flex justify-between items-start gap-4 py-3 border-b border-gray-100 last:border-0"
+                >
                   <div>
-                    <span class="font-semibold text-mlm-text">{{ item.name }}</span>
-                    <span class="text-sm text-mlm-secondary block">Qty: {{ item.quantity }}</span>
+                    <span class="font-semibold text-mlm-text">{{ item.productName }}</span>
+                    <span class="text-sm text-mlm-secondary block"
+                      >Qty: {{ item.quantity }} ×
+                      {{ formatCurrency(item.unitPrice, o.currency) }}</span
+                    >
                   </div>
-                  <span class="font-semibold text-mlm-text shrink-0">{{ formatCurrency(item.price * item.quantity, o.currency) }}</span>
+                  <span class="font-semibold text-mlm-text shrink-0">{{
+                    formatCurrency(item.unitPrice * item.quantity, o.currency)
+                  }}</span>
                 </li>
               }
             </ul>
-          </div>
-
-          <div class="border-b border-gray-200 pb-6 mb-6">
-            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">Payment &amp; Fulfilment</h2>
-            <dl class="space-y-3 text-sm">
-              <div class="flex justify-between">
-                <dt class="text-mlm-secondary">Payment method</dt>
-                <dd class="font-semibold text-mlm-text">{{ o.paymentMethod ?? '—' }}</dd>
-              </div>
-              <div class="flex justify-between">
-                <dt class="text-mlm-secondary">Fulfilment</dt>
-                <dd class="font-semibold text-mlm-text">{{ getFulfilmentLabel(o.fulfilmentMethod) }}</dd>
-              </div>
-              @if (o.fulfilmentMethod === 'delivery' && o.deliveryAddress) {
-                <div>
-                  <dt class="text-mlm-secondary mb-1">Delivery address</dt>
-                  <dd class="font-medium text-mlm-text">{{ o.deliveryAddress }}</dd>
-                </div>
-                @if (o.deliveryFee != null) {
-                  <div class="flex justify-between">
-                    <dt class="text-mlm-secondary">Delivery fee</dt>
-                    <dd class="font-semibold text-mlm-text">{{ formatCurrency(o.deliveryFee!, o.currency) }}</dd>
-                  </div>
-                }
-              }
-              @if (o.fulfilmentMethod === 'pickup' && o.pickupLocationName) {
-                <div>
-                  <dt class="text-mlm-secondary mb-1">Pickup location</dt>
-                  <dd class="font-medium text-mlm-text">{{ o.pickupLocationName }}</dd>
-                  @if (o.pickupLocationDistance) {
-                    <dd class="text-mlm-secondary text-xs mt-0.5">{{ o.pickupLocationDistance }} away</dd>
-                  }
-                </div>
-              }
-            </dl>
-          </div>
-
-          <div class="border-b border-gray-200 pb-6 mb-6">
-            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">Update status</h2>
-            <div class="flex flex-wrap gap-3">
-              <p-button
-                label="Mark as Ready"
-                icon="pi pi-check"
-                [disabled]="!canMarkReady()"
-                (onClick)="markAsReady()"
-                styleClass="!bg-mlm-primary !border-mlm-primary"></p-button>
-              <p-button
-                label="Mark as Shipped"
-                icon="pi pi-truck"
-                [disabled]="!canMarkShipped()"
-                (onClick)="markAsShipped()"
-                severity="secondary"></p-button>
-              <p-button
-                label="Mark as Completed"
-                icon="pi pi-check-circle"
-                [disabled]="!canMarkCompleted()"
-                (onClick)="markAsCompleted()"
-                severity="success"></p-button>
+            <div class="flex justify-between items-center pt-4 mt-2 border-t border-gray-200">
+              <span class="text-sm font-bold text-mlm-secondary">Total</span>
+              <span class="text-lg font-bold text-mlm-primary">{{
+                formatCurrency(o.totalAmount, o.currency)
+              }}</span>
             </div>
           </div>
 
+          <!-- Payment & Fulfilment -->
+          <div class="border-b border-gray-200 pb-6 mb-6">
+            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
+              Payment &amp; Fulfilment
+            </h2>
+            <dl class="space-y-3 text-sm">
+              <div class="flex justify-between">
+                <dt class="text-mlm-secondary">Payment method</dt>
+                <dd class="font-semibold text-mlm-text">{{ o.paymentMethod }}</dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-mlm-secondary">Fulfilment</dt>
+                <dd class="font-semibold text-mlm-text">
+                  {{ getFulfilmentLabel(o.fulfilmentMode) }}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <!-- Delivery confirmation (if delivered) -->
+          @if (o.deliveryConfirmation; as dc) {
+            <div class="border-b border-gray-200 pb-6 mb-6">
+              <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
+                Delivery Confirmation
+              </h2>
+              <dl class="space-y-3 text-sm">
+                <div class="flex justify-between">
+                  <dt class="text-mlm-secondary">Confirmed by</dt>
+                  <dd class="font-semibold text-mlm-text">{{ dc.confirmedBy }}</dd>
+                </div>
+                @if (dc.proof) {
+                  <div class="flex justify-between">
+                    <dt class="text-mlm-secondary">Proof</dt>
+                    <dd>
+                      <a [href]="dc.proof" target="_blank" class="text-mlm-primary hover:underline"
+                        >View proof</a
+                      >
+                    </dd>
+                  </div>
+                }
+                @if (dc.notes) {
+                  <div>
+                    <dt class="text-mlm-secondary mb-1">Notes</dt>
+                    <dd class="font-medium text-mlm-text">{{ dc.notes }}</dd>
+                  </div>
+                }
+                <div class="flex justify-between">
+                  <dt class="text-mlm-secondary">Date</dt>
+                  <dd class="font-semibold text-mlm-text">{{ formatDate(dc.createdAt) }}</dd>
+                </div>
+              </dl>
+            </div>
+          }
+
+          <!-- Actions -->
           <div class="pb-6">
-            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">Order timeline</h2>
-            <app-order-timeline [currentStatus]="o.status"></app-order-timeline>
+            <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
+              Actions
+            </h2>
+            <div class="flex flex-wrap gap-3">
+              @if (canMarkReadyForPickup()) {
+                <p-button
+                  label="Mark Ready for Pickup"
+                  icon="pi pi-check"
+                  [loading]="actionLoading()"
+                  (onClick)="markReadyForPickup()"
+                  styleClass="!bg-mlm-primary !border-mlm-primary"
+                ></p-button>
+              }
+              @if (canMarkDeliveryRequested()) {
+                <p-button
+                  label="Mark Delivery Requested"
+                  icon="pi pi-truck"
+                  [loading]="actionLoading()"
+                  (onClick)="markDeliveryRequested()"
+                  styleClass="!bg-mlm-primary !border-mlm-primary"
+                ></p-button>
+              }
+              @if (canMarkSent()) {
+                <p-button
+                  label="Mark as Sent"
+                  icon="pi pi-send"
+                  [loading]="actionLoading()"
+                  (onClick)="markSent()"
+                  severity="secondary"
+                ></p-button>
+              }
+              @if (canConfirmDelivery()) {
+                <p-button
+                  label="Confirm Delivery"
+                  icon="pi pi-check-circle"
+                  [loading]="actionLoading()"
+                  (onClick)="toggleConfirmForm()"
+                  severity="success"
+                ></p-button>
+              }
+              @if (isDelivered()) {
+                <span
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 text-sm font-semibold rounded-lg"
+                >
+                  <i class="pi pi-check-circle" aria-hidden="true"></i> Delivered
+                </span>
+              }
+            </div>
+
+            <!-- Confirm delivery form -->
+            @if (showConfirmForm()) {
+              <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+                <h3 class="text-sm font-bold text-mlm-text">Confirm delivery details (optional)</h3>
+                <div>
+                  <label
+                    for="proof-url"
+                    class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-1"
+                    >Proof URL</label
+                  >
+                  <input
+                    id="proof-url"
+                    type="url"
+                    placeholder="https://example.com/proof.jpg"
+                    [ngModel]="proofUrl()"
+                    (ngModelChange)="proofUrl.set($event)"
+                    class="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+                  />
+                </div>
+                <div>
+                  <label
+                    for="delivery-notes"
+                    class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-1"
+                    >Notes</label
+                  >
+                  <textarea
+                    id="delivery-notes"
+                    placeholder="Delivered to customer at..."
+                    [ngModel]="deliveryNotes()"
+                    (ngModelChange)="deliveryNotes.set($event)"
+                    rows="3"
+                    class="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+                  ></textarea>
+                </div>
+                <div class="flex gap-3">
+                  <p-button
+                    label="Submit"
+                    icon="pi pi-check"
+                    [loading]="actionLoading()"
+                    (onClick)="submitConfirmDelivery()"
+                    styleClass="!bg-mlm-primary !border-mlm-primary"
+                  ></p-button>
+                  <p-button
+                    label="Cancel"
+                    severity="secondary"
+                    (onClick)="toggleConfirmForm()"
+                  ></p-button>
+                </div>
+              </div>
+            }
           </div>
         </div>
       }
