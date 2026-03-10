@@ -17,6 +17,7 @@ export type OrderStatus =
 export type FulfilmentMode = 'PICKUP' | 'OFFLINE_DELIVERY';
 export type StockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 export type AllocationStatus = 'PENDING' | 'ACCEPTED';
+export type MerchantFeePaymentSource = 'REGISTRATION_WALLET' | 'CASH_WALLET' | 'PAYSTACK';
 
 /* ── Interfaces ────────────────────────────────────────────────── */
 
@@ -35,17 +36,23 @@ export interface MerchantProfileResponse {
   type?: MerchantType;
   status?: MerchantStatus;
   serviceAreas?: string[];
+  merchantFeePaidAt?: string | null;
   createdAt?: string;
   message?: string;
 }
 
+export interface MerchantCategoryConfigItem {
+  productId: string;
+  quantity: number;
+}
+
 export interface MerchantCategoryConfig {
+  id: string;
   merchantType: MerchantType;
   deliveryCommissionPct: number;
   productCommissionPct: number;
   registrationFeeUsd: number;
-  onboardingProductId: string | null;
-  onboardingQuantity: number;
+  onboardingItems: MerchantCategoryConfigItem[];
 }
 
 export interface AvailableMerchantProduct {
@@ -179,6 +186,18 @@ export interface UpdateStockBody {
   stockStatus?: StockStatus;
 }
 
+export interface InitiateMerchantFeeBody {
+  source: MerchantFeePaymentSource;
+  merchantId?: string;
+  callbackUrl?: string;
+}
+
+export interface InitiateMerchantFeeResponse {
+  message: string;
+  gatewayUrl?: string;
+  reference?: string;
+}
+
 export interface ConfirmDeliveryBody {
   proof?: string;
   notes?: string;
@@ -287,7 +306,9 @@ export class MerchantService {
     this.api
       .get<{ configs: MerchantCategoryConfig[] }>('merchants/category-config')
       .pipe(
-        tap((res) => this.categoryConfigSignal.set(res.configs ?? [])),
+        tap((res) => {
+          this.categoryConfigSignal.set(res.configs ?? []);
+        }),
         catchError((err) => {
           console.error('[MerchantService] fetchCategoryConfig failed', err);
           this.errorSignal.set('Failed to load merchant categories.');
@@ -296,6 +317,23 @@ export class MerchantService {
         finalize(() => this.loadingSignal.set(false)),
       )
       .subscribe();
+  }
+
+  /** POST /merchants/merchant-fee/initiate */
+  initiateMerchantFeePayment(
+    body: InitiateMerchantFeeBody,
+  ): Observable<InitiateMerchantFeeResponse | null> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+    return this.api.post<InitiateMerchantFeeResponse>('merchants/merchant-fee/initiate', body).pipe(
+      tap(() => this.fetchProfile()),
+      catchError((err) => {
+        console.error('[MerchantService] initiateMerchantFeePayment failed', err);
+        this.errorSignal.set(err?.error?.message || 'Failed to initiate fee payment.');
+        return of(null);
+      }),
+      finalize(() => this.actionLoadingSignal.set(false)),
+    );
   }
 
   /** GET /merchants/available (public) */

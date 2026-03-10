@@ -59,6 +59,9 @@ export class SideMenuComponent {
         items: [
           { label: 'Dashboard', icon: 'pi pi-th-large', route: '/dashboard' },
           { label: 'Profile', icon: 'pi pi-user', route: '/profile' },
+          ...(this.isMerchant()
+            ? []
+            : [{ label: 'Become a Merchant', icon: 'pi pi-shop', route: '/merchant/apply' }]),
           {
             label: 'Marketplace',
             icon: 'pi pi-shopping-cart',

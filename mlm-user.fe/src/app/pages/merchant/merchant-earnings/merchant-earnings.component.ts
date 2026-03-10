@@ -1,11 +1,10 @@
 import { Component, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { MerchantService } from '../../../services/merchant.service';
 
 @Component({
   selector: 'app-merchant-earnings',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   templateUrl: './merchant-earnings.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

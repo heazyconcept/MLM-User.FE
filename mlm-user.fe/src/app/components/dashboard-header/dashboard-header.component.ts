@@ -1,4 +1,11 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  signal,
+  OnInit,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -22,10 +29,10 @@ import { NotificationService } from '../../services/notification.service';
     AvatarModule,
     MenuModule,
     BadgeModule,
-    DrawerModule
+    DrawerModule,
   ],
   templateUrl: './dashboard-header.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardHeaderComponent implements OnInit {
   private userService = inject(UserService);
@@ -33,7 +40,6 @@ export class DashboardHeaderComponent implements OnInit {
   private layoutService = inject(LayoutService);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
-
 
   currentUser = this.userService.currentUser;
   notifications = this.notificationService.allNotifications;
@@ -52,27 +58,38 @@ export class DashboardHeaderComponent implements OnInit {
     }
   }
 
-  
-  userMenuItems: MenuItem[] = [
-    {
-      label: 'Profile',
-      icon: 'pi pi-user',
-      command: () => this.router.navigate(['/profile'])
-    },
-    {
-      label: 'Settings',
-      icon: 'pi pi-cog',
-      command: () => this.router.navigate(['/settings/account'])
-    },
-    {
-      separator: true
-    },
-    {
-      label: 'Logout',
-      icon: 'pi pi-power-off',
-      command: () => this.logout()
-    }
-  ];
+  userMenuItems = computed<MenuItem[]>(() => {
+    const items: MenuItem[] = [
+      {
+        label: 'Profile',
+        icon: 'pi pi-user',
+        command: () => this.router.navigate(['/profile']),
+      },
+      ...(this.userService.isMerchant()
+        ? []
+        : [
+            {
+              label: 'Become a Merchant',
+              icon: 'pi pi-shop',
+              command: () => this.router.navigate(['/merchant/apply']),
+            },
+          ]),
+      {
+        label: 'Settings',
+        icon: 'pi pi-cog',
+        command: () => this.router.navigate(['/settings/account']),
+      },
+      {
+        separator: true,
+      },
+      {
+        label: 'Logout',
+        icon: 'pi pi-power-off',
+        command: () => this.logout(),
+      },
+    ];
+    return items;
+  });
 
   toggleMobileMenu() {
     this.layoutService.toggleMobileMenu();
@@ -87,8 +104,7 @@ export class DashboardHeaderComponent implements OnInit {
       next: () => {
         this.router.navigate(['/auth/login']);
       },
-      error: () => this.router.navigate(['/auth/login'])
+      error: () => this.router.navigate(['/auth/login']),
     });
   }
 }
-
