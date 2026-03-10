@@ -9,12 +9,11 @@ import {
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MerchantService } from '../../../services/merchant.service';
-import { MerchantStatCardComponent } from '../../../components/merchant-stat-card/merchant-stat-card.component';
 import { UserService } from '../../../services/user.service';
 
 @Component({
   selector: 'app-merchant-dashboard',
-  imports: [CommonModule, RouterLink, MerchantStatCardComponent],
+  imports: [CommonModule, RouterLink],
   templateUrl: './merchant-dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -158,63 +157,62 @@ export class MerchantDashboardComponent implements OnInit {
   }
 
   earningsBreakdown = computed(() => {
-    // using dummy data for breakdown since merchant API might not have this detailed breakdown
-    const e = this.earnings()?.merchantEarnings?.totalEarnings || 0;
-    const directSales = e * 0.7;
-    const affiliateSales = e * 0.3;
-    const total = e > 0 ? e : 1;
+    const e = this.earnings()?.merchantEarnings;
+    if (!e) return [];
 
-    return [
-      {
-        label: 'Direct Sales',
-        value: directSales,
-        color: '#49A321',
-        pct: Math.round((directSales / total) * 100),
-      },
-      {
-        label: 'Affiliate Sales',
-        value: affiliateSales,
-        color: '#64748b',
-        pct: Math.round((affiliateSales / total) * 100),
-      },
-    ];
+    const colors = ['#49A321', '#64748b', '#3b82f6', '#f59e0b', '#8b5cf6'];
+    const total = e.totalEarnings || 1;
+
+    return Object.entries(e.byType).map(([key, value], i) => ({
+      label: this.formatTypeLabel(key),
+      value: value,
+      color: colors[i % colors.length],
+      pct: Math.round((value / total) * 100),
+    }));
   });
 
   recentActivities = computed(() => {
-    // Dummy recent activities for merchant dashboard
-    return [
-      {
-        id: 1,
+    const orders = this.orders()
+      .slice(0, 3)
+      .map((o) => ({
+        id: `ord-${o.id}`,
         type: 'Order Received',
-        title: 'New order received',
-        description: 'Order #ORD-8493',
-        amount: 45000,
-        currency: 'NGN',
-        date: new Date().toISOString(),
+        title: 'New Order',
+        description: `Order ${o.id.slice(0, 8)}...`,
+        amount: o.totalAmount,
+        currency: o.currency,
+        date: o.createdAt,
         icon: 'pi-shopping-bag',
-      },
-      {
-        id: 2,
-        type: 'Product Approved',
-        title: 'Product approved',
-        description: 'Aloe Vera Gel',
+      }));
+
+    const deliveries = this.merchantService
+      .deliveries()
+      .slice(0, 2)
+      .map((d) => ({
+        id: `del-${d.id}`,
+        type: 'Delivery Confirmed',
+        title: 'Delivery Done',
+        description: `Order ${d.orderId.slice(0, 8)}...`,
         amount: null,
-        currency: 'NGN',
-        date: new Date(Date.now() - 3600000).toISOString(),
+        currency: null,
+        date: d.createdAt,
         icon: 'pi-check-circle',
-      },
-      {
-        id: 3,
-        type: 'Earnings Posted',
-        title: 'Merchant commission',
-        description: 'Weekly payout',
-        amount: 12500,
-        currency: 'NGN',
-        date: new Date(Date.now() - 86400000).toISOString(),
-        icon: 'pi-money-bill',
-      },
-    ];
+      }));
+
+    return [...orders, ...deliveries]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
   });
+
+  private formatTypeLabel(key: string): string {
+    const labels: Record<string, string> = {
+      personalProduct: 'Personal Sales',
+      directReferralProduct: 'Referral Sales',
+      communityProduct: 'Community Sales',
+      deliveryBonus: 'Delivery Bonus',
+    };
+    return labels[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+  }
 
   activityBadge(activity: { amount?: number; currency?: string; type: string }): string {
     if (activity.amount == null) return '';

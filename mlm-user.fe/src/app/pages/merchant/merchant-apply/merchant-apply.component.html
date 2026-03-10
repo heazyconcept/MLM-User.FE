@@ -1,6 +1,6 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
-    <div class="px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <div class="mb-10">
         <a
           routerLink="/merchant/dashboard"
@@ -21,25 +21,84 @@
         </div>
       } @else if (isMerchant()) {
         <!-- Already applied -->
-        <div class="bg-white rounded-lg border border-green-200 shadow-sm p-8 text-center">
-          <div
-            class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6"
-          >
-            <i class="pi pi-check-circle text-3xl text-green-500" aria-hidden="true"></i>
-          </div>
-          <h2 class="text-xl font-bold text-mlm-text mb-2">Application Submitted</h2>
-          <p class="text-mlm-secondary text-sm mb-2">
-            Status: <strong>{{ profile()?.status }}</strong>
-          </p>
-          <p class="text-mlm-secondary text-sm mb-6">
-            Your application is being reviewed. You'll be notified once it's approved.
-          </p>
-          <a
-            routerLink="/merchant/dashboard"
-            class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors"
-          >
-            Go to Dashboard
-          </a>
+        <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-8 text-center">
+          @if (profile()?.status === 'PENDING' && !profile()?.merchantFeePaidAt) {
+            <!-- Payment Required -->
+            <div
+              class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6"
+            >
+              <i class="pi pi-wallet text-3xl text-amber-500" aria-hidden="true"></i>
+            </div>
+            <h2 class="text-xl font-bold text-mlm-text mb-2">Payment Required</h2>
+            <p class="text-mlm-secondary text-sm mb-6">
+              Your application is submitted as <strong>PENDING</strong>. Please pay the registration
+              fee to proceed with admin approval.
+            </p>
+
+            <div class="space-y-4 text-left mb-8">
+              <label class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest"
+                >Select Payment Source</label
+              >
+              <div class="grid grid-cols-1 gap-3">
+                @for (source of paymentSources; track source.value) {
+                  <button
+                    class="p-4 rounded-lg border-2 text-left transition-all"
+                    [class]="
+                      selectedPaymentSource() === source.value
+                        ? 'border-mlm-primary bg-mlm-primary/5'
+                        : 'border-gray-100 hover:border-gray-200'
+                    "
+                    (click)="selectedPaymentSource.set(source.value)"
+                  >
+                    <div class="flex items-center gap-3">
+                      <i
+                        class="pi"
+                        [class]="
+                          selectedPaymentSource() === source.value
+                            ? 'pi-check-circle text-mlm-primary'
+                            : 'pi-circle text-gray-300'
+                        "
+                      ></i>
+                      <span class="font-medium text-mlm-text">{{ source.label }}</span>
+                    </div>
+                  </button>
+                }
+              </div>
+            </div>
+
+            <p-button
+              label="Pay Merchant Fee"
+              icon="pi pi-credit-card"
+              [loading]="actionLoading()"
+              (onClick)="onPayFee()"
+              styleClass="w-full !bg-mlm-primary !border-mlm-primary"
+            ></p-button>
+          } @else {
+            <!-- Application Submitted (Paid or Active) -->
+            <div
+              class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6"
+            >
+              <i class="pi pi-check-circle text-3xl text-green-500" aria-hidden="true"></i>
+            </div>
+            <h2 class="text-xl font-bold text-mlm-text mb-2">Application Submitted</h2>
+            <p class="text-mlm-secondary text-sm mb-2">
+              Status: <strong>{{ profile()?.status }}</strong>
+            </p>
+            <p class="text-mlm-secondary text-sm mb-6">
+              @if (profile()?.status === 'PENDING') {
+                Your application is being reviewed. You'll be notified once it's approved.
+              } @else {
+                Your merchant account is now <strong>{{ profile()?.status }}</strong
+                >.
+              }
+            </p>
+            <a
+              routerLink="/merchant/dashboard"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors"
+            >
+              Go to Dashboard
+            </a>
+          }
         </div>
       } @else {
         <!-- Application form -->
@@ -49,59 +108,59 @@
           </div>
         }
 
-        <!-- Tier cards -->
-        @if (categoryConfig().length > 0) {
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-            @for (cfg of categoryConfig(); track cfg.merchantType) {
-              <button
-                class="p-4 rounded-lg border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-mlm-primary/20"
-                [class]="
-                  selectedType() === cfg.merchantType
-                    ? 'border-mlm-primary bg-mlm-primary/5 shadow-md'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                "
-                (click)="selectedType.set(cfg.merchantType)"
-              >
-                <h3 class="font-bold text-mlm-text mb-2">{{ getTypeLabel(cfg.merchantType) }}</h3>
-                <dl class="space-y-1 text-sm">
-                  <div class="flex justify-between">
-                    <dt class="text-mlm-secondary">Registration fee</dt>
-                    <dd class="font-semibold text-mlm-text">${{ cfg.registrationFeeUsd }}</dd>
+        <div class="space-y-4 mb-8">
+          <label class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest"
+            >Choose Your Merchant Tier</label
+          >
+          @if (categoryConfig().length > 0) {
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              @for (cfg of categoryConfig(); track cfg.merchantType) {
+                <button
+                  class="p-4 rounded-xl border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 flex flex-col h-full"
+                  [class]="
+                    selectedType() === cfg.merchantType
+                      ? 'border-mlm-primary bg-mlm-primary/5 shadow-md'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  "
+                  (click)="selectedType.set(cfg.merchantType)"
+                >
+                  <h3 class="font-bold text-mlm-text mb-2">{{ getTypeLabel(cfg.merchantType) }}</h3>
+                  <div class="text-2xl font-black text-mlm-primary mb-4">
+                    ${{ cfg.registrationFeeUsd }}
                   </div>
-                  <div class="flex justify-between">
-                    <dt class="text-mlm-secondary">Product commission</dt>
-                    <dd class="font-semibold text-mlm-text">{{ cfg.productCommissionPct }}%</dd>
-                  </div>
-                  <div class="flex justify-between">
-                    <dt class="text-mlm-secondary">Delivery commission</dt>
-                    <dd class="font-semibold text-mlm-text">{{ cfg.deliveryCommissionPct }}%</dd>
-                  </div>
-                </dl>
-              </button>
-            }
-          </div>
-        }
+                  <dl class="space-y-2 text-xs flex-1">
+                    <div class="flex justify-between border-b border-gray-50 pb-1">
+                      <dt class="text-mlm-secondary">Product Comm.</dt>
+                      <dd class="font-semibold text-mlm-text">{{ cfg.productCommissionPct }}%</dd>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-50 pb-1">
+                      <dt class="text-mlm-secondary">Delivery Comm.</dt>
+                      <dd class="font-semibold text-mlm-text">{{ cfg.deliveryCommissionPct }}%</dd>
+                    </div>
+                    @if (cfg.onboardingItems && cfg.onboardingItems.length > 0) {
+                      <div class="pt-2">
+                        <dt class="text-mlm-secondary font-bold mb-1 uppercase tracking-tight">
+                          Stock Bonus:
+                        </dt>
+                        <dd class="text-mlm-text space-y-0.5">
+                          @for (item of cfg.onboardingItems; track item.productId) {
+                            <div class="flex items-center gap-1">
+                              <i class="pi pi-box scale-75"></i>
+                              <span>Qty: {{ item.quantity }}</span>
+                            </div>
+                          }
+                        </dd>
+                      </div>
+                    }
+                  </dl>
+                </button>
+              }
+            </div>
+          }
+        </div>
 
         <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
           <div class="space-y-6">
-            <div>
-              <label
-                for="merchant-type"
-                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
-                >Merchant Type</label
-              >
-              <select
-                id="merchant-type"
-                [ngModel]="selectedType()"
-                (ngModelChange)="selectedType.set($event)"
-                class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
-              >
-                @for (t of merchantTypes; track t) {
-                  <option [value]="t">{{ getTypeLabel(t) }}</option>
-                }
-              </select>
-            </div>
-
             <div>
               <label
                 for="service-areas"
