@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { SelectModule } from 'primeng/select';
 import { OnboardingService } from '../../../services/onboarding.service';
 import { ModalService } from '../../../services/modal.service';
+import { LoadingService } from '../../../services/loading.service';
 
 @Component({
   selector: 'app-bank-details',
@@ -22,8 +23,7 @@ export class BankDetailsComponent implements OnInit {
   private router = inject(Router);
   private onboardingService = inject(OnboardingService);
   private modalService = inject(ModalService);
-  isLoading = signal<boolean>(false);
-
+  protected loadingService = inject(LoadingService);
   accountTypes = [
     { label: 'Savings', value: 'savings' },
     { label: 'Current', value: 'current' }
@@ -75,14 +75,14 @@ export class BankDetailsComponent implements OnInit {
       accountType
     };
 
-    this.isLoading.set(true);
+    this.loadingService.show();
     this.onboardingService.updateBankDetails(payload).subscribe({
       next: () => {
-        this.isLoading.set(false);
+        this.loadingService.hide();
         this.router.navigate(['/onboarding/preferences']);
       },
       error: () => {
-        this.isLoading.set(false);
+        this.loadingService.hide();
         if (typeof ngDevMode !== 'undefined' && ngDevMode) {
           console.error('Bank details update failed');
         }
