@@ -7,6 +7,7 @@ import { countries } from 'countries-list';
 import { OnboardingService } from '../../../services/onboarding.service';
 import { UserService } from '../../../services/user.service';
 import { ModalService } from '../../../services/modal.service';
+import { LoadingService } from '../../../services/loading.service';
 
 @Component({
   selector: 'app-contact-details',
@@ -26,9 +27,8 @@ export class ContactDetailsComponent implements OnInit {
   private onboardingService = inject(OnboardingService);
   private userService = inject(UserService);
   private modalService = inject(ModalService);
+  protected loadingService = inject(LoadingService);
 
-
-  isLoading = signal<boolean>(false);
 
   countriesList = Object.values(countries)
     .map(country => ({ label: country.name, value: country.name }))
@@ -36,7 +36,7 @@ export class ContactDetailsComponent implements OnInit {
 
   contactForm = this.fb.group({
     email: [{ value: '', disabled: true }],
-    phone: ['', [Validators.required]],
+    phone: ['', [Validators.required, Validators.pattern(/^[0-9]{11}$/)]],
     address: ['', [Validators.required]],
     city: ['', [Validators.required]],
     state: ['', [Validators.required]],
@@ -73,17 +73,17 @@ export class ContactDetailsComponent implements OnInit {
       country: value.country ?? undefined
     };
 
-    this.isLoading.set(true);
+    this.loadingService.show();
     this.onboardingService.updateProfile(payload).subscribe({
       next: () => {
-        this.isLoading.set(false);
+        this.loadingService.hide();
         this.userService.fetchProfile().subscribe({
-          next: () => this.router.navigate(['/onboarding/identity']),
-          error: () => this.router.navigate(['/onboarding/identity'])
+          next: () => this.router.navigate(['/onboarding/bank']),
+          error: () => this.router.navigate(['/onboarding/bank'])
         });
       },
       error: () => {
-        this.isLoading.set(false);
+        this.loadingService.hide();
         if (typeof ngDevMode !== 'undefined' && ngDevMode) {
           console.error('Contact update failed');
         }

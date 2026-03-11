@@ -32,12 +32,19 @@
                     <input
                         type="tel"
                         class="w-full h-[48px] pl-[42px] pr-[14px] border-[1.5px] border-[#ddd0c2] rounded-xl font-dm-sans text-[14px] text-slate-800 bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-mlm-primary focus:shadow-[0_0_0_4px_rgba(73,163,33,0.1)] placeholder:text-slate-400 placeholder:text-[13.5px]"
-                        placeholder="+234 800 000 0000"
+                        placeholder="08000000000"
                         formControlName="phone"
+                        maxlength="11"
+                        inputmode="numeric"
+                        (keypress)="$event.charCode >= 48 && $event.charCode <= 57 || $event.preventDefault()"
                         [class.border-red-500]="contactForm.get('phone')?.invalid && contactForm.get('phone')?.touched">
                 </div>
                 @if (contactForm.get('phone')?.invalid && contactForm.get('phone')?.touched) {
-                    <span class="text-[11px] font-semibold text-red-500 mt-1 block">Required</span>
+                    @if (contactForm.get('phone')?.hasError('required')) {
+                        <span class="text-[11px] font-semibold text-red-500 mt-1 block">Phone number is required.</span>
+                    } @else if (contactForm.get('phone')?.hasError('pattern')) {
+                        <span class="text-[11px] font-semibold text-red-500 mt-1 block">Must be exactly 11 digits (numbers only).</span>
+                    }
                 }
             </div>
         </div>
@@ -117,12 +124,12 @@
         <button 
             type="submit"
             class="w-full h-[52px] bg-mlm-primary text-white border-none rounded-[14px] font-sora text-[0.95rem] font-bold cursor-pointer tracking-wide shadow-[0_8px_24px_rgba(73,163,33,0.3)] transition-all duration-150 flex items-center justify-center gap-2 hover:bg-[#3d8a1c] hover:-translate-y-[1px] hover:shadow-[0_12px_28px_rgba(73,163,33,0.35)] active:translate-y-0 disabled:opacity-55 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:bg-mlm-primary"
-            [disabled]="contactForm.invalid || isLoading()">
-            @if (isLoading()) {
+            [disabled]="contactForm.invalid || loadingService.isLoading()">
+            @if (loadingService.isLoading()) {
                 <i class="pi pi-spin pi-spinner text-sm"></i>
             }
             Continue
-            @if (!isLoading()) {
+            @if (!loadingService.isLoading()) {
                 <i class="pi pi-arrow-right text-sm"></i>
             }
         </button>

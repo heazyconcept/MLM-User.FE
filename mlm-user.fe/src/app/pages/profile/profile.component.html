@@ -186,10 +186,17 @@
                       id="phoneNumber" 
                       type="text" 
                       formControlName="phoneNumber"
+                      maxlength="11"
+                      inputmode="numeric"
                       class="w-full"
+                      (keypress)="$event.charCode >= 48 && $event.charCode <= 57 || $event.preventDefault()"
                       [class.ng-invalid]="profileForm.get('phoneNumber')?.invalid && profileForm.get('phoneNumber')?.touched" />
                     @if (profileForm.get('phoneNumber')?.invalid && profileForm.get('phoneNumber')?.touched) {
-                      <small class="text-red-500 text-sm mt-1 block">Phone Number is required.</small>
+                      @if (profileForm.get('phoneNumber')?.hasError('required')) {
+                        <small class="text-red-500 text-sm mt-1 block">Phone Number is required.</small>
+                      } @else if (profileForm.get('phoneNumber')?.hasError('pattern')) {
+                        <small class="text-red-500 text-sm mt-1 block">Phone Number must be exactly 11 digits (numbers only).</small>
+                      }
                     }
                   </div>
 

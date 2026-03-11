@@ -8,6 +8,7 @@ import { FileUploadComponent } from '../../components/file-upload/file-upload.co
 import { OnboardingService } from '../../../services/onboarding.service';
 import { UserService } from '../../../services/user.service';
 import { ModalService } from '../../../services/modal.service';
+import { LoadingService } from '../../../services/loading.service';
 
 @Component({
   selector: 'app-profile-info',
@@ -28,9 +29,8 @@ export class ProfileInfoComponent implements OnInit {
   private onboardingService = inject(OnboardingService);
   private userService = inject(UserService);
   private modalService = inject(ModalService);
+  protected loadingService = inject(LoadingService);
 
-
-  isLoading = signal<boolean>(false);
   private selectedPhotoFile: File | null = null;
 
   genders = [
@@ -82,7 +82,7 @@ export class ProfileInfoComponent implements OnInit {
     };
     Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
 
-    this.isLoading.set(true);
+    this.loadingService.show();
 
     this.onboardingService.updateProfile(payload).subscribe({
       next: () => {
@@ -96,7 +96,7 @@ export class ProfileInfoComponent implements OnInit {
         }
       },
       error: (err) => {
-        this.isLoading.set(false);
+        this.loadingService.hide();
         if (typeof ngDevMode !== 'undefined' && ngDevMode && err?.error) {
           console.error('Profile update failed', err.error);
         }
@@ -110,7 +110,7 @@ export class ProfileInfoComponent implements OnInit {
   }
 
   private handleSuccess(): void {
-    this.isLoading.set(false);
+    this.loadingService.hide();
     this.userService.fetchProfile().subscribe({
       next: () => this.router.navigate(['/onboarding/contact']),
       error: () => this.router.navigate(['/onboarding/contact'])

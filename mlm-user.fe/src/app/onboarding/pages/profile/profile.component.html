@@ -101,12 +101,12 @@
         <button 
             type="submit"
             class="w-full h-[52px] bg-mlm-primary text-white border-none rounded-[14px] font-sora text-[0.95rem] font-bold cursor-pointer tracking-wide shadow-[0_8px_24px_rgba(73,163,33,0.3)] transition-all duration-150 flex items-center justify-center gap-2 hover:bg-[#3d8a1c] hover:-translate-y-[1px] hover:shadow-[0_12px_28px_rgba(73,163,33,0.35)] active:translate-y-0 disabled:opacity-55 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:bg-mlm-primary"
-            [disabled]="profileForm.invalid || isLoading()">
-            @if (isLoading()) {
+            [disabled]="profileForm.invalid || loadingService.isLoading()">
+            @if (loadingService.isLoading()) {
                 <i class="pi pi-spin pi-spinner text-sm"></i>
             }
             Continue
-            @if (!isLoading()) {
+            @if (!loadingService.isLoading()) {
                 <i class="pi pi-arrow-right text-sm"></i>
             }
         </button>

@@ -10,6 +10,7 @@ import { AuthService, type RegisterRequest } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { ReferralService } from '../../services/referral.service';
 import { ModalService } from '../../services/modal.service';
+import { LoadingService } from '../../services/loading.service';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import {
@@ -40,8 +41,7 @@ export class RegisterComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private modalService = inject(ModalService);
-
-  isLoading = signal<boolean>(false);
+  protected loadingService = inject(LoadingService);
   referralValid = signal<boolean | null>(null);
   referralValidating = signal(false);
 
@@ -248,7 +248,7 @@ export class RegisterComponent implements OnInit {
 
   onSubmit() {
     if (this.registerForm.valid) {
-      this.isLoading.set(true);
+      this.loadingService.show();
 
       const formValue = this.registerForm.value;
       const code = formValue.referralCode?.trim();
@@ -268,17 +268,17 @@ export class RegisterComponent implements OnInit {
           localStorage.removeItem('referralCode');
           this.userService.fetchProfile().subscribe({
             next: () => {
-              this.isLoading.set(false);
+              this.loadingService.hide();
               this.router.navigate(['/onboarding/profile']);
             },
             error: () => {
-              this.isLoading.set(false);
+              this.loadingService.hide();
               this.router.navigate(['/onboarding/profile']);
             }
           });
         },
         error: (err) => {
-          this.isLoading.set(false);
+          this.loadingService.hide();
           if (typeof ngDevMode !== 'undefined' && ngDevMode) {
             console.error('Registration failed', err);
           }

@@ -347,9 +347,8 @@ export class OnboardingLayoutComponent implements AfterViewInit, OnDestroy {
   steps: OnboardingStep[] = [
     { id: 1, label: 'Personal Information', sublabel: 'Name, DOB, profile photo' },
     { id: 2, label: 'Contact Details', sublabel: 'Phone, email, address' },
-    { id: 3, label: 'Identity Verification', sublabel: 'ID document & selfie' },
-    { id: 4, label: 'Bank Details', sublabel: 'Payout account info' },
-    { id: 5, label: 'Preferences', sublabel: 'Language, currency, alerts' }
+    { id: 3, label: 'Bank Details', sublabel: 'Payout account info' },
+    { id: 4, label: 'Preferences', sublabel: 'Language, currency, alerts' }
   ];
 
   currentStep = toSignal(
@@ -364,9 +363,8 @@ export class OnboardingLayoutComponent implements AfterViewInit, OnDestroy {
   private getStepFromUrl(url: string): number {
     if (url.includes('profile')) return 1;
     if (url.includes('contact')) return 2;
-    if (url.includes('identity')) return 3;
-    if (url.includes('bank')) return 4;
-    if (url.includes('preferences')) return 5;
+    if (url.includes('bank')) return 3;
+    if (url.includes('preferences')) return 4;
     return 1;
   }
 
