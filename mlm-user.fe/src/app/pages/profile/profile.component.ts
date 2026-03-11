@@ -40,7 +40,7 @@ export class ProfileComponent implements OnInit {
     firstName: ['', [Validators.required]],
     lastName: ['', [Validators.required]],
     email: [{ value: '', disabled: true }],
-    phoneNumber: ['', [Validators.required]],
+    phoneNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{11}$/)]],
     address: [''],
     bankName: [''],
     accountNumber: [''],

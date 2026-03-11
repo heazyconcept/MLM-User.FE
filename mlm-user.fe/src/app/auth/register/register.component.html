@@ -41,7 +41,7 @@
             <div class="mb-8">
                 @if (currentStep() === 1) {
                     <h1 class="font-sora text-[2rem] font-extrabold text-slate-900 leading-tight mb-2">
-                        Create your<br>account
+                        Create your account
                     </h1>
                     <p class="text-sm text-slate-500 leading-relaxed">
                         Set up your credentials to get started.
@@ -274,13 +274,13 @@
                         </button>
                     } @else {
                         <button type="submit"
-                            [disabled]="!registerForm.valid || isLoading()"
+                            [disabled]="!registerForm.valid || loadingService.isLoading()"
                             class="btn-primary">
-                            @if (isLoading()) {
+                            @if (loadingService.isLoading()) {
                                 <i class="pi pi-spin pi-spinner text-sm"></i>
                             }
                             Create Account
-                            @if (!isLoading()) {
+                            @if (!loadingService.isLoading()) {
                                 <i class="pi pi-check text-sm"></i>
                             }
                         </button>

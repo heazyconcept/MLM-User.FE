@@ -93,10 +93,8 @@ export const routes: Routes = [
       },
       {
         path: 'identity',
-        loadComponent: () =>
-          import('./onboarding/pages/identity/identity-kyc.component').then(
-            (m) => m.IdentityKycComponent,
-          ),
+        redirectTo: 'bank',
+        pathMatch: 'full',
       },
       {
         path: 'bank',

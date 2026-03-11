@@ -5,7 +5,7 @@ module.exports = {
   ],
   darkMode: 'selector',
   theme: {
-    extend: {
+  extend: {
       fontFamily: {
         'geist': ['Geist', 'sans-serif'],
         'outfit': ['Outfit', 'sans-serif'],

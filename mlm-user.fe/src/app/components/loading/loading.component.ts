@@ -6,7 +6,8 @@ import { LoadingService } from '../../services/loading.service';
   selector: 'app-loading',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './loading.component.html'
+  templateUrl: './loading.component.html',
+  styleUrl: './loading.component.css'
 })
 export class LoadingComponent {
   loadingService = inject(LoadingService);

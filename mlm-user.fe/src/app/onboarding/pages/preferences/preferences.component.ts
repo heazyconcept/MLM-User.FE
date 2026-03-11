@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { SelectModule } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ModalService } from '../../../services/modal.service';
+import { LoadingService } from '../../../services/loading.service';
 import { OnboardingService } from '../../../services/onboarding.service';
 import { UserService } from '../../../services/user.service';
 
@@ -28,8 +29,7 @@ export class PreferencesComponent implements OnInit {
   private onboardingService = inject(OnboardingService);
   private userService = inject(UserService);
   private cdr = inject(ChangeDetectorRef);
-
-  isLoading = signal<boolean>(false);
+  protected loadingService = inject(LoadingService);
 
   languages = [
     { label: 'English', value: 'en' },
@@ -88,10 +88,10 @@ export class PreferencesComponent implements OnInit {
       displayCurrency
     };
 
-    this.isLoading.set(true);
+    this.loadingService.show();
     this.onboardingService.updatePreferences(payload).subscribe({
       next: () => {
-        this.isLoading.set(false);
+        this.loadingService.hide();
         const isPaid = this.userService.isPaid();
         const redirectPath = isPaid ? '/dashboard' : '/auth/activation';
         const message = isPaid
@@ -107,7 +107,7 @@ export class PreferencesComponent implements OnInit {
         }, 2000);
       },
       error: () => {
-        this.isLoading.set(false);
+        this.loadingService.hide();
         if (typeof ngDevMode !== 'undefined' && ngDevMode) {
           console.error('Preferences update failed');
         }

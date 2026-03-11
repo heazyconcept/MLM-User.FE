@@ -6,6 +6,7 @@ import { SelectModule } from 'primeng/select';
 import { FileUploadComponent } from '../../components/file-upload/file-upload.component';
 import { OnboardingService } from '../../../services/onboarding.service';
 import { ModalService } from '../../../services/modal.service';
+import { LoadingService } from '../../../services/loading.service';
 
 const ID_TYPE_TO_API: Record<string, 'NATIONAL_ID' | 'PASSPORT' | 'DRIVERS_LICENSE'> = {
   national_id: 'NATIONAL_ID',
@@ -31,9 +32,8 @@ export class IdentityKycComponent {
   private router = inject(Router);
   private onboardingService = inject(OnboardingService);
   private modalService = inject(ModalService);
+  protected loadingService = inject(LoadingService);
 
-
-  isLoading = signal<boolean>(false);
 
   idTypes = [
     { label: 'National ID', value: 'national_id' },
@@ -72,14 +72,14 @@ export class IdentityKycComponent {
       formData.append('selfie', value.selfie, value.selfie.name);
     }
 
-    this.isLoading.set(true);
+    this.loadingService.show();
     this.onboardingService.submitIdentity(formData).subscribe({
       next: () => {
-        this.isLoading.set(false);
+        this.loadingService.hide();
         this.router.navigate(['/onboarding/bank']);
       },
       error: () => {
-        this.isLoading.set(false);
+        this.loadingService.hide();
         if (typeof ngDevMode !== 'undefined' && ngDevMode) {
           console.error('Identity submission failed');
         }
