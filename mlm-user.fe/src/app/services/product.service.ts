@@ -7,6 +7,8 @@ export interface Product {
   id: string;
   name: string;
   description: string;
+  memberPriceNGN: number;
+  nonMemberPriceNGN: number;
   price: number;
   currency: 'NGN' | 'USD';
   pv: number; // Point Value
@@ -177,11 +179,17 @@ export class ProductService {
   }
 
   private mapProduct(item: any): Product {
+    const memberPriceNGN = Number(item.currentPrice?.memberPriceNGN ?? item.currentPrice?.basePrice ?? 0);
+    const nonMemberPriceNGN = Number(item.currentPrice?.nonMemberPriceNGN ?? item.currentPrice?.basePrice ?? 0);
+
     return {
       id: item.id,
       name: item.name,
       description: item.description,
-      price: item.currentPrice ? item.currentPrice.basePrice || 0 : 0,
+      memberPriceNGN,
+      nonMemberPriceNGN,
+      // Keep `price` for existing purchase/order flows; use member price as default.
+      price: memberPriceNGN,
       currency: 'NGN',
       pv: item.currentPrice ? item.currentPrice.pv || 0 : 0,
       category: item.category ? item.category.name.toLowerCase() : 'other',

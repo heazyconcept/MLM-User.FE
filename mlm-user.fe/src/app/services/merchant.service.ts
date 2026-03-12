@@ -198,6 +198,16 @@ export interface InitiateMerchantFeeResponse {
   reference?: string;
 }
 
+export interface VerifyMerchantFeeBody {
+  reference: string;
+}
+
+export interface VerifyMerchantFeeResponse {
+  success: true;
+  payment: unknown;
+  message: string;
+}
+
 export interface ConfirmDeliveryBody {
   proof?: string;
   notes?: string;
@@ -330,6 +340,23 @@ export class MerchantService {
       catchError((err) => {
         console.error('[MerchantService] initiateMerchantFeePayment failed', err);
         this.errorSignal.set(err?.error?.message || 'Failed to initiate fee payment.');
+        return of(null);
+      }),
+      finalize(() => this.actionLoadingSignal.set(false)),
+    );
+  }
+
+  /** POST /merchants/merchant-fee/verify */
+  verifyMerchantFeePayment(
+    body: VerifyMerchantFeeBody,
+  ): Observable<VerifyMerchantFeeResponse | null> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+    return this.api.post<VerifyMerchantFeeResponse>('merchants/merchant-fee/verify', body).pipe(
+      tap(() => this.fetchProfile()),
+      catchError((err) => {
+        console.error('[MerchantService] verifyMerchantFeePayment failed', err);
+        this.errorSignal.set(err?.error?.message || 'Failed to verify fee payment.');
         return of(null);
       }),
       finalize(() => this.actionLoadingSignal.set(false)),
