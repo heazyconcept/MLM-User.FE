@@ -3,22 +3,22 @@
   <!-- Image Gallery -->
   <div class="lg:w-1/2">
     <!-- Main Image -->
-    <div class="aspect-square rounded-3xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 mb-4 shadow-sm">
+    <div class="aspect-square rounded-2xl overflow-hidden bg-gray-50 mb-3">
       <img 
         [src]="selectedImage()" 
         [alt]="product.name"
-        class="w-full h-full object-cover transition-transform duration-300 hover:scale-105">
+        class="w-full h-full object-cover">
     </div>
     
-    <!-- Thumbnail Gallery -->
+    <!-- Thumbnails -->
     @if (product.images.length > 1) {
-      <div class="flex gap-3">
-        @for (image of product.images; track image; let i = $index) {
+      <div class="flex gap-2">
+        @for (image of product.images; track image) {
           <button
             (click)="selectImage(image)"
-            [class]="selectedImage() === image ? 'ring-2 ring-mlm-primary ring-offset-2' : 'ring-1 ring-gray-200 hover:ring-mlm-primary/50'"
-            class="w-16 h-16 rounded-xl overflow-hidden transition-all bg-gray-50">
-            <img [src]="image" [alt]="product.name + ' thumbnail'" class="w-full h-full object-cover">
+            class="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-colors"
+            [class]="selectedImage() === image ? 'border-mlm-primary' : 'border-transparent'">
+            <img [src]="image" [alt]="product.name" class="w-full h-full object-cover">
           </button>
         }
       </div>
@@ -26,97 +26,104 @@
   </div>
   
   <!-- Product Details -->
-  <div class="lg:w-1/2 space-y-5">
+  <div class="lg:w-1/2 flex flex-col gap-5">
     
     <!-- Category & Stock -->
     <div class="flex items-center gap-3">
       <span class="text-xs font-bold text-mlm-secondary uppercase tracking-widest">{{ product.category }}</span>
+      <span class="w-1 h-1 rounded-full bg-gray-300"></span>
       @if (product.inStock) {
         <span class="text-xs font-semibold text-mlm-primary">In Stock</span>
       } @else {
         <span class="text-xs font-semibold text-mlm-error">Out of Stock</span>
       }
     </div>
+
+    <!-- Name -->
+    <h1 class="text-2xl font-bold text-mlm-text leading-snug">{{ product.name }}</h1>
     
     <!-- Price & PV -->
-    <div class="flex items-center gap-4">
-      <span class="text-4xl font-bold text-mlm-text tracking-tight">{{ formatCurrency(product.price) }}</span>
-      <span class="text-sm font-semibold text-mlm-secondary bg-gray-100 px-4 py-1.5 rounded-full">
+    <div class="flex items-center gap-3">
+      <span class="text-3xl font-extrabold text-mlm-text tracking-tight">{{ formatCurrency(product.memberPriceNGN) }}</span>
+      <span class="text-xs font-bold text-mlm-primary bg-mlm-primary/8 px-3 py-1.5 rounded-lg">
         {{ product.pv }} PV
       </span>
     </div>
+
+    <div class="h-px bg-gray-100"></div>
     
     <!-- Description -->
-    <div class="pt-2">
-      <h4 class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">Description</h4>
+    <div>
+      <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2">Description</p>
       <p class="text-sm text-mlm-secondary leading-relaxed">{{ product.description }}</p>
     </div>
+
+    <div class="h-px bg-gray-100"></div>
     
     <!-- Wallet Selection -->
-    <div class="pt-2">
-      <h4 class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-4">Pay With</h4>
-      <div class="grid grid-cols-3 gap-3">
+    <div>
+      <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">Pay With</p>
+      <div class="grid grid-cols-3 gap-2">
         @for (wallet of walletOptions; track wallet.type) {
           <button
             (click)="selectWallet(wallet.type)"
             [disabled]="!product.eligibleWallets.includes(wallet.type) || isProcessing()"
-            [class]="getWalletButtonClass(wallet.type)"
-            class="py-5 px-4 rounded-2xl text-center transition-all duration-200">
-            <i [class]="'pi ' + wallet.icon + ' text-xl mb-2 block'"></i>
+            class="py-3 px-3 rounded-xl text-center border-2 transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
+            [class]="getWalletButtonClass(wallet.type)">
             <span class="text-sm font-semibold block">{{ wallet.label }}</span>
           </button>
         }
       </div>
     </div>
     
-    <!-- Quantity Selector -->
-    <div class="pt-2">
-      <h4 class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-4">Quantity</h4>
-      <div class="flex items-center gap-1">
+    <!-- Quantity -->
+    <div>
+      <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">Quantity</p>
+      <div class="flex items-center gap-0 border border-gray-200 rounded-xl w-fit overflow-hidden">
         <button 
           (click)="decrementQuantity()"
           [disabled]="quantity() <= 1 || isProcessing()"
-          class="w-12 h-12 rounded-xl border border-gray-200 flex items-center justify-center text-mlm-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-          <i class="pi pi-minus text-sm"></i>
+          class="w-11 h-11 flex items-center justify-center text-mlm-secondary disabled:opacity-40 disabled:cursor-not-allowed font-bold text-lg">
+          −
         </button>
-        <span class="w-14 text-center text-xl font-bold text-mlm-text">{{ quantity() }}</span>
+        <span class="w-12 text-center text-base font-bold text-mlm-text border-x border-gray-200 h-11 flex items-center justify-center">
+          {{ quantity() }}
+        </span>
         <button 
           (click)="incrementQuantity()"
           [disabled]="quantity() >= 10 || isProcessing()"
-          class="w-12 h-12 rounded-xl border border-gray-200 flex items-center justify-center text-mlm-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-          <i class="pi pi-plus text-sm"></i>
+          class="w-11 h-11 flex items-center justify-center text-mlm-secondary disabled:opacity-40 disabled:cursor-not-allowed font-bold text-lg">
+          +
         </button>
       </div>
     </div>
     
     <!-- Total -->
-    <div class="bg-gray-50 rounded-2xl p-5 mt-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <span class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-1">Total</span>
-          <span class="text-3xl font-bold text-mlm-text tracking-tight">{{ formatCurrency(product.price * quantity()) }}</span>
-        </div>
-        <div class="text-right">
-          <span class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-1">Total PV</span>
-          <span class="text-xl font-bold text-mlm-secondary">{{ product.pv * quantity() }} PV</span>
-        </div>
+    <div class="flex items-center justify-between bg-gray-50 rounded-xl px-5 py-4 border border-gray-100">
+      <div>
+        <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-1">Total</p>
+        <span class="text-2xl font-extrabold text-mlm-text tracking-tight">{{ formatCurrency(product.memberPriceNGN * quantity()) }}</span>
+      </div>
+      <div class="text-right">
+        <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-1">Total PV</p>
+        <span class="text-lg font-bold text-mlm-primary">{{ product.pv * quantity() }} PV</span>
       </div>
     </div>
     
-    <!-- Action Buttons -->
-    <div class="flex gap-3 pt-3">
-      <button
-        (click)="onBuyNow()"
-        [disabled]="!product.inStock || isProcessing()"
-        class="flex-1 py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-brand-green-dark shadow-lg shadow-mlm-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all flex items-center justify-center gap-2">
-        @if (isProcessing()) {
-          <i class="pi pi-spinner pi-spin"></i>
-          <span>Processing...</span>
-        } @else {
-          <span>Buy Now</span>
-        }
-      </button>
-    </div>
+    <!-- Buy Now -->
+    <button
+      (click)="onBuyNow()"
+      [disabled]="!product.inStock || isProcessing()"
+      class="w-full py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+      @if (isProcessing()) {
+        <span class="flex items-center justify-center gap-2">
+          <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          Processing…
+        </span>
+      } @else {
+        Buy Now
+      }
+    </button>
     
   </div>
 </div>

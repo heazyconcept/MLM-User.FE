@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://segulah-api.onrender.com',
+  apiUrl: 'https://api.segulah.ng',
   defaultReferralCode: 'REF000000',
 };
