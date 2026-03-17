@@ -1,0 +1,97 @@
+<div class="p-6 lg:p-10 space-y-8 mx-auto max-w-3xl">
+  <!-- Back link -->
+  <div>
+    <button
+      (click)="backToList()"
+      class="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+    >
+      <i class="pi pi-arrow-left text-xs"></i>
+      Back to Withdrawals
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-8 animate-pulse">
+      <div class="h-8 w-48 bg-gray-100 rounded mb-6"></div>
+      <div class="space-y-4">
+        <div class="h-4 bg-gray-100 rounded w-full"></div>
+        <div class="h-4 bg-gray-100 rounded w-3/4"></div>
+        <div class="h-4 bg-gray-100 rounded w-1/2"></div>
+      </div>
+    </div>
+  } @else if (error()) {
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-8 text-center">
+      <i class="pi pi-exclamation-triangle text-4xl text-amber-500 mb-4"></i>
+      <p class="text-gray-700 font-medium">{{ error() }}</p>
+      <button
+        (click)="backToList()"
+        class="mt-4 px-4 py-2 bg-mlm-primary text-white text-sm font-medium rounded-lg hover:bg-mlm-primary/90"
+      >
+        Back to Withdrawals
+      </button>
+    </div>
+  } @else if (withdrawal(); as w) {
+    <div class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Withdrawal Details</h1>
+          <p class="text-sm text-gray-500 mt-1 font-mono">{{ w.id }}</p>
+        </div>
+        <app-status-badge [status]="w.status" size="lg"></app-status-badge>
+      </div>
+
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="p-6 space-y-6">
+          <!-- Amount & Date -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Amount</span>
+              <p class="text-2xl font-bold text-gray-900 mt-1">
+                {{ getCurrencySymbol() }}{{ w.amount | number:'1.2-2' }}
+              </p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ w.currency }}</p>
+            </div>
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Requested</span>
+              <p class="text-sm font-medium text-gray-900 mt-1">{{ w.date | date:'MMM d, yyyy' }}</p>
+              <p class="text-xs text-gray-400">{{ w.date | date:'h:mm a' }}</p>
+            </div>
+          </div>
+
+          <!-- Bank details -->
+          <div class="pt-4 border-t border-gray-100">
+            <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Payout Account</span>
+            <div class="mt-2">
+              <p class="text-sm font-medium text-gray-900">{{ bankDisplay().line1 }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">{{ bankDisplay().line2 }}</p>
+            </div>
+          </div>
+
+          @if (w.status === 'Rejected' && w.reason) {
+            <div class="pt-4 border-t border-gray-100 p-4 bg-red-50 rounded-lg border border-red-100">
+              <span class="text-xs font-bold uppercase tracking-wider text-red-700">Reason</span>
+              <p class="text-sm text-red-800 mt-1">{{ w.reason }}</p>
+            </div>
+          }
+
+          @if ((w.status === 'Paid' || w.status === 'Approved') && (w.payoutReference || w.paidAt)) {
+            <div class="pt-4 border-t border-gray-100 space-y-3">
+              @if (w.payoutReference) {
+                <div>
+                  <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Payout Reference</span>
+                  <p class="text-sm font-mono text-gray-900 mt-1">{{ w.payoutReference }}</p>
+                </div>
+              }
+              @if (w.paidAt) {
+                <div>
+                  <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Paid At</span>
+                  <p class="text-sm text-gray-900 mt-1">{{ w.paidAt | date:'MMM d, yyyy h:mm a' }}</p>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

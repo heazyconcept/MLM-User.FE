@@ -343,6 +343,14 @@ export const routes: Routes = [
           ),
         data: { title: 'Withdrawals' },
       },
+      {
+        path: ':id',
+        loadComponent: () =>
+          import('./pages/wallet/withdrawals/withdrawal-detail.component').then(
+            (m) => m.WithdrawalDetailComponent,
+          ),
+        data: { title: 'Withdrawal Details' },
+      },
     ],
   },
   {

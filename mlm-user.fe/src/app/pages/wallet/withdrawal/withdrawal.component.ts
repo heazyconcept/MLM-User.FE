@@ -60,7 +60,7 @@ export class WithdrawalComponent implements OnInit {
 
   constructor() {
     this.withdrawalForm = this.fb.group({
-      amount: [null, [Validators.required, Validators.min(100)]]
+      amount: [null, [Validators.required, Validators.min(0.01)]]
     });
   }
 
@@ -70,7 +70,7 @@ export class WithdrawalComponent implements OnInit {
       this.currency.set(data.currency);
       const w = this.walletService.getWallet(data.currency as 'NGN' | 'USD')();
       if (w) {
-        this.withdrawalForm.get('amount')?.addValidators(Validators.max(w.balance));
+        this.withdrawalForm.get('amount')?.addValidators(Validators.max(w.cashBalance));
         this.withdrawalForm.get('amount')?.updateValueAndValidity();
       }
     }
@@ -112,11 +112,11 @@ export class WithdrawalComponent implements OnInit {
       accountNumber: bank.accountNumber!,
       accountName: bank.accountName!
     }).subscribe({
-      next: () => {
+      next: (created) => {
         this.walletService.fetchWallets().subscribe();
         this.isSubmitting.set(false);
         this.ref.close(true);
-        this.router.navigate(['/withdrawals']);
+        this.router.navigate(['/withdrawals', created.id]);
       },
       error: () => {
         this.isSubmitting.set(false);
