@@ -8,7 +8,7 @@
               <span class="text-[15px] text-mlm-secondary font-bold uppercase tracking-wider">Available Balance</span>
               <div class="mt-1 flex items-baseline gap-1">
                   <span class="text-2xl font-black text-mlm-text">
-                      {{ currency() === 'NGN' ? '₦' : '$' }}{{ (wallet()?.balance ?? 0) | number:'1.2-2' }}
+                      {{ currency() === 'NGN' ? '₦' : '$' }}{{ (wallet()?.cashBalance ?? 0) | number:'1.2-2' }}
                   </span>
               </div>
           </div>
@@ -49,15 +49,15 @@
                   [mode]="'currency'" 
                   [currency]="currency() === 'NGN' ? 'NGN' : 'USD'" 
                   [currencyDisplay]="'symbol'"
-                  [min]="100"
-                  [max]="wallet()?.balance ?? 0"
+                  [min]="0.01"
+                  [max]="wallet()?.cashBalance ?? 0"
                   fluid="true"
                   placeholder="0.00">
               </p-inputNumber>
               <div class="flex items-center justify-between text-[10px]">
-                <span class="text-mlm-secondary font-medium italic">Min: {{ currency() === 'NGN' ? '₦100' : '$100' }}</span>
+                <span class="text-mlm-secondary font-medium italic">Min: {{ currency() === 'NGN' ? '₦0.01' : '$0.01' }}</span>
                 @if (wallet()) {
-                  <button type="button" (click)="withdrawalForm.patchValue({amount: wallet()?.balance})" class="text-mlm-primary font-bold hover:underline">MAX</button>
+                  <button type="button" (click)="withdrawalForm.patchValue({amount: wallet()?.cashBalance})" class="text-mlm-primary font-bold hover:underline">MAX</button>
                 }
               </div>
               
@@ -67,7 +67,7 @@
                           <small class="text-mlm-error text-[10px] font-bold">Amount is required.</small>
                       }
                       @if (withdrawalForm.get('amount')?.errors?.['min']) {
-                          <small class="text-mlm-error text-[10px] font-bold">Minimum withdrawal amount is 100.</small>
+                          <small class="text-mlm-error text-[10px] font-bold">Minimum withdrawal amount is 0.01.</small>
                       }
                       @if (withdrawalForm.get('amount')?.errors?.['max']) {
                           <small class="text-mlm-error text-[10px] font-bold">Amount exceeds available balance.</small>

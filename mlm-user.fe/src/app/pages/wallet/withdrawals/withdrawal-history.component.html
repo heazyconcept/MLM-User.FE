@@ -90,6 +90,7 @@
             <option [value]="null">All Status</option>
             <option value="Pending">Pending</option>
             <option value="Approved">Approved</option>
+            <option value="Paid">Paid</option>
             <option value="Rejected">Rejected</option>
           </select>
         </div>
@@ -162,7 +163,7 @@
           </thead>
           <tbody class="divide-y divide-gray-100">
             @for (w of filteredWithdrawals(); track w.id) {
-              <tr class="hover:bg-gray-50/50 transition-colors">
+              <tr class="hover:bg-gray-50/50 transition-colors cursor-pointer" (click)="viewDetail(w.id)">
                 <!-- Reference -->
                 <td class="px-6 py-4">
                   <span class="text-xs font-mono font-semibold text-gray-900">{{ w.id }}</span>
@@ -176,11 +177,12 @@
                   </div>
                 </td>
                 
-                <!-- Bank Details -->
+                <!-- Bank Details (API or user profile fallback) -->
                 <td class="px-6 py-4">
+                  @let bank = getBankDisplay(w);
                   <div class="flex flex-col">
-                    <span class="text-xs font-medium text-gray-900">{{ w.bankName }}</span>
-                    <span class="text-[10px] text-gray-400">{{ w.accountNumber }} • {{ w.accountName }}</span>
+                    <span class="text-xs font-medium text-gray-900">{{ bank.line1 }}</span>
+                    <span class="text-[10px] text-gray-400">{{ bank.line2 }}</span>
                   </div>
                 </td>
                 
