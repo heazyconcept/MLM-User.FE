@@ -118,9 +118,11 @@ export class NotificationService {
     if (params?.type != null) query['type'] = params.type;
     if (params?.isRead != null) query['isRead'] = params.isRead;
 
-    return this.api.get<ApiNotificationItem[] | { items?: ApiNotificationItem[] }>('notifications', query).pipe(
+    return this.api.get<
+      ApiNotificationItem[] | { items?: ApiNotificationItem[]; notifications?: ApiNotificationItem[] }
+    >('notifications', query).pipe(
       map((raw) => {
-        const items = Array.isArray(raw) ? raw : (raw?.items ?? []);
+        const items = Array.isArray(raw) ? raw : (raw?.items ?? raw?.notifications ?? []);
         const list = items.map((item) => this.mapApiItemToNotification(item as ApiNotificationItem));
         this.notificationsSignal.set(list);
         this.loadingSignal.set(false);

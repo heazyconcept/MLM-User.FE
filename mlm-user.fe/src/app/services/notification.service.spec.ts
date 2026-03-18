@@ -80,6 +80,28 @@ describe('NotificationService', () => {
       req.flush({ items: [{ id: 'n2', type: 'SYSTEM_ANNOUNCEMENT', isRead: true, createdAt: '2025-02-20T10:00:00.000Z' }] });
     });
 
+    it('should handle notifications wrapper response', () => {
+      service.loadNotifications().subscribe((list) => {
+        expect(list.length).toBe(1);
+        expect(list[0].id).toBe('n3');
+        expect(list[0].title).toBe('Wallet Unlocked');
+        expect(list[0].message).toBe('Your wallet has been unlocked and is now active.');
+      });
+      const req = httpMock.expectOne((r) => r.url.startsWith(`${baseUrl}/notifications`));
+      req.flush({
+        notifications: [
+          {
+            id: 'n3',
+            type: 'WALLET_UNLOCKED',
+            title: 'Wallet Unlocked',
+            message: 'Your wallet has been unlocked and is now active.',
+            isRead: false,
+            createdAt: '2026-03-18T15:19:37.792Z',
+          },
+        ],
+      });
+    });
+
     it('should set error signal and return empty array on failure', () => {
       service.loadNotifications().subscribe((list) => {
         expect(list).toEqual([]);

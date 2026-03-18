@@ -33,16 +33,16 @@
 } @else {
   <div class="min-h-screen bg-mlm-background">
     <main class="py-10">
-      <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div class="space-y-6 animate-fade-in">
+      <div class="px-4 sm:px-6 lg:px-8">
+        <div class="space-y-6 xl:space-y-8 2xl:space-y-10 animate-fade-in">
           <!-- Welcome header (example style) -->
           @if (currentUser(); as user) {
-            <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center justify-between mb-6 xl:mb-10 2xl:mb-12">
               <div>
-                <h1 class="font-extrabold text-mlm-warm-900 tracking-tight text-2xl">
+                <h1 class="font-extrabold text-mlm-warm-900 tracking-tight text-2xl xl:text-4xl 2xl:text-[2.5rem]">
                   Good morning, <span class="text-mlm-primary">{{ user.firstName }}</span> 👋
                 </h1>
-                <p class="text-mlm-warm-500 mt-1 text-[13px]">
+                <p class="text-mlm-warm-500 mt-1 text-[13px] xl:text-sm 2xl:text-base">
                   Your portfolio is up
                   <strong class="text-mlm-primary">12%</strong> this month
                 </p>
@@ -51,14 +51,14 @@
           }
 
           <!-- Wallet hero (example layout) -->
-          <div class="rounded-2xl mb-6 bg-mlm-primary">
-            <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr_1fr] p-8 gap-8">
+          <div class="rounded-2xl mb-6 xl:mb-8 2xl:mb-10 bg-mlm-primary xl:min-h-[200px] 2xl:min-h-[240px]">
+            <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr_1fr] xl:grid-cols-[1.3fr_1fr_1fr] p-6 sm:p-8 lg:p-8 xl:p-12 2xl:p-14 gap-6 lg:gap-8 xl:gap-12 2xl:gap-14">
               <div>
-                <p class="font-bold text-white/80 uppercase mb-3 text-[11px] tracking-widest">
+                <p class="font-bold text-white/80 uppercase mb-3 text-[11px] xl:text-xs 2xl:text-sm tracking-widest">
                   Total Wallet Balance
                 </p>
                 <p
-                  class="text-white font-extrabold font-mono text-4xl tracking-tight leading-tight"
+                  class="text-white font-extrabold font-mono text-4xl xl:text-5xl 2xl:text-6xl tracking-tight leading-tight"
                 >
                   {{ displayCurrency() === 'NGN' ? '₦' : '$' }}
                   {{ activeWallet()?.cashBalance ?? 0 | number: '1.0-0' }}
@@ -72,47 +72,47 @@
                     ₦{{ ngnWallet()?.cashBalance ?? 0 | number: '1.0-0' }}
                   </p>
                 }
-                <div class="flex gap-2.5 mt-6">
+                <div class="flex gap-2.5 xl:gap-3 mt-6 xl:mt-8">
                   <button
                     type="button"
-                    class="px-5 py-2.5 rounded-xl font-bold text-mlm-primary bg-white text-sm transition-opacity hover:opacity-90"
+                    class="px-5 py-2.5 xl:px-6 xl:py-3 2xl:px-7 2xl:py-3.5 rounded-xl font-bold text-mlm-primary bg-white text-sm xl:text-base 2xl:text-lg transition-opacity hover:opacity-90"
                   >
                     Withdraw
                   </button>
                   <button
                     type="button"
                     (click)="navigateTo('wallet')"
-                    class="px-5 py-2.5 rounded-xl font-semibold text-white text-sm border border-white/40 transition-opacity hover:opacity-90"
+                    class="px-5 py-2.5 xl:px-6 xl:py-3 2xl:px-7 2xl:py-3.5 rounded-xl font-semibold text-white text-sm xl:text-base 2xl:text-lg border border-white/40 transition-opacity hover:opacity-90"
                   >
                     History
                   </button>
                 </div>
               </div>
-              <div class="py-0 px-6 border-l border-white/20">
-                <div class="mb-6">
-                  <p class="font-bold text-white/80 uppercase mb-1.5 text-[11px] tracking-wide">
+              <div class="py-4 lg:py-0 lg:px-6 border-t lg:border-t-0 lg:border-l border-white/20">
+                <div class="mb-6 xl:mb-8">
+                  <p class="font-bold text-white/80 uppercase mb-1.5 text-[11px] xl:text-xs 2xl:text-sm tracking-wide">
                     Vouchers
                   </p>
-                  <p class="text-white font-bold font-mono text-[22px]">
+                  <p class="text-white font-bold font-mono text-[22px] xl:text-2xl 2xl:text-3xl">
                     {{ displayCurrency() === 'NGN' ? '₦' : '$'
                     }}{{ activeWallet()?.voucherBalance ?? 0 | number: '1.0-0' }}
                   </p>
                 </div>
                 <div>
-                  <p class="font-bold text-white/80 uppercase mb-1.5 text-[11px] tracking-wide">
+                  <p class="font-bold text-white/80 uppercase mb-1.5 text-[11px] xl:text-xs 2xl:text-sm tracking-wide">
                     Autoship
                   </p>
-                  <p class="text-white font-bold font-mono text-[22px]">
+                  <p class="text-white font-bold font-mono text-[22px] xl:text-2xl 2xl:text-3xl">
                     {{ displayCurrency() === 'NGN' ? '₦' : '$'
                     }}{{ activeWallet()?.autoshipBalance ?? 0 | number: '1.0-0' }}
                   </p>
                 </div>
               </div>
-              <div class="py-0 px-6 border-l border-white/20">
-                <p class="font-bold text-white/80 uppercase mb-3 text-[11px] tracking-wide">
+              <div class="py-4 lg:py-0 lg:px-6 border-t lg:border-t-0 lg:border-l border-white/20">
+                <p class="font-bold text-white/80 uppercase mb-3 text-[11px] xl:text-xs 2xl:text-sm tracking-wide">
                   7-Day Trend
                 </p>
-                <div class="h-14">
+                <div class="h-14 xl:h-16 2xl:h-20">
                   <svg viewBox="0 0 200 48" class="w-full h-full" preserveAspectRatio="none">
                     <defs>
                       <linearGradient id="dashboardSparkGrad" x1="0" y1="0" x2="0" y2="1">
@@ -142,22 +142,22 @@
           </div>
 
           <!-- Stat cards (example layout) -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 xl:gap-6 2xl:gap-8 mb-6 xl:mb-8 2xl:mb-10">
             @for (card of statCardsData; track card.label; let i = $index) {
               <div
-                class="rounded-2xl p-5 transition-all duration-300 border border-transparent"
+                class="rounded-2xl p-5 xl:p-6 2xl:p-8 xl:min-h-[140px] 2xl:min-h-[160px] transition-all duration-300 border border-transparent"
                 [style.background]="card.gradient"
                 [style.opacity]="cardsVisible[i] ? '1' : '0'"
                 [style.transform]="cardsVisible[i] ? 'translateY(0)' : 'translateY(12px)'"
               >
-                <div class="text-2xl mb-2.5 text-white">
+                <div class="text-2xl xl:text-3xl 2xl:text-4xl mb-2.5 xl:mb-3 text-white">
                   <i [class]="'pi ' + card.icon"></i>
                 </div>
-                <p class="font-bold uppercase text-white/80 mb-1.5 text-[11px] tracking-wide">
+                <p class="font-bold uppercase text-white/80 mb-1.5 text-[11px] xl:text-xs 2xl:text-sm tracking-wide">
                   {{ card.label }}
                 </p>
                 <p
-                  class="text-white font-extrabold font-mono text-[22px] tracking-tight leading-tight"
+                  class="text-white font-extrabold font-mono text-[22px] xl:text-2xl 2xl:text-[28px] tracking-tight leading-tight"
                 >
                   {{ card.value }}
                 </p>
@@ -166,21 +166,21 @@
           </div>
 
           <!-- Earnings Growth + Earnings Breakdown (example layout) -->
-          <div class="grid gap-5 mb-6 grid-cols-1 lg:grid-cols-[1.5fr_1fr]">
-            <div class="bg-white rounded-2xl p-6 border border-mlm-warm-200">
-              <div class="flex items-start justify-between mb-5">
+          <div class="grid gap-5 xl:gap-8 2xl:gap-10 mb-6 xl:mb-8 2xl:mb-10 grid-cols-1 lg:grid-cols-[1.5fr_1fr]">
+            <div class="bg-white rounded-2xl p-6 xl:p-8 2xl:p-10 xl:min-h-[320px] 2xl:min-h-[360px] border border-mlm-warm-200 min-w-0">
+              <div class="flex items-start justify-between mb-5 xl:mb-6 2xl:mb-8">
                 <div>
-                  <p class="font-bold text-mlm-warm-900 text-sm">Earnings Growth</p>
-                  <p class="text-mlm-warm-500 mt-0.5 text-xs">Last 7 months</p>
+                  <p class="font-bold text-mlm-warm-900 text-sm xl:text-base 2xl:text-lg">Earnings Growth</p>
+                  <p class="text-mlm-warm-500 mt-0.5 text-xs xl:text-sm">Last 7 months</p>
                 </div>
                 <select
-                  class="rounded-xl px-3 py-1.5 text-mlm-warm-600 font-medium border border-mlm-warm-200 outline-none cursor-pointer bg-mlm-background text-xs"
+                  class="rounded-xl px-3 py-1.5 xl:px-4 xl:py-2 2xl:px-4 2xl:py-2 text-mlm-warm-600 font-medium border border-mlm-warm-200 outline-none cursor-pointer bg-mlm-background text-xs xl:text-sm"
                 >
                   <option>Monthly</option>
                   <option>Weekly</option>
                 </select>
               </div>
-              <div class="flex items-end gap-2.5 px-1 h-[210px]">
+              <div class="flex items-end gap-2.5 xl:gap-3 px-1 h-[210px] xl:h-[260px] 2xl:h-[300px] min-w-0">
                 @for (bar of barItems; track bar.label; let i = $index) {
                   <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
                     <div
@@ -195,26 +195,26 @@
                 }
               </div>
             </div>
-            <div class="bg-white rounded-2xl p-6 border border-mlm-warm-200">
-              <p class="font-bold text-mlm-warm-900 text-sm mb-5">Earnings Breakdown</p>
+            <div class="bg-white rounded-2xl p-6 xl:p-8 2xl:p-10 xl:min-h-[320px] 2xl:min-h-[360px] border border-mlm-warm-200">
+              <p class="font-bold text-mlm-warm-900 text-sm xl:text-base 2xl:text-lg mb-5 xl:mb-6 2xl:mb-8">Earnings Breakdown</p>
               @for (item of earningsBreakdown(); track item.label) {
-                <div class="mb-4">
-                  <div class="flex items-center justify-between mb-1.5">
+                <div class="mb-4 xl:mb-5 2xl:mb-6">
+                  <div class="flex items-center justify-between mb-1.5 xl:mb-2">
                     <div class="flex items-center gap-2">
                       <div
-                        class="w-2 h-2 rounded-full shrink-0"
+                        class="w-2 h-2 xl:w-2.5 xl:h-2.5 rounded-full shrink-0"
                         [style.background]="item.color"
                       ></div>
-                      <span class="text-mlm-warm-600 font-medium text-[13px]">{{
+                      <span class="text-mlm-warm-600 font-medium text-[13px] xl:text-sm 2xl:text-base">{{
                         item.label
                       }}</span>
                     </div>
-                    <span class="font-bold text-mlm-warm-900 font-mono text-[13px]"
+                    <span class="font-bold text-mlm-warm-900 font-mono text-[13px] xl:text-sm 2xl:text-base"
                       >{{ displayCurrency() === 'NGN' ? '₦' : '$'
                       }}{{ item.value | number: '1.0-0' }}</span
                     >
                   </div>
-                  <div class="h-1.5 rounded-full overflow-hidden bg-mlm-warm-100">
+                  <div class="h-1.5 xl:h-2 2xl:h-2.5 rounded-full overflow-hidden bg-mlm-warm-100">
                     <div
                       class="h-full rounded-full transition-[width] duration-300"
                       [style.width.%]="item.pct"
@@ -224,10 +224,10 @@
                 </div>
               }
               <div
-                class="flex items-center justify-between mt-5 px-4 py-3.5 rounded-xl border border-mlm-green-200 bg-mlm-green-50"
+                class="flex items-center justify-between mt-5 xl:mt-6 2xl:mt-8 px-4 py-3.5 xl:px-5 xl:py-4 2xl:px-6 2xl:py-5 rounded-xl border border-mlm-green-200 bg-mlm-green-50"
               >
-                <span class="font-bold text-mlm-warm-900 text-[13px]">Total Earnings</span>
-                <span class="font-extrabold text-mlm-primary font-mono text-[17px]"
+                <span class="font-bold text-mlm-warm-900 text-[13px] xl:text-sm 2xl:text-base">Total Earnings</span>
+                <span class="font-extrabold text-mlm-primary font-mono text-[17px] xl:text-lg 2xl:text-xl"
                   >{{ displayCurrency() === 'NGN' ? '₦' : '$'
                   }}{{ activeSummary().totalEarnings | number: '1.0-0' }}</span
                 >
@@ -236,46 +236,46 @@
           </div>
 
           <!-- Recent Activity (example layout) -->
-          <div class="bg-white rounded-2xl p-6 border border-mlm-warm-200">
-            <div class="flex items-center justify-between mb-5">
+          <div class="bg-white rounded-2xl p-6 xl:p-8 2xl:p-10 border border-mlm-warm-200">
+            <div class="flex items-center justify-between mb-5 xl:mb-6 2xl:mb-8">
               <div>
-                <p class="font-bold text-mlm-warm-900 text-sm">Recent Activity</p>
-                <p class="text-mlm-warm-500 mt-0.5 text-xs">
+                <p class="font-bold text-mlm-warm-900 text-sm xl:text-base 2xl:text-lg">Recent Activity</p>
+                <p class="text-mlm-warm-500 mt-0.5 text-xs xl:text-sm">
                   Your latest transactions &amp; events
                 </p>
               </div>
               <button
                 type="button"
                 (click)="navigateTo('wallet')"
-                class="px-4 py-2 rounded-xl text-mlm-warm-600 font-semibold border border-mlm-warm-200 bg-mlm-background text-xs transition-opacity hover:opacity-80"
+                class="px-4 py-2 xl:px-5 xl:py-2.5 2xl:px-6 2xl:py-3 rounded-xl text-mlm-warm-600 font-semibold border border-mlm-warm-200 bg-mlm-background text-xs xl:text-sm 2xl:text-base transition-opacity hover:opacity-80"
               >
                 View all →
               </button>
             </div>
             @if (recentActivities().length > 0) {
-              <div class="flex flex-col gap-0.5">
+              <div class="flex flex-col gap-0.5 xl:gap-1">
                 @for (activity of recentActivities(); track activity.id) {
                   <div
-                    class="flex items-center gap-3.5 px-3 py-3 rounded-xl cursor-pointer hover:bg-mlm-warm-50 transition-colors duration-150"
+                    class="flex items-center gap-3.5 xl:gap-4 px-3 py-3 xl:px-4 xl:py-4 2xl:px-5 2xl:py-5 rounded-xl cursor-pointer hover:bg-mlm-warm-50 transition-colors duration-150"
                     (click)="navigateToActivity(activity)"
                   >
                     <div
-                      class="flex items-center justify-center w-11 h-11 rounded-2xl shrink-0 text-lg border"
+                      class="flex items-center justify-center w-11 h-11 xl:w-12 xl:h-12 2xl:w-14 2xl:h-14 rounded-2xl shrink-0 text-lg xl:text-xl 2xl:text-2xl border"
                       [style.background]="getActivityBg(activity.type)"
                       [style.border-color]="getActivityBorder(activity.type)"
                     >
                       <i [class]="'pi ' + activity.icon" class="text-mlm-warm-700"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="font-semibold text-mlm-warm-900 text-[13px]">
+                      <p class="font-semibold text-mlm-warm-900 text-[13px] xl:text-sm 2xl:text-base">
                         {{ activity.title }}
                       </p>
-                      <p class="text-mlm-warm-500 mt-0.5 text-xs">{{ activity.description }}</p>
+                      <p class="text-mlm-warm-500 mt-0.5 text-xs xl:text-sm">{{ activity.description }}</p>
                     </div>
                     <div class="text-right shrink-0">
                       @if (activity.amount != null) {
                         <span
-                          class="inline-block font-extrabold font-mono rounded-full px-2.5 py-0.5 border text-[13px]"
+                          class="inline-block font-extrabold font-mono rounded-full px-2.5 py-0.5 xl:px-3 xl:py-1 2xl:px-3.5 2xl:py-1 border text-[13px] xl:text-sm 2xl:text-base"
                           [class.text-mlm-green-700]="isPositiveActivityBadge(activity)"
                           [class.bg-mlm-green-50]="isPositiveActivityBadge(activity)"
                           [class.border-mlm-green-200]="isPositiveActivityBadge(activity)"
@@ -286,7 +286,7 @@
                           {{ activityBadge(activity) }}
                         </span>
                       }
-                      <p class="text-mlm-warm-400 mt-1 text-[11px]">
+                      <p class="text-mlm-warm-400 mt-1 text-[11px] xl:text-xs 2xl:text-sm">
                         {{ formatActivityDate(activity.date) }}
                       </p>
                     </div>
