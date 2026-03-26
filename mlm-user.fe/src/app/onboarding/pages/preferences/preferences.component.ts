@@ -57,6 +57,7 @@ export class PreferencesComponent implements OnInit {
     }
 
     // Then try to load saved preferences (overrides the above if they exist)
+    this.loadingService.show();
     this.onboardingService.getPreferences().subscribe({
       next: (data) => {
         const lang = (data['preferredLanguage'] ?? data['preferred_language']) as string | undefined;
@@ -67,8 +68,11 @@ export class PreferencesComponent implements OnInit {
             currency: currency ?? registrationCurrency ?? 'USD'
           });
         }
+        this.loadingService.hide();
       },
-      error: () => {}
+      error: () => {
+        this.loadingService.hide();
+      }
     });
   }
 

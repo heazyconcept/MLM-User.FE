@@ -46,6 +46,8 @@ export class RegisterComponent implements OnInit {
   referralValidating = signal(false);
 
   ngOnInit(): void {
+    this.applyPackageFromRoute();
+
     // Prefill: query param (?ref=ABC123) or localStorage (from /ref/:code) overrides default
     const queryRef = this.route.snapshot.queryParamMap.get('ref')?.trim();
     const storedCode = localStorage.getItem('referralCode');
@@ -67,6 +69,22 @@ export class RegisterComponent implements OnInit {
         }
       });
     }
+  }
+
+  /** Path segment from marketing site: /auth/register/RUBY (see mlm-app-package-query-handoff.md). */
+  private applyPackageFromRoute(): void {
+    const raw = this.route.snapshot.paramMap.get('packageCode')?.trim();
+    if (!raw) return;
+    let decoded = raw;
+    try {
+      decoded = decodeURIComponent(raw);
+    } catch {
+      /* keep raw */
+    }
+    const normalized = decoded.toUpperCase();
+    const allowed = new Set(this.packages.map((p) => p.value));
+    if (!allowed.has(normalized)) return;
+    this.registerForm.patchValue({ package: normalized });
   }
 
   onReferralBlur(): void {

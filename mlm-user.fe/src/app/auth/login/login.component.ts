@@ -33,6 +33,7 @@ export class LoginComponent {
   private router = inject(Router);
   private userService = inject(UserService);
   private modalService = inject(ModalService);
+  private loadingService = inject(LoadingService);
   
   isLoading = signal<boolean>(false);
 
@@ -47,9 +48,11 @@ export class LoginComponent {
       const { username, password } = this.loginForm.value;
       if (username && password) {
         this.isLoading.set(true);
+        this.loadingService.show();
         this.authService.login(username, password).subscribe({
           next: (result) => {
             this.isLoading.set(false);
+            this.loadingService.hide();
             
             // Registration Fee Status Check (On Every Login)
             // The payment status has been fetched from the server in AuthService.login()
@@ -79,6 +82,7 @@ export class LoginComponent {
           },
           error: () => {
             this.isLoading.set(false);
+            this.loadingService.hide();
             // Show error modal
             this.modalService.open(
               'error',
