@@ -37,6 +37,7 @@ export class BankDetailsComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.loadingService.show();
     this.onboardingService.getBankDetails().subscribe({
       next: (data: Record<string, unknown>) => {
         const bankName = (data['bankName'] ?? data['bank_name']) as string | undefined;
@@ -51,8 +52,12 @@ export class BankDetailsComponent implements OnInit {
             accountType: accountType?.toLowerCase() === 'current' ? 'current' : 'savings'
           });
         }
+        this.loadingService.hide();
       },
-      error: () => { /* silently ignore — user will fill in */ }
+      error: () => {
+        this.loadingService.hide();
+        /* silently ignore — user will fill in */
+      }
     });
   }
 

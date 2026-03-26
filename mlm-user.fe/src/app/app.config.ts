@@ -3,7 +3,6 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
-import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';
@@ -54,7 +53,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
 
 
-      withInterceptors([authInterceptor, errorInterceptor, loadingInterceptor])
+      withInterceptors([authInterceptor, errorInterceptor])
     )
   ]
 };
