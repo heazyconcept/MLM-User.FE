@@ -1,6 +1,8 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, signal, computed, type Signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { startWith } from 'rxjs';
 import { CardModule } from 'primeng/card';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
@@ -11,6 +13,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Router } from '@angular/router';
 import { WalletService } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
+import { formatWithdrawalAmountInWords } from '../../../core/utils/amount-in-words';
 
 @Component({
   selector: 'app-withdrawal',
@@ -57,10 +60,20 @@ export class WithdrawalComponent implements OnInit {
   withdrawalForm: FormGroup;
   isSubmitting = signal(false);
 
+  /** Latest amount control value for spelled-out line */
+  private amountValue!: Signal<number | null>;
+  /** e.g. "ten thousand naira" */
+  amountInWords = computed(() =>
+    formatWithdrawalAmountInWords(this.amountValue(), this.currency())
+  );
 
   constructor() {
     this.withdrawalForm = this.fb.group({
       amount: [null, [Validators.required, Validators.min(0.01)]]
+    });
+    const amountCtrl = this.withdrawalForm.get('amount')!;
+    this.amountValue = toSignal(amountCtrl.valueChanges.pipe(startWith(amountCtrl.value)), {
+      initialValue: amountCtrl.value as number | null
     });
   }
 
@@ -78,11 +91,12 @@ export class WithdrawalComponent implements OnInit {
 
   onSubmit() {
     if (this.withdrawalForm.valid && this.hasBankDetails()) {
-      const amount = this.withdrawalForm.value.amount;
+      const amount = this.withdrawalForm.value.amount as number;
       const bank = this.bankDetails();
+      const formattedAmount = WithdrawalComponent.formatAmountWithCommas(amount);
 
       this.confirmationService.confirm({
-        message: `Confirm withdrawal of ${this.currency() === 'NGN' ? '₦' : '$'}${amount} to ${bank.bankName} (${bank.accountNumber})?`,
+        message: `Confirm withdrawal of ${this.currency() === 'NGN' ? '₦' : '$'}${formattedAmount} to ${bank.bankName} (${bank.accountNumber})?`,
         header: 'Confirm Withdrawal',
         icon: 'pi pi-exclamation-triangle',
         acceptButtonProps: { label: 'Confirm', severity: 'success' },
@@ -126,6 +140,14 @@ export class WithdrawalComponent implements OnInit {
 
   cancel() {
     this.ref.close();
+  }
+
+  /** Matches display style e.g. 50,000,001.00 */
+  private static formatAmountWithCommas(amount: number): string {
+    return amount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
   }
 }
 

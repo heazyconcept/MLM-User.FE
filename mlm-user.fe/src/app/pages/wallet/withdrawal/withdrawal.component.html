@@ -43,6 +43,7 @@
       <form [formGroup]="withdrawalForm" (ngSubmit)="onSubmit()" class="space-y-6">
           <div class="flex flex-col gap-2">
               <label for="amount" class="text-xs font-bold text-mlm-text uppercase tracking-tight">Amount to Withdraw</label>
+              <div class="flex flex-col gap-1">
               <p-inputNumber 
                   formControlName="amount" 
                   inputId="amount" 
@@ -54,13 +55,16 @@
                   fluid="true"
                   placeholder="0.00">
               </p-inputNumber>
-              <div class="flex items-center justify-between text-[10px]">
-                <span class="text-mlm-secondary font-medium italic">Min: {{ currency() === 'NGN' ? '₦0.01' : '$0.01' }}</span>
-                @if (wallet()) {
+              @if (wallet()) {
+                <div class="flex justify-end text-[10px] leading-none">
                   <button type="button" (click)="withdrawalForm.patchValue({amount: wallet()?.cashBalance})" class="text-mlm-primary font-bold hover:underline">MAX</button>
-                }
+                </div>
+              }
+              @if (amountInWords()) {
+                <p class="text-sm font-bold text-mlm-text leading-snug">{{ amountInWords() }}</p>
+              }
               </div>
-              
+
               @if (withdrawalForm.get('amount')?.invalid && (withdrawalForm.get('amount')?.dirty || withdrawalForm.get('amount')?.touched)) {
                   <div class="mt-1">
                       @if (withdrawalForm.get('amount')?.errors?.['required']) {
