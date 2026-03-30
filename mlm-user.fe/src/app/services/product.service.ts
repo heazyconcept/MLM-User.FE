@@ -12,6 +12,7 @@ export interface Product {
   price: number;
   currency: 'NGN' | 'USD';
   pv: number; // Point Value
+  cpv: number; // Carry Point Value
   category: string;
   images: string[];
   inStock: boolean;
@@ -192,6 +193,7 @@ export class ProductService {
       price: memberPriceNGN,
       currency: 'NGN',
       pv: item.currentPrice ? item.currentPrice.pv || 0 : 0,
+      cpv: item.currentPrice ? item.currentPrice.cpv || 0 : 0,
       category: item.category ? item.category.name.toLowerCase() : 'other',
       images:
         item.images && item.images.length > 0

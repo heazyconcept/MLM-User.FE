@@ -28,6 +28,7 @@ export interface Notification {
 }
 
 const PREFERENCES_KEY = 'mlm_notification_preferences';
+const DISMISSED_DRAWER_KEY = 'mlm_dismissed_notifications_drawer';
 
 const DEFAULT_PREFERENCES: Record<NotificationCategory, boolean> = {
   earnings: true,
@@ -58,11 +59,16 @@ export class NotificationService {
   private notificationsSignal = signal<Notification[]>([]);
   private unreadCountSignal = signal<number>(0);
   private preferencesSignal = signal<Record<NotificationCategory, boolean>>(DEFAULT_PREFERENCES);
+  private dismissedDrawerIdsSignal = signal<Set<string>>(new Set());
   private loadingSignal = signal<boolean>(false);
   private errorSignal = signal<string | null>(null);
   private preferencesLoadedSignal = signal<boolean>(false);
 
   readonly allNotifications = computed(() => this.notificationsSignal());
+  readonly drawerNotifications = computed(() => {
+    const dismissed = this.dismissedDrawerIdsSignal();
+    return this.notificationsSignal().filter((n) => !dismissed.has(n.id));
+  });
   readonly unreadCount = computed(() => this.unreadCountSignal());
   readonly preferences = this.preferencesSignal.asReadonly();
   readonly loading = this.loadingSignal.asReadonly();
@@ -71,6 +77,7 @@ export class NotificationService {
 
   constructor() {
     this.loadPreferencesFromStorage();
+    this.loadDismissedDrawerFromStorage();
   }
 
   private loadPreferencesFromStorage(): void {
@@ -86,6 +93,20 @@ export class NotificationService {
       } catch {
         // keep defaults
       }
+    }
+  }
+
+  private loadDismissedDrawerFromStorage(): void {
+    const saved = localStorage.getItem(DISMISSED_DRAWER_KEY);
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved) as unknown;
+      if (Array.isArray(parsed)) {
+        const ids = parsed.filter((x): x is string => typeof x === 'string');
+        this.dismissedDrawerIdsSignal.set(new Set(ids));
+      }
+    } catch {
+      // ignore malformed storage
     }
   }
 
@@ -215,6 +236,46 @@ export class NotificationService {
   clearAll(): void {
     this.notificationsSignal.set([]);
     this.unreadCountSignal.set(0);
+  }
+
+  /**
+   * Dismiss a notification from the header drawer only (non-destructive).
+   * It remains available on the Notifications page.
+   */
+  dismissFromDrawer(id: string): void {
+    const dismissed = new Set(this.dismissedDrawerIdsSignal());
+    if (dismissed.has(id)) return;
+    dismissed.add(id);
+    this.dismissedDrawerIdsSignal.set(dismissed);
+    localStorage.setItem(DISMISSED_DRAWER_KEY, JSON.stringify(Array.from(dismissed)));
+
+    const notification = this.notificationsSignal().find((n) => n.id === id);
+    if (notification && !notification.isRead) {
+      const current = this.unreadCountSignal();
+      if (current > 0) this.unreadCountSignal.set(current - 1);
+    }
+  }
+
+  /**
+   * Permanently delete a notification.
+   */
+  deleteNotification(id: string): Observable<void> {
+    return this.api.delete<void>(`notifications/${id}`).pipe(
+      map(() => {
+        const notification = this.notificationsSignal().find((n) => n.id === id);
+        this.notificationsSignal.set(this.notificationsSignal().filter((n) => n.id !== id));
+        if (notification && !notification.isRead) {
+          const current = this.unreadCountSignal();
+          if (current > 0) this.unreadCountSignal.set(current - 1);
+        }
+        const dismissed = new Set(this.dismissedDrawerIdsSignal());
+        if (dismissed.delete(id)) {
+          this.dismissedDrawerIdsSignal.set(dismissed);
+          localStorage.setItem(DISMISSED_DRAWER_KEY, JSON.stringify(Array.from(dismissed)));
+        }
+      }),
+      catchError(() => of(void 0))
+    );
   }
 
   /**
