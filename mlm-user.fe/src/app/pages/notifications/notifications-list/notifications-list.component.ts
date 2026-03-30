@@ -95,6 +95,17 @@ export class NotificationsListComponent implements OnInit {
     this.selectedNotification.set(null);
   }
 
+  deleteNotification(id: string, event?: Event): void {
+    event?.stopPropagation();
+    this.notificationService.deleteNotification(id).subscribe(() => {
+      this.notifications.update((list) => list.filter((n) => n.id !== id));
+      if (this.selectedNotification()?.id === id) {
+        this.selectedNotification.set(null);
+      }
+      this.notificationService.loadUnreadCount().subscribe();
+    });
+  }
+
   getTypeBadgeClass(type: Notification['type']): string {
     const base = 'px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide';
     const colors: Record<Notification['type'], string> = {

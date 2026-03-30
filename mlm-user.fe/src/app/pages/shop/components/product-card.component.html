@@ -19,10 +19,15 @@
       </div>
     }
 
-    <!-- PV pill — bottom-right of image -->
-    <span class="absolute bottom-3 right-3 px-2.5 py-1 bg-white/90 text-mlm-primary text-xs font-bold rounded-lg border border-mlm-primary/20">
-      {{ product.pv }} PV
-    </span>
+    <!-- PV/CPV pills — bottom-right of image -->
+    <div class="absolute bottom-3 right-3 flex items-center gap-1.5">
+      <span class="px-2.5 py-1 bg-white/90 text-mlm-primary text-xs font-bold rounded-lg border border-mlm-primary/20">
+        {{ product.pv }} PV
+      </span>
+      <span class="px-2.5 py-1 bg-white/90 text-indigo-600 text-xs font-bold rounded-lg border border-indigo-200">
+        {{ product.cpv }} CPV
+      </span>
+    </div>
   </div>
 
   <!-- Info -->

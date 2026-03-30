@@ -27,8 +27,24 @@ import { WalletService } from '../../services/wallet.service';
 import { LoadingService } from '../../services/loading.service';
 import { ModalService } from '../../services/modal.service';
 import { ActivityService } from '../../services/activity.service';
+import { NotificationService } from '../../services/notification.service';
 import { OverlayOptions } from 'primeng/api';
 import { signal } from '@angular/core';
+
+type DashboardTask = {
+  id: 'activation' | 'profile' | 'first-referral' | 'bank-details';
+  label: string;
+  description: string;
+  done: boolean;
+  ctaLabel: string;
+  route: string;
+};
+
+type QuickAction = {
+  id: 'create-referral' | 'wallet' | 'withdrawals' | 'commissions';
+  label: string;
+  route: string;
+};
 
 @Component({
   selector: 'app-dashboard',
@@ -57,6 +73,7 @@ export class DashboardComponent implements OnInit {
   private loadingService = inject(LoadingService);
   private modalService = inject(ModalService);
   private activityService = inject(ActivityService);
+  private notificationService = inject(NotificationService);
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
 
@@ -64,6 +81,7 @@ export class DashboardComponent implements OnInit {
   currentUser = this.userService.currentUser;
   paymentStatus = this.userService.paymentStatus;
   displayCurrency = this.userService.displayCurrency;
+  unreadCount = this.notificationService.unreadCount;
 
   ngnSummary = this.commissionService.getSummary('NGN');
   usdSummary = this.commissionService.getSummary('USD');
@@ -113,6 +131,68 @@ export class DashboardComponent implements OnInit {
   });
 
   recentActivities = this.activityService.getRecentActivities(5);
+
+  readonly phaseOneDashboardEnabled = true;
+
+  quickActions: QuickAction[] = [
+    { id: 'create-referral', label: 'Create referral', route: '/network/referrals' },
+    { id: 'wallet', label: 'Fund wallet', route: '/wallet' },
+    { id: 'withdrawals', label: 'Withdraw', route: '/withdrawals' },
+    { id: 'commissions', label: 'View commissions', route: '/commissions' },
+  ];
+
+  todayTasks = computed<DashboardTask[]>(() => {
+    const user = this.currentUser();
+    const isPaid = this.isPaid();
+    const profileCompletion = user?.profileCompletionPercentage ?? 0;
+    const directReferrals = this.activeSummary().directReferrals ?? 0;
+    const hasBankDetails = !!(user?.bankName && user?.accountNumber);
+
+    const tasks: DashboardTask[] = [
+      {
+        id: 'activation',
+        label: 'Activate your account',
+        description: 'Complete payment setup to unlock all earning flows.',
+        done: isPaid,
+        ctaLabel: 'Complete activation',
+        route: '/auth/activation',
+      },
+      {
+        id: 'profile',
+        label: 'Complete profile',
+        description: 'Finish profile details for better trust and payout readiness.',
+        done: profileCompletion >= 100,
+        ctaLabel: 'Update profile',
+        route: '/profile',
+      },
+      {
+        id: 'bank-details',
+        label: 'Set bank details',
+        description: 'Add payout account details to withdraw without delays.',
+        done: hasBankDetails,
+        ctaLabel: 'Add bank details',
+        route: '/profile',
+      },
+      {
+        id: 'first-referral',
+        label: 'Get your first referral',
+        description: 'Share your referral link and grow your team.',
+        done: directReferrals > 0,
+        ctaLabel: 'Invite now',
+        route: '/network/referrals',
+      },
+    ];
+
+    return tasks.filter((t) => !t.done).slice(0, 3);
+  });
+
+  sinceLastLoginMessage = computed(() => {
+    const unread = this.unreadCount();
+    const activities = this.recentActivities();
+    if (unread > 0) return `You have ${unread} new notification${unread > 1 ? 's' : ''} since your last visit.`;
+    if (activities.length > 0) return `${activities.length} recent activit${activities.length > 1 ? 'ies' : 'y'} on your account.`;
+    return 'No new updates since your last login. You are all caught up.';
+  });
 
   salesData: any;
   salesOptions: any;
@@ -586,5 +666,12 @@ export class DashboardComponent implements OnInit {
       default:
         return 'bg-mlm-secondary/10 text-mlm-secondary';
     }
+  }
+
+  getTimeGreeting(): 'Good morning' | 'Good afternoon' | 'Good evening' {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   }
 }

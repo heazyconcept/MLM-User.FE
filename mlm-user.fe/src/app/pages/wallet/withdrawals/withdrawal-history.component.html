@@ -13,57 +13,57 @@
     </button>
   </div>
 
-  <!-- Hero Stats - Dashboard Style -->
-  <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+  <!-- Stat Cards - New Design Approach -->
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
     <!-- Available Balance -->
-    <div class="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02] bg-mlm-primary">
-      <i class="pi pi-wallet absolute" 
-         style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.25; pointer-events: none; z-index: 0;"></i>
-      <div class="relative z-10 flex flex-col gap-2">
-        <span class="text-xs font-bold uppercase tracking-wider opacity-90">Available to Withdraw</span>
-        <div class="flex flex-col">
-          <span class="text-3xl font-black">{{ getCurrencySymbol() }}{{ availableBalance() | number:'1.2-2' }}</span>
-        </div>
-        <div class="mt-2 flex items-center gap-1 text-[10px] font-bold">
-          <span>FROM CASH WALLET</span>
-          <i class="pi pi-info-circle ml-1 cursor-help" 
-             pTooltip="Only your cash wallet balance can be withdrawn. Voucher and autoship balances are non-withdrawable."
-             tooltipPosition="top"></i>
-        </div>
+    <div class="rounded-xl border border-mlm-secondary/15 bg-white p-5">
+      <div class="mb-4">
+        <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Available to Withdraw</span>
+      </div>
+      <p class="text-3xl font-medium text-mlm-text tabular-nums leading-none">
+        {{ getCurrencySymbol() }}{{ availableBalance() | number:'1.2-2' }}
+      </p>
+      <div class="mt-3 flex items-center gap-1 text-[11px] text-mlm-secondary">
+        <span>From cash wallet</span>
+        <i
+          class="pi pi-info-circle cursor-help"
+          pTooltip="Only your cash wallet balance can be withdrawn. Voucher and autoship balances are non-withdrawable."
+          tooltipPosition="top"
+        ></i>
       </div>
     </div>
-    
+
     <!-- Pending Withdrawals -->
-    <div class="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02] bg-brand-gold">
-      <i class="pi pi-clock absolute" 
-         style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.25; pointer-events: none; z-index: 0;"></i>
-      <div class="relative z-10 flex flex-col gap-2">
-        <span class="text-xs font-bold uppercase tracking-wider opacity-90">Pending Withdrawals</span>
-        <div class="flex flex-col">
-          <span class="text-3xl font-black">{{ getCurrencySymbol() }}{{ pendingAmount() | number:'1.2-2' }}</span>
-        </div>
-        <div class="mt-2 flex items-center gap-1 text-[10px] font-bold">
-          <span class="bg-white/20 px-2 py-0.5 rounded-full">{{ pendingWithdrawals().length }} PENDING</span>
-          <i class="pi pi-info-circle ml-1 cursor-help" 
-             pTooltip="Pending withdrawals are awaiting admin approval. This usually takes up to 48 hours."
-             tooltipPosition="top"></i>
-        </div>
+    <div class="rounded-xl border border-mlm-secondary/15 bg-white p-5">
+      <div class="mb-4">
+        <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Pending Withdrawals</span>
+      </div>
+      <p class="text-3xl font-medium text-mlm-text tabular-nums leading-none">
+        {{ getCurrencySymbol() }}{{ pendingAmount() | number:'1.2-2' }}
+      </p>
+      <div class="mt-3 flex items-center gap-2">
+        <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+          {{ pendingWithdrawals().length }} pending
+        </span>
+        <i
+          class="pi pi-info-circle cursor-help text-[11px] text-mlm-secondary"
+          pTooltip="Pending withdrawals are awaiting admin approval. This usually takes up to 48 hours."
+          tooltipPosition="top"
+        ></i>
       </div>
     </div>
-    
+
     <!-- Total Withdrawn -->
-    <div class="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02] bg-mlm-blue-500">
-      <i class="pi pi-check-circle absolute" 
-         style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.25; pointer-events: none; z-index: 0;"></i>
-      <div class="relative z-10 flex flex-col gap-2">
-        <span class="text-xs font-bold uppercase tracking-wider opacity-90">Total Withdrawn</span>
-        <div class="flex flex-col">
-          <span class="text-3xl font-black">{{ getCurrencySymbol() }}{{ totalWithdrawn() | number:'1.2-2' }}</span>
-        </div>
-        <div class="mt-2 flex items-center gap-1 text-[10px] font-bold">
-          <i class="pi pi-chart-line"></i>
-          <span>LIFETIME PAYOUTS</span>
-        </div>
+    <div class="rounded-xl border border-mlm-secondary/15 bg-white p-5">
+      <div class="mb-4">
+        <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Total Withdrawn</span>
+      </div>
+      <p class="text-3xl font-medium text-mlm-text tabular-nums leading-none">
+        {{ getCurrencySymbol() }}{{ totalWithdrawn() | number:'1.2-2' }}
+      </p>
+      <div class="mt-3 inline-flex items-center gap-1 text-[11px] text-mlm-secondary">
+        <i class="pi pi-chart-line"></i>
+        <span>Lifetime payouts</span>
       </div>
     </div>
   </div>
