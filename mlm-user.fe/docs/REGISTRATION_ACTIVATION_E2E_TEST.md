@@ -51,7 +51,7 @@ This document provides step-by-step use cases to test the registration and activ
 6. **Payment callback**
    - Verify "Verifying your payment" spinner
    - Verify success message "Payment verified"
-   - Verify redirect to `/dashboard` or `/onboarding/profile` (if profile incomplete)
+   - Verify redirect to `/auth/activation` (registration payment verified) or other flow-specific target; profile wizard is optional from `/profile`
 
 7. **Post-activation**
    - Verify user can access dashboard, wallet, earnings, etc.

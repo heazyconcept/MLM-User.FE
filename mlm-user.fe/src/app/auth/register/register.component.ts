@@ -13,10 +13,6 @@ import { ModalService } from '../../services/modal.service';
 import { LoadingService } from '../../services/loading.service';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
-import {
-  REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, NGN_TO_USD_RATE, IPV_PERCENT,
-  INSTANT_REG_PV, COMMUNITY_REG_PV, DIRECT_REFERRAL_PCT, PDPA_RATES, CDPA_RATES
-} from '../../core/constants/registration.constants';
 
 @Component({
   selector: 'app-register',
@@ -127,7 +123,7 @@ export class RegisterComponent implements OnInit {
   registerForm = this.fb.group({
     // Step 1: Account Credentials
     username: ['', [Validators.required, Validators.minLength(3)]],
-    email: ['', [Validators.required, Validators.email]],
+    email: ['', [this.optionalEmailValidator.bind(this)]],
     password: ['', [Validators.required, this.passwordStrengthValidator]],
     confirmPassword: ['', [Validators.required]],
 
@@ -138,40 +134,6 @@ export class RegisterComponent implements OnInit {
     placementParentUserId: [''],
     acceptTerms: [false, [Validators.requiredTrue]]
   }, { validators: this.passwordMatchValidator });
-
-  private selectedPackageValue = toSignal(
-    this.registerForm.get('package')!.valueChanges,
-    { initialValue: '' }
-  );
-  private selectedCurrencyValue = toSignal(
-    this.registerForm.get('currency')!.valueChanges,
-    { initialValue: '' }
-  );
-
-  selectedPackageInfo = computed(() => {
-    const pkg = this.selectedPackageValue();
-    const currency = this.selectedCurrencyValue() || 'NGN';
-    if (!pkg) return null;
-    const regNgn = REGISTRATION_FEE_NGN[pkg] ?? 0;
-    const adminNgn = ADMIN_FEE_NGN[pkg] ?? 0;
-    const totalNgn = regNgn + adminNgn;
-    const ipvNgn = regNgn * IPV_PERCENT;
-    const isNgn = currency === 'NGN';
-    const rate = isNgn ? 1 : NGN_TO_USD_RATE;
-    const sym = isNgn ? '₦' : '$';
-    const fmt = (v: number) => `${sym}${(v / rate).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-    return {
-      regFee: fmt(regNgn),
-      adminFee: fmt(adminNgn),
-      total: fmt(totalNgn),
-      ipv: fmt(ipvNgn),
-      regPv: INSTANT_REG_PV[pkg] ?? 0,
-      communityPv: COMMUNITY_REG_PV[pkg] ?? 0,
-      directRef: `${DIRECT_REFERRAL_PCT[pkg] ?? 10}%`,
-      pdpa: `${PDPA_RATES[pkg] ?? 0.05}%`,
-      cdpa: `${CDPA_RATES[pkg] ?? 5}%`
-    };
-  });
 
   private passwordValue = toSignal(
     this.registerForm.get('password')!.valueChanges,
@@ -213,6 +175,15 @@ export class RegisterComponent implements OnInit {
     if (strength === 'number') return 'Include at least one number (0\u20139)';
     if (strength === 'symbol') return 'Include at least one symbol (e.g. ! @ # $ % & *)';
     return null;
+  }
+
+  /** Empty or whitespace-only is valid; non-empty must pass email format. */
+  private optionalEmailValidator(control: AbstractControl): ValidationErrors | null {
+    const trimmed = typeof control.value === 'string' ? control.value.trim() : '';
+    if (!trimmed) {
+      return null;
+    }
+    return Validators.email({ value: trimmed } as AbstractControl);
   }
 
   passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
@@ -271,9 +242,10 @@ export class RegisterComponent implements OnInit {
       const formValue = this.registerForm.value;
       const code = formValue.referralCode?.trim();
       const placementId = formValue.placementParentUserId?.trim();
+      const emailTrim = formValue.email?.trim() ?? '';
       const payload: RegisterRequest = {
         username: formValue.username!,
-        email: formValue.email!,
+        ...(emailTrim ? { email: emailTrim } : {}),
         password: formValue.password!,
         package: formValue.package!,
         currency: formValue.currency!,
@@ -287,11 +259,12 @@ export class RegisterComponent implements OnInit {
           this.userService.fetchProfile().subscribe({
             next: () => {
               this.loadingService.hide();
-              this.router.navigate(['/onboarding/profile']);
+              const path = this.userService.isPaid() ? '/dashboard' : '/auth/activation';
+              this.router.navigate([path]);
             },
             error: () => {
               this.loadingService.hide();
-              this.router.navigate(['/onboarding/profile']);
+              this.router.navigate(['/auth/activation']);
             }
           });
         },
