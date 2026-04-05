@@ -51,10 +51,11 @@ export class LoginModernComponent {
         this.isLoading.set(true);
         this.loadingService.show();
         this.authService.login(username, password).subscribe({
-          next: () => {
+          next: (result) => {
             this.isLoading.set(false);
             this.loadingService.hide();
-            const redirectPath = this.userService.onboardingComplete() ? '/dashboard' : '/onboarding/profile';
+            const redirectPath =
+              result.paymentStatus === 'PAID' ? '/dashboard' : '/auth/activation';
             
             this.modalService.open(
               'success',

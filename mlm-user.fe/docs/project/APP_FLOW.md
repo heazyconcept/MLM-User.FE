@@ -22,16 +22,16 @@ This document maps all routes, screens, and primary user flows for the MLM User 
 |-------|--------|-------------|
 | `ref/:code` | Referral redirect | Stores referral code in localStorage, redirects to `auth/register` |
 | `auth/login` | Login | Email/username, password, Remember me, Forgot password, Register link |
-| `auth/register` | Registration | Username, email, password, package, currency, optional referral code; → `auth/activation` |
+| `auth/register` | Registration | Username, email, password, package, currency, optional referral code; after success → `auth/activation` if UNPAID, else `dashboard` |
 | `auth/activation` | Activation choice | Pay online (Paystack) or Use wallet balance |
 | `auth/activation/wallet` | Activation wallet | Transfer CASH → REGISTRATION, then Activate |
-| `auth/payment/callback` | Payment callback | Handles Paystack redirect; verifies payment; → dashboard or onboarding |
+| `auth/payment/callback` | Payment callback | Handles Paystack redirect; verifies payment; → dashboard, wallet, or `auth/activation` depending on flow |
 | `auth/register/payment-pending` | Payment pending | USDT/manual payment; shows reference for manual verification |
 | `auth/forgot-password` | Forgot password | Email; submit → reset flow |
 | `auth/reset-password` | Reset password | New password, confirm; → login |
-| `auth/verify` | Account verification | 6-digit OTP, verify, resend with cooldown; → dashboard (or onboarding) |
+| `auth/verify` | Account verification | 6-digit OTP, verify, resend with cooldown; → `dashboard` |
 
-### 1.3 Onboarding (post-registration)
+### 1.3 Onboarding (optional profile wizard)
 
 | Route | Screen | Description |
 |-------|--------|-------------|
@@ -42,7 +42,13 @@ This document maps all routes, screens, and primary user flows for the MLM User 
 | `onboarding/bank` | Bank details | Bank info step |
 | `onboarding/preferences` | Preferences | Final onboarding preferences |
 
-All under **OnboardingLayoutComponent** (stepper/wizard).
+All under **OnboardingLayoutComponent** (stepper/wizard). **Not** shown immediately after register or activation: users complete **activation (payment) first**, land on **dashboard**, and may open this wizard **anytime** from **Profile** (`/profile`) via “Complete your earning profile” when onboarding is incomplete.
+
+### 1.3a Auth redirect summary
+
+- **Register** → `auth/activation` if UNPAID, else `dashboard`.
+- **Login** → `dashboard` if PAID, else `auth/activation`.
+- **After Activate** (registration) → `dashboard`.
 
 ### 1.4 Dashboard (authenticated shell)
 
@@ -51,7 +57,7 @@ All below routes use **DashboardLayoutComponent** (sidebar + header + outlet).
 | Route | Screen | Description |
 |-------|--------|-------------|
 | `dashboard` | Dashboard | Main landing: welcome, summary cards, earnings snapshot, wallet snapshot, network snapshot, recent activity, notifications preview |
-| `profile` | Profile | User profile view/edit (top-level) |
+| `profile` | Profile | User profile view/edit; entry point to optional onboarding wizard when profile is incomplete |
 
 ### 1.5 Marketplace / Shop
 

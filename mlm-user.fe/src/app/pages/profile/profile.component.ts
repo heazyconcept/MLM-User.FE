@@ -1,6 +1,7 @@
 import { Component, inject, ChangeDetectionStrategy, ChangeDetectorRef, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -15,6 +16,7 @@ import { ModalService } from '../../services/modal.service';
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
     ReactiveFormsModule,
     CardModule,
     ButtonModule,
@@ -52,20 +54,6 @@ export class ProfileComponent implements OnInit {
     if (user) {
       this.populateForm(user);
     }
-
-    // Load identity / KYC status
-    this.onboardingService.getIdentity().subscribe({
-      next: (data: Record<string, unknown>) => {
-        const status = (data['kycStatus'] ?? data['status'] ?? data['kyc_status']) as string | undefined;
-        if (status && ['PENDING', 'VERIFIED', 'REJECTED'].includes(status.toUpperCase())) {
-          this.userService.updateProfile({
-            kycStatus: status.toUpperCase() as 'PENDING' | 'VERIFIED' | 'REJECTED'
-          });
-          this.cdr.markForCheck();
-        }
-      },
-      error: () => { /* silently ignore */ }
-    });
 
     // Load bank details
     this.onboardingService.getBankDetails().subscribe({
