@@ -184,10 +184,10 @@
                         </div>
 
                         <div class="flex flex-col gap-1.5">
-                            <label for="reg-referral" class="text-[0.8rem] font-semibold text-slate-500">Referral Code</label>
+                            <label for="reg-referral" class="text-[0.8rem] font-semibold text-slate-500">Referrer Username</label>
                             <div class="relative">
-                                <input pInputText id="reg-referral" formControlName="referralCode"
-                                    placeholder="e.g. ABC123 (optional)"
+                                <input pInputText id="reg-referral" formControlName="referralUsername"
+                                    placeholder="e.g. johndoe (optional)"
                                     class="reg-input"
                                     (blur)="onReferralBlur()" />
                                 @if (referralValidating()) {
@@ -199,7 +199,7 @@
                                 }
                             </div>
                             @if (referralValidating()) {
-                                <small class="text-slate-500 text-xs mt-1">Checking code…</small>
+                                <small class="text-slate-500 text-xs mt-1">Checking username…</small>
                             }
                         </div>
 

@@ -46,15 +46,15 @@ export class RegisterComponent implements OnInit {
 
     // Prefill: query param (?ref=ABC123) or localStorage (from /ref/:code) overrides default
     const queryRef = this.route.snapshot.queryParamMap.get('ref')?.trim();
-    const storedCode = localStorage.getItem('referralCode');
-    const codeToUse = queryRef || storedCode || environment.defaultReferralCode || '';
+    const storedUsername = localStorage.getItem('referralUsername');
+    const usernameToUse = queryRef || storedUsername || environment.defaultReferralUsername || '';
     if (queryRef) {
-      localStorage.setItem('referralCode', queryRef);
+      localStorage.setItem('referralUsername', queryRef);
     }
-    this.registerForm.patchValue({ referralCode: codeToUse });
-    if (codeToUse) {
+    this.registerForm.patchValue({ referralUsername: usernameToUse });
+    if (usernameToUse) {
       this.referralValidating.set(true);
-      this.referralService.validateReferralCode(codeToUse).subscribe({
+      this.referralService.validateReferralUsername(usernameToUse).subscribe({
         next: (res) => {
           this.referralValidating.set(false);
           this.referralValid.set(res.valid);
@@ -84,15 +84,15 @@ export class RegisterComponent implements OnInit {
   }
 
   onReferralBlur(): void {
-    const code = this.registerForm.get('referralCode')?.value?.trim();
-    if (!code) {
+    const username = this.registerForm.get('referralUsername')?.value?.trim();
+    if (!username) {
       this.referralValid.set(null);
       this.referralValidating.set(false);
       return;
     }
     this.referralValidating.set(true);
     this.referralValid.set(null);
-    this.referralService.validateReferralCode(code).subscribe({
+    this.referralService.validateReferralUsername(username).subscribe({
       next: (res) => {
         this.referralValidating.set(false);
         this.referralValid.set(res.valid);
@@ -130,7 +130,7 @@ export class RegisterComponent implements OnInit {
     // Step 2: Membership
     package: ['', [Validators.required]],
     currency: ['', [Validators.required]],
-    referralCode: [environment.defaultReferralCode ?? ''],
+    referralUsername: [environment.defaultReferralUsername ?? ''],
     placementParentUserId: [''],
     acceptTerms: [false, [Validators.requiredTrue]]
   }, { validators: this.passwordMatchValidator });
@@ -240,7 +240,7 @@ export class RegisterComponent implements OnInit {
       this.loadingService.show();
 
       const formValue = this.registerForm.value;
-      const code = formValue.referralCode?.trim();
+      const referralUsername = formValue.referralUsername?.trim();
       const placementId = formValue.placementParentUserId?.trim();
       const emailTrim = formValue.email?.trim() ?? '';
       const payload: RegisterRequest = {
@@ -249,13 +249,13 @@ export class RegisterComponent implements OnInit {
         password: formValue.password!,
         package: formValue.package!,
         currency: formValue.currency!,
-        ...(code ? { referralCode: code } : {}),
+        ...(referralUsername ? { referralUsername } : {}),
         ...(placementId ? { placementParentUserId: placementId } : {})
       };
 
       this.authService.register(payload).subscribe({
         next: () => {
-          localStorage.removeItem('referralCode');
+          localStorage.removeItem('referralUsername');
           this.userService.fetchProfile().subscribe({
             next: () => {
               this.loadingService.hide();

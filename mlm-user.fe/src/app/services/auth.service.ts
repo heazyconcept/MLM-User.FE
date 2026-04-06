@@ -16,7 +16,7 @@ export interface RegisterRequest {
   password: string;
   package: string;
   currency: string;
-  referralCode?: string;
+  referralUsername?: string;
   placementParentUserId?: string;
 }
 

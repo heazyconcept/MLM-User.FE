@@ -98,7 +98,7 @@ describe('AuthService', () => {
       expect(localStorage.getItem('mlm_refresh_token')).toBe('ref_new');
     });
 
-    it('should include optional referralCode when provided', () => {
+    it('should include optional referralUsername when provided', () => {
       const mockAuth: AuthResponse = { accessToken: 'a', refreshToken: 'r' };
 
       service.register({
@@ -107,11 +107,26 @@ describe('AuthService', () => {
         password: 'StrongP@ss1',
         package: 'SILVER',
         currency: 'USD',
-        referralCode: 'ABC123'
+        referralUsername: 'johndoe'
       }).subscribe();
 
       const req = httpMock.expectOne(r => r.url === `${baseUrl}/auth/register`);
-      expect(req.request.body.referralCode).toBe('ABC123');
+      expect(req.request.body.referralUsername).toBe('johndoe');
+      req.flush(mockAuth);
+    });
+
+    it('should allow register payload without email', () => {
+      const mockAuth: AuthResponse = { accessToken: 'a2', refreshToken: 'r2' };
+
+      service.register({
+        username: 'noemailuser',
+        password: 'StrongP@ss1',
+        package: 'SILVER',
+        currency: 'NGN'
+      }).subscribe();
+
+      const req = httpMock.expectOne(r => r.url === `${baseUrl}/auth/register`);
+      expect(req.request.body.email).toBeUndefined();
       req.flush(mockAuth);
     });
   });
