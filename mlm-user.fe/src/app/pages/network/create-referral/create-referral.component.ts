@@ -79,7 +79,7 @@ const CURRENCY_OPTIONS = [
 
         <!-- Email -->
         <div class="flex flex-col gap-1.5">
-          <label for="cr-email" class="text-sm font-semibold text-gray-700">Email</label>
+          <label for="cr-email" class="text-sm font-semibold text-gray-700">Email <span class="text-gray-500 font-normal">(optional)</span></label>
           <input pInputText formControlName="email" id="cr-email" type="email" placeholder="newuser&#64;example.com" class="w-full" />
           @if (form.get('email')?.invalid && form.get('email')?.touched) {
             <small class="text-red-500 text-xs">Please enter a valid email address.</small>
@@ -215,7 +215,7 @@ export class CreateReferralComponent implements OnInit {
   placementParentOptions = computed(() =>
     this.placementParents().map(p => ({
       value: p.userId,
-      label: `${p.username} (${p.email})`
+      label: p.email ? `${p.username} (${p.email})` : p.username
     }))
   );
 
@@ -279,8 +279,11 @@ export class CreateReferralComponent implements OnInit {
     this.isSubmitting.set(true);
     this.formError.set('');
 
+    const emailTrim = typeof email === 'string' ? email.trim() : '';
     const request: CreateReferralRequest = {
-      email, username, password,
+      ...(emailTrim ? { email: emailTrim } : {}),
+      username,
+      password,
       package: pkg,
       currency,
       ...(placementParentUserId ? { placementParentUserId } : {})

@@ -23,7 +23,8 @@ export interface CpvSummary {
 
 export interface ReferralLink {
   url: string;
-  code: string;
+  /** Slug used in `/ref/{username}` — always username, never referralCode */
+  referralUsername: string;
   sponsorName: string;
 }
 
@@ -72,7 +73,7 @@ export class NetworkService {
 
   readonly referralLink = signal<ReferralLink>({
     url: '',
-    code: '',
+    referralUsername: '',
     sponsorName: ''
   });
 
@@ -140,10 +141,17 @@ export class NetworkService {
       .pipe(
         tap(({ refInfo, sponsor, downlines, placement, upline, cpv, profile }) => {
           const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-          const url = refInfo.referralCode ? `${baseUrl}/ref/${refInfo.referralCode}` : '';
+          const currentUsername = (
+            (profile as Record<string, unknown> | null)?.['username'] as string | undefined
+            ?? this.userService.currentUser()?.username
+            ?? ''
+          ).trim();
+          const fromReferralEndpoint = refInfo.referralUsername?.trim() ?? '';
+          const linkUsername = fromReferralEndpoint || currentUsername;
+          const url = linkUsername ? `${baseUrl}/ref/${linkUsername}` : '';
           this.referralLink.set({
             url,
-            code: refInfo.referralCode,
+            referralUsername: linkUsername,
             sponsorName: sponsor?.sponsorEmail ?? refInfo.referrerName ?? ''
           });
 
