@@ -14,7 +14,9 @@
         <div class="w-full max-w-[460px] flex flex-col flex-1">
             <!-- Logo -->
             <div class="mb-9">
-                <img src="assets/images/logo.png" alt="logo" class="w-24">
+                <a href="https://www.segulah.ng/" target="_blank" rel="noopener noreferrer">
+                    <img src="assets/images/logo.png" alt="logo" class="w-24 cursor-pointer">
+                </a>
             </div>
 
             <!-- Step Indicator -->
@@ -82,14 +84,14 @@
                         <!-- Email -->
                         <div class="flex flex-col gap-1.5">
                             <label for="reg-email" class="text-[0.8rem] font-semibold text-slate-500 flex items-center gap-1">
-                                Email Address <span class="text-slate-400 text-[0.75rem] font-normal">(optional)</span>
+                                Email Address <span class="text-red-500 text-[0.9em]">*</span>
                             </label>
                             <input pInputText id="reg-email" formControlName="email"
                                 placeholder="name@example.com"
                                 class="reg-input"
                                 [class.ng-invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" />
                             @if (registerForm.get('email')?.invalid && registerForm.get('email')?.touched) {
-                                <small class="text-red-500 text-xs">Please enter a valid email address</small>
+                                <small class="text-red-500 text-xs">Email is required</small>
                             }
                         </div>
 

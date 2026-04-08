@@ -123,7 +123,7 @@ export class RegisterComponent implements OnInit {
   registerForm = this.fb.group({
     // Step 1: Account Credentials
     username: ['', [Validators.required, Validators.minLength(3)]],
-    email: ['', [this.optionalEmailValidator.bind(this)]],
+    email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, this.passwordStrengthValidator]],
     confirmPassword: ['', [Validators.required]],
 
@@ -177,14 +177,7 @@ export class RegisterComponent implements OnInit {
     return null;
   }
 
-  /** Empty or whitespace-only is valid; non-empty must pass email format. */
-  private optionalEmailValidator(control: AbstractControl): ValidationErrors | null {
-    const trimmed = typeof control.value === 'string' ? control.value.trim() : '';
-    if (!trimmed) {
-      return null;
-    }
-    return Validators.email({ value: trimmed } as AbstractControl);
-  }
+
 
   passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
     const password = control.get('password')?.value;
