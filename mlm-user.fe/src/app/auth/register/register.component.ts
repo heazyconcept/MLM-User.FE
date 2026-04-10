@@ -6,6 +6,7 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
 import { environment } from '../../../environments/environment';
+import { NGN_TO_USD_RATE, REGISTRATION_FEE_NGN } from '../../core/constants/registration.constants';
 import { AuthService, type RegisterRequest } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { ReferralService } from '../../services/referral.service';
@@ -78,7 +79,7 @@ export class RegisterComponent implements OnInit {
       /* keep raw */
     }
     const normalized = decoded.toUpperCase();
-    const allowed = new Set(this.packages.map((p) => p.value));
+    const allowed = new Set(this.packageBaseOptions.map((p) => p.value));
     if (!allowed.has(normalized)) return;
     this.registerForm.patchValue({ package: normalized });
   }
@@ -106,7 +107,7 @@ export class RegisterComponent implements OnInit {
   currentStep = signal<number>(1);
   totalSteps = signal<number>(2);
 
-  packages = [
+  packageBaseOptions = [
     { label: 'Nickel', value: 'NICKEL' },
     { label: 'Silver', value: 'SILVER' },
     { label: 'Gold', value: 'GOLD' },
@@ -140,6 +141,28 @@ export class RegisterComponent implements OnInit {
     { initialValue: this.registerForm.get('password')!.value ?? '' }
   );
 
+  private currencyValue = toSignal(
+    this.registerForm.get('currency')!.valueChanges,
+    { initialValue: this.registerForm.get('currency')!.value ?? '' }
+  );
+
+  selectedCurrency = computed(() => this.currencyValue() ?? '');
+
+  packageOptions = computed(() => {
+    const currency = this.selectedCurrency();
+
+    return this.packageBaseOptions.map((pkg) => {
+      if (!currency) {
+        return pkg;
+      }
+
+      return {
+        ...pkg,
+        label: `${pkg.label} (${this.getPackagePriceLabel(pkg.value, currency)})`
+      };
+    });
+  });
+
   passwordChecklist = computed(() => {
     const password = this.passwordValue() ?? '';
 
@@ -155,6 +178,24 @@ export class RegisterComponent implements OnInit {
       { key: 'symbol', label: 'At least one symbol (! @ # $ % & *)', met: hasSymbol }
     ];
   });
+
+  private getPackagePriceLabel(packageCode: string, currency: string): string {
+    const amountNgn = REGISTRATION_FEE_NGN[packageCode] ?? REGISTRATION_FEE_NGN['NICKEL'];
+    if (currency === 'USD') {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0
+      }).format(amountNgn / NGN_TO_USD_RATE);
+    }
+
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      currencyDisplay: 'narrowSymbol',
+      maximumFractionDigits: 0
+    }).format(amountNgn);
+  }
 
   passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {
     const value = control.value ?? '';
@@ -207,6 +248,11 @@ export class RegisterComponent implements OnInit {
     } else {
       this.markStepAsTouched(this.currentStep());
     }
+  }
+
+  onCurrencyChange(): void {
+    this.registerForm.patchValue({ package: '' });
+    this.registerForm.get('package')?.markAsUntouched();
   }
 
   prevStep() {
