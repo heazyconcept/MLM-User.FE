@@ -149,21 +149,6 @@
                 @if (currentStep() === 2) {
                     <div class="form-stack animate-step-in">
                         <div class="flex flex-col gap-1.5">
-                            <label class="text-[0.8rem] font-semibold text-slate-500">Select Package</label>
-                                <p-select
-                                    [options]="packages"
-                                    formControlName="package"
-                                    optionLabel="label"
-                                optionValue="value"
-                                    placeholder="Choose your membership"
-                                    styleClass="w-full !rounded-xl !border-mlm-warm-300 !shadow-none">
-                                </p-select>
-                                @if (registerForm.get('package')?.invalid && registerForm.get('package')?.touched) {
-                                <small class="text-red-500 text-xs">Please select a package</small>
-                            }
-                        </div>
-
-                        <div class="flex flex-col gap-1.5">
                             <label class="text-[0.8rem] font-semibold text-slate-500">Currency</label>
                             <p-select
                                 [options]="currencies"
@@ -171,10 +156,27 @@
                                 optionLabel="label"
                                 optionValue="value"
                                 placeholder="Select your currency"
-                                styleClass="w-full !rounded-xl !border-mlm-warm-300 !shadow-none">
+                                styleClass="w-full !rounded-xl !border-mlm-warm-300 !shadow-none"
+                                (onChange)="onCurrencyChange()">
                             </p-select>
                             @if (registerForm.get('currency')?.invalid && registerForm.get('currency')?.touched) {
                                 <small class="text-red-500 text-xs">Please select a currency</small>
+                            }
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[0.8rem] font-semibold text-slate-500">Select Package</label>
+                                <p-select
+                                    [options]="packageOptions()"
+                                    formControlName="package"
+                                    optionLabel="label"
+                                optionValue="value"
+                                    [placeholder]="selectedCurrency() ? 'Choose your membership' : 'Select currency first'"
+                                    [disabled]="!selectedCurrency()"
+                                    styleClass="w-full !rounded-xl !border-mlm-warm-300 !shadow-none">
+                                </p-select>
+                                @if (registerForm.get('package')?.invalid && registerForm.get('package')?.touched) {
+                                <small class="text-red-500 text-xs">Please select a package</small>
                             }
                         </div>
 
