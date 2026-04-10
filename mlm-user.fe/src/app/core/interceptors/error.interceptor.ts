@@ -9,6 +9,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const modalService = inject(ModalService);
   const router = inject(Router);
   const authService = inject(AuthService);
+  const authPaths = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/refresh'];
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -21,7 +22,16 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         // Server-side error
         if (error.status === 401) {
           authService.logoutLocal();
-          router.navigate(['/auth/login'], { queryParams: { returnUrl: router.url } });
+
+          const isAuthRequest = authPaths.some(path => req.url.includes(path));
+          const currentPath = router.url.split('?')[0];
+          const isAuthPage = currentPath.startsWith('/auth/');
+
+          // Prevent infinite login redirects when login itself fails with 401.
+          if (!isAuthRequest && !isAuthPage) {
+            router.navigate(['/auth/login'], { queryParams: { returnUrl: router.url } });
+          }
+
           return throwError(() => error);
         } else if (error.status === 403) {
           errorMessage = 'You do not have permission to perform this action.';

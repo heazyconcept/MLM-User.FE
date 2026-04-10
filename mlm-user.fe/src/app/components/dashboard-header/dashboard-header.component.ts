@@ -42,7 +42,7 @@ export class DashboardHeaderComponent implements OnInit {
   private router = inject(Router);
 
   currentUser = this.userService.currentUser;
-  notifications = this.notificationService.allNotifications;
+  notifications = this.notificationService.drawerNotifications;
   unreadCount = this.notificationService.unreadCount;
 
   notificationsVisible = signal(false);
@@ -97,6 +97,10 @@ export class DashboardHeaderComponent implements OnInit {
 
   markAllAsRead() {
     this.notificationService.markAllAsRead();
+  }
+
+  dismissNotification(id: string): void {
+    this.notificationService.dismissFromDrawer(id);
   }
 
   logout() {

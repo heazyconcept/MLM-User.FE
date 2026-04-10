@@ -1679,13 +1679,13 @@ export interface components {
     schemas: {
         RegisterDto: {
             /** @example user@example.com */
-            email: string;
+            email?: string;
             password: string;
             /** @enum {string} */
             package: "SILVER" | "GOLD" | "PLATINUM" | "RUBY" | "DIAMOND";
             /** @enum {string} */
             currency: "NGN" | "USD";
-            referralCode?: string;
+            referralUsername?: string;
         };
         LoginDto: {
             /** @example user@example.com */

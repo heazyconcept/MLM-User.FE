@@ -11,6 +11,21 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'register/payment-pending',
+    redirectTo: 'auth/register/payment-pending',
+    pathMatch: 'full',
+  },
+  {
+    path: 'register/:packageCode',
+    redirectTo: 'auth/register/:packageCode',
+    pathMatch: 'full',
+  },
+  {
+    path: 'register',
+    redirectTo: 'auth/register',
+    pathMatch: 'full',
+  },
+  {
     path: 'auth',
     children: [
       {
@@ -62,6 +77,11 @@ export const routes: Routes = [
           import('./auth/payment-pending/payment-pending.component').then(
             (m) => m.PaymentPendingComponent,
           ),
+      },
+      {
+        path: 'register/:packageCode',
+        loadComponent: () =>
+          import('./auth/register/register.component').then((m) => m.RegisterComponent),
       },
       {
         path: 'logout',
@@ -342,6 +362,14 @@ export const routes: Routes = [
             (m) => m.WithdrawalHistoryComponent,
           ),
         data: { title: 'Withdrawals' },
+      },
+      {
+        path: ':id',
+        loadComponent: () =>
+          import('./pages/wallet/withdrawals/withdrawal-detail.component').then(
+            (m) => m.WithdrawalDetailComponent,
+          ),
+        data: { title: 'Withdrawal Details' },
       },
     ],
   },

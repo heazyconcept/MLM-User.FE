@@ -6,6 +6,9 @@ module.exports = {
   darkMode: 'selector',
   theme: {
   extend: {
+      screens: {
+        '3xl': '2560px',
+      },
       fontFamily: {
         'geist': ['Geist', 'sans-serif'],
         'outfit': ['Outfit', 'sans-serif'],

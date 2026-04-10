@@ -83,7 +83,16 @@ export class WalletComponent implements OnInit {
       this.isLoading.set(true);
       this.settingsService.fetchCommissionRules().subscribe();
       this.walletService.fetchWallets().subscribe({
-        next: () => this.isLoading.set(false),
+        next: () => {
+          this.isLoading.set(false);
+          // Auto-open withdrawal dialog when navigating from "Request Withdrawal" on withdrawals page
+          const action = this.route.snapshot.queryParamMap.get('action');
+          if (action === 'withdraw') {
+            const wallet = this.primaryWallet();
+            if (wallet) this.openWithdrawDialog(wallet);
+            this.router.navigate([], { queryParams: {}, replaceUrl: true });
+          }
+        },
         error: () => this.isLoading.set(false)
       });
       this.walletService.fetchAutoshipStatus().subscribe();

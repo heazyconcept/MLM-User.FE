@@ -95,6 +95,7 @@ export class EarningsOverviewComponent implements OnInit {
 
   chartData: any;
   chartOptions: any;
+  private selectedChartRange: 'Last 30 days' | 'Last 7 days' | 'This month' | 'Last 3 months' = 'Last 30 days';
 
   ngOnInit(): void {
     if (this.userService.isPaid()) {
@@ -124,7 +125,9 @@ export class EarningsOverviewComponent implements OnInit {
       byDate.set(key, (byDate.get(key) ?? 0) + e.amount);
     }
 
-    const labels = Array.from(byDate.keys()).slice(-15);
+    const allLabels = Array.from(byDate.keys());
+    const labelCount = this.getChartLabelCount(this.selectedChartRange);
+    const labels = allLabels.slice(-labelCount);
     const data = labels.map((l) => byDate.get(l) ?? 0);
 
     this.chartData = {
@@ -207,5 +210,28 @@ export class EarningsOverviewComponent implements OnInit {
 
   getWithdrawn(): number {
     return this.ngnSummary().withdrawnAmount + (this.usdSummary().withdrawnAmount * 1500);
+  }
+
+  onChartRangeChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement | null)?.value;
+    const allowedRanges = ['Last 30 days', 'Last 7 days', 'This month', 'Last 3 months'] as const;
+    if (value && (allowedRanges as readonly string[]).includes(value)) {
+      this.selectedChartRange = value as (typeof allowedRanges)[number];
+      this.buildChartData();
+    }
+  }
+
+  private getChartLabelCount(range: 'Last 30 days' | 'Last 7 days' | 'This month' | 'Last 3 months'): number {
+    switch (range) {
+      case 'Last 7 days':
+        return 7;
+      case 'This month':
+        return 31;
+      case 'Last 3 months':
+        return 90;
+      case 'Last 30 days':
+      default:
+        return 30;
+    }
   }
 }

@@ -84,10 +84,9 @@
           <ul class="border-t border-gray-200 divide-y divide-gray-100" role="list">
             @for (n of filteredNotifications(); track n.id) {
               <li>
-                <button
-                  type="button"
+                <div
                   (click)="openNotification(n)"
-                  class="w-full text-left px-4 py-4 rounded-lg transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:bg-gray-50"
+                  class="w-full text-left px-4 py-4 rounded-lg transition-colors hover:bg-gray-50 focus-within:ring-2 focus-within:ring-mlm-primary/20 focus-within:bg-gray-50 cursor-pointer"
                   [class.border-l-4]="!n.isRead"
                   [class.border-l-mlm-primary]="!n.isRead"
                   [class.bg-mlm-green-50/30]="!n.isRead">
@@ -99,9 +98,19 @@
                       </div>
                       <p class="text-xs text-mlm-secondary line-clamp-2">{{ n.message }}</p>
                     </div>
-                    <span class="text-[10px] font-medium text-mlm-secondary whitespace-nowrap shrink-0">{{ n.timestamp | date:'short' }}</span>
+                    <div class="flex flex-col items-end gap-1 shrink-0">
+                      <button
+                        type="button"
+                        (click)="deleteNotification(n.id, $event)"
+                        class="h-6 w-6 inline-flex items-center justify-center rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        aria-label="Delete notification"
+                        title="Delete permanently">
+                        <i class="pi pi-trash text-[10px]"></i>
+                      </button>
+                      <span class="text-[10px] font-medium text-mlm-secondary whitespace-nowrap">{{ n.timestamp | date:'short' }}</span>
+                    </div>
                   </div>
-                </button>
+                </div>
               </li>
             }
           </ul>

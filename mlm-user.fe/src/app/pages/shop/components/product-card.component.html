@@ -1,62 +1,69 @@
 <div 
   (click)="onProductClick()"
-  class="group bg-white rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl">
-  
-  <!-- Product Image -->
-  <div class="relative aspect-4/5 overflow-hidden bg-mlm-warm-50">
+  class="bg-white rounded-xl border border-gray-100 overflow-hidden cursor-pointer flex flex-col">
+
+  <!-- Image — square, compact -->
+  <div class="relative w-full aspect-square overflow-hidden bg-mlm-warm-50">
     <img 
       [src]="product.images[0]" 
       [alt]="product.name"
-      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+      class="w-full h-full object-cover"
       loading="lazy">
-    
-    <!-- Category Badge (top-left) -->
-    <div class="absolute top-4 left-4">
-      <app-badge [text]="getCategoryLabel()" variant="category"></app-badge>
-    </div>
 
-    <!-- Out of Stock Overlay -->
+    <!-- Out of Stock -->
     @if (!product.inStock) {
-      <div class="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center">
-        <span class="px-4 py-2 bg-mlm-text/80 text-white text-xs font-semibold rounded-full">Out of Stock</span>
+      <div class="absolute inset-0 bg-white/75 backdrop-blur-sm flex items-center justify-center">
+        <span class="px-3 py-1.5 bg-mlm-text/80 text-white text-xs font-semibold rounded-full tracking-wide">
+          Out of Stock
+        </span>
       </div>
     }
+
+    <!-- PV/CPV pills — bottom-right of image -->
+    <div class="absolute bottom-3 right-3 flex items-center gap-1.5">
+      <span class="px-2.5 py-1 bg-white/90 text-mlm-primary text-xs font-bold rounded-lg border border-mlm-primary/20">
+        {{ product.pv }} PV
+      </span>
+      <span class="px-2.5 py-1 bg-white/90 text-indigo-600 text-xs font-bold rounded-lg border border-indigo-200">
+        {{ product.cpv }} CPV
+      </span>
+    </div>
   </div>
-  
-  <!-- Product Info -->
-  <div class="p-5">
-    <!-- Title & Rating Row -->
-    <div class="flex items-start justify-between gap-3 mb-2">
-      <h3 class="text-base font-semibold text-mlm-text leading-tight line-clamp-1 group-hover:text-mlm-primary transition-colors">
-        {{ product.name }}
-      </h3>
-      <div class="flex items-center gap-1 shrink-0">
-        <i class="pi pi-star-fill text-amber-400 text-sm"></i>
-        <span class="text-sm font-semibold text-mlm-secondary">{{ getRating() }}</span>
+
+  <!-- Info -->
+  <div class="flex flex-col flex-1 p-4 gap-3">
+
+    <!-- Category + Rating -->
+    <div class="flex items-center justify-between">
+      <span class="text-[11px] font-semibold uppercase tracking-widest text-mlm-secondary">
+        {{ getCategoryLabel() }}
+      </span>
+      <div class="flex items-center gap-1">
+        <span class="text-amber-400 text-xs leading-none">★</span>
+        <span class="text-xs font-semibold text-mlm-secondary">{{ getRating() }}</span>
       </div>
     </div>
-    
-    <!-- Description -->
-    <p class="text-sm text-mlm-secondary line-clamp-2 leading-relaxed mb-4">
-      {{ getShortDescription() }}
-    </p>
-    
-    <!-- Price & PV -->
-    <div class="flex items-center justify-between gap-2 mb-3">
-      <span class="text-lg font-bold text-mlm-text">
-        {{ formatCurrency(product.price) }}
-      </span>
-      <app-badge [text]="product.pv + ' PV'" variant="pv"></app-badge>
-    </div>
 
-    <!-- Buy button -->
-    <button
-      type="button"
-      (click)="onBuyClick($event)"
-      [disabled]="!product.inStock"
-      class="w-full py-2.5 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-      Buy
-    </button>
+    <!-- Name -->
+    <h3 class="text-sm font-bold text-mlm-text leading-snug line-clamp-2">
+      {{ product.name }}
+    </h3>
+
+    <!-- Divider -->
+    <div class="h-px bg-gray-100"></div>
+
+    <!-- Price + Buy -->
+    <div class="flex items-center justify-between gap-2">
+      <span class="text-base font-extrabold text-mlm-text">
+        {{ formatCurrency(product.memberPriceNGN) }}
+      </span>
+      <button
+        type="button"
+        (click)="onBuyClick($event)"
+        [disabled]="!product.inStock"
+        class="px-4 py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed tracking-wide">
+        Buy Now
+      </button>
+    </div>
   </div>
 </div>
-

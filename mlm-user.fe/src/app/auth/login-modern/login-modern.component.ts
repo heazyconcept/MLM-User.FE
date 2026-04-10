@@ -6,6 +6,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { ModalService } from '../../services/modal.service';
+import { LoadingService } from '../../services/loading.service';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 // import { AuthInputComponent } from '../components/auth-input/auth-input.component';
@@ -33,6 +34,7 @@ export class LoginModernComponent {
   private userService = inject(UserService);
   private router = inject(Router);
   private modalService = inject(ModalService);
+  private loadingService = inject(LoadingService);
   
   isLoading = signal<boolean>(false);
 
@@ -47,10 +49,13 @@ export class LoginModernComponent {
       const { username, password } = this.loginForm.value;
       if (username && password) {
         this.isLoading.set(true);
+        this.loadingService.show();
         this.authService.login(username, password).subscribe({
-          next: () => {
+          next: (result) => {
             this.isLoading.set(false);
-            const redirectPath = this.userService.onboardingComplete() ? '/dashboard' : '/onboarding/profile';
+            this.loadingService.hide();
+            const redirectPath =
+              result.paymentStatus === 'PAID' ? '/dashboard' : '/auth/activation';
             
             this.modalService.open(
               'success',
@@ -65,6 +70,7 @@ export class LoginModernComponent {
           },
           error: (err) => {
             this.isLoading.set(false);
+            this.loadingService.hide();
             if (typeof ngDevMode !== 'undefined' && ngDevMode) {
               console.error('Login failed', err);
             }

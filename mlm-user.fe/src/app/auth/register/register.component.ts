@@ -6,6 +6,7 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
 import { environment } from '../../../environments/environment';
+import { NGN_TO_USD_RATE, REGISTRATION_FEE_NGN } from '../../core/constants/registration.constants';
 import { AuthService, type RegisterRequest } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { ReferralService } from '../../services/referral.service';
@@ -13,10 +14,6 @@ import { ModalService } from '../../services/modal.service';
 import { LoadingService } from '../../services/loading.service';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
-import {
-  REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, NGN_TO_USD_RATE, IPV_PERCENT,
-  INSTANT_REG_PV, COMMUNITY_REG_PV, DIRECT_REFERRAL_PCT, PDPA_RATES, CDPA_RATES
-} from '../../core/constants/registration.constants';
 
 @Component({
   selector: 'app-register',
@@ -46,17 +43,19 @@ export class RegisterComponent implements OnInit {
   referralValidating = signal(false);
 
   ngOnInit(): void {
+    this.applyPackageFromRoute();
+
     // Prefill: query param (?ref=ABC123) or localStorage (from /ref/:code) overrides default
     const queryRef = this.route.snapshot.queryParamMap.get('ref')?.trim();
-    const storedCode = localStorage.getItem('referralCode');
-    const codeToUse = queryRef || storedCode || environment.defaultReferralCode || '';
+    const storedUsername = localStorage.getItem('referralUsername');
+    const usernameToUse = queryRef || storedUsername || environment.defaultReferralUsername || '';
     if (queryRef) {
-      localStorage.setItem('referralCode', queryRef);
+      localStorage.setItem('referralUsername', queryRef);
     }
-    this.registerForm.patchValue({ referralCode: codeToUse });
-    if (codeToUse) {
+    this.registerForm.patchValue({ referralUsername: usernameToUse });
+    if (usernameToUse) {
       this.referralValidating.set(true);
-      this.referralService.validateReferralCode(codeToUse).subscribe({
+      this.referralService.validateReferralUsername(usernameToUse).subscribe({
         next: (res) => {
           this.referralValidating.set(false);
           this.referralValid.set(res.valid);
@@ -69,16 +68,32 @@ export class RegisterComponent implements OnInit {
     }
   }
 
+  /** Path segment from marketing site: /auth/register/RUBY (see mlm-app-package-query-handoff.md). */
+  private applyPackageFromRoute(): void {
+    const raw = this.route.snapshot.paramMap.get('packageCode')?.trim();
+    if (!raw) return;
+    let decoded = raw;
+    try {
+      decoded = decodeURIComponent(raw);
+    } catch {
+      /* keep raw */
+    }
+    const normalized = decoded.toUpperCase();
+    const allowed = new Set(this.packageBaseOptions.map((p) => p.value));
+    if (!allowed.has(normalized)) return;
+    this.registerForm.patchValue({ package: normalized });
+  }
+
   onReferralBlur(): void {
-    const code = this.registerForm.get('referralCode')?.value?.trim();
-    if (!code) {
+    const username = this.registerForm.get('referralUsername')?.value?.trim();
+    if (!username) {
       this.referralValid.set(null);
       this.referralValidating.set(false);
       return;
     }
     this.referralValidating.set(true);
     this.referralValid.set(null);
-    this.referralService.validateReferralCode(code).subscribe({
+    this.referralService.validateReferralUsername(username).subscribe({
       next: (res) => {
         this.referralValidating.set(false);
         this.referralValid.set(res.valid);
@@ -92,7 +107,7 @@ export class RegisterComponent implements OnInit {
   currentStep = signal<number>(1);
   totalSteps = signal<number>(2);
 
-  packages = [
+  packageBaseOptions = [
     { label: 'Nickel', value: 'NICKEL' },
     { label: 'Silver', value: 'SILVER' },
     { label: 'Gold', value: 'GOLD' },
@@ -116,49 +131,37 @@ export class RegisterComponent implements OnInit {
     // Step 2: Membership
     package: ['', [Validators.required]],
     currency: ['', [Validators.required]],
-    referralCode: [environment.defaultReferralCode ?? ''],
+    referralUsername: [environment.defaultReferralUsername ?? ''],
     placementParentUserId: [''],
     acceptTerms: [false, [Validators.requiredTrue]]
   }, { validators: this.passwordMatchValidator });
-
-  private selectedPackageValue = toSignal(
-    this.registerForm.get('package')!.valueChanges,
-    { initialValue: '' }
-  );
-  private selectedCurrencyValue = toSignal(
-    this.registerForm.get('currency')!.valueChanges,
-    { initialValue: '' }
-  );
-
-  selectedPackageInfo = computed(() => {
-    const pkg = this.selectedPackageValue();
-    const currency = this.selectedCurrencyValue() || 'NGN';
-    if (!pkg) return null;
-    const regNgn = REGISTRATION_FEE_NGN[pkg] ?? 0;
-    const adminNgn = ADMIN_FEE_NGN[pkg] ?? 0;
-    const totalNgn = regNgn + adminNgn;
-    const ipvNgn = regNgn * IPV_PERCENT;
-    const isNgn = currency === 'NGN';
-    const rate = isNgn ? 1 : NGN_TO_USD_RATE;
-    const sym = isNgn ? '₦' : '$';
-    const fmt = (v: number) => `${sym}${(v / rate).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-    return {
-      regFee: fmt(regNgn),
-      adminFee: fmt(adminNgn),
-      total: fmt(totalNgn),
-      ipv: fmt(ipvNgn),
-      regPv: INSTANT_REG_PV[pkg] ?? 0,
-      communityPv: COMMUNITY_REG_PV[pkg] ?? 0,
-      directRef: `${DIRECT_REFERRAL_PCT[pkg] ?? 10}%`,
-      pdpa: `${PDPA_RATES[pkg] ?? 0.05}%`,
-      cdpa: `${CDPA_RATES[pkg] ?? 5}%`
-    };
-  });
 
   private passwordValue = toSignal(
     this.registerForm.get('password')!.valueChanges,
     { initialValue: this.registerForm.get('password')!.value ?? '' }
   );
+
+  private currencyValue = toSignal(
+    this.registerForm.get('currency')!.valueChanges,
+    { initialValue: this.registerForm.get('currency')!.value ?? '' }
+  );
+
+  selectedCurrency = computed(() => this.currencyValue() ?? '');
+
+  packageOptions = computed(() => {
+    const currency = this.selectedCurrency();
+
+    return this.packageBaseOptions.map((pkg) => {
+      if (!currency) {
+        return pkg;
+      }
+
+      return {
+        ...pkg,
+        label: `${pkg.label} (${this.getPackagePriceLabel(pkg.value, currency)})`
+      };
+    });
+  });
 
   passwordChecklist = computed(() => {
     const password = this.passwordValue() ?? '';
@@ -175,6 +178,24 @@ export class RegisterComponent implements OnInit {
       { key: 'symbol', label: 'At least one symbol (! @ # $ % & *)', met: hasSymbol }
     ];
   });
+
+  private getPackagePriceLabel(packageCode: string, currency: string): string {
+    const amountNgn = REGISTRATION_FEE_NGN[packageCode] ?? REGISTRATION_FEE_NGN['NICKEL'];
+    if (currency === 'USD') {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0
+      }).format(amountNgn / NGN_TO_USD_RATE);
+    }
+
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      currencyDisplay: 'narrowSymbol',
+      maximumFractionDigits: 0
+    }).format(amountNgn);
+  }
 
   passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {
     const value = control.value ?? '';
@@ -196,6 +217,8 @@ export class RegisterComponent implements OnInit {
     if (strength === 'symbol') return 'Include at least one symbol (e.g. ! @ # $ % & *)';
     return null;
   }
+
+
 
   passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
     const password = control.get('password')?.value;
@@ -227,6 +250,11 @@ export class RegisterComponent implements OnInit {
     }
   }
 
+  onCurrencyChange(): void {
+    this.registerForm.patchValue({ package: '' });
+    this.registerForm.get('package')?.markAsUntouched();
+  }
+
   prevStep() {
     if (this.currentStep() > 1) {
       this.currentStep.update(s => s - 1);
@@ -251,29 +279,31 @@ export class RegisterComponent implements OnInit {
       this.loadingService.show();
 
       const formValue = this.registerForm.value;
-      const code = formValue.referralCode?.trim();
+      const referralUsername = formValue.referralUsername?.trim();
       const placementId = formValue.placementParentUserId?.trim();
+      const emailTrim = formValue.email?.trim() ?? '';
       const payload: RegisterRequest = {
         username: formValue.username!,
-        email: formValue.email!,
+        ...(emailTrim ? { email: emailTrim } : {}),
         password: formValue.password!,
         package: formValue.package!,
         currency: formValue.currency!,
-        ...(code ? { referralCode: code } : {}),
+        ...(referralUsername ? { referralUsername } : {}),
         ...(placementId ? { placementParentUserId: placementId } : {})
       };
 
       this.authService.register(payload).subscribe({
         next: () => {
-          localStorage.removeItem('referralCode');
+          localStorage.removeItem('referralUsername');
           this.userService.fetchProfile().subscribe({
             next: () => {
               this.loadingService.hide();
-              this.router.navigate(['/onboarding/profile']);
+              const path = this.userService.isPaid() ? '/dashboard' : '/auth/activation';
+              this.router.navigate([path]);
             },
             error: () => {
               this.loadingService.hide();
-              this.router.navigate(['/onboarding/profile']);
+              this.router.navigate(['/auth/activation']);
             }
           });
         },

@@ -145,12 +145,9 @@ export class ActivationWalletComponent implements OnInit {
         this.activating.set(false);
         this.userService.fetchProfile().subscribe({
           next: () => {
-            const redirectPath = this.userService.onboardingComplete()
-              ? '/dashboard'
-              : '/onboarding/profile';
-            this.router.navigate([redirectPath]);
+            this.router.navigate(['/dashboard']);
           },
-          error: () => this.router.navigate(['/onboarding/profile']),
+          error: () => this.router.navigate(['/dashboard']),
           complete: () => this.cdr.markForCheck()
         });
       },

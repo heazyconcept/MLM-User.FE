@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
   MerchantService,
@@ -18,6 +18,7 @@ import { ButtonModule } from 'primeng/button';
 export class MerchantApplyComponent implements OnInit {
   private merchantService = inject(MerchantService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   categoryConfig = this.merchantService.categoryConfig;
   profile = this.merchantService.profile;
@@ -33,6 +34,8 @@ export class MerchantApplyComponent implements OnInit {
   // Payment related
   selectedPaymentSource = signal<MerchantFeePaymentSource>('REGISTRATION_WALLET');
   paymentInitiated = signal(false);
+  verificationMessage = signal('');
+  verificationError = signal('');
 
   readonly merchantTypes: MerchantType[] = ['REGIONAL', 'NATIONAL', 'GLOBAL'];
   readonly paymentSources: { label: string; value: MerchantFeePaymentSource }[] = [
@@ -44,6 +47,36 @@ export class MerchantApplyComponent implements OnInit {
   ngOnInit(): void {
     this.merchantService.fetchCategoryConfig();
     this.merchantService.fetchProfile();
+    this.handleGatewayVerification();
+  }
+
+  private handleGatewayVerification(): void {
+    const reference = this.route.snapshot.queryParamMap.get('reference');
+    const trxref = this.route.snapshot.queryParamMap.get('trxref');
+    const paymentReference = reference || trxref;
+
+    if (!paymentReference) return;
+
+    this.verificationMessage.set('Verifying your payment...');
+    this.verificationError.set('');
+
+    this.merchantService.verifyMerchantFeePayment({ reference: paymentReference }).subscribe((res) => {
+      if (res?.success) {
+        this.verificationMessage.set(
+          res.message || 'Merchant fee verified. Your application is pending admin approval.',
+        );
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { reference: null, trxref: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+        return;
+      }
+
+      this.verificationMessage.set('');
+      this.verificationError.set(this.error() || 'Payment could not be verified.');
+    });
   }
 
   getTypeLabel(type: MerchantType): string {

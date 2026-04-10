@@ -1,236 +1,251 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
-    <div class="px-4 sm:px-6 lg:px-8 mx-auto">
-      <div class="space-y-10 animate-fade-in">
-        
-        <!-- Header -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-4">
+    <div class="px-4 sm:px-6 lg:px-8 w-full">
+
+      @if (isLoading()) {
+        <div class="space-y-6">
+          <p-skeleton width="180px" height="1.75rem"></p-skeleton>
+          <p-skeleton width="100%" height="120px" borderRadius="12px"></p-skeleton>
+          <p-skeleton width="100%" height="160px" borderRadius="12px"></p-skeleton>
+        </div>
+      } @else {
+        <div class="space-y-8 animate-fade-in">
+
+          <!-- ─── Header ──────────────────────────────── -->
           <div>
-            <h1 class="text-2xl font-bold text-mlm-text mb-2">Referral Tools</h1>
-            <p class="text-mlm-secondary text-sm">Share your unique link to grow your team and earn bonuses.</p>
+            <h1 class="text-xl font-medium text-mlm-text tracking-tight">Referral tools</h1>
+            <p class="mt-1 text-sm text-mlm-secondary">Share your unique link to grow your team and earn bonuses.</p>
           </div>
-        </div>
 
-        <!-- Empty state: no referrals yet -->
-        @if (hasNoReferrals()) {
-          <div class="bg-white rounded-2xl border border-gray-100 p-8 shadow-sm text-center">
-            <p class="text-mlm-secondary mb-6">No referrals yet. Share your link to invite friends and grow your team.</p>
-            <div class="flex flex-wrap gap-3 justify-center">
-              <a routerLink="/network/referrals" fragment="referral-link-section" class="inline-flex items-center justify-center gap-2 bg-mlm-primary text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-mlm-primary/90 transition-colors">
-                Invite Friends
-              </a>
-              <button type="button" (click)="openShareModal()" class="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-colors">
-                Share referral link
-              </button>
-            </div>
-          </div>
-        }
-
-        <!-- Quick Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          <app-stat-card
-            label="Total Referrals"
-            [value]="summary().directReferrals"
-            icon="pi-users"
-            bgClass="bg-mlm-blue-500"
-            trend="Growing"
-            trendIcon="pi-chart-line">
-          </app-stat-card>
-
-          <app-stat-card
-            label="Team Size"
-            [value]="summary().teamSize"
-            icon="pi-check-circle"
-            bgClass="bg-mlm-success"
-            trend="Active"
-            trendIcon="pi-check-circle">
-          </app-stat-card>
-
-          <app-stat-card
-            label="Earnings from Referrals"
-            [value]="currencySymbol() + (earningsAmount() | number:'1.0-0')"
-            icon="pi-money-bill"
-            bgClass="bg-brand-gold"
-            trend="Total"
-            trendIcon="pi-calendar">
-          </app-stat-card>
-        </div>
-
-        <!-- Main Referral Link Card -->
-        <div id="referral-link-section" class="relative overflow-hidden bg-white rounded-[2.5rem] border border-gray-100/50 shadow-sm p-8 lg:p-10 transition-all duration-300">
-          <i class="pi pi-link absolute" 
-             style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.1; pointer-events: none; z-index: 0;"></i>
-          
-          <div class="relative z-10 space-y-6">
-            <div class="flex items-center gap-4 mb-2">
-              <div class="w-12 h-12 bg-mlm-primary/10 rounded-2xl flex items-center justify-center">
-                <i class="pi pi-link text-xl text-mlm-primary"></i>
-              </div>
-              <div>
-                <h3 class="text-lg font-semibold text-mlm-text">Your Referral Link</h3>
-                <p class="text-sm text-mlm-secondary">Share this link to invite new members</p>
+          <!-- ─── Empty State ─────────────────────────── -->
+          @if (hasNoReferrals()) {
+            <div class="border border-mlm-secondary/15 rounded-xl bg-white px-5 py-8 text-center">
+              <p class="text-sm text-mlm-secondary mb-4">No referrals yet. Share your link to invite friends and grow your team.</p>
+              <div class="flex flex-wrap gap-2 justify-center">
+                <a
+                  routerLink="/network/referrals"
+                  fragment="referral-link-section"
+                  class="px-4 py-2 text-sm font-medium text-white bg-mlm-primary rounded-lg hover:bg-mlm-primary/90 transition-colors"
+                >
+                  Invite friends
+                </a>
+                <button
+                  type="button"
+                  (click)="openShareModal()"
+                  class="px-4 py-2 text-sm font-medium text-mlm-text border border-mlm-secondary/30 rounded-lg hover:bg-mlm-secondary/5 transition-colors"
+                >
+                  Share referral link
+                </button>
               </div>
             </div>
-            
-            <div class="space-y-4">
-              <!-- Link Input -->
-              <div class="flex flex-col sm:flex-row gap-3">
-                <div class="flex-1 bg-gray-50 rounded-xl border border-gray-100 px-4 py-3.5 flex items-center">
-                  <span class="text-gray-900 font-medium text-sm truncate">{{ referral().url }}</span>
-                </div>
-                <app-copy-button 
-                  [textToCopy]="referral().url" 
-                  label="Copy Link"
+          }
+
+          <!-- ─── Stat Grid ───────────────────────────── -->
+          <div class="grid grid-cols-3 divide-x divide-mlm-secondary/15 border border-mlm-secondary/15 rounded-xl overflow-hidden">
+
+            <div class="flex flex-col gap-2 p-5 bg-white">
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Total referrals</span>
+              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ summary().directReferrals }}</span>
+              <span class="inline-flex items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full w-fit font-medium">
+                ↑ Growing
+              </span>
+            </div>
+
+            <div class="flex flex-col gap-2 p-5 bg-white">
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Team size</span>
+              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ summary().teamSize }}</span>
+              <span class="inline-flex items-center gap-1 text-[11px] text-mlm-secondary bg-mlm-secondary/10 px-2 py-0.5 rounded-full w-fit font-medium">
+                Active
+              </span>
+            </div>
+
+            <div class="flex flex-col gap-2 p-5 bg-white border-t-2 border-t-mlm-primary">
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Earnings from referrals</span>
+              <span class="text-3xl font-medium text-mlm-text tabular-nums leading-none">
+                {{ currencySymbol() }}{{ earningsAmount() | number:'1.0-0' }}
+              </span>
+              <span class="inline-flex items-center gap-1 text-[11px] text-mlm-secondary bg-mlm-secondary/10 px-2 py-0.5 rounded-full w-fit font-medium">
+                Total earned
+              </span>
+            </div>
+
+          </div>
+
+          <!-- ─── Referral Link ───────────────────────── -->
+          <div
+            id="referral-link-section"
+            class="border border-mlm-secondary/15 rounded-xl overflow-hidden bg-white"
+          >
+            <div class="px-5 pt-5 pb-4 border-b border-mlm-secondary/15">
+              <p class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium mb-3">Your referral link</p>
+              <div class="flex items-center gap-2">
+                <input
+                  [value]="referral().url"
+                  readonly
+                  class="flex-1 min-w-0 text-sm text-mlm-text font-mono bg-mlm-background border border-mlm-secondary/15 rounded-lg px-3 py-2.5 focus:outline-none cursor-text select-all"
+                />
+                <app-copy-button
+                  [textToCopy]="referral().url"
+                  label="Copy link"
                   (copiedSuccess)="onCopySuccess()"
-                  styleClass="!w-full sm:!w-auto !bg-mlm-primary !border-mlm-primary !py-3.5 !px-6 !rounded-xl !font-medium !text-sm shadow-sm hover:!bg-mlm-primary/90 transition-colors">
-                </app-copy-button>
-              </div>
-
-              <!-- Referral Code -->
-              <div class="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-xl border border-gray-100">
-                <div class="flex items-center gap-2">
-                  <i class="pi pi-hashtag text-gray-400 text-sm"></i>
-                  <span class="text-xs text-gray-500 font-medium">Referral Code:</span>
-                </div>
-                <span class="font-mono font-semibold text-gray-900">{{ referral().code }}</span>
+                  styleClass="!shrink-0 !bg-mlm-primary !border-mlm-primary !text-white !text-sm !font-medium !px-4 !py-2.5 !rounded-lg hover:!bg-mlm-primary/90 !transition-colors"
+                ></app-copy-button>
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Share Options -->
-        <div class="relative overflow-hidden bg-white rounded-[2.5rem] border border-gray-100/50 shadow-sm p-8 lg:p-10 transition-all duration-300">
-          <i class="pi pi-share-alt absolute" 
-             style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.1; pointer-events: none; z-index: 0;"></i>
-          
-          <div class="relative z-10">
-            <h3 class="text-lg font-semibold text-mlm-text mb-6">Quick Share</h3>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <button type="button" (click)="openShareModal()" class="flex flex-col items-center gap-3 p-5 rounded-2xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all group">
-                <div class="w-14 h-14 rounded-full bg-[#25D366]/10 flex items-center justify-center group-hover:bg-[#25D366]/20 transition-colors group-hover:scale-110">
-                  <i class="pi pi-whatsapp text-2xl text-[#25D366]"></i>
-                </div>
-                <span class="text-xs font-semibold text-gray-700">WhatsApp</span>
-              </button>
-              <button type="button" (click)="openShareModal()" class="flex flex-col items-center gap-3 p-5 rounded-2xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all group">
-                <div class="w-14 h-14 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors group-hover:scale-110">
-                  <i class="pi pi-telegram text-2xl text-blue-500"></i>
-                </div>
-                <span class="text-xs font-semibold text-gray-700">Telegram</span>
-              </button>
-              <button type="button" (click)="openShareModal()" class="flex flex-col items-center gap-3 p-5 rounded-2xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all group">
-                <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors group-hover:scale-110">
-                  <i class="pi pi-envelope text-2xl text-gray-600"></i>
-                </div>
-                <span class="text-xs font-semibold text-gray-700">Email</span>
-              </button>
-              <button type="button" (click)="openShareModal()" class="flex flex-col items-center gap-3 p-5 rounded-2xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all group">
-                <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors group-hover:scale-110">
-                  <i class="pi pi-share-alt text-2xl text-gray-600"></i>
-                </div>
-                <span class="text-xs font-semibold text-gray-700">More</span>
-              </button>
+            <div class="px-5 py-3.5 flex items-center justify-between">
+              <span class="text-xs text-mlm-secondary">Referral username</span>
+              <span class="text-sm font-mono font-medium text-mlm-primary">{{ referral().referralUsername }}</span>
             </div>
           </div>
-        </div>
 
-        <!-- Sponsor Info (only when user has a sponsor) -->
-        @if (hasSponsor()) {
-        <div class="relative overflow-hidden bg-white rounded-[2.5rem] border border-gray-100/50 shadow-sm p-8 lg:p-10 transition-all duration-300">
-          <i class="pi pi-user absolute" 
-             style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.1; pointer-events: none; z-index: 0;"></i>
-          
-          <div class="relative z-10">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div class="flex items-center gap-4">
-                <div class="w-14 h-14 rounded-full bg-mlm-primary/10 flex items-center justify-center">
-                  <i class="pi pi-user text-xl text-mlm-primary"></i>
-                </div>
+          <!-- ─── Quick Share + Sponsor ───────────────── -->
+          <div class="border border-mlm-secondary/15 rounded-xl overflow-hidden">
+
+            <!-- Share buttons -->
+            <div class="px-5 pt-5 pb-5 bg-white border-b border-mlm-secondary/15">
+              <p class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium mb-4">Quick share</p>
+              <div class="grid grid-cols-4 gap-3">
+
+                <button
+                  type="button"
+                  (click)="shareVia('whatsapp')"
+                  class="group flex flex-col items-center gap-2.5 py-4 rounded-xl border border-mlm-secondary/15 bg-mlm-background hover:border-mlm-secondary/40 transition-colors"
+                >
+                  <svg class="w-5 h-5 text-mlm-secondary group-hover:text-mlm-text transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
+                  </svg>
+                  <span class="text-xs text-mlm-secondary group-hover:text-mlm-text transition-colors font-medium">WhatsApp</span>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="shareVia('telegram')"
+                  class="group flex flex-col items-center gap-2.5 py-4 rounded-xl border border-mlm-secondary/15 bg-mlm-background hover:border-mlm-secondary/40 transition-colors"
+                >
+                  <svg class="w-5 h-5 text-mlm-secondary group-hover:text-mlm-text transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                  </svg>
+                  <span class="text-xs text-mlm-secondary group-hover:text-mlm-text transition-colors font-medium">Telegram</span>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="shareVia('email')"
+                  class="group flex flex-col items-center gap-2.5 py-4 rounded-xl border border-mlm-secondary/15 bg-mlm-background hover:border-mlm-secondary/40 transition-colors"
+                >
+                  <svg class="w-5 h-5 text-mlm-secondary group-hover:text-mlm-text transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                  </svg>
+                  <span class="text-xs text-mlm-secondary group-hover:text-mlm-text transition-colors font-medium">Email</span>
+                </button>
+
+                <button
+                  type="button"
+                  (click)="shareVia('more')"
+                  class="group flex flex-col items-center gap-2.5 py-4 rounded-xl border border-mlm-secondary/15 bg-mlm-background hover:border-mlm-secondary/40 transition-colors"
+                >
+                  <svg class="w-5 h-5 text-mlm-secondary group-hover:text-mlm-text transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185z" />
+                  </svg>
+                  <span class="text-xs text-mlm-secondary group-hover:text-mlm-text transition-colors font-medium">More</span>
+                </button>
+
+              </div>
+            </div>
+
+            <!-- Sponsor row -->
+            @if (hasSponsor()) {
+              <div class="px-5 py-4 bg-white flex items-center justify-between">
                 <div>
-                  <p class="text-xs text-mlm-secondary font-medium mb-1">Your Sponsor</p>
-                  <p class="text-lg font-semibold text-mlm-text">{{ referral().sponsorName }}</p>
+                  <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium block mb-1">Your sponsor</span>
+                  <span class="text-sm font-medium text-mlm-text">{{ referral().sponsorName }}</span>
                 </div>
+                <span class="inline-flex items-center gap-1.5 text-[11px] text-green-700 bg-green-50 px-2.5 py-1 rounded-full font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
+                  Registered via referral link
+                </span>
               </div>
-              <div class="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl border border-green-100">
-                <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                <span class="text-xs font-medium text-green-700">Registered via referral link</span>
+            }
+
+          </div>
+
+          <!-- ─── Tips ────────────────────────────────── -->
+          <div>
+            <p class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium mb-3">Tips to get more referrals</p>
+            <div class="border border-mlm-secondary/15 rounded-xl overflow-hidden divide-y divide-mlm-secondary/15">
+
+              <div class="flex items-start gap-4 px-5 py-4 bg-white">
+                <span class="shrink-0 text-[11px] font-medium text-mlm-secondary tabular-nums mt-0.5 w-5">01</span>
+                <p class="text-sm text-mlm-text leading-relaxed">Share your link on social media platforms with a personal message about your experience.</p>
               </div>
+
+              <div class="flex items-start gap-4 px-5 py-4 bg-white">
+                <span class="shrink-0 text-[11px] font-medium text-mlm-secondary tabular-nums mt-0.5 w-5">02</span>
+                <p class="text-sm text-mlm-text leading-relaxed">Follow up with interested contacts within 24 hours to answer any questions.</p>
+              </div>
+
+              <div class="flex items-start gap-4 px-5 py-4 bg-white">
+                <span class="shrink-0 text-[11px] font-medium text-mlm-secondary tabular-nums mt-0.5 w-5">03</span>
+                <p class="text-sm text-mlm-text leading-relaxed">Help new members get started quickly to increase their activation rate.</p>
+              </div>
+
             </div>
           </div>
-        </div>
-        }
 
-        <!-- Tips Section -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-mlm-primary/5 to-green-50 rounded-[2.5rem] border border-mlm-primary/10 p-8 lg:p-10">
-          <i class="pi pi-lightbulb absolute" 
-             style="font-size: 150px; bottom: -20px; right: -20px; opacity: 0.1; pointer-events: none; z-index: 0;"></i>
-          
-          <div class="relative z-10">
-            <h3 class="text-lg font-semibold text-mlm-text mb-6 flex items-center gap-2">
-              <i class="pi pi-lightbulb text-mlm-primary"></i>
-              Tips to Get More Referrals
-            </h3>
-            <ul class="space-y-4">
-              <li class="flex items-start gap-4">
-                <div class="w-8 h-8 rounded-full bg-mlm-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <span class="text-sm font-semibold text-mlm-primary">1</span>
-                </div>
-                <p class="text-sm text-mlm-secondary leading-relaxed">Share your link on social media platforms with a personal message about your experience.</p>
-              </li>
-              <li class="flex items-start gap-4">
-                <div class="w-8 h-8 rounded-full bg-mlm-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <span class="text-sm font-semibold text-mlm-primary">2</span>
-                </div>
-                <p class="text-sm text-mlm-secondary leading-relaxed">Follow up with interested contacts within 24 hours to answer any questions.</p>
-              </li>
-              <li class="flex items-start gap-4">
-                <div class="w-8 h-8 rounded-full bg-mlm-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <span class="text-sm font-semibold text-mlm-primary">3</span>
-                </div>
-                <p class="text-sm text-mlm-secondary leading-relaxed">Help new members get started quickly to increase their activation rate.</p>
-              </li>
-            </ul>
-          </div>
         </div>
-
-      </div>
+      }
     </div>
   </main>
 
-  <!-- Share modal (mock) -->
+  <!-- ─── Share Modal ─────────────────────────── -->
   @if (shareModalVisible()) {
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" (click)="closeShareModal()" role="presentation">
-      <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4" (click)="$event.stopPropagation()" role="dialog" aria-label="Share via">
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+      (click)="closeShareModal()"
+      role="presentation"
+    >
+      <div
+        class="bg-white rounded-xl border border-mlm-secondary/15 max-w-md w-full p-6 space-y-4"
+        (click)="$event.stopPropagation()"
+        role="dialog"
+        aria-label="Share via"
+      >
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-mlm-text">Share via</h3>
-          <button type="button" (click)="closeShareModal()" class="p-2 rounded-lg hover:bg-gray-100 text-gray-500" aria-label="Close">
-            <i class="pi pi-times"></i>
+          <h3 class="text-base font-medium text-mlm-text">Share your link</h3>
+          <button
+            type="button"
+            (click)="closeShareModal()"
+            class="p-1.5 rounded-lg hover:bg-mlm-secondary/10 text-mlm-secondary transition-colors"
+            aria-label="Close"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
-        <p class="text-sm text-mlm-secondary">Share your referral link with friends:</p>
-        <div class="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3">
-          <span class="text-gray-900 font-medium text-sm break-all">{{ referral().url }}</span>
+
+        <div class="bg-mlm-background border border-mlm-secondary/15 rounded-lg px-3 py-2.5">
+          <span class="text-sm font-mono text-mlm-text break-all">{{ referral().url }}</span>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <span class="text-xs text-gray-500">Channels:</span>
-          <span class="text-xs font-medium text-gray-700">WhatsApp</span>
-          <span class="text-gray-300">·</span>
-          <span class="text-xs font-medium text-gray-700">Telegram</span>
-          <span class="text-gray-300">·</span>
-          <span class="text-xs font-medium text-gray-700">Email</span>
-        </div>
-        <div class="flex gap-3 pt-2">
+
+        <div class="flex gap-2 pt-1">
           <app-copy-button
             [textToCopy]="referral().url"
             label="Copy link"
             (copiedSuccess)="onCopySuccess()"
-            styleClass="!flex-1 !bg-mlm-primary !border-mlm-primary !py-3 !rounded-xl !font-medium !text-sm">
-          </app-copy-button>
-          <button type="button" (click)="closeShareModal()" class="flex-1 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium text-sm hover:bg-gray-50">
+            styleClass="!flex-1 !bg-mlm-primary !border-mlm-primary !text-white !text-sm !font-medium !py-2.5 !rounded-lg hover:!bg-mlm-primary/90 !transition-colors"
+          ></app-copy-button>
+          <button
+            type="button"
+            (click)="closeShareModal()"
+            class="flex-1 py-2.5 rounded-lg border border-mlm-secondary/30 text-mlm-text text-sm font-medium hover:bg-mlm-secondary/5 transition-colors"
+          >
             Close
           </button>
         </div>
       </div>
     </div>
   }
+
 </div>

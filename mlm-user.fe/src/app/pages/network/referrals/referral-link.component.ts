@@ -2,16 +2,16 @@ import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { SkeletonModule } from 'primeng/skeleton';
 import { NetworkService } from '../../../services/network.service';
 import { EarningsService } from '../../../services/earnings.service';
 import { UserService } from '../../../services/user.service';
 import { CopyButtonComponent } from '../../../components/copy-button/copy-button.component';
-import { StatCardComponent } from '../../../components/stat-card/stat-card.component';
 
 @Component({
   selector: 'app-referral-link',
   standalone: true,
-  imports: [CommonModule, RouterModule, CopyButtonComponent, StatCardComponent],
+  imports: [CommonModule, RouterModule, CopyButtonComponent, SkeletonModule],
   templateUrl: './referral-link.component.html'
 })
 export class ReferralLinkComponent implements OnInit {
@@ -22,6 +22,7 @@ export class ReferralLinkComponent implements OnInit {
 
   referral = this.networkService.referralLink;
   summary = this.networkService.networkSummary;
+  isLoading = this.networkService.isLoading;
   earningsSummary = this.earningsService.earningsSummary;
   displayCurrency = this.userService.displayCurrency;
   shareModalVisible = signal(false);
@@ -54,5 +55,38 @@ export class ReferralLinkComponent implements OnInit {
 
   closeShareModal(): void {
     this.shareModalVisible.set(false);
+  }
+
+  shareVia(channel: 'whatsapp' | 'telegram' | 'email' | 'more'): void {
+    const link = this.referral().url;
+    const message = `Join me on Segulah: ${link}`;
+
+    if (!link) return;
+
+    switch (channel) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+        break;
+      case 'telegram':
+        window.open(
+          `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Join me on Segulah')}`,
+          '_blank',
+          'noopener,noreferrer'
+        );
+        break;
+      case 'email':
+        window.location.href = `mailto:?subject=${encodeURIComponent('Join me on Segulah')}&body=${encodeURIComponent(message)}`;
+        break;
+      case 'more':
+        if (navigator.share) {
+          navigator.share({ title: 'Join me on Segulah', text: 'Join me on Segulah', url: link }).catch(() => {});
+        } else {
+          this.openShareModal();
+        }
+        break;
+      default:
+        this.openShareModal();
+        break;
+    }
   }
 }

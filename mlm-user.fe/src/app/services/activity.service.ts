@@ -163,7 +163,8 @@ export class ActivityService {
     return status;
   }
 
-  private mapWithdrawalStatus(status: 'Pending' | 'Approved' | 'Rejected'): ActivityStatus {
+  private mapWithdrawalStatus(status: 'Pending' | 'Approved' | 'Rejected' | 'Paid'): ActivityStatus {
+    if (status === 'Paid') return 'Completed';
     return status;
   }
 

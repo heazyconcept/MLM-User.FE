@@ -15,6 +15,18 @@
         </p>
       </div>
 
+      @if (verificationMessage()) {
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <p class="text-green-700 text-sm">{{ verificationMessage() }}</p>
+        </div>
+      }
+
+      @if (verificationError()) {
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p class="text-red-700 text-sm">{{ verificationError() }}</p>
+        </div>
+      }
+
       @if (loading()) {
         <div class="flex items-center justify-center py-20">
           <div class="w-8 h-8 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"></div>
@@ -128,7 +140,7 @@
                 >
                   <h3 class="font-bold text-mlm-text mb-2">{{ getTypeLabel(cfg.merchantType) }}</h3>
                   <div class="text-2xl font-black text-mlm-primary mb-4">
-                    ${{ cfg.registrationFeeUsd }}
+                    ₦{{ cfg.registrationFeeUsd | number: '1.0-0' }}
                   </div>
                   <dl class="space-y-2 text-xs flex-1">
                     <div class="flex justify-between border-b border-gray-50 pb-1">
