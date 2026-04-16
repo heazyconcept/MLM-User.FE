@@ -14,6 +14,32 @@
         }
       </div>
 
+      <!-- Complete setup / onboarding wizard CTA: disabled — users use Edit Profile instead.
+      @if (!onboardingComplete() && !isEditMode()) {
+        <div
+          class="mb-6 rounded-xl border border-mlm-primary/25 bg-mlm-green-50/80 px-4 py-4 sm:px-5 sm:py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        >
+          <div>
+            <h2 class="text-base font-semibold text-mlm-text">Complete your earning profile</h2>
+            <p class="mt-1 text-sm text-mlm-secondary max-w-xl">
+              Add contact details, verification, bank info, and preferences when it suits you. You can continue using the app in the meantime.
+            </p>
+            @if (profileCompletionPct() > 0) {
+              <p class="mt-2 text-sm font-medium text-mlm-primary">
+                Profile about {{ profileCompletionPct() }}% complete
+              </p>
+            }
+          </div>
+          <a
+            routerLink="/onboarding/profile"
+            class="inline-flex shrink-0 items-center justify-center rounded-lg bg-mlm-primary px-4 py-2.5 text-sm font-semibold text-white hover:opacity-95 transition-opacity"
+          >
+            Continue setup
+          </a>
+        </div>
+      }
+      -->
+
       @if (!isEditMode()) {
         <!-- View Mode -->
         @if (currentUser(); as user) {
@@ -93,25 +119,13 @@
                 </div>
               </ng-template>
               <div class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-mlm-secondary mb-2">KYC Status</label>
-                    @if (user.kycStatus === 'VERIFIED') {
-                      <p-badge value="VERIFIED" severity="success"></p-badge>
-                    } @else if (user.kycStatus === 'REJECTED') {
-                      <p-badge value="REJECTED" severity="danger"></p-badge>
-                    } @else {
-                      <p-badge value="PENDING" severity="warn"></p-badge>
-                    }
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-mlm-secondary mb-2">Account Status</label>
-                    @if (user.paymentStatus === 'PAID') {
-                      <p-badge value="PAID" severity="success"></p-badge>
-                    } @else {
-                      <p-badge value="UNPAID" severity="warn"></p-badge>
-                    }
-                  </div>
+                <div>
+                  <label class="block text-sm font-medium text-mlm-secondary mb-2">Account Status</label>
+                  @if (user.paymentStatus === 'PAID') {
+                    <p-badge value="PAID" severity="success"></p-badge>
+                  } @else {
+                    <p-badge value="UNPAID" severity="warn"></p-badge>
+                  }
                 </div>
               </div>
             </p-card>

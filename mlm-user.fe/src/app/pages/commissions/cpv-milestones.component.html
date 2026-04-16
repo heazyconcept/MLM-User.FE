@@ -1,227 +1,213 @@
-<div class="p-6 lg:p-10 space-y-8 mx-auto">
-  
-  <!-- Header -->
-  <div class="flex items-center justify-between">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900">Earnings</h1>
-      <p class="text-sm text-gray-500 mt-1">CPV and milestones tracking</p>
-    </div>
-  </div>
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 w-full">
 
-  <!-- Tabs -->
-  <app-earnings-tabs></app-earnings-tabs>
-  @if (!userService.isPaid()) {
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-12 text-center">
-      <div class="max-w-sm mx-auto space-y-4">
-        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-          <i class="pi pi-lock text-gray-400"></i>
-        </div>
-        <h2 class="text-lg font-semibold text-gray-900">Track Milestones</h2>
-        <p class="text-sm text-gray-500">Complete your registration to start earning CPV.</p>
-        <button routerLink="/dashboard/registration-payment" 
-                class="inline-flex items-center px-4 py-2 bg-mlm-primary text-white text-sm font-medium rounded-lg hover:bg-mlm-primary/90 transition-colors">
-          Complete Registration
-        </button>
+      <!-- ─── Header ──────────────────────────────── -->
+      <div class="mb-8">
+        <h1 class="text-xl font-medium text-mlm-text tracking-tight">Earnings</h1>
+        <p class="mt-1 text-sm text-mlm-secondary">CPV and milestones tracking.</p>
       </div>
-    </div>
-  } @else if (error()) {
-    <div class="bg-red-50 border border-red-200 rounded-xl p-4">
-      <p class="text-sm text-red-700">{{ error() }}</p>
-    </div>
-  } @else if (isLoading()) {
-    <div class="space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        @for (i of [1,2,3]; track i) {
-          <div class="bg-white rounded-xl p-6">
-            <p-skeleton width="6rem" height="1rem"></p-skeleton>
-            <p-skeleton width="4rem" height="2rem" class="mt-3"></p-skeleton>
-          </div>
-        }
-      </div>
-      <div class="bg-white rounded-xl p-6">
-        <p-skeleton width="100%" height="4rem"></p-skeleton>
-      </div>
-    </div>
-  } @else {
-    
-    <!-- Registration PV (from activation) -->
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Registration PV</p>
-          <p class="text-xs text-gray-500 mt-0.5">PV received at activation (Instant + Community)</p>
-        </div>
-      </div>
-      <div class="flex flex-wrap gap-6 mt-4">
-        <div>
-          <span class="text-2xl font-bold text-gray-900">{{ registrationPv().instant }} PV</span>
-          <p class="text-xs text-gray-500">Instant</p>
-        </div>
-        <div>
-          <span class="text-2xl font-bold text-gray-900">{{ registrationPv().community }} PV</span>
-          <p class="text-xs text-gray-500">Community</p>
-        </div>
-        <div class="border-l border-gray-200 pl-6">
-          <span class="text-2xl font-bold text-mlm-primary">{{ registrationPv().total }} PV</span>
-          <p class="text-xs text-gray-500">Total from registration</p>
-        </div>
-      </div>
-    </div>
 
-    <!-- CPV Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- Total CPV -->
-      <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-        <div class="flex items-center justify-between">
-          <span class="text-sm text-gray-500">Total CPV Volume</span>
-          <div class="w-8 h-8 rounded-lg bg-mlm-primary/10 flex items-center justify-center">
-            <i class="pi pi-chart-line text-mlm-primary text-sm"></i>
-          </div>
-        </div>
-        <p class="text-3xl font-bold text-gray-900 mt-3">{{ cpvSummary().totalCpv | number }}</p>
-        <p class="text-xs text-gray-400 mt-1">points accumulated</p>
-      </div>
-      
-      <!-- Personal CPV -->
-      <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-        <div class="flex items-center justify-between">
-          <span class="text-sm text-gray-500">Personal CPV</span>
-          <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-            <i class="pi pi-user text-blue-500 text-sm"></i>
-          </div>
-        </div>
-        <p class="text-3xl font-bold text-gray-900 mt-3">{{ cpvSummary().personalCpv | number }}</p>
-        <p class="text-xs text-gray-400 mt-1">from your activity</p>
-      </div>
-      
-      <!-- Team CPV -->
-      <!-- <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-        <div class="flex items-center justify-between">
-          <span class="text-sm text-gray-500">Team CPV</span>
-          <div class="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
-            <i class="pi pi-users text-purple-500 text-sm"></i>
-          </div>
-        </div>
-        <p class="text-3xl font-bold text-gray-900 mt-3">{{ cpvSummary().teamCpv | number }}</p>
-        <p class="text-xs text-gray-400 mt-1">from your network</p>
-      </div> -->
-    </div>
+      <!-- ─── Tabs ────────────────────────────────── -->
+      <app-earnings-tabs></app-earnings-tabs>
 
-    <!-- Next Milestone Progress -->
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <span class="text-xs text-gray-400 uppercase tracking-wide">Next Milestone</span>
-          <p class="text-lg font-semibold text-gray-900 mt-0.5">{{ cpvSummary().nextMilestoneReward }}</p>
+      <!-- ─── Unpaid Gate ──────────────────────────── -->
+      @if (!userService.isPaid()) {
+        <div class="mt-8 border border-mlm-secondary/15 rounded-xl bg-white px-5 py-12 text-center">
+          <p class="text-sm font-medium text-mlm-text mb-1">Track milestones</p>
+          <p class="text-sm text-mlm-secondary mb-5">Complete your registration to start earning CPV.</p>
+          <a
+            routerLink="/dashboard/registration-payment"
+            class="inline-flex px-4 py-2 text-sm font-medium text-white bg-mlm-primary rounded-lg hover:bg-mlm-primary/90 transition-colors"
+          >
+            Complete registration
+          </a>
         </div>
-        <div class="text-right">
-          <span class="text-2xl font-bold text-mlm-primary">{{ getMilestoneProgress() | number:'1.0-0' }}%</span>
-          <p class="text-xs text-gray-400">{{ cpvSummary().nextMilestoneCpv - cpvSummary().totalCpv | number }} pts to go</p>
-        </div>
-      </div>
-      
-      <div class="h-3 bg-gray-100 rounded-full overflow-hidden">
-        <div class="h-full bg-mlm-primary rounded-full transition-all duration-500"
-             [style.width.%]="getMilestoneProgress()">
-        </div>
-      </div>
-      <div class="flex justify-between mt-2 text-xs text-gray-400">
-        <span>{{ cpvSummary().totalCpv | number }} CPV</span>
-        <span>{{ cpvSummary().nextMilestoneCpv | number }} CPV</span>
-      </div>
-    </div>
 
-    <!-- Milestones List -->
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-        <span class="text-sm font-medium text-gray-900">Milestones</span>
-        <span class="text-xs text-gray-400">{{ getAchievedCount() }} unlocked</span>
-      </div>
-      
-      @if (milestones().length === 0) {
-        <div class="px-6 py-12 text-center">
-          <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <i class="pi pi-flag text-gray-400"></i>
-          </div>
-          <p class="text-sm font-medium text-gray-700">No milestones yet</p>
-          <p class="text-xs text-gray-400 mt-1">Keep earning CPV to unlock milestones and rewards.</p>
+      } @else if (error()) {
+        <div class="mt-8 px-4 py-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm">
+          {{ error() }}
         </div>
+
+      } @else if (isLoading()) {
+        <div class="mt-8 space-y-6">
+          <p-skeleton width="100%" height="100px" borderRadius="12px"></p-skeleton>
+          <p-skeleton width="100%" height="80px" borderRadius="12px"></p-skeleton>
+          <p-skeleton width="100%" height="200px" borderRadius="12px"></p-skeleton>
+        </div>
+
       } @else {
-      <div class="divide-y divide-gray-100">
-        @for (milestone of milestones(); track milestone.id) {
-          <div class="px-6 py-4 flex items-center gap-4">
-            <!-- Status Indicator -->
-            <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-                 [class]="milestone.achieved ? 'bg-green-50' : (isNextMilestone(milestone) ? 'bg-mlm-primary/10' : 'bg-gray-50')">
-              @if (milestone.achieved) {
-                <i class="pi pi-check text-green-600"></i>
-              } @else if (isNextMilestone(milestone)) {
-                <i class="pi pi-arrow-right text-mlm-primary"></i>
-              } @else {
-                <i class="pi pi-lock text-gray-300"></i>
-              }
+      <div class="mt-8 space-y-8 animate-fade-in">
+
+        <!-- ─── Registration PV ─────────────────────── -->
+        <div class="grid grid-cols-3 divide-x divide-mlm-secondary/15 border border-mlm-secondary/15 rounded-xl overflow-hidden">
+
+          <div class="bg-white px-5 py-4 flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Instant PV</span>
+            <span class="text-3xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ registrationPv().instant }}</span>
+            <span class="text-[11px] text-mlm-secondary">from registration</span>
+          </div>
+
+          <div class="bg-white px-5 py-4 flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Community PV</span>
+            <span class="text-3xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ registrationPv().community }}</span>
+            <span class="text-[11px] text-mlm-secondary">distributed to upline</span>
+          </div>
+
+          <div class="bg-white px-5 py-4 flex flex-col gap-1 border-t-2 border-t-mlm-primary">
+            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Total registration PV</span>
+            <span class="text-3xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ registrationPv().total }}</span>
+            <span class="text-[11px] text-mlm-secondary">PV at activation</span>
+          </div>
+
+        </div>
+
+        <!-- ─── CPV Summary ─────────────────────────── -->
+        <div class="grid grid-cols-2 divide-x divide-mlm-secondary/15 border border-mlm-secondary/15 rounded-xl overflow-hidden">
+
+          <div class="bg-white px-5 py-4 flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Total CPV volume</span>
+            <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ cpvSummary().totalCpv | number }}</span>
+            <span class="text-[11px] text-mlm-secondary">points accumulated</span>
+          </div>
+
+          <div class="bg-white px-5 py-4 flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Personal CPV</span>
+            <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ cpvSummary().personalCpv | number }}</span>
+            <span class="text-[11px] text-mlm-secondary">from your activity</span>
+          </div>
+
+        </div>
+
+        <!-- ─── Next Milestone Progress ────────────── -->
+        <div class="border border-mlm-secondary/15 rounded-xl bg-white px-5 py-5">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium block mb-1">Next milestone</span>
+              <span class="text-sm font-medium text-mlm-text">{{ cpvSummary().nextMilestoneReward || '—' }}</span>
             </div>
-            
-            <!-- Milestone Info -->
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="text-sm font-medium" 
-                      [class]="milestone.achieved ? 'text-gray-900' : (isNextMilestone(milestone) ? 'text-gray-900' : 'text-gray-400')">
-                  {{ milestone.name }}
-                </span>
-                @if (isNextMilestone(milestone)) {
-                  <span class="px-1.5 py-0.5 text-[10px] font-semibold bg-mlm-primary/10 text-mlm-primary rounded">NEXT</span>
-                }
-              </div>
-              <p class="text-xs mt-0.5"
-                 [class]="milestone.achieved ? 'text-gray-500' : 'text-gray-400'">
-                @if (milestone.achieved) {
-                  Achieved {{ milestone.achievedDate | date:'MMM d, yyyy' }}
-                } @else {
-                  {{ milestone.cpvRequired | number }} CPV required
-                }
+            <div class="text-right shrink-0 ml-4">
+              <span class="text-2xl font-medium text-mlm-text tabular-nums leading-none">
+                {{ getMilestoneProgress() | number:'1.0-0' }}%
+              </span>
+              <p class="text-[11px] text-mlm-secondary mt-0.5">
+                {{ (cpvSummary().nextMilestoneCpv - cpvSummary().totalCpv) | number }} pts to go
               </p>
             </div>
-            
-            <!-- Reward -->
-            <span class="text-sm font-medium shrink-0"
-                  [class]="milestone.achieved ? 'text-green-600' : 'text-gray-400'">
-              {{ getRewardLabel(milestone) }}
-            </span>
+          </div>
+
+          <div class="h-[3px] w-full bg-mlm-secondary/10 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-mlm-primary rounded-full transition-all duration-700"
+              [style.width.%]="getMilestoneProgress()"
+            ></div>
+          </div>
+
+          <div class="flex justify-between mt-2">
+            <span class="text-[11px] text-mlm-secondary">{{ cpvSummary().totalCpv | number }} CPV</span>
+            <span class="text-[11px] text-mlm-secondary">{{ cpvSummary().nextMilestoneCpv | number }} CPV</span>
+          </div>
+        </div>
+
+        <!-- ─── Milestones List ─────────────────────── -->
+        <div class="border border-mlm-secondary/15 rounded-xl overflow-hidden">
+          <div class="px-5 py-4 bg-white border-b border-mlm-secondary/15 flex items-center justify-between">
+            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Milestones</span>
+            <span class="text-[11px] text-mlm-secondary">{{ getAchievedCount() }} unlocked</span>
+          </div>
+
+          @if (milestones().length === 0) {
+            <div class="px-5 py-10 text-center bg-white">
+              <p class="text-sm font-medium text-mlm-text mb-1">No milestones yet</p>
+              <p class="text-xs text-mlm-secondary">Keep earning CPV to unlock milestones and rewards.</p>
+            </div>
+          } @else {
+            <div class="divide-y divide-mlm-secondary/15">
+              @for (milestone of milestones(); track milestone.id) {
+                <div class="flex items-center justify-between px-5 py-4 bg-white">
+
+                  <div class="flex items-center gap-4 min-w-0">
+                    <!-- Status dot -->
+                    <span
+                      class="shrink-0 w-1.5 h-1.5 rounded-full"
+                      [class]="milestone.achieved
+                        ? 'bg-green-500'
+                        : isNextMilestone(milestone)
+                          ? 'bg-mlm-primary'
+                          : 'bg-mlm-secondary/20'"
+                    ></span>
+
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span
+                          class="text-sm font-medium"
+                          [class]="milestone.achieved || isNextMilestone(milestone) ? 'text-mlm-text' : 'text-mlm-secondary'"
+                        >
+                          {{ milestone.name }}
+                        </span>
+                        @if (isNextMilestone(milestone)) {
+                          <span class="text-[10px] font-medium text-mlm-primary border border-mlm-primary/30 px-1.5 py-0.5 rounded-full">
+                            Next
+                          </span>
+                        }
+                      </div>
+                      <p class="text-xs mt-0.5"
+                         [class]="milestone.achieved ? 'text-mlm-secondary' : 'text-mlm-secondary/60'">
+                        @if (milestone.achieved) {
+                          Achieved {{ milestone.achievedDate | date:'MMM d, yyyy' }}
+                        } @else {
+                          {{ milestone.cpvRequired | number }} CPV required
+                        }
+                      </p>
+                    </div>
+                  </div>
+
+                  <span
+                    class="shrink-0 text-sm font-medium tabular-nums ml-4"
+                    [class]="milestone.achieved ? 'text-green-700' : 'text-mlm-secondary/40'"
+                  >
+                    {{ getRewardLabel(milestone) }}
+                  </span>
+
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- ─── PV Activity Table ───────────────────── -->
+        @if (cpvHistory().length > 0) {
+          <div class="border border-mlm-secondary/15 rounded-xl overflow-hidden">
+            <div class="px-5 py-4 bg-white border-b border-mlm-secondary/15">
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">PV activity</span>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm" style="table-layout: fixed;">
+                <thead>
+                  <tr class="border-b border-mlm-secondary/15 bg-mlm-background">
+                    <th class="text-left px-5 py-3 text-[11px] font-medium text-mlm-secondary uppercase tracking-widest w-1/3">Date</th>
+                    <th class="text-right px-5 py-3 text-[11px] font-medium text-mlm-secondary uppercase tracking-widest w-1/4">Amount</th>
+                    <th class="text-left px-5 py-3 text-[11px] font-medium text-mlm-secondary uppercase tracking-widest">Source</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-mlm-secondary/15 bg-white">
+                  @for (h of cpvHistory(); track $index) {
+                    <tr>
+                      <td class="px-5 py-4 text-sm text-mlm-secondary">{{ h.date | date:'MMM d, yyyy' }}</td>
+                      <td class="px-5 py-4 text-sm font-medium text-mlm-text tabular-nums text-right">{{ h.personalCpv | number }} PV</td>
+                      <td class="px-5 py-4 text-sm text-mlm-secondary">{{ getSourceLabel(h.source, h.pvType) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
         }
+
       </div>
       }
-    </div>
 
-    <!-- PV Activity / CPV History -->
-    @if (cpvHistory().length > 0) {
-      <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100">
-          <span class="text-sm font-medium text-gray-900">PV Activity</span>
-          <p class="text-xs text-gray-500 mt-0.5">CPV transactions with source (Instant vs Community PV when available)</p>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="bg-gray-50 border-b border-gray-200">
-                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
-                <th class="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
-                <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Source</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              @for (h of cpvHistory(); track $index) {
-                <tr class="hover:bg-gray-50/50 transition-colors">
-                  <td class="px-4 py-3 text-gray-700">{{ h.date | date:'MMM d, yyyy' }}</td>
-                  <td class="px-4 py-3 text-right font-semibold text-gray-900">{{ h.personalCpv | number }} PV</td>
-                  <td class="px-4 py-3 text-gray-600">{{ getSourceLabel(h.source, h.pvType) }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      </div>
-    }
-  }
+    </div>
+  </main>
 </div>

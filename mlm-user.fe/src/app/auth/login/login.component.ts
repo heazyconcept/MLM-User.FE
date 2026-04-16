@@ -33,6 +33,7 @@ export class LoginComponent {
   private router = inject(Router);
   private userService = inject(UserService);
   private modalService = inject(ModalService);
+  private loadingService = inject(LoadingService);
   
   isLoading = signal<boolean>(false);
 
@@ -47,21 +48,18 @@ export class LoginComponent {
       const { username, password } = this.loginForm.value;
       if (username && password) {
         this.isLoading.set(true);
+        this.loadingService.show();
         this.authService.login(username, password).subscribe({
           next: (result) => {
             this.isLoading.set(false);
+            this.loadingService.hide();
             
             // Registration Fee Status Check (On Every Login)
             // The payment status has been fetched from the server in AuthService.login()
             // This ensures we always have the latest status, even if it changed externally
             // (e.g., admin override, payment retry, failed payment)
             const paymentStatus = result.paymentStatus;
-            
-            // Apply Access Rules:
-            // - RegistrationFeeStatus = UNPAID → Redirect to Restricted Dashboard
-            // - RegistrationFeeStatus = PAID → Redirect to Full Dashboard
-            // The dashboard component will automatically show the appropriate view based on payment status
-            const redirectPath = '/dashboard';
+            const redirectPath = paymentStatus === 'PAID' ? '/dashboard' : '/auth/activation';
             
             // Show success modal with automatic redirect
             this.modalService.open(
@@ -71,14 +69,14 @@ export class LoginComponent {
               redirectPath
             );
             
-            // Automatically redirect after a short delay to show the modal
-            // The dashboard component will automatically show restricted or full view based on payment status
+            // PAID → dashboard; UNPAID → activation choice (dashboard remains available from there)
             setTimeout(() => {
               this.router.navigate([redirectPath]);
             }, 2000);
           },
           error: () => {
             this.isLoading.set(false);
+            this.loadingService.hide();
             // Show error modal
             this.modalService.open(
               'error',

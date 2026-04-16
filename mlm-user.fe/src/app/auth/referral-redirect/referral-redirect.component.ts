@@ -11,9 +11,9 @@ export class ReferralRedirectComponent {
   private router = inject(Router);
 
   constructor() {
-    const code = this.route.snapshot.paramMap.get('code');
-    if (code) {
-      localStorage.setItem('referralCode', code);
+    const username = this.route.snapshot.paramMap.get('code');
+    if (username) {
+      localStorage.setItem('referralUsername', username);
     }
     this.router.navigate(['/auth/register'], { replaceUrl: true });
   }

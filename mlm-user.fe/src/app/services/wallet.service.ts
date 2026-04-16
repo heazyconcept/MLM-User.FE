@@ -58,15 +58,41 @@ export interface Transaction {
   description?: string;
 }
 
+/** API response shape for GET/POST withdrawals (WithdrawalResponseDto) */
+export interface WithdrawalResponseDto {
+  id: string;
+  userId?: string;
+  walletId?: string;
+  amount: number;
+  baseAmount?: number;
+  currency: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAID';
+  reason?: string | null;
+  payoutReference?: string | null;
+  approvedAt?: string | null;
+  paidAt?: string | null;
+  rejectedAt?: string | null;
+  approvedById?: string | null;
+  rejectedById?: string | null;
+  paidById?: string | null;
+  createdAt: string;
+  bankName?: string;
+  accountNumber?: string;
+  accountName?: string;
+}
+
 export interface WithdrawalRequest {
   id: string;
   date: string;
   currency: 'NGN' | 'USD';
   amount: number;
-  status: 'Pending' | 'Approved' | 'Rejected';
+  status: 'Pending' | 'Approved' | 'Rejected' | 'Paid';
   bankName: string;
   accountNumber: string;
   accountName: string;
+  reason?: string | null;
+  payoutReference?: string | null;
+  paidAt?: string | null;
 }
 
 @Injectable({
@@ -212,8 +238,9 @@ export class WalletService {
    */
   private mapApiWithdrawalToWithdrawal(item: Record<string, unknown>): WithdrawalRequest {
     const status = String(item['status'] ?? 'PENDING').toUpperCase();
-    let mappedStatus: 'Pending' | 'Approved' | 'Rejected' = 'Pending';
-    if (status === 'APPROVED' || status === 'PAID') mappedStatus = 'Approved';
+    let mappedStatus: 'Pending' | 'Approved' | 'Rejected' | 'Paid' = 'Pending';
+    if (status === 'PAID') mappedStatus = 'Paid';
+    else if (status === 'APPROVED') mappedStatus = 'Approved';
     else if (status === 'REJECTED') mappedStatus = 'Rejected';
 
     return {
@@ -224,7 +251,10 @@ export class WalletService {
       status: mappedStatus,
       bankName: String(item['bankName'] ?? item['bank_name'] ?? ''),
       accountNumber: String(item['accountNumber'] ?? item['account_number'] ?? ''),
-      accountName: String(item['accountName'] ?? item['account_name'] ?? '')
+      accountName: String(item['accountName'] ?? item['account_name'] ?? ''),
+      reason: item['reason'] != null ? String(item['reason']) : undefined,
+      payoutReference: item['payoutReference'] != null ? String(item['payoutReference']) : undefined,
+      paidAt: item['paidAt'] != null ? String(item['paidAt']) : undefined
     };
   }
 
@@ -256,24 +286,26 @@ export class WalletService {
     bankName: string;
     accountNumber: string;
     accountName: string;
-  }): Observable<boolean> {
+  }): Observable<WithdrawalRequest> {
     const { currency, amount } = params;
 
-    return this.api.post<unknown>('withdrawals/request', { amount }).pipe(
-      tap(() => {
+    return this.api.post<Record<string, unknown>>('withdrawals/request', { amount }).pipe(
+      map(raw => this.mapApiWithdrawalToWithdrawal(raw as Record<string, unknown>)),
+      tap(mapped => {
         this.modalService.open(
           'success',
           'Withdrawal Submitted',
           `Your withdrawal request of ${currency === 'NGN' ? '₦' : '$'}${amount} has been successfully submitted and is currently pending admin approval.`,
-          '/withdrawals'
+          `/withdrawals/${mapped.id}`
         );
         this.fetchWallets().subscribe();
         this.fetchWithdrawals().subscribe();
       }),
-      map(() => true),
       catchError(err => {
-        const msg = err?.error?.message ?? (Array.isArray(err?.error?.message) ? err.error.message[0] : null)
-          ?? 'Could not submit withdrawal. Please try again or contact support.';
+        const msg = err?.status === 403
+          ? "You're not yet eligible to withdraw."
+          : (err?.error?.message ?? (Array.isArray(err?.error?.message) ? err.error.message[0] : null)
+            ?? 'Could not submit withdrawal. Please try again or contact support.');
         this.modalService.open('error', 'Withdrawal Failed', msg);
         throw err;
       })
@@ -297,6 +329,13 @@ export class WalletService {
           throw err;
         })
       );
+  }
+
+  /** GET /withdrawals/{id} - fetch a single withdrawal by id */
+  fetchWithdrawalById(id: string): Observable<WithdrawalRequest> {
+    return this.api.get<Record<string, unknown>>(`withdrawals/${id}`).pipe(
+      map(raw => this.mapApiWithdrawalToWithdrawal(raw as Record<string, unknown>))
+    );
   }
 
   /** GET /wallets/autoship/status */

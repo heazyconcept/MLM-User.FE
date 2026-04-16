@@ -12,9 +12,9 @@ export interface ValidateReferralResponse {
 }
 
 export interface ReferralInfo {
-  referralCode: string;
+  referralUsername: string;
   referrerName?: string;
-  referrerEmail?: string;
+  referrerEmail?: string | null;
 }
 
 export interface SponsorInfo {
@@ -41,14 +41,14 @@ export interface PlacementInfo {
 export interface PlacementParent {
   userId: string;
   username: string;
-  email: string;
+  email?: string;
 }
 
 export interface DownlineItem {
   id: string;
   username: string;
   fullName: string;
-  email: string;
+  email?: string;
   joinDate: Date;
   status: 'active' | 'inactive';
   level: number;
@@ -61,7 +61,7 @@ export interface DownlineItem {
 }
 
 export interface CreateReferralRequest {
-  email: string;
+  email?: string;
   username: string;
   password: string;
   package: string;
@@ -71,7 +71,7 @@ export interface CreateReferralRequest {
 
 export interface CreateReferralResponse {
   userId: string;
-  email: string;
+  email?: string;
 }
 
 // ── Service ─────────────────────────────────────────────────────────
@@ -83,13 +83,13 @@ export class ReferralService {
   private api = inject(ApiService);
 
   /** POST /referrals/validate */
-  validateReferralCode(code: string): Observable<ValidateReferralResponse> {
-    if (!code?.trim()) {
+  validateReferralUsername(username: string): Observable<ValidateReferralResponse> {
+    if (!username?.trim()) {
       return of({ valid: false });
     }
     return this.api
       .post<Record<string, unknown>>('referrals/validate', {
-        referralCode: code.trim()
+        referralUsername: username.trim()
       })
       .pipe(
         map((res) => ({
@@ -100,15 +100,20 @@ export class ReferralService {
       );
   }
 
-  /** GET /users/me/referral – fetch the current user's referral code & referrer info */
+  /** GET /users/me/referral – fetch current referral username & referrer info */
   getReferralInfo(): Observable<ReferralInfo> {
     return this.api.get<Record<string, unknown>>('users/me/referral').pipe(
       map((res) => ({
-        referralCode: String(res['referralCode'] ?? res['referral_code'] ?? ''),
+        referralUsername: String(
+          res['referralUsername'] ??
+          res['referral_username'] ??
+          res['username'] ??
+          ''
+        ).trim(),
         referrerName: (res['referrerName'] ?? res['referrer_name']) as string | undefined,
-        referrerEmail: (res['referrerEmail'] ?? res['referrer_email']) as string | undefined
+        referrerEmail: (res['referrerEmail'] ?? res['referrer_email']) as string | null | undefined
       })),
-      catchError(() => of({ referralCode: '' }))
+      catchError(() => of({ referralUsername: '' }))
     );
   }
 
@@ -193,7 +198,7 @@ export class ReferralService {
         return arr.map((item) => ({
           userId: String(item['userId'] ?? item['user_id'] ?? ''),
           username: String(item['username'] ?? ''),
-          email: String(item['email'] ?? '')
+          email: (item['email'] as string | undefined) ?? undefined
         }));
       }),
       catchError(() => of([]))
@@ -203,19 +208,21 @@ export class ReferralService {
   /** POST /referrals/create */
   createReferral(request: CreateReferralRequest): Observable<CreateReferralResponse> {
     const body: Record<string, unknown> = {
-      email: request.email,
       username: request.username,
       password: request.password,
       package: request.package,
       currency: request.currency
     };
+    if (request.email?.trim()) {
+      body['email'] = request.email.trim();
+    }
     if (request.placementParentUserId) {
       body['placementParentUserId'] = request.placementParentUserId;
     }
     return this.api.post<Record<string, unknown>>('referrals/create', body).pipe(
       map((res) => ({
         userId: String(res['userId'] ?? res['user_id'] ?? ''),
-        email: String(res['email'] ?? request.email)
+        email: (res['email'] as string | undefined) ?? request.email
       }))
     );
   }
@@ -235,7 +242,7 @@ export class ReferralService {
     return {
       id: String(raw['id'] ?? raw['userId'] ?? raw['user_id'] ?? ''),
       username: String(raw['username'] ?? raw['email'] ?? '—'),
-      email: String(raw['email'] ?? ''),
+      email: (raw['email'] as string | undefined) ?? undefined,
       fullName,
       joinDate,
       status: (isActive ? 'active' : 'inactive') as 'active' | 'inactive',

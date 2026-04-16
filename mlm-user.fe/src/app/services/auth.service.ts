@@ -12,11 +12,11 @@ export interface AuthResponse {
 
 export interface RegisterRequest {
   username: string;
-  email: string;
+  email?: string;
   password: string;
   package: string;
   currency: string;
-  referralCode?: string;
+  referralUsername?: string;
   placementParentUserId?: string;
 }
 

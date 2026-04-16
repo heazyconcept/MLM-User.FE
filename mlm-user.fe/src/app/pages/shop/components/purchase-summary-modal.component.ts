@@ -30,6 +30,10 @@ export class PurchaseSummaryModalComponent {
     return this.product.pv * this.quantity;
   }
 
+  get totalCPV(): number {
+    return this.product.cpv * this.quantity;
+  }
+
   onConfirm(): void {
     this.isProcessing.set(true);
     setTimeout(() => {

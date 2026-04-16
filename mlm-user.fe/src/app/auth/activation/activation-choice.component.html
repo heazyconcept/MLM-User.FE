@@ -35,15 +35,6 @@
         </p>
       </div>
 
-      <!-- Voucher credit preview -->
-      <div class="bg-green-50 rounded-xl p-4 mb-6">
-        <p class="text-xs font-medium text-green-800 mb-1">Product Voucher on activation</p>
-        <p class="text-sm font-semibold text-green-900">
-          {{ formatAmount(voucherCreditAmount(), userCurrency()) }}
-          <span class="text-xs font-normal text-green-700">(60% of registration fee &rarr; Voucher wallet)</span>
-        </p>
-      </div>
-
       <div class="flex flex-col gap-3 mb-6">
         <!-- Fund via Paystack -->
         @if (!canActivate()) {
@@ -94,8 +85,8 @@
       </div>
 
       <p class="text-center">
-        <a routerLink="/onboarding/profile" class="text-slate-500 text-sm hover:text-mlm-primary">
-          Skip for now &mdash; complete profile first
+        <a routerLink="/dashboard" class="text-slate-500 text-sm hover:text-mlm-primary">
+          Skip for now &mdash; continue from your dashboard
         </a>
       </p>
     }

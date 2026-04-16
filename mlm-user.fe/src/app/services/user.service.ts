@@ -8,6 +8,7 @@ export type KycStatus = 'PENDING' | 'VERIFIED' | 'REJECTED';
 
 export interface User {
   id: string;
+  username?: string;
   email: string;
   firstName: string;
   lastName: string;
@@ -122,6 +123,7 @@ export class UserService {
 
     return {
       id: String(apiUser['id'] ?? ''),
+      username: (apiUser['username'] as string | undefined) ?? undefined,
       email: String(apiUser['email'] ?? ''),
       firstName: String(apiUser['firstName'] ?? apiUser['first_name'] ?? ''),
       lastName: String(apiUser['lastName'] ?? apiUser['last_name'] ?? ''),

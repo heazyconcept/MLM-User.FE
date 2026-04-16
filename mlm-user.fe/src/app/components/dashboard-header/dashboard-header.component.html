@@ -75,10 +75,21 @@
                     <p class="text-sm font-semibold text-mlm-text">{{ n.title }}</p>
                     <p class="text-xs text-mlm-secondary mt-0.5 leading-relaxed">{{ n.message }}</p>
                   </div>
-                  <span
-                    class="text-[10px] font-medium text-mlm-secondary whitespace-nowrap shrink-0"
-                    >{{ n.timestamp | date: 'shortTime' }}</span
-                  >
+                  <div class="flex flex-col items-end gap-1 shrink-0">
+                    <button
+                      type="button"
+                      (click)="dismissNotification(n.id)"
+                      class="h-6 w-6 inline-flex items-center justify-center rounded-md text-gray-400 hover:text-mlm-error hover:bg-red-50 transition-colors"
+                      aria-label="Remove notification from drawer"
+                      title="Remove"
+                    >
+                      <i class="pi pi-times text-[10px]"></i>
+                    </button>
+                    <span
+                      class="text-[10px] font-medium text-mlm-secondary whitespace-nowrap"
+                      >{{ n.timestamp | date: 'shortTime' }}</span
+                    >
+                  </div>
                 </div>
               </div>
             } @empty {

@@ -14,6 +14,8 @@ import { getRequiredAmount, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, NGN_TO_USD_RATE
 
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const REGISTRATION_FUNDING_FLOW = 'registration_funding';
+/** After Paystack return, payment-callback navigates here if set (e.g. Create Referral flow). */
+const REGISTRATION_FUND_RETURN_PATH_KEY = 'mlm_registration_fund_return_path';
 
 type ProviderOption = 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT';
 
@@ -270,6 +272,12 @@ export class RegistrationFundingComponent {
           // Gateway redirect (Paystack/Flutterwave)
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem(PAYMENT_FLOW_KEY, REGISTRATION_FUNDING_FLOW);
+            const returnPath = this.config.data?.['returnAfterFundingUrl'] as string | undefined;
+            if (returnPath?.startsWith('/')) {
+              sessionStorage.setItem(REGISTRATION_FUND_RETURN_PATH_KEY, returnPath);
+            } else {
+              sessionStorage.removeItem(REGISTRATION_FUND_RETURN_PATH_KEY);
+            }
           }
           window.location.href = gatewayUrl;
         } else if (res.reference) {
@@ -302,7 +310,14 @@ export class RegistrationFundingComponent {
         this.isVerifying.set(false);
         this.walletService.fetchWallets().subscribe();
         this.ref.close(true);
-        this.router.navigate(['/wallet'], { queryParams: { funded: 'true' } });
+        const returnPath =
+          (this.config.data?.['returnAfterFundingUrl'] as string | undefined) ?? '/wallet';
+        const path = returnPath.startsWith('/') ? returnPath : '/wallet';
+        if (path === '/wallet') {
+          void this.router.navigate(['/wallet'], { queryParams: { funded: 'true' } });
+        } else {
+          void this.router.navigateByUrl(`${path}?registrationFunded=true`);
+        }
       },
       error: (err) => {
         this.isVerifying.set(false);

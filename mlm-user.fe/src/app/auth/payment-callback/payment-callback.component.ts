@@ -8,6 +8,8 @@ import { WalletService } from '../../services/wallet.service';
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const WALLET_FUNDING_FLOW = 'wallet_funding';
 const REGISTRATION_FUNDING_FLOW = 'registration_funding';
+/** Set by RegistrationFundingComponent when funding from a contextual flow (e.g. Create Referral). */
+const REGISTRATION_FUND_RETURN_PATH_KEY = 'mlm_registration_fund_return_path';
 
 @Component({
   selector: 'app-payment-callback',
@@ -68,7 +70,19 @@ export class PaymentCallbackComponent implements OnInit {
             this.successMessage.set(msg);
             this.cdr.markForCheck();
             this.walletService.fetchWallets().subscribe();
-            setTimeout(() => this.router.navigate(['/wallet'], { queryParams: { funded: 'true' } }), 1500);
+            setTimeout(() => {
+              if (paymentFlow === REGISTRATION_FUNDING_FLOW && typeof sessionStorage !== 'undefined') {
+                const returnPath = sessionStorage.getItem(REGISTRATION_FUND_RETURN_PATH_KEY);
+                sessionStorage.removeItem(REGISTRATION_FUND_RETURN_PATH_KEY);
+                if (returnPath?.startsWith('/')) {
+                  void this.router.navigateByUrl(
+                    `${returnPath}?registrationFunded=true`
+                  );
+                  return;
+                }
+              }
+              void this.router.navigate(['/wallet'], { queryParams: { funded: 'true' } });
+            }, 1500);
             return;
           }
         }

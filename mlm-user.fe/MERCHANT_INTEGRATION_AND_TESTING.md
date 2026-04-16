@@ -100,8 +100,9 @@ Use the normal user JWT (registration paid). Do not use admin for apply/pay.
 | 2.1 | **Get category config (public)** — `GET /merchants/category-config` (no auth). | Response: `{ "configs": [ ... ] }` with same structure as admin GET. Frontend will use this to show fee and “You will receive: …”. |
 | 2.2 | **Apply as merchant** — `POST /merchants/apply` with body e.g. `{ "type": "REGIONAL", "serviceAreas": ["Lagos"] }`. | Response: `201`, merchant object with `status: "PENDING"`, `type`, `serviceAreas`. Store `merchant.id` for later. |
 | 2.3 | **Get my merchant profile** — `GET /merchants/me`. | Response: same merchant with `status: "PENDING"`. |
-| 2.4 | **Pay merchant fee** — `POST /merchants/merchant-fee/initiate` with body e.g. `{ "source": "REGISTRATION_WALLET" }` or `"CASH_WALLET"` (ensure user has enough balance). If using Paystack: `{ "source": "PAYSTACK", "callbackUrl": "https://..." }` and then redirect user to `response.gatewayUrl`. | For wallet: `200` and fee deducted. For Paystack: redirect, pay, return to callbackUrl; backend verifies via webhook/callback. Then `GET /merchants/me` (or admin GET merchant) shows fee as paid if your API exposes it. |
-| 2.5 | **Confirm state** — Call `GET /merchants/me` again. | Merchant still `PENDING`; ready for admin to approve or reject. |
+| 2.4 | **Pay merchant fee** — `POST /merchants/merchant-fee/initiate` with body e.g. `{ "source": "REGISTRATION_WALLET" }` or `"CASH_WALLET"` (ensure user has enough balance). If using Paystack: `{ "source": "PAYSTACK", "callbackUrl": "https://..." }` and then redirect user to `response.gatewayUrl`. | Wallet: `200`, fee is marked paid immediately. Paystack: redirect and return to callbackUrl with `reference`. |
+| 2.5 | **Gateway verify (Paystack only)** — `POST /merchants/merchant-fee/verify` with `{ "reference": "..." }` after redirect back from gateway. | `200` marks fee paid. If verify is skipped or payment failed/cancelled, fee is not considered paid. |
+| 2.6 | **Confirm state** — Call `GET /merchants/me` again. | Merchant still `PENDING`; ready for admin to approve or reject; fee-paid state should now be visible for wallet or verified gateway payments. |
 
 **Exit condition:** One merchant in status PENDING and (if your flow requires it) fee paid. Admin can now list pending merchants and approve/reject.
 

@@ -57,6 +57,7 @@ export class PreferencesComponent implements OnInit {
     }
 
     // Then try to load saved preferences (overrides the above if they exist)
+    this.loadingService.show();
     this.onboardingService.getPreferences().subscribe({
       next: (data) => {
         const lang = (data['preferredLanguage'] ?? data['preferred_language']) as string | undefined;
@@ -67,8 +68,11 @@ export class PreferencesComponent implements OnInit {
             currency: currency ?? registrationCurrency ?? 'USD'
           });
         }
+        this.loadingService.hide();
       },
-      error: () => {}
+      error: () => {
+        this.loadingService.hide();
+      }
     });
   }
 
@@ -92,11 +96,10 @@ export class PreferencesComponent implements OnInit {
     this.onboardingService.updatePreferences(payload).subscribe({
       next: () => {
         this.loadingService.hide();
-        const isPaid = this.userService.isPaid();
-        const redirectPath = isPaid ? '/dashboard' : '/auth/activation';
-        const message = isPaid
+        const redirectPath = '/dashboard';
+        const message = this.userService.isPaid()
           ? 'Your profile has been successfully set up. You are now ready to explore your dashboard.'
-          : 'Your profile has been set up. Complete your activation to unlock all features.';
+          : 'Your preferences were saved. Complete activation from your dashboard when you are ready to unlock all features.';
         this.modalService.open('success', 'Setup Complete!', message, redirectPath);
         this.userService.fetchProfile().subscribe({
           next: () => {},

@@ -6,8 +6,14 @@ import { PasswordModule } from 'primeng/password';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { MessageModule } from 'primeng/message';
-import { DynamicDialogRef, DynamicDialogModule, DynamicDialogConfig } from 'primeng/dynamicdialog';
+import {
+  DynamicDialogRef,
+  DynamicDialogModule,
+  DynamicDialogConfig,
+  DialogService
+} from 'primeng/dynamicdialog';
 import { ReferralService, CreateReferralRequest, PlacementParent } from '../../../services/referral.service';
+import { RegistrationFundingComponent } from '../../wallet/registration-funding/registration-funding.component';
 import { WalletService } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
 import { NetworkService } from '../../../services/network.service';
@@ -53,13 +59,27 @@ const CURRENCY_OPTIONS = [
             <span class="text-red-600 font-semibold"> — Insufficient balance</span>
           }
         </p>
+        @if (hasInsufficientBalance()) {
+          <div class="mt-3 pt-3 border-t border-blue-200">
+            <p class="text-[11px] text-blue-800 mb-2">Fund your registration wallet using the same options as on the Wallet page.</p>
+            <p-button
+              type="button"
+              label="Fund registration wallet"
+              icon="pi pi-wallet"
+              styleClass="w-full"
+              [outlined]="false"
+              (onClick)="openRegistrationFundingDialog()"
+              [disabled]="isSubmitting()">
+            </p-button>
+          </div>
+        }
       </div>
 
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
 
         <!-- Email -->
         <div class="flex flex-col gap-1.5">
-          <label for="cr-email" class="text-sm font-semibold text-gray-700">Email</label>
+          <label for="cr-email" class="text-sm font-semibold text-gray-700">Email <span class="text-gray-500 font-normal">(optional)</span></label>
           <input pInputText formControlName="email" id="cr-email" type="email" placeholder="newuser&#64;example.com" class="w-full" />
           @if (form.get('email')?.invalid && form.get('email')?.touched) {
             <small class="text-red-500 text-xs">Please enter a valid email address.</small>
@@ -160,6 +180,7 @@ const CURRENCY_OPTIONS = [
 })
 export class CreateReferralComponent implements OnInit {
   private ref = inject(DynamicDialogRef);
+  private dialogService = inject(DialogService);
   private fb = inject(FormBuilder);
   private referralService = inject(ReferralService);
   private walletService = inject(WalletService);
@@ -194,7 +215,7 @@ export class CreateReferralComponent implements OnInit {
   placementParentOptions = computed(() =>
     this.placementParents().map(p => ({
       value: p.userId,
-      label: `${p.username} (${p.email})`
+      label: p.email ? `${p.username} (${p.email})` : p.username
     }))
   );
 
@@ -230,6 +251,22 @@ export class CreateReferralComponent implements OnInit {
     this.walletService.fetchWallets().subscribe();
   }
 
+  /** Same flow as Wallet page → Fund Registration Wallet (nested above this dialog). */
+  openRegistrationFundingDialog(): void {
+    const returnAfterFundingUrl =
+      (this.config.data?.['returnUrl'] as string | undefined) ?? '/network';
+    const fundingRef = this.dialogService.open(RegistrationFundingComponent, {
+      header: 'Fund Registration Wallet',
+      width: '480px',
+      contentStyle: { 'max-height': '650px', overflow: 'auto' },
+      baseZIndex: 11000,
+      data: { returnAfterFundingUrl }
+    });
+    fundingRef?.onClose.subscribe(() => {
+      this.walletService.fetchWallets().subscribe();
+    });
+  }
+
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -242,8 +279,11 @@ export class CreateReferralComponent implements OnInit {
     this.isSubmitting.set(true);
     this.formError.set('');
 
+    const emailTrim = typeof email === 'string' ? email.trim() : '';
     const request: CreateReferralRequest = {
-      email, username, password,
+      ...(emailTrim ? { email: emailTrim } : {}),
+      username,
+      password,
       package: pkg,
       currency,
       ...(placementParentUserId ? { placementParentUserId } : {})

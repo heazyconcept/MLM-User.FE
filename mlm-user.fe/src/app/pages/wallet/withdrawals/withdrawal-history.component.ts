@@ -32,8 +32,19 @@ export class WithdrawalHistoryComponent implements OnInit {
     { label: 'All Status', value: null },
     { label: 'Pending', value: 'Pending' },
     { label: 'Approved', value: 'Approved' },
+    { label: 'Paid', value: 'Paid' },
     { label: 'Rejected', value: 'Rejected' }
   ];
+
+  /** User profile bank details for fallback when API does not return bank info */
+  userProfileBank = computed(() => {
+    const user = this.userService.currentUser();
+    return {
+      bankName: user?.bankName ?? '',
+      accountNumber: user?.accountNumber ?? '',
+      accountName: user?.accountName ?? ''
+    };
+  });
 
   // Get user's currency
   currency = computed(() => this.userService.currentUser()?.currency || 'NGN');
@@ -63,10 +74,10 @@ export class WithdrawalHistoryComponent implements OnInit {
     return this.pendingWithdrawals().reduce((sum, w) => sum + w.amount, 0);
   });
 
-  // Total withdrawn (approved)
+  // Total withdrawn (approved + paid)
   totalWithdrawn = computed(() => {
     return this.withdrawals()
-      .filter(w => w.status === 'Approved')
+      .filter(w => w.status === 'Approved' || w.status === 'Paid')
       .reduce((sum, w) => sum + w.amount, 0);
   });
 
@@ -89,10 +100,30 @@ export class WithdrawalHistoryComponent implements OnInit {
   getStatusClass(status: string): string {
     switch (status) {
       case 'Approved': return 'bg-green-100 text-green-700';
+      case 'Paid': return 'bg-green-100 text-green-700';
       case 'Pending': return 'bg-amber-100 text-amber-700';
       case 'Rejected': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
+  }
+
+  viewDetail(id: string) {
+    this.router.navigate(['/withdrawals', id]);
+  }
+
+  /** Bank display for a withdrawal: API data or user profile fallback, or "On file" */
+  getBankDisplay(w: WithdrawalRequest): { line1: string; line2: string } {
+    const profile = this.userProfileBank();
+    const bankName = w.bankName || profile.bankName;
+    const accountNumber = w.accountNumber || profile.accountNumber;
+    const accountName = w.accountName || profile.accountName;
+    if (bankName || accountNumber || accountName) {
+      return {
+        line1: bankName || '—',
+        line2: accountNumber && accountName ? `${accountNumber} • ${accountName}` : (accountNumber || accountName || '—')
+      };
+    }
+    return { line1: 'On file', line2: '—' };
   }
 
   onStatusFilterChange(event: any) {
