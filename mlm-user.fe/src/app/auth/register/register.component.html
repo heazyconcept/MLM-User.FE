@@ -202,8 +202,12 @@
                                     <i class="pi pi-times text-red-500 absolute right-3 top-1/2 -translate-y-1/2 text-sm"></i>
                                 }
                             </div>
-                            @if (referralValidating()) {
-                                <small class="text-slate-500 text-xs mt-1">Checking username…</small>
+                            @if (getReferralValidationMessage(); as referralMessage) {
+                                <small
+                                    class="text-xs mt-1"
+                                    [class]="referralValid() === false ? 'text-red-500' : (referralValid() === true ? 'text-mlm-success' : 'text-slate-500')">
+                                    {{ referralMessage }}
+                                </small>
                             }
                         </div>
 
@@ -237,7 +241,7 @@
                         </button>
                     } @else {
                         <button type="submit"
-                            [disabled]="!registerForm.valid || loadingService.isLoading()"
+                            [disabled]="!registerForm.valid || loadingService.isLoading() || referralValidating()"
                             class="btn-primary">
                             @if (loadingService.isLoading()) {
                                 <i class="pi pi-spin pi-spinner text-sm"></i>
