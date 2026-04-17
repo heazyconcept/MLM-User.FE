@@ -31,17 +31,19 @@ jobs:
         env:
           CI: true
 
-      - name: Deploy to cPanel via SFTP
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.CPANEL_HOST }}
-          username: ${{ secrets.CPANEL_USERNAME }}
-          password: ${{ secrets.CPANEL_PASSWORD }}
-          port: ${{ secrets.CPANEL_PORT }}
-          source: "mlm-user.fe/dist/mlm-user.fe/*"
-          target: ${{ secrets.CPANEL_TARGET_DIR }}
-          strip_components: 1
-          overwrite: true
-
-      - name: Show deployed files
-        run: echo "Deployment completed successfully to ${{ secrets.CPANEL_HOST }}"
+      - name: Deploy to cPanel via FTP
+        env:
+          FTP_HOST: ${{ secrets.CPANEL_HOST }}
+          FTP_USER: ${{ secrets.CPANEL_USERNAME }}
+          FTP_PASS: ${{ secrets.CPANEL_PASSWORD }}
+          FTP_TARGET: ${{ secrets.CPANEL_TARGET_DIR }}
+        run: |
+          apt-get update && apt-get install -y lftp
+          lftp -c "
+            open ftp://$FTP_USER:$FTP_PASS@$FTP_HOST:21
+            set ftp:ssl-allow no
+            mkdir -p $FTP_TARGET
+            cd $FTP_TARGET
+            mirror -R --reverse mlm-user.fe/dist/mlm-user.fe/ ./
+            bye
+          "
