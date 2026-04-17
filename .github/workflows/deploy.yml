@@ -32,18 +32,10 @@ jobs:
           CI: true
 
       - name: Deploy to cPanel via FTP
-        env:
-          FTP_HOST: ${{ secrets.CPANEL_HOST }}
-          FTP_USER: ${{ secrets.CPANEL_USERNAME }}
-          FTP_PASS: ${{ secrets.CPANEL_PASSWORD }}
-          FTP_TARGET: ${{ secrets.CPANEL_TARGET_DIR }}
-        run: |
-          apt-get update && apt-get install -y lftp
-          lftp -c "
-            open ftp://$FTP_USER:$FTP_PASS@$FTP_HOST:21
-            set ftp:ssl-allow no
-            mkdir -p $FTP_TARGET
-            cd $FTP_TARGET
-            mirror -R --reverse mlm-user.fe/dist/mlm-user.fe/ ./
-            bye
-          "
+        uses: SamDecrock/github-action-ftp-uploader@main
+        with:
+          host: ${{ secrets.CPANEL_HOST }}
+          user: ${{ secrets.CPANEL_USERNAME }}
+          password: ${{ secrets.CPANEL_PASSWORD }}
+          local_dir: mlm-user.fe/dist/mlm-user.fe
+          remote_dir: ${{ secrets.CPANEL_TARGET_DIR }}
