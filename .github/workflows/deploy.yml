@@ -32,10 +32,10 @@ jobs:
           CI: true
 
       - name: Deploy to cPanel via FTP
-        uses: SamDecrock/github-action-ftp-uploader@main
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
-          host: ${{ secrets.CPANEL_HOST }}
-          user: ${{ secrets.CPANEL_USERNAME }}
+          server: ${{ secrets.CPANEL_HOST }}
+          username: ${{ secrets.CPANEL_USERNAME }}
           password: ${{ secrets.CPANEL_PASSWORD }}
-          local_dir: mlm-user.fe/dist/mlm-user.fe
-          remote_dir: ${{ secrets.CPANEL_TARGET_DIR }}
+          local-dir: mlm-user.fe/dist/mlm-user.fe/
+          server-dir: ${{ secrets.CPANEL_TARGET_DIR }}/
