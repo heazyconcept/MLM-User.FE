@@ -218,6 +218,15 @@ export class RegisterComponent implements OnInit {
     return null;
   }
 
+  getReferralValidationMessage(): string | null {
+    const referralUsername = this.registerForm.get('referralUsername')?.value?.trim();
+    if (!referralUsername) return null;
+    if (this.referralValidating()) return 'Checking username...';
+    if (this.referralValid() === false) return 'Referral username not found. Please check and try again.';
+    if (this.referralValid() === true) return 'Referral username verified.';
+    return null;
+  }
+
 
 
   passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
