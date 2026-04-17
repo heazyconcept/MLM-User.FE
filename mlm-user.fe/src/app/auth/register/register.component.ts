@@ -6,7 +6,7 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
 import { environment } from '../../../environments/environment';
-import { NGN_TO_USD_RATE, REGISTRATION_FEE_NGN } from '../../core/constants/registration.constants';
+import { NGN_TO_USD_RATE, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN } from '../../core/constants/registration.constants';
 import { AuthService, type RegisterRequest } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { ReferralService } from '../../services/referral.service';
@@ -180,21 +180,18 @@ export class RegisterComponent implements OnInit {
   });
 
   private getPackagePriceLabel(packageCode: string, currency: string): string {
-    const amountNgn = REGISTRATION_FEE_NGN[packageCode] ?? REGISTRATION_FEE_NGN['NICKEL'];
+    const registrationFeeNgn = REGISTRATION_FEE_NGN[packageCode] ?? REGISTRATION_FEE_NGN['NICKEL'];
+    const adminFeeNgn = ADMIN_FEE_NGN[packageCode] ?? ADMIN_FEE_NGN['NICKEL'];
+    const totalNgn = registrationFeeNgn + adminFeeNgn;
+
     if (currency === 'USD') {
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0
-      }).format(amountNgn / NGN_TO_USD_RATE);
+      const registrationFeeUsd = Math.round(registrationFeeNgn / NGN_TO_USD_RATE);
+      const adminFeeUsd = Math.round(adminFeeNgn / NGN_TO_USD_RATE);
+      const totalUsd = registrationFeeUsd + adminFeeUsd;
+      return `$${registrationFeeUsd.toLocaleString()} + $${adminFeeUsd.toLocaleString()} (admin fee) = $${totalUsd.toLocaleString()}`;
     }
 
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
-      currencyDisplay: 'narrowSymbol',
-      maximumFractionDigits: 0
-    }).format(amountNgn);
+    return `₦${registrationFeeNgn.toLocaleString()} + ₦${adminFeeNgn.toLocaleString()} (admin fee) = ₦${totalNgn.toLocaleString()}`;
   }
 
   passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {
