@@ -1,0 +1,47 @@
+name: Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mlm-user.fe/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./mlm-user.fe
+        run: npm ci
+
+      - name: Build application
+        working-directory: ./mlm-user.fe
+        run: npm run build
+        env:
+          CI: true
+
+      - name: Deploy to cPanel via SFTP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.CPANEL_HOST }}
+          username: ${{ secrets.CPANEL_USERNAME }}
+          password: ${{ secrets.CPANEL_PASSWORD }}
+          port: ${{ secrets.CPANEL_PORT }}
+          source: "mlm-user.fe/dist/mlm-user.fe/*"
+          target: ${{ secrets.CPANEL_TARGET_DIR }}
+          strip_components: 1
+          overwrite: true
+
+      - name: Show deployed files
+        run: echo "Deployment completed successfully to ${{ secrets.CPANEL_HOST }}"
