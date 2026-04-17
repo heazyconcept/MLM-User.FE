@@ -102,20 +102,20 @@ export class CommissionService {
 
   getSummary(currency: 'NGN' | 'USD') {
     return computed(() => {
-      const summary = this.earningsService.earningsSummary();
       const list = this.earningsService.earningsList();
       const filtered = list.filter((e) => e.currency === currency);
       const approved = filtered.filter((e) => e.status === 'Approved');
       const pending = filtered.filter((e) => e.status === 'Pending');
+      const total = filtered.reduce((acc, curr) => acc + curr.amount, 0);
       return {
-        totalEarnings: summary.totalEarnings || approved.reduce((acc, curr) => acc + curr.amount, 0),
+        totalEarnings: total,
         pendingCommissions: pending.reduce((acc, curr) => acc + curr.amount, 0),
         approvedCommissions: approved.reduce((acc, curr) => acc + curr.amount, 0),
         withdrawnAmount: 0,
-        directReferralBonus: summary.directReferralBonus ?? approved.filter((e) => e.type === 'Direct Referral').reduce((acc, curr) => acc + curr.amount, 0),
-        communityBonus: summary.communityBonus ?? approved.filter((e) => e.type === 'Community Bonus').reduce((acc, curr) => acc + curr.amount, 0),
-        productBonus: summary.productBonus ?? approved.filter((e) => e.type === 'Product Bonus').reduce((acc, curr) => acc + curr.amount, 0),
-        matchingBonus: summary.matchingBonus ?? approved.filter((e) => e.type === 'Matching Bonus').reduce((acc, curr) => acc + curr.amount, 0),
+        directReferralBonus: approved.filter((e) => e.type === 'Direct Referral').reduce((acc, curr) => acc + curr.amount, 0),
+        communityBonus: approved.filter((e) => e.type === 'Community Bonus').reduce((acc, curr) => acc + curr.amount, 0),
+        productBonus: approved.filter((e) => e.type === 'Product Bonus').reduce((acc, curr) => acc + curr.amount, 0),
+        matchingBonus: approved.filter((e) => e.type === 'Matching Bonus').reduce((acc, curr) => acc + curr.amount, 0),
         pdpaEarnings: approved.filter((e) => e.type === 'PDPA').reduce((acc, curr) => acc + curr.amount, 0),
         cdpaEarnings: approved.filter((e) => e.type === 'CDPA').reduce((acc, curr) => acc + curr.amount, 0),
         directReferrals: approved.filter((e) => e.type === 'Direct Referral').length

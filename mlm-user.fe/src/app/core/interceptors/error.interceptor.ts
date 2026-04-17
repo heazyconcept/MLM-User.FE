@@ -11,6 +11,32 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const authPaths = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/refresh'];
 
+  const getBackendErrorMessage = (payload: unknown): string | null => {
+    if (!payload) return null;
+    if (typeof payload === 'string') return payload;
+
+    if (typeof payload === 'object') {
+      const record = payload as Record<string, unknown>;
+      const messageFields = ['message', 'error', 'detail', 'title'];
+
+      for (const field of messageFields) {
+        const value = record[field];
+        if (typeof value === 'string' && value.trim()) {
+          return value;
+        }
+        if (Array.isArray(value)) {
+          const joined = value
+            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            .join(' ')
+            .trim();
+          if (joined) return joined;
+        }
+      }
+    }
+
+    return null;
+  };
+
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       let errorMessage = 'An unknown error occurred!';
@@ -33,16 +59,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           }
 
           return throwError(() => error);
-        } else if (error.status === 403) {
-          errorMessage = 'You do not have permission to perform this action.';
-        } else if (error.status === 404) {
-          errorMessage = 'Resource not found.';
-        } else if (error.status >= 500) {
-          errorMessage = 'Server error. Please try again later.';
-        } else if (error.error && error.error.message) {
-          const msg = error.error.message;
-          errorMessage = Array.isArray(msg) ? msg.join(' ') : String(msg);
         }
+
+        errorMessage = getBackendErrorMessage(error.error) ?? error.message ?? 'Request failed. Please try again.';
+
         if (error.status === 400 && typeof ngDevMode !== 'undefined' && ngDevMode) {
           console.error('API 400:', error.error);
         }

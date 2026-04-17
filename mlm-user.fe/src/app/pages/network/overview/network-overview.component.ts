@@ -2,7 +2,6 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { NetworkService } from '../../../services/network.service';
-import { StatCardComponent } from '../../../components/stat-card/stat-card.component';
 import { SkeletonModule } from 'primeng/skeleton';
 import { DialogService } from 'primeng/dynamicdialog';
 import { CreateReferralComponent } from '../create-referral/create-referral.component';
@@ -10,7 +9,7 @@ import { CreateReferralComponent } from '../create-referral/create-referral.comp
 @Component({
   selector: 'app-network-overview',
   standalone: true,
-  imports: [CommonModule, RouterModule, StatCardComponent, SkeletonModule],
+  imports: [CommonModule, RouterModule, SkeletonModule],
   providers: [DialogService],
   templateUrl: './network-overview.component.html'
 })
@@ -32,7 +31,7 @@ export class NetworkOverviewComponent implements OnInit {
 
   openCreateReferralDialog(): void {
     this.dialogService.open(CreateReferralComponent, {
-      header: 'Create Referral',
+      header: 'Create Successline',
       width: '520px',
       contentStyle: { 'max-height': '700px', overflow: 'auto' },
       baseZIndex: 10000,

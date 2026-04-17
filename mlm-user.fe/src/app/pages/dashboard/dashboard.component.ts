@@ -104,7 +104,7 @@ export class DashboardComponent implements OnInit {
     const total = summary.totalEarnings || 1;
     return [
       {
-        label: 'Direct Referral',
+        label: 'Direct Successline',
         value: summary.directReferralBonus,
         color: '#49A321',
         pct: Math.round((summary.directReferralBonus / total) * 100),
@@ -135,7 +135,7 @@ export class DashboardComponent implements OnInit {
   readonly phaseOneDashboardEnabled = true;
 
   quickActions: QuickAction[] = [
-    { id: 'create-referral', label: 'Create referral', route: '/network/referrals' },
+    { id: 'create-referral', label: 'Create successline', route: '/network/referrals' },
     { id: 'wallet', label: 'Fund wallet', route: '/wallet' },
     { id: 'withdrawals', label: 'Withdraw', route: '/withdrawals' },
     { id: 'commissions', label: 'View commissions', route: '/commissions' },
