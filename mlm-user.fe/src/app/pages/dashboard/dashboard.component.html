@@ -42,10 +42,7 @@
                 <h1 class="font-extrabold text-mlm-warm-900 tracking-tight text-2xl xl:text-4xl 2xl:text-[2.5rem]">
                   {{ getTimeGreeting() }}, <span class="text-mlm-primary">{{ user.firstName }}</span> 👋
                 </h1>
-                <p class="text-mlm-warm-500 mt-1 text-[13px] xl:text-sm 2xl:text-base">
-                  Your portfolio is up
-                  <strong class="text-mlm-primary">12%</strong> this month
-                </p>
+                
               </div>
             </div>
           }
@@ -285,67 +282,67 @@
           </div>
 
           <!-- Recent Activity (example layout) -->
-          <div class="bg-white rounded-2xl p-6 xl:p-8 2xl:p-10 border border-mlm-warm-200">
-            <div class="flex items-center justify-between mb-5 xl:mb-6 2xl:mb-8">
-              <div>
-                <p class="font-bold text-mlm-warm-900 text-sm xl:text-base 2xl:text-lg">Recent Activity</p>
-                <p class="text-mlm-warm-500 mt-0.5 text-xs xl:text-sm">
-                  Your latest transactions &amp; events
-                </p>
+            <!-- <div class="bg-white rounded-2xl p-6 xl:p-8 2xl:p-10 border border-mlm-warm-200">
+              <div class="flex items-center justify-between mb-5 xl:mb-6 2xl:mb-8">
+                <div>
+                  <p class="font-bold text-mlm-warm-900 text-sm xl:text-base 2xl:text-lg">Recent Activity</p>
+                  <p class="text-mlm-warm-500 mt-0.5 text-xs xl:text-sm">
+                    Your latest transactions &amp; events
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  (click)="navigateTo('wallet')"
+                  class="px-4 py-2 xl:px-5 xl:py-2.5 2xl:px-6 2xl:py-3 rounded-xl text-mlm-warm-600 font-semibold border border-mlm-warm-200 bg-mlm-background text-xs xl:text-sm 2xl:text-base transition-opacity hover:opacity-80"
+                >
+                  View all →
+                </button>
               </div>
-              <button
-                type="button"
-                (click)="navigateTo('wallet')"
-                class="px-4 py-2 xl:px-5 xl:py-2.5 2xl:px-6 2xl:py-3 rounded-xl text-mlm-warm-600 font-semibold border border-mlm-warm-200 bg-mlm-background text-xs xl:text-sm 2xl:text-base transition-opacity hover:opacity-80"
-              >
-                View all →
-              </button>
-            </div>
-            @if (recentActivities().length > 0) {
-              <div class="flex flex-col gap-0.5 xl:gap-1">
-                @for (activity of recentActivities(); track activity.id) {
-                  <div
-                    class="flex items-center gap-3.5 xl:gap-4 px-3 py-3 xl:px-4 xl:py-4 2xl:px-5 2xl:py-5 rounded-xl cursor-pointer hover:bg-mlm-warm-50 transition-colors duration-150"
-                    (click)="navigateToActivity(activity)"
-                  >
+              @if (recentActivities().length > 0) {
+                <div class="flex flex-col gap-0.5 xl:gap-1">
+                  @for (activity of recentActivities(); track activity.id) {
                     <div
-                      class="flex items-center justify-center w-11 h-11 xl:w-12 xl:h-12 2xl:w-14 2xl:h-14 rounded-2xl shrink-0 text-lg xl:text-xl 2xl:text-2xl border"
-                      [style.background]="getActivityBg(activity.type)"
-                      [style.border-color]="getActivityBorder(activity.type)"
+                      class="flex items-center gap-3.5 xl:gap-4 px-3 py-3 xl:px-4 xl:py-4 2xl:px-5 2xl:py-5 rounded-xl cursor-pointer hover:bg-mlm-warm-50 transition-colors duration-150"
+                      (click)="navigateToActivity(activity)"
                     >
-                      <i [class]="'pi ' + activity.icon" class="text-mlm-warm-700"></i>
+                      <div
+                        class="flex items-center justify-center w-11 h-11 xl:w-12 xl:h-12 2xl:w-14 2xl:h-14 rounded-2xl shrink-0 text-lg xl:text-xl 2xl:text-2xl border"
+                        [style.background]="getActivityBg(activity.type)"
+                        [style.border-color]="getActivityBorder(activity.type)"
+                      >
+                        <i [class]="'pi ' + activity.icon" class="text-mlm-warm-700"></i>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-mlm-warm-900 text-[13px] xl:text-sm 2xl:text-base">
+                          {{ activity.title }}
+                        </p>
+                        <p class="text-mlm-warm-500 mt-0.5 text-xs xl:text-sm">{{ activity.description }}</p>
+                      </div>
+                      <div class="text-right shrink-0">
+                        @if (activity.amount != null) {
+                          <span
+                            class="inline-block font-extrabold font-mono rounded-full px-2.5 py-0.5 xl:px-3 xl:py-1 2xl:px-3.5 2xl:py-1 border text-[13px] xl:text-sm 2xl:text-base"
+                            [class.text-mlm-green-700]="isPositiveActivityBadge(activity)"
+                            [class.bg-mlm-green-50]="isPositiveActivityBadge(activity)"
+                            [class.border-mlm-green-200]="isPositiveActivityBadge(activity)"
+                            [class.text-mlm-red-600]="!isPositiveActivityBadge(activity)"
+                            [class.bg-mlm-red-50]="!isPositiveActivityBadge(activity)"
+                            [class.border-mlm-red-200]="!isPositiveActivityBadge(activity)"
+                          >
+                            {{ activityBadge(activity) }}
+                          </span>
+                        }
+                        <p class="text-mlm-warm-400 mt-1 text-[11px] xl:text-xs 2xl:text-sm">
+                          {{ formatActivityDate(activity.date) }}
+                        </p>
+                      </div>
                     </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="font-semibold text-mlm-warm-900 text-[13px] xl:text-sm 2xl:text-base">
-                        {{ activity.title }}
-                      </p>
-                      <p class="text-mlm-warm-500 mt-0.5 text-xs xl:text-sm">{{ activity.description }}</p>
-                    </div>
-                    <div class="text-right shrink-0">
-                      @if (activity.amount != null) {
-                        <span
-                          class="inline-block font-extrabold font-mono rounded-full px-2.5 py-0.5 xl:px-3 xl:py-1 2xl:px-3.5 2xl:py-1 border text-[13px] xl:text-sm 2xl:text-base"
-                          [class.text-mlm-green-700]="isPositiveActivityBadge(activity)"
-                          [class.bg-mlm-green-50]="isPositiveActivityBadge(activity)"
-                          [class.border-mlm-green-200]="isPositiveActivityBadge(activity)"
-                          [class.text-mlm-red-600]="!isPositiveActivityBadge(activity)"
-                          [class.bg-mlm-red-50]="!isPositiveActivityBadge(activity)"
-                          [class.border-mlm-red-200]="!isPositiveActivityBadge(activity)"
-                        >
-                          {{ activityBadge(activity) }}
-                        </span>
-                      }
-                      <p class="text-mlm-warm-400 mt-1 text-[11px] xl:text-xs 2xl:text-sm">
-                        {{ formatActivityDate(activity.date) }}
-                      </p>
-                    </div>
-                  </div>
-                }
-              </div>
-            } @else {
-              <p class="text-sm text-mlm-warm-500 py-8 text-center">No recent activity</p>
-            }
-          </div>
+                  }
+                </div>
+              } @else {
+                <p class="text-sm text-mlm-warm-500 py-8 text-center">No recent activity</p>
+              }
+            </div> -->
         </div>
       </div>
     </main>
