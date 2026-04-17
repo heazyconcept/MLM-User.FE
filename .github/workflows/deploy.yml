@@ -31,11 +31,49 @@ jobs:
         env:
           CI: true
 
+      - name: Clear FTP target (keep .htaccess)
+        env:
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
+          CPANEL_USERNAME: ${{ secrets.CPANEL_USERNAME }}
+          CPANEL_PASSWORD: ${{ secrets.CPANEL_PASSWORD }}
+          CPANEL_TARGET_DIR: ${{ secrets.CPANEL_TARGET_DIR }}
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lftp
+          HT="/tmp/.htaccess.preserve.$$"
+          rm -f "$HT"
+          lftp -c "
+          set ssl:verify-certificate no
+          set net:max-retries 3
+          set net:timeout 30
+          open -u \"${CPANEL_USERNAME}\",\"${CPANEL_PASSWORD}\" ftp://${CPANEL_HOST}
+          cd ${CPANEL_TARGET_DIR}
+          set cmd:fail-exit no
+          get .htaccess -o ${HT}
+          glob -a rm -r *
+          rm -f .ftp-deploy-sync-state.json
+          "
+          if [ -s "$HT" ]; then
+            lftp -c "
+            set ssl:verify-certificate no
+            open -u \"${CPANEL_USERNAME}\",\"${CPANEL_PASSWORD}\" ftp://${CPANEL_HOST}
+            cd ${CPANEL_TARGET_DIR}
+            put ${HT} -o .htaccess
+            "
+          fi
+          rm -f "$HT"
+
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
           server: ${{ secrets.CPANEL_HOST }}
           username: ${{ secrets.CPANEL_USERNAME }}
           password: ${{ secrets.CPANEL_PASSWORD }}
-          local-dir: mlm-user.fe/dist/mlm-user.fe/
+          local-dir: mlm-user.fe/dist/mlm-user.fe/browser/
           server-dir: ${{ secrets.CPANEL_TARGET_DIR }}/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.htaccess
