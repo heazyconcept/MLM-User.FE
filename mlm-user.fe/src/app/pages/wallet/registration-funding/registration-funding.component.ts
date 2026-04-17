@@ -10,7 +10,7 @@ import { DynamicDialogConfig, DynamicDialogRef, DynamicDialogModule } from 'prim
 import { PaymentService } from '../../../services/payment.service';
 import { UserService } from '../../../services/user.service';
 import { WalletService } from '../../../services/wallet.service';
-import { getRequiredAmount, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, NGN_TO_USD_RATE } from '../../../core/constants/registration.constants';
+import { getRequiredAmount } from '../../../core/constants/registration.constants';
 
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const REGISTRATION_FUNDING_FLOW = 'registration_funding';
@@ -27,11 +27,6 @@ const PROVIDER_OPTIONS_NGN: { value: ProviderOption; label: string }[] = [
 const PROVIDER_OPTIONS_USD: { value: ProviderOption; label: string }[] = [
   { value: 'USDT', label: 'USDT (Manual Transfer)' }
 ];
-
-const PACKAGE_OPTIONS = Object.keys(REGISTRATION_FEE_NGN).map(pkg => ({
-  value: pkg,
-  label: pkg.charAt(0) + pkg.slice(1).toLowerCase()
-}));
 
 @Component({
   selector: 'app-registration-funding',
@@ -60,20 +55,6 @@ const PACKAGE_OPTIONS = Object.keys(REGISTRATION_FEE_NGN).map(pkg => ({
         </div>
 
         <form [formGroup]="fundForm" (ngSubmit)="onSubmit()" class="space-y-4">
-
-          <!-- Package -->
-          <div class="flex flex-col gap-1.5">
-            <label for="reg-package" class="text-sm font-semibold text-gray-700">Package</label>
-            <p-select
-              formControlName="package"
-              inputId="reg-package"
-              [options]="packageOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select package"
-              styleClass="w-full">
-            </p-select>
-          </div>
 
           <!-- Amount -->
           <div class="flex flex-col gap-1.5">
@@ -205,7 +186,7 @@ export class RegistrationFundingComponent {
   currency = computed(() => this.userService.displayCurrency());
   currencySymbol = computed(() => (this.currency() === 'NGN' ? '₦' : '$'));
 
-  /** Selected package from the dropdown */
+  /** Package context for this funding flow (fixed for the modal session). */
   selectedPackage = signal(this.userService.currentUser()?.package ?? 'SILVER');
   selectedPackageLabel = computed(() => {
     const pkg = this.selectedPackage();
@@ -218,30 +199,22 @@ export class RegistrationFundingComponent {
     this.currency() === 'NGN' ? PROVIDER_OPTIONS_NGN : PROVIDER_OPTIONS_USD
   );
 
-  packageOptions = PACKAGE_OPTIONS;
-
   fundForm: FormGroup;
 
   constructor() {
-    const defaultPkg = this.userService.currentUser()?.package ?? 'SILVER';
+    const dialogPackage = this.config.data?.['selectedPackage'] as string | undefined;
+    const defaultPkg = (dialogPackage ?? this.userService.currentUser()?.package ?? 'SILVER').toUpperCase();
     const currency = this.userService.displayCurrency();
+    this.selectedPackage.set(defaultPkg);
 
     this.fundForm = this.fb.group({
-      package: [defaultPkg, Validators.required],
       amount: [null as number | null, [Validators.required, Validators.min(1)]],
       provider: [(currency === 'NGN' ? 'PAYSTACK' : 'USDT') as ProviderOption, Validators.required]
     });
 
-    // Pre-fill amount with selected package's required amount
+    // Pre-fill amount with required amount for the fixed package context.
     const amount = getRequiredAmount(defaultPkg, currency);
     this.fundForm.patchValue({ amount });
-
-    // Watch package changes → update selectedPackage signal + amount
-    this.fundForm.get('package')?.valueChanges.subscribe((pkg: string) => {
-      this.selectedPackage.set(pkg);
-      const newAmount = getRequiredAmount(pkg, this.currency());
-      this.fundForm.patchValue({ amount: newAmount }, { emitEvent: false });
-    });
   }
 
   onSubmit(): void {

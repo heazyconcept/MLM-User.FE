@@ -188,10 +188,10 @@ export class RegisterComponent implements OnInit {
       const registrationFeeUsd = Math.round(registrationFeeNgn / NGN_TO_USD_RATE);
       const adminFeeUsd = Math.round(adminFeeNgn / NGN_TO_USD_RATE);
       const totalUsd = registrationFeeUsd + adminFeeUsd;
-      return `$${registrationFeeUsd.toLocaleString()} + $${adminFeeUsd.toLocaleString()} (admin fee) = $${totalUsd.toLocaleString()}`;
+      return `$${totalUsd.toLocaleString()}`;
     }
 
-    return `₦${registrationFeeNgn.toLocaleString()} + ₦${adminFeeNgn.toLocaleString()} (admin fee) = ₦${totalNgn.toLocaleString()}`;
+    return `₦${totalNgn.toLocaleString()}`;
   }
 
   passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {

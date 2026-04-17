@@ -13,14 +13,14 @@
 
           <!-- ─── Header ──────────────────────────────── -->
           <div>
-            <h1 class="text-xl font-medium text-mlm-text tracking-tight">Referral tools</h1>
+            <h1 class="text-xl font-medium text-mlm-text tracking-tight">Successline tools</h1>
             <p class="mt-1 text-sm text-mlm-secondary">Share your unique link to grow your team and earn bonuses.</p>
           </div>
 
           <!-- ─── Empty State ─────────────────────────── -->
           @if (hasNoReferrals()) {
             <div class="border border-mlm-secondary/15 rounded-xl bg-white px-5 py-8 text-center">
-              <p class="text-sm text-mlm-secondary mb-4">No referrals yet. Share your link to invite friends and grow your team.</p>
+              <p class="text-sm text-mlm-secondary mb-4">No successlines yet. Share your link to invite friends and grow your team.</p>
               <div class="flex flex-wrap gap-2 justify-center">
                 <a
                   routerLink="/network/referrals"
@@ -34,7 +34,7 @@
                   (click)="openShareModal()"
                   class="px-4 py-2 text-sm font-medium text-mlm-text border border-mlm-secondary/30 rounded-lg hover:bg-mlm-secondary/5 transition-colors"
                 >
-                  Share referral link
+                  Share successline link
                 </button>
               </div>
             </div>
@@ -44,7 +44,7 @@
           <div class="grid grid-cols-3 divide-x divide-mlm-secondary/15 border border-mlm-secondary/15 rounded-xl overflow-hidden">
 
             <div class="flex flex-col gap-2 p-5 bg-white">
-              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Total referrals</span>
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Total successlines</span>
               <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ summary().directReferrals }}</span>
               <span class="inline-flex items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full w-fit font-medium">
                 ↑ Growing
@@ -60,7 +60,7 @@
             </div>
 
             <div class="flex flex-col gap-2 p-5 bg-white border-t-2 border-t-mlm-primary">
-              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Earnings from referrals</span>
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Earnings from successlines</span>
               <span class="text-3xl font-medium text-mlm-text tabular-nums leading-none">
                 {{ currencySymbol() }}{{ earningsAmount() | number:'1.0-0' }}
               </span>
@@ -77,7 +77,7 @@
             class="border border-mlm-secondary/15 rounded-xl overflow-hidden bg-white"
           >
             <div class="px-5 pt-5 pb-4 border-b border-mlm-secondary/15">
-              <p class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium mb-3">Your referral link</p>
+              <p class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium mb-3">Your successline link</p>
               <div class="flex items-center gap-2">
                 <input
                   [value]="referral().url"
@@ -94,7 +94,7 @@
             </div>
 
             <div class="px-5 py-3.5 flex items-center justify-between">
-              <span class="text-xs text-mlm-secondary">Referral username</span>
+              <span class="text-xs text-mlm-secondary">Successline username</span>
               <span class="text-sm font-mono font-medium text-mlm-primary">{{ referral().referralUsername }}</span>
             </div>
           </div>
@@ -163,7 +163,7 @@
                 </div>
                 <span class="inline-flex items-center gap-1.5 text-[11px] text-green-700 bg-green-50 px-2.5 py-1 rounded-full font-medium">
                   <span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>
-                  Registered via referral link
+                  Registered via successline link
                 </span>
               </div>
             }
@@ -172,7 +172,7 @@
 
           <!-- ─── Tips ────────────────────────────────── -->
           <div>
-            <p class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium mb-3">Tips to get more referrals</p>
+            <p class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium mb-3">Tips to get more successlines</p>
             <div class="border border-mlm-secondary/15 rounded-xl overflow-hidden divide-y divide-mlm-secondary/15">
 
               <div class="flex items-start gap-4 px-5 py-4 bg-white">

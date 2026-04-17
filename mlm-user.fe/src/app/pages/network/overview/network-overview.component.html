@@ -28,7 +28,7 @@
                 (click)="openCreateReferralDialog()"
                 class="px-4 py-2 text-sm font-medium text-mlm-text border border-mlm-secondary/30 rounded-lg hover:bg-mlm-secondary/5 transition-colors"
               >
-                Create referral
+                Create successline
               </button>
               <button
                 [routerLink]="['/network/referrals']"
@@ -53,7 +53,7 @@
 
             <a [routerLink]="['/network/referrals']"
                class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer">
-              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Direct referrals</span>
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Direct successlines</span>
               <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ summary().directReferrals }}</span>
               <span class="inline-flex items-center gap-1 text-[11px] text-mlm-secondary bg-mlm-secondary/10 px-2 py-0.5 rounded-full w-fit font-medium">
                 Active
@@ -115,7 +115,7 @@
                     <dd class="text-sm font-medium text-mlm-text">{{ sponsor()!.sponsorEmail }}</dd>
                   </div>
                   <div class="flex items-center justify-between">
-                    <dt class="text-xs text-mlm-secondary">Referral code</dt>
+                    <dt class="text-xs text-mlm-secondary">Successline code</dt>
                     <dd class="text-sm font-mono font-medium text-mlm-primary">{{ sponsor()!.sponsorReferralCode }}</dd>
                   </div>
                   @if (sponsor()!.sponsorLevel != null) {

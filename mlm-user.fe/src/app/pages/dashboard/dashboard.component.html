@@ -13,7 +13,7 @@
         </p>
       </div>
       <div class="space-y-2 text-sm text-mlm-secondary">
-        <p>Direct Referrals — Earn up to 20% commission</p>
+        <p>Direct Successlines — Earn up to 20% commission</p>
         <p>Community Bonus — Earn as the community grows</p>
       </div>
       <div class="flex flex-wrap justify-center gap-4 text-xs text-mlm-secondary">
@@ -154,36 +154,36 @@
                   </p>
                 </div>
               </div>
-              <div class="py-4 lg:py-0 lg:px-6 border-t lg:border-t-0 lg:border-l border-white/20">
-                <p class="font-bold text-white/80 uppercase mb-3 text-[11px] xl:text-xs 2xl:text-sm tracking-wide">
-                  7-Day Trend
-                </p>
-                <div class="h-14 xl:h-16 2xl:h-20">
-                  <svg viewBox="0 0 200 48" class="w-full h-full" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="dashboardSparkGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#fff" stop-opacity="0.2" />
-                        <stop offset="100%" stop-color="#fff" stop-opacity="0" />
-                      </linearGradient>
-                    </defs>
-                    <polygon [attr.points]="sparklineArea" fill="url(#dashboardSparkGrad)" />
-                    <polyline
-                      [attr.points]="sparklinePoints"
-                      fill="none"
-                      stroke="#fff"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </div>
-                <div class="flex items-center gap-2 mt-3">
-                  <span class="text-white font-bold rounded-full px-2.5 py-0.5 text-xs bg-white/20"
-                    >↑ 12%</span
-                  >
-                  <span class="text-white/80 text-xs">vs last month</span>
-                </div>
-              </div>
+                <!-- <div class="py-4 lg:py-0 lg:px-6 border-t lg:border-t-0 lg:border-l border-white/20">
+                  <p class="font-bold text-white/80 uppercase mb-3 text-[11px] xl:text-xs 2xl:text-sm tracking-wide">
+                    7-Day Trend
+                  </p>
+                  <div class="h-14 xl:h-16 2xl:h-20">
+                    <svg viewBox="0 0 200 48" class="w-full h-full" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="dashboardSparkGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#fff" stop-opacity="0.2" />
+                          <stop offset="100%" stop-color="#fff" stop-opacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <polygon [attr.points]="sparklineArea" fill="url(#dashboardSparkGrad)" />
+                      <polyline
+                        [attr.points]="sparklinePoints"
+                        fill="none"
+                        stroke="#fff"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <div class="flex items-center gap-2 mt-3">
+                    <span class="text-white font-bold rounded-full px-2.5 py-0.5 text-xs bg-white/20"
+                      >↑ 12%</span
+                    >
+                    <span class="text-white/80 text-xs">vs last month</span>
+                  </div>
+                </div> -->
             </div>
           </div>
 
@@ -191,7 +191,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 xl:gap-6 2xl:gap-8 mb-6 xl:mb-8 2xl:mb-10">
             @for (card of statCardsData; track card.label; let i = $index) {
               <div
-                class="rounded-2xl p-5 xl:p-6 2xl:p-8 xl:min-h-[140px] 2xl:min-h-[160px] transition-all duration-300 border border-transparent"
+                class="rounded-2xl p-5 xl:p-6 2xl:p-8 xl:min-h-35 2xl:min-h-[160px] transition-all duration-300 border border-transparent"
                 [style.background]="card.gradient"
                 [style.opacity]="cardsVisible[i] ? '1' : '0'"
                 [style.transform]="cardsVisible[i] ? 'translateY(0)' : 'translateY(12px)'"
