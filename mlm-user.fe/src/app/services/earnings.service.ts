@@ -243,10 +243,6 @@ export class EarningsService {
     // API shape: { totalCpv, lastUpdated, transactions[], milestones[], milestonesAchieved[], cpvCashBonus }
     const totalCpv = Number(raw['totalCpv'] ?? 0);
 
-    // API doesn't split into personal/team — put totalCpv as personal for now
-    const personalCpv = totalCpv;
-    const teamCpv = 0;
-
     const requiredCpv = Number(raw['requiredCpv'] ?? raw['required_cpv'] ?? 0);
     const cycle = String(raw['cycle'] ?? raw['lastUpdated'] ?? '');
     const currentStage = Number(raw['currentStage'] ?? raw['stage'] ?? 0);
@@ -269,14 +265,30 @@ export class EarningsService {
 
     // Map transactions as history (API returns transactions[])
     const rawTxns = (raw['transactions'] ?? raw['history'] ?? []) as Record<string, unknown>[];
-    const history: CpvHistoryDto[] = rawTxns.map((t) => ({
-      date: String(t['createdAt'] ?? t['date'] ?? ''),
-      personalCpv: Number(t['amount'] ?? 0),
-      teamCpv: 0,
-      totalCpv: Number(t['amount'] ?? 0),
-      source: t['source'] ? String(t['source']) : undefined,
-      pvType: t['pvType'] ? String(t['pvType']) : undefined
-    }));
+    const personalSources = new Set(['REGISTRATION', 'PRODUCT_PURCHASE', 'DIRECT_REFERRAL_REGISTRATION']);
+    let personalCpv = 0;
+
+    const history: CpvHistoryDto[] = rawTxns.map((t) => {
+      const amount = Number(t['amount'] ?? 0);
+      const source = String(t['source'] ?? '').toUpperCase().trim();
+      const pvType = String(t['pvType'] ?? '').toUpperCase().trim();
+      const isPersonal = pvType === 'PERSONAL' || personalSources.has(source);
+      const personalAmount = isPersonal ? amount : 0;
+      const communityAmount = isPersonal ? 0 : amount;
+
+      personalCpv += personalAmount;
+
+      return {
+        date: String(t['createdAt'] ?? t['date'] ?? ''),
+        personalCpv: personalAmount,
+        teamCpv: communityAmount,
+        totalCpv: amount,
+        source: t['source'] ? String(t['source']) : undefined,
+        pvType: t['pvType'] ? String(t['pvType']) : undefined
+      };
+    });
+
+    const teamCpv = Math.max(totalCpv - personalCpv, 0);
 
     return {
       personalCpv,
@@ -406,6 +418,9 @@ export class EarningsService {
     const t = type.toUpperCase().trim();
     // Canonical LedgerEarningType enum matches
     switch (t) {
+      case 'REGISTRATION': return 'Registration';
+      case 'DIRECT_REFERRAL_REGISTRATION': return 'Direct Referral PV';
+      case 'PRODUCT_PURCHASE': return 'Product Purchase';
       case 'PDPA': return 'PDPA';
       case 'CDPA': return 'CDPA';
       case 'DIRECT_REFERRAL': return 'Direct Referral';
@@ -426,6 +441,11 @@ export class EarningsService {
       default: break;
     }
     // Fallback: fuzzy matching for any non-canonical strings
+    if (t.includes('DIRECT_REFERRAL_REGISTRATION') || t.includes('DIRECT REFERRAL REGISTRATION')) {
+      return 'Direct Referral PV';
+    }
+    if (t === 'REGISTRATION') return 'Registration';
+    if (t === 'PRODUCT_PURCHASE' || t.includes('PRODUCT PURCHASE')) return 'Product Purchase';
     if (t.includes('DIRECT_REFERRAL') || t.includes('DIRECT REFERRAL')) return 'Direct Referral';
     if (t.includes('PERSONAL_PRODUCT') || t.includes('PERSONAL PRODUCT')) return 'Personal Product Commission';
     if (t.includes('COMMUNITY_PRODUCT') || t.includes('COMMUNITY PRODUCT')) return 'Community Product Commission';

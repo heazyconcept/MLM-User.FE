@@ -40,6 +40,7 @@ export class EarningsOverviewComponent implements OnInit {
     const apiRates = this.settingsService.commissionRules()?.pdpaRates;
     return apiRates?.[pkg] ?? 0;
   });
+  pdpaRatePercent = computed(() => this.pdpaRate() * 100);
   cdpaRate = computed(() => {
     const pkg = this.userService.currentUser()?.package ?? 'NICKEL';
     const apiRates = this.settingsService.commissionRules()?.cdpaRates;
@@ -85,12 +86,29 @@ export class EarningsOverviewComponent implements OnInit {
 
   cpvSummary = this.earningsService.cpvSummary;
 
-  /** Registration PV received at activation (Instant + Community) */
+  /** Registration PV from /earnings/summary (same source used by CPV tab). */
   registrationPv = computed(() => {
     const summary = this.earningsService.earningsSummary();
-    const instant = summary.instantRegistrationPv ?? 0;
+    const registration = summary.instantRegistrationPv ?? 0;
     const community = summary.communityRegistrationPv ?? 0;
-    return { instant, community, total: instant + community };
+    return {
+      registration,
+      community,
+      total: registration + community
+    };
+  });
+
+  /** Direct referral PV from sponsoring new activations. */
+  directReferralPv = computed(() => {
+    const history = this.cpvSummary().history ?? [];
+    if (history.length === 0) {
+      return 0;
+    }
+
+    return history.reduce((sum, entry) => {
+      const source = (entry.source ?? '').toUpperCase().trim();
+      return source === 'DIRECT_REFERRAL_REGISTRATION' ? sum + entry.totalCpv : sum;
+    }, 0);
   });
 
   chartData: any;
