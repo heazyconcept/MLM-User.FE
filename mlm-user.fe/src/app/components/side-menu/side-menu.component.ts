@@ -95,7 +95,7 @@ export class SideMenuComponent {
                 requiresPayment: true,
               },
               {
-                label: 'Referrals',
+                label: 'Successlines',
                 icon: 'pi pi-link',
                 route: '/network/referrals',
                 requiresPayment: true,
