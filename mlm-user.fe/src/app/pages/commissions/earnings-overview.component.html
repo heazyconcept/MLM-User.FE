@@ -115,12 +115,12 @@
         <!-- ─── Daily Allocations ───────────────────── -->
         <div>
           <p class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium mb-3">Daily allocations</p>
-          <div class="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-mlm-secondary/15 border border-mlm-secondary/15 rounded-xl overflow-hidden">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-mlm-secondary/15 border border-mlm-secondary/15 rounded-xl overflow-hidden">
 
             <div class="bg-white px-5 py-4 flex flex-col gap-1">
               <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">PDPA</span>
               <span class="text-[11px] text-mlm-secondary mb-1">Personal Daily Proceeds Allocation</span>
-              <span class="text-2xl font-medium text-mlm-text tabular-nums">{{ pdpaRate() }}%</span>
+              <span class="text-2xl font-medium text-mlm-text tabular-nums">{{ pdpaRatePercent() | number:'1.0-2' }}%</span>
               <span class="text-[11px] text-mlm-secondary">daily rate</span>
               <div class="mt-2 pt-2 border-t border-mlm-secondary/15 flex items-center justify-between">
                 <span class="text-[11px] text-mlm-secondary">Accumulated</span>
@@ -141,12 +141,20 @@
 
             <div class="bg-white px-5 py-4 flex flex-col gap-1">
               <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Registration PV</span>
-              <span class="text-[11px] text-mlm-secondary mb-1">PV received at activation</span>
+              <span class="text-[11px] text-mlm-secondary mb-1">PV from your own activation</span>
               <span class="text-2xl font-medium text-mlm-text tabular-nums">{{ registrationPv().total }} PV</span>
               <div class="mt-2 pt-2 border-t border-mlm-secondary/15 flex items-center gap-2">
-                <span class="text-[11px] text-mlm-secondary">Instant {{ registrationPv().instant }} PV</span>
+                <span class="text-[11px] text-mlm-secondary">Registration {{ registrationPv().registration }} PV</span>
                 <span class="text-[11px] text-mlm-secondary/50">+</span>
                 <span class="text-[11px] text-mlm-secondary">Community {{ registrationPv().community }} PV</span>
+              </div>
+            </div>
+
+            <div class="bg-white px-5 py-4 flex flex-col gap-1">
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Direct referral PV</span>
+               <span class="text-2xl font-medium text-mlm-text tabular-nums">{{ directReferralPv() }} PV</span>
+              <div class="mt-2 pt-2 border-t border-mlm-secondary/15 flex items-center justify-between">
+                
               </div>
             </div>
 
