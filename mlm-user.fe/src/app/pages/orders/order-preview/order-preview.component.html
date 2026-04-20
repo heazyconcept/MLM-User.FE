@@ -1,23 +1,23 @@
-<div class="min-h-screen bg-mlm-background">
-  <main class="py-10">
-    <div class="px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto">
+<div class="bg-mlm-background">
+  <main class="py-4 sm:py-6">
+    <div class="px-0 sm:px-2 max-w-2xl mx-auto">
 
       <!-- Header -->
-      <div class="mb-8">
+      <div class="mb-5 sm:mb-6">
         <p class="text-xs font-bold text-mlm-primary uppercase tracking-[.15em] mb-3">Order Setup</p>
-        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight">Fulfilment Options</h1>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-mlm-text tracking-tight">Fulfilment Options</h1>
         <p class="text-mlm-secondary text-sm mt-2">Choose how you want to receive your order</p>
         <div class="mt-5 h-px bg-linear-to-r from-mlm-primary/20 to-transparent"></div>
       </div>
 
       <!-- Option Cards -->
-      <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
 
         <!-- Pickup -->
         <button
           type="button"
           (click)="setOption('pickup')"
-          class="text-left p-5 rounded-xl border-2 transition-colors focus:outline-none"
+          class="text-left p-4 sm:p-5 rounded-xl border-2 transition-colors focus:outline-none"
           [class]="fulfilmentOption() === 'pickup'
             ? 'border-mlm-primary bg-mlm-primary/5'
             : 'border-gray-200 bg-white'">
@@ -33,7 +33,7 @@
         <button
           type="button"
           (click)="setOption('delivery')"
-          class="text-left p-5 rounded-xl border-2 transition-colors focus:outline-none"
+          class="text-left p-4 sm:p-5 rounded-xl border-2 transition-colors focus:outline-none"
           [class]="fulfilmentOption() === 'delivery'
             ? 'border-mlm-primary bg-mlm-primary/5'
             : 'border-gray-200 bg-white'">
@@ -49,7 +49,7 @@
 
       <!-- Pickup Detail -->
       @if (fulfilmentOption() === 'pickup') {
-        <div class="bg-white border border-gray-100 rounded-xl p-6">
+        <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6">
           <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-4">
             Select Pickup Location
           </p>
@@ -74,11 +74,11 @@
 
       <!-- Delivery Detail -->
       @if (fulfilmentOption() === 'delivery') {
-        <div class="bg-white border border-gray-100 rounded-xl p-6 space-y-5">
+        <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 space-y-5">
 
           <!-- Note -->
           <div class="flex items-start gap-3 p-4 bg-amber-50 rounded-lg border border-amber-100">
-            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 flex-shrink-0"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0"></span>
             <p class="text-xs font-medium text-amber-800 leading-relaxed">
               Delivery cost will be added to your order total.
             </p>
@@ -109,12 +109,12 @@
       }
 
       <!-- Confirm -->
-      <div class="mt-5">
+      <div class="mt-5 pb-1">
         <button
           type="button"
           (click)="onConfirm()"
           [disabled]="!canConfirm()"
-          class="w-full py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+          class="w-full py-3.5 sm:py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
           @if (submitting()) {
             <span class="flex items-center justify-center gap-2">
               <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>

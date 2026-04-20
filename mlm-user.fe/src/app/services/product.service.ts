@@ -25,6 +25,8 @@ export interface Category {
   icon: string;
 }
 
+type WalletType = 'cash' | 'voucher' | 'autoship';
+
 export type SortOption = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'pv-desc';
 
 @Injectable({
@@ -200,7 +202,49 @@ export class ProductService {
           ? item.images.map((img: any) => img.url)
           : ['/assets/images/placeholder.png'],
       inStock: item.status === 'ACTIVE',
-      eligibleWallets: ['cash'],
+      eligibleWallets: this.resolveEligibleWallets(item),
     };
+  }
+
+  private resolveEligibleWallets(item: any): WalletType[] {
+    const candidates = [
+      item?.eligibleWallets,
+      item?.eligibleWalletTypes,
+      item?.availableWallets,
+      item?.allowedWallets,
+      item?.wallets,
+      item?.paymentWallets,
+      item?.currentPrice?.eligibleWallets,
+      item?.currentPrice?.eligibleWalletTypes,
+      item?.currentPrice?.availableWallets,
+      item?.currentPrice?.allowedWallets,
+      item?.currentPrice?.wallets,
+      item?.currentPrice?.paymentWallets,
+    ];
+
+    for (const candidate of candidates) {
+      const normalized = this.normalizeWallets(candidate);
+      if (normalized.length) return normalized;
+    }
+
+    return ['cash', 'voucher', 'autoship'];
+  }
+
+  private normalizeWallets(value: unknown): WalletType[] {
+    if (!Array.isArray(value)) return [];
+
+    const mapped = value
+      .map((entry) => String(entry ?? '').trim().toLowerCase())
+      .map((entry): WalletType | null => {
+        if (entry === 'cash' || entry === 'wallet' || entry === 'cash_wallet') return 'cash';
+        if (entry === 'voucher' || entry === 'product_voucher' || entry === 'voucher_wallet') {
+          return 'voucher';
+        }
+        if (entry === 'autoship' || entry === 'autoship_wallet') return 'autoship';
+        return null;
+      })
+      .filter((wallet): wallet is WalletType => wallet !== null);
+
+    return Array.from(new Set(mapped));
   }
 }

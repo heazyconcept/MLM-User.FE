@@ -190,7 +190,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     this.orderSubmitting.set(true);
     this.orderService.createOrder(payload).subscribe({
       next: (order) => {
-        this.orderService.payOrderWithWallet(order.id).subscribe({
+        this.orderService.payOrderWithWallet(order.id, orderData.wallet).subscribe({
           next: () => {
             this.orderSubmitting.set(false);
             this.fulfilmentDrawerVisible.set(false);
