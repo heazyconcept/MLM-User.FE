@@ -90,10 +90,13 @@ export class CreateReferralComponent implements OnInit {
   packageOptions = PACKAGE_OPTIONS;
   currencyOptions = CURRENCY_OPTIONS;
   form: FormGroup;
+  private initialPlacementParentUserId: string | null;
 
   constructor() {
     const currency = this.userService.displayCurrency() as 'NGN' | 'USD';
     this.selectedCurrency.set(currency);
+    this.initialPlacementParentUserId =
+      (this.config.data?.['placementParentUserId'] as string | null | undefined) ?? null;
 
     this.form = this.fb.group({
       email: ['', [Validators.email]],
@@ -101,7 +104,7 @@ export class CreateReferralComponent implements OnInit {
       password: ['', [Validators.required, Validators.minLength(8)]],
       package: ['SILVER', Validators.required],
       currency: [currency, Validators.required],
-      placementParentUserId: [null as string | null]
+      placementParentUserId: [this.initialPlacementParentUserId]
     });
 
     // Watch package & currency changes
@@ -113,6 +116,15 @@ export class CreateReferralComponent implements OnInit {
     // Fetch placement parents to determine if spillover dropdown is needed
     this.referralService.getPlacementParents().subscribe((parents) => {
       this.placementParents.set(parents);
+
+      if (!this.initialPlacementParentUserId) {
+        return;
+      }
+
+      const existsInOptions = parents.some((parent) => parent.userId === this.initialPlacementParentUserId);
+      if (!existsInOptions) {
+        this.form.patchValue({ placementParentUserId: null }, { emitEvent: false });
+      }
     });
 
     // Ensure wallet balances are loaded so we can show the registration balance

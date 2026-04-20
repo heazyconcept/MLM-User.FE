@@ -40,13 +40,26 @@ export class MatrixTreeComponent implements OnInit {
   nodeForModal = signal<MatrixNode | null>(null);
   showMatrixInfo = signal(false);
 
-  openCreateReferralDialog(): void {
-    this.dialogService.open(CreateReferralComponent, {
+  openCreateReferralDialog(options?: { placementParentUserId?: string | null; focusNodeId?: string }): void {
+    const dialogRef = this.dialogService.open(CreateReferralComponent, {
       header: 'Create Referral',
       width: '520px',
       contentStyle: { 'max-height': '700px', overflow: 'auto' },
       baseZIndex: 10000,
-      data: { returnUrl: '/network/matrix' }
+      data: {
+        returnUrl: '/network/matrix',
+        placementParentUserId: options?.placementParentUserId ?? null
+      }
+    });
+
+    const focusNodeId = options?.focusNodeId ?? this.currentRootNode().id;
+    dialogRef?.onClose.subscribe((created) => {
+      if (created !== true) {
+        return;
+      }
+
+      // The create dialog triggers network refresh; keep user on the branch where they initiated placement.
+      this.restoreFocusedBranch(focusNodeId);
     });
   }
 
@@ -291,6 +304,59 @@ export class MatrixTreeComponent implements OnInit {
     const rank = node.rank ?? '—';
     const stage = node.stage ?? '';
     return `${node.username} | ${pkg} | ${rank}${stage ? ' | ' + stage : ''} | ${status}`;
+  }
+
+  onOpenSlotClick(node: MatrixNode): void {
+    if (!node || node.status !== 'empty') {
+      return;
+    }
+
+    const placementParentUserId = this.getPlacementParentIdFromEmptyNode(node);
+    const focusNodeId = this.getFocusNodeIdFromEmptyNode(node);
+
+    this.openCreateReferralDialog({
+      placementParentUserId,
+      focusNodeId
+    });
+  }
+
+  private getPlacementParentIdFromEmptyNode(node: MatrixNode): string | null {
+    const parentId = node.parentId;
+    if (!parentId || parentId === 'root' || parentId.startsWith('empty-') || parentId.startsWith('e-')) {
+      return null;
+    }
+    return parentId;
+  }
+
+  private getFocusNodeIdFromEmptyNode(node: MatrixNode): string {
+    const parentId = node.parentId;
+    if (!parentId || parentId.startsWith('empty-') || parentId.startsWith('e-')) {
+      return this.currentRootNode().id;
+    }
+    return parentId;
+  }
+
+  private restoreFocusedBranch(nodeId: string): void {
+    if (nodeId === 'root') {
+      this.navigationStack.set([]);
+      this.currentRootNode.set(this.originalRoot());
+      return;
+    }
+
+    const tryRestore = (attempt = 0) => {
+      const nextNode = this.networkService.findNode(nodeId);
+      if (nextNode) {
+        this.navigationStack.set([]);
+        this.currentRootNode.set(nextNode);
+        return;
+      }
+
+      if (attempt < 20) {
+        window.setTimeout(() => tryRestore(attempt + 1), 200);
+      }
+    };
+
+    tryRestore();
   }
 
   isCurrentRoot(nodeId: string): boolean {

@@ -219,6 +219,7 @@ export class NetworkService {
           package: d2.package ?? null,
           level: 2,
           status: d2.status,
+          parentId: d.id,
           position: positions[j],
           rank: d2.rank,
           stage: d2.stage,
@@ -235,6 +236,7 @@ export class NetworkService {
           package: null,
           level: 2,
           status: 'empty',
+          parentId: d.id,
           position: positions[childNodes.length],
           children: []
         });
@@ -245,6 +247,7 @@ export class NetworkService {
         package: d.package ?? null,
         level: 1,
         status: d.status,
+        parentId: 'root',
         position: pos,
         rank: d.rank,
         stage: d.stage,
@@ -261,11 +264,12 @@ export class NetworkService {
         package: null,
         level: 1,
         status: 'empty',
+        parentId: 'root',
         position: positions[children.length],
         children: [
-          { id: `e-${children.length}-0`, username: 'Empty Slot', package: null, level: 2, status: 'empty', position: 'left', children: [] },
-          { id: `e-${children.length}-1`, username: 'Empty Slot', package: null, level: 2, status: 'empty', position: 'center', children: [] },
-          { id: `e-${children.length}-2`, username: 'Empty Slot', package: null, level: 2, status: 'empty', position: 'right', children: [] }
+          { id: `e-${children.length}-0`, username: 'Empty Slot', package: null, level: 2, status: 'empty', parentId: `empty-${children.length}`, position: 'left', children: [] },
+          { id: `e-${children.length}-1`, username: 'Empty Slot', package: null, level: 2, status: 'empty', parentId: `empty-${children.length}`, position: 'center', children: [] },
+          { id: `e-${children.length}-2`, username: 'Empty Slot', package: null, level: 2, status: 'empty', parentId: `empty-${children.length}`, position: 'right', children: [] }
         ]
       });
     }

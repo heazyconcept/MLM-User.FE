@@ -27,15 +27,6 @@
   </div>
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
-    <!-- Email -->
-    <div class="flex flex-col gap-1.5">
-      <label for="cr-email" class="text-sm font-semibold text-gray-700">Email <span class="text-gray-500 font-normal">(optional)</span></label>
-      <input pInputText formControlName="email" id="cr-email" type="email" placeholder="newuser&#64;example.com" class="w-full" />
-      @if (form.get('email')?.invalid && form.get('email')?.touched) {
-        <small class="text-red-500 text-xs">Please enter a valid email address.</small>
-      }
-    </div>
-
     <!-- Username -->
     <div class="flex flex-col gap-1.5">
       <label for="cr-username" class="text-sm font-semibold text-gray-700">Username</label>
@@ -51,6 +42,15 @@
       <p-password formControlName="password" inputId="cr-password" [toggleMask]="true" [feedback]="false" styleClass="w-full" inputStyleClass="w-full" placeholder="Min 8 characters"></p-password>
       @if (form.get('password')?.invalid && form.get('password')?.touched) {
         <small class="text-red-500 text-xs">Password must be at least 8 characters.</small>
+      }
+    </div>
+
+    <!-- Email -->
+    <div class="flex flex-col gap-1.5">
+      <label for="cr-email" class="text-sm font-semibold text-gray-700">Email <span class="text-gray-500 font-normal">(optional)</span></label>
+      <input pInputText formControlName="email" id="cr-email" type="email" placeholder="newuser&#64;example.com" class="w-full" />
+      @if (form.get('email')?.invalid && form.get('email')?.touched) {
+        <small class="text-red-500 text-xs">Please enter a valid email address.</small>
       }
     </div>
 
