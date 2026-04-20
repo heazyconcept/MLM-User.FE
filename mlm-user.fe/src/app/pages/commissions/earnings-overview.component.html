@@ -161,6 +161,78 @@
           </div>
         </div>
 
+        <!-- ─── Per-Card Earnings History (Restructure Scaffold) ───── -->
+        <div class="border border-mlm-secondary/15 rounded-xl overflow-hidden">
+          <div class="px-5 py-4 bg-white border-b border-mlm-secondary/15 flex items-center justify-between gap-4">
+            <div>
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium block">Earnings drop history</span>
+              <span class="text-xs text-mlm-secondary">Select any card to view its history table</span>
+            </div>
+            @if (selectedHistoryCard(); as card) {
+              <span class="text-xs font-medium text-mlm-secondary border border-mlm-secondary/20 px-2 py-1 rounded-full">
+                {{ card.label }}
+              </span>
+            }
+          </div>
+
+          <div class="bg-white px-5 py-4 border-b border-mlm-secondary/15">
+            <div class="flex flex-wrap gap-2">
+              @for (card of historyCards(); track card.key) {
+                <button
+                  type="button"
+                  (click)="selectHistoryCard(card.key)"
+                  class="px-3 py-1.5 rounded-full text-[11px] font-medium border transition-colors"
+                  [class.bg-mlm-primary]="selectedHistoryCardKey() === card.key"
+                  [class.text-white]="selectedHistoryCardKey() === card.key"
+                  [class.border-mlm-primary]="selectedHistoryCardKey() === card.key"
+                  [class.bg-white]="selectedHistoryCardKey() !== card.key"
+                  [class.text-mlm-secondary]="selectedHistoryCardKey() !== card.key"
+                  [class.border-mlm-secondary/30]="selectedHistoryCardKey() !== card.key">
+                  {{ card.label }}
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="overflow-x-auto overscroll-x-contain">
+            <table class="w-full min-w-max text-sm">
+              <thead>
+                <tr class="border-b border-mlm-secondary/15 bg-mlm-background">
+                  <th class="text-left px-5 py-3 text-[11px] font-medium text-mlm-secondary uppercase tracking-widest">Date</th>
+                  <th class="text-left px-5 py-3 text-[11px] font-medium text-mlm-secondary uppercase tracking-widest">Status</th>
+                  <th class="text-left px-5 py-3 text-[11px] font-medium text-mlm-secondary uppercase tracking-widest">Source</th>
+                  <th class="text-right px-5 py-3 text-[11px] font-medium text-mlm-secondary uppercase tracking-widest">Value dropped</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-mlm-secondary/15 bg-white">
+                @for (row of historyRowsForSelectedCard(); track row.id) {
+                  <tr>
+                    <td class="px-5 py-4 text-sm text-mlm-secondary whitespace-nowrap">{{ row.date | date:'MMM d, yyyy' }}</td>
+                    <td class="px-5 py-4">
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold border"
+                            [class]="getHistoryStatusClass(row.status)">
+                        {{ row.status }}
+                      </span>
+                    </td>
+                    <td class="px-5 py-4 text-sm text-mlm-secondary">{{ row.source }}</td>
+                    <td class="px-5 py-4 text-sm font-medium text-mlm-text tabular-nums text-right whitespace-nowrap">
+                      {{ formatHistoryValue(row) }}
+                    </td>
+                  </tr>
+                }
+
+                @if (historyRowsForSelectedCard().length === 0) {
+                  <tr>
+                    <td colspan="4" class="px-5 py-8 text-sm text-center text-mlm-secondary">
+                      No history rows available for this card yet.
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- ─── Product Purchase Commissions ──────── -->
         <div>
           <p class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium mb-3">Product purchase commissions</p>

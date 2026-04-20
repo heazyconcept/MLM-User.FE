@@ -1,4 +1,4 @@
-import { Component, inject, computed, ChangeDetectionStrategy, OnInit, effect } from '@angular/core';
+import { Component, inject, computed, ChangeDetectionStrategy, OnInit, effect, signal } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ChartModule } from 'primeng/chart';
@@ -8,6 +8,35 @@ import { CommissionService } from '../../services/commission.service';
 import { EarningsService } from '../../services/earnings.service';
 import { SettingsService } from '../../services/settings.service';
 import { EarningsTabsComponent } from './earnings-tabs.component';
+
+type EarningCardKey =
+  | 'PDPA'
+  | 'CDPA'
+  | 'REGISTRATION_PV'
+  | 'DIRECT_REFERRAL_PV'
+  | 'PPPC'
+  | 'DRPPC'
+  | 'CPPC'
+  | 'PERSONAL_CPV'
+  | 'CPV_CASH_BONUS';
+
+type HistoryRowStatus = 'POSTED' | 'PENDING' | 'FAILED';
+
+interface CardHistoryRow {
+  id: string;
+  date: string;
+  status: HistoryRowStatus;
+  source: string;
+  value: number;
+  unit: 'MONEY' | 'PV';
+}
+
+interface HistoryCardConfig {
+  key: EarningCardKey;
+  label: string;
+  unit: 'MONEY' | 'PV';
+  value: number;
+}
 
 @Component({
   selector: 'app-earnings-overview',
@@ -31,7 +60,9 @@ export class EarningsOverviewComponent implements OnInit {
   isLoading = this.earningsService.isLoading;
   error = this.earningsService.error;
 
-  recentEntries = computed(() => this.commissionService.getAllCommissions()().slice(0, 5));
+  allCommissionEntries = this.commissionService.getAllCommissions();
+  recentEntries = computed(() => this.allCommissionEntries().slice(0, 5));
+  selectedHistoryCardKey = signal<EarningCardKey>('PDPA');
 
   pdpaRate = computed(() => {
     // If backend returns rates directly, we could use them here if we map them.
@@ -115,6 +146,109 @@ export class EarningsOverviewComponent implements OnInit {
   chartOptions: any;
   private selectedChartRange: 'Last 30 days' | 'Last 7 days' | 'This month' | 'Last 3 months' = 'Last 30 days';
 
+  historyCards = computed<HistoryCardConfig[]>(() => [
+    { key: 'PDPA', label: 'PDPA', unit: 'MONEY', value: this.pdpaEarned() },
+    { key: 'CDPA', label: 'CDPA', unit: 'MONEY', value: this.cdpaEarned() },
+    { key: 'REGISTRATION_PV', label: 'Registration PV', unit: 'PV', value: this.registrationPv().total },
+    { key: 'DIRECT_REFERRAL_PV', label: 'Direct Referral PV', unit: 'PV', value: this.directReferralPv() },
+    { key: 'PPPC', label: 'PPPC', unit: 'MONEY', value: this.pppcEarned() },
+    { key: 'DRPPC', label: 'DRPPC', unit: 'MONEY', value: this.drppcEarned() },
+    { key: 'CPPC', label: 'CPPC', unit: 'MONEY', value: this.cppcEarned() },
+    { key: 'PERSONAL_CPV', label: 'Personal CPV', unit: 'PV', value: this.cpvSummary().personalCpv },
+    { key: 'CPV_CASH_BONUS', label: 'CPV Cash Bonus', unit: 'MONEY', value: this.cpvSummary().cpvCashBonus },
+  ]);
+
+  selectedHistoryCard = computed(() =>
+    this.historyCards().find(c => c.key === this.selectedHistoryCardKey()) ?? this.historyCards()[0]
+  );
+
+  historyRowsForSelectedCard = computed<CardHistoryRow[]>(() => {
+    const key = this.selectedHistoryCardKey();
+    const earningsRows = this.allCommissionEntries();
+    const cpvRows = this.cpvSummary().history ?? [];
+
+    const mapStatus = (s: string): HistoryRowStatus => {
+      const status = s.toUpperCase();
+      if (status === 'APPROVED') return 'POSTED';
+      if (status === 'PENDING') return 'PENDING';
+      return 'FAILED';
+    };
+
+    if (key === 'PERSONAL_CPV') {
+      return cpvRows
+        .filter(r => r.personalCpv > 0)
+        .map((r, i) => ({
+          id: `pcpv-${i}-${r.date}`,
+          date: r.date,
+          status: 'POSTED' as HistoryRowStatus,
+          source: this.normalizeCpvSource(r.source, r.pvType),
+          value: r.personalCpv,
+          unit: 'PV' as 'PV',
+        }))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 20);
+    }
+
+    if (key === 'REGISTRATION_PV') {
+      return cpvRows
+        .filter(r => {
+          const source = (r.source ?? '').toUpperCase();
+          return source.includes('REGISTRATION');
+        })
+        .map((r, i) => ({
+          id: `rpv-${i}-${r.date}`,
+          date: r.date,
+          status: 'POSTED' as HistoryRowStatus,
+          source: this.normalizeCpvSource(r.source, r.pvType),
+          value: r.totalCpv,
+          unit: 'PV' as 'PV',
+        }))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 20);
+    }
+
+    if (key === 'DIRECT_REFERRAL_PV') {
+      return cpvRows
+        .filter(r => (r.source ?? '').toUpperCase().includes('DIRECT_REFERRAL'))
+        .map((r, i) => ({
+          id: `drpv-${i}-${r.date}`,
+          date: r.date,
+          status: 'POSTED' as HistoryRowStatus,
+          source: this.normalizeCpvSource(r.source, r.pvType),
+          value: r.totalCpv,
+          unit: 'PV' as 'PV',
+        }))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 20);
+    }
+
+    const earningTypeMap: Record<EarningCardKey, string[]> = {
+      PDPA: ['PDPA'],
+      CDPA: ['CDPA'],
+      PPPC: ['Personal Product Commission', 'Merchant Personal Product'],
+      DRPPC: ['Direct Referral Product Commission', 'Merchant Direct Referral Product'],
+      CPPC: ['Community Product Commission', 'Merchant Community Product'],
+      CPV_CASH_BONUS: ['CPV Cash Bonus'],
+      REGISTRATION_PV: [],
+      DIRECT_REFERRAL_PV: [],
+      PERSONAL_CPV: [],
+    };
+
+    const acceptedTypes = earningTypeMap[key] ?? [];
+    return earningsRows
+      .filter(e => acceptedTypes.includes(e.type))
+      .map(e => ({
+        id: e.id,
+        date: e.date,
+        status: mapStatus(e.status),
+        source: e.source,
+        value: e.amount,
+        unit: 'MONEY' as 'MONEY',
+      }))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 20);
+  });
+
   ngOnInit(): void {
     if (this.userService.isPaid()) {
       this.earningsService.fetchEarningsSectionData();
@@ -124,13 +258,40 @@ export class EarningsOverviewComponent implements OnInit {
   constructor() {
     // Rebuilds chart whenever the earnings list signal changes
     effect(() => {
-      this.commissionService.getAllCommissions()();
+      this.allCommissionEntries();
       this.buildChartData();
     });
   }
 
+  selectHistoryCard(cardKey: EarningCardKey): void {
+    this.selectedHistoryCardKey.set(cardKey);
+  }
+
+  getHistoryStatusClass(status: HistoryRowStatus): string {
+    if (status === 'POSTED') return 'text-emerald-700 bg-emerald-50 border-emerald-200';
+    if (status === 'PENDING') return 'text-amber-700 bg-amber-50 border-amber-200';
+    return 'text-red-700 bg-red-50 border-red-200';
+  }
+
+  formatHistoryValue(row: CardHistoryRow): string {
+    if (row.unit === 'PV') {
+      return `${row.value.toLocaleString()} PV`;
+    }
+    return `${this.currencySymbol()}${row.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  }
+
+  private normalizeCpvSource(source?: string, pvType?: string): string {
+    if (source && source.trim().length > 0) {
+      return source.replace(/_/g, ' ');
+    }
+    if (pvType && pvType.trim().length > 0) {
+      return pvType.replace(/_/g, ' ');
+    }
+    return 'CPV activity';
+  }
+
   buildChartData() {
-    const entries = this.commissionService.getAllCommissions()();
+    const entries = this.allCommissionEntries();
     const symbol = this.currencySymbol();
     const textColorSecondary = '#64748b';
     const surfaceBorder = '#e5e7eb';
