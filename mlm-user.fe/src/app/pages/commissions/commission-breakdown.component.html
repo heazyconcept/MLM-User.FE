@@ -62,56 +62,59 @@
   <!-- Tabs -->
   <app-earnings-tabs></app-earnings-tabs>
   <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-    
-    <!-- Table Header -->
-    <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-      <div class="col-span-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Source</div>
-      <div class="col-span-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Type</div>
-      <div class="col-span-2 text-xs font-medium text-gray-500 uppercase tracking-wide">Date</div>
-      <div class="col-span-2 text-xs font-medium text-gray-500 uppercase tracking-wide text-right">Amount</div>
-      <div class="col-span-1 text-xs font-medium text-gray-500 uppercase tracking-wide text-right">Status</div>
-    </div>
-    
-    <!-- Table Body -->
-    <div class="divide-y divide-gray-100">
-      @for (entry of allCommissions(); track entry.id) {
-        <div class="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-50/50 transition-colors">
-          
-          <!-- Source -->
-          <div class="col-span-4">
-            <span class="text-sm font-medium text-gray-900">{{ entry.source }}</span>
-          </div>
-          
-          <!-- Type -->
-          <div class="col-span-3">
-            <span class="text-sm text-gray-500">{{ entry.type }}</span>
-          </div>
-          
-          <!-- Date -->
-          <div class="col-span-2">
-            <span class="text-sm text-gray-500">{{ entry.date | date:'MMM d, yyyy' }}</span>
-          </div>
-          
-          <!-- Amount -->
-          <div class="col-span-2 text-right">
-            <span class="text-sm font-medium text-gray-900">
-              + {{ entry.currency === 'NGN' ? '₦' : '$' }}{{ entry.amount | number:'1.2-2' }}
-            </span>
-          </div>
-          
-          <!-- Status -->
-          <div class="col-span-1 text-right">
-            <app-status-badge [status]="entry.status" size="sm"></app-status-badge>
-          </div>
+    <div class="overflow-x-auto overscroll-x-contain">
+      <div class="min-w-180">
+        <!-- Table Header -->
+        <div class="grid grid-cols-12 gap-4 px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+          <div class="col-span-4 text-xs font-medium text-gray-500 uppercase tracking-wide">Source</div>
+          <div class="col-span-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Type</div>
+          <div class="col-span-2 text-xs font-medium text-gray-500 uppercase tracking-wide whitespace-nowrap">Date</div>
+          <div class="col-span-2 text-xs font-medium text-gray-500 uppercase tracking-wide text-right whitespace-nowrap">Amount</div>
+          <div class="col-span-1 text-xs font-medium text-gray-500 uppercase tracking-wide text-right whitespace-nowrap">Status</div>
         </div>
-      }
-      
-      <!-- Empty State -->
-      @if (allCommissions().length === 0) {
-        <div class="px-6 py-12 text-center">
-          <p class="text-sm text-gray-500">No commissions found.</p>
+
+        <!-- Table Body -->
+        <div class="divide-y divide-gray-100">
+          @for (entry of allCommissions(); track entry.id) {
+            <div class="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-50/50 transition-colors">
+
+              <!-- Source -->
+              <div class="col-span-4">
+                <span class="text-sm font-medium text-gray-900">{{ entry.source }}</span>
+              </div>
+
+              <!-- Type -->
+              <div class="col-span-3">
+                <span class="text-sm text-gray-500">{{ entry.type }}</span>
+              </div>
+
+              <!-- Date -->
+              <div class="col-span-2 whitespace-nowrap">
+                <span class="text-sm text-gray-500">{{ entry.date | date:'MMM d, yyyy' }}</span>
+              </div>
+
+              <!-- Amount -->
+              <div class="col-span-2 text-right whitespace-nowrap">
+                <span class="text-sm font-medium text-gray-900">
+                  + {{ entry.currency === 'NGN' ? '₦' : '$' }}{{ entry.amount | number:'1.2-2' }}
+                </span>
+              </div>
+
+              <!-- Status -->
+              <div class="col-span-1 text-right whitespace-nowrap">
+                <app-status-badge [status]="entry.status" size="sm"></app-status-badge>
+              </div>
+            </div>
+          }
+
+          <!-- Empty State -->
+          @if (allCommissions().length === 0) {
+            <div class="px-6 py-12 text-center">
+              <p class="text-sm text-gray-500">No commissions found.</p>
+            </div>
+          }
         </div>
-      }
+      </div>
     </div>
   </div>
   }

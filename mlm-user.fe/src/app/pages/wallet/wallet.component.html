@@ -69,7 +69,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
               <!-- LEFT: Wallet Ledger -->
-              <div class="lg:col-span-2 space-y-5 order-2 lg:order-1">
+              <div class="lg:col-span-2 space-y-5 order-1 lg:order-1">
 
                 @for (wallet of displayWallets(); track wallet.id) {
 
@@ -85,6 +85,35 @@
 
                   <!-- Wallet rows -->
                   <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden divide-y divide-gray-100">
+
+                    <!-- Registration -->
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between px-5 sm:px-6 py-5 gap-4">
+                      <div class="flex items-center gap-4">
+                        <div class="w-1.5 h-8 rounded-full bg-gray-300 shrink-0"></div>
+                        <div>
+                          <p class="text-sm font-bold text-mlm-text">Registration Wallet</p>
+                          <p class="text-xs text-mlm-secondary mt-0.5">Registration funds</p>
+                        </div>
+                      </div>
+                      <div class="flex items-center justify-between sm:justify-end gap-4 sm:gap-6 pl-6 sm:pl-0">
+                        <p class="text-base font-extrabold text-mlm-text tabular-nums">
+                          @if (isBalanceHidden()) { •••••• } @else {
+                            {{ formatAmountOrPlaceholder(wallet.registrationBalance, wallet.currency) }}
+                          }
+                        </p>
+                        <div class="flex gap-2">
+                          <button (click)="openTransferDialog('REGISTRATION')"
+                            [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
+                            class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
+                            Pay from Cash
+                          </button>
+                          <button (click)="openRegistrationFundingDialog()"
+                            class="px-3 sm:px-4 py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg">
+                            Fund
+                          </button>
+                        </div>
+                      </div>
+                    </div>
 
                     <!-- Cash -->
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between px-5 sm:px-6 py-5 gap-4">
@@ -169,41 +198,12 @@
                       </div>
                     </div>
 
-                    <!-- Registration -->
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between px-5 sm:px-6 py-5 gap-4">
-                      <div class="flex items-center gap-4">
-                        <div class="w-1.5 h-8 rounded-full bg-gray-300 shrink-0"></div>
-                        <div>
-                          <p class="text-sm font-bold text-mlm-text">Registration Wallet</p>
-                          <p class="text-xs text-mlm-secondary mt-0.5">Registration funds</p>
-                        </div>
-                      </div>
-                      <div class="flex items-center justify-between sm:justify-end gap-4 sm:gap-6 pl-6 sm:pl-0">
-                        <p class="text-base font-extrabold text-mlm-text tabular-nums">
-                          @if (isBalanceHidden()) { •••••• } @else {
-                            {{ formatAmountOrPlaceholder(wallet.registrationBalance, wallet.currency) }}
-                          }
-                        </p>
-                        <div class="flex gap-2">
-                          <button (click)="openTransferDialog('REGISTRATION')"
-                            [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
-                            class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
-                            Pay from Cash
-                          </button>
-                          <button (click)="openRegistrationFundingDialog()"
-                            class="px-3 sm:px-4 py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg">
-                            Fund
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
                   </div>
                 }
               </div>
 
               <!-- RIGHT: Sidebar -->
-              <div class="space-y-4 order-1 lg:order-2">
+              <div class="space-y-4 order-2 lg:order-2">
 
                 <!-- Earnings Split -->
                 <div class="bg-white rounded-2xl border border-gray-100 p-6">

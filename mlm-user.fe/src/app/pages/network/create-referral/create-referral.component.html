@@ -12,20 +12,18 @@
         <span class="text-red-600 font-semibold"> — Insufficient balance</span>
       }
     </p>
-    @if (hasInsufficientBalance()) {
-      <div class="mt-3 pt-3 border-t border-blue-200">
-        <p class="text-[11px] text-blue-800 mb-2">Fund your registration wallet using the same options as on the Wallet page.</p>
-        <p-button
-          type="button"
-          label="Fund registration wallet"
-          icon="pi pi-wallet"
-          styleClass="w-full"
-          [outlined]="false"
-          (onClick)="openRegistrationFundingDialog()"
-          [disabled]="isSubmitting()">
-        </p-button>
-      </div>
-    }
+    <div class="mt-3 pt-3 border-t border-blue-200">
+      <p class="text-[11px] text-blue-800 mb-2">Fund your registration wallet using the same options as on the Wallet page.</p>
+      <p-button
+        type="button"
+        label="Fund registration wallet"
+        icon="pi pi-wallet"
+        styleClass="w-full"
+        [outlined]="false"
+        (onClick)="openRegistrationFundingDialog()"
+        [disabled]="isSubmitting()">
+      </p-button>
+    </div>
   </div>
 
   <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">

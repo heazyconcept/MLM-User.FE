@@ -4,6 +4,7 @@ import { Observable, of } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
 
 export type OrderFulfilmentMethod = 'pickup' | 'delivery';
+export type OrderWalletType = 'cash' | 'voucher' | 'autoship';
 
 export type OrderStatus =
   | 'Pending'
@@ -140,8 +141,15 @@ export class OrderService {
     return this.api.post<any>('orders', payload).pipe(map((res) => this.mapOrder(res)));
   }
 
-  payOrderWithWallet(id: string): Observable<void> {
-    return this.api.post<void>(`orders/${id}/pay-wallet`, {});
+  payOrderWithWallet(id: string, walletType?: OrderWalletType): Observable<void> {
+    const normalizedWalletType =
+      walletType === 'voucher' ? 'VOUCHER'
+      : walletType === 'autoship' ? 'AUTOSHIP'
+      : 'CASH';
+
+    return this.api.post<void>(`orders/${id}/pay-wallet`, {
+      walletType: normalizedWalletType,
+    });
   }
 
   cancelOrder(id: string): Observable<Order> {

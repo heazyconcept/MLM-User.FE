@@ -28,6 +28,11 @@ import { LoadingService } from '../../services/loading.service';
 import { ModalService } from '../../services/modal.service';
 import { ActivityService } from '../../services/activity.service';
 import { NotificationService } from '../../services/notification.service';
+import {
+  DashboardService,
+  DashboardOverview,
+  DashboardTransaction,
+} from '../../services/dashboard.service';
 import { OverlayOptions } from 'primeng/api';
 import { signal } from '@angular/core';
 
@@ -44,6 +49,8 @@ type QuickAction = {
   id: 'create-referral' | 'wallet' | 'withdrawals' | 'commissions';
   label: string;
   route: string;
+  icon: string;
+  description: string;
 };
 
 @Component({
@@ -74,8 +81,26 @@ export class DashboardComponent implements OnInit {
   private modalService = inject(ModalService);
   private activityService = inject(ActivityService);
   private notificationService = inject(NotificationService);
+  private dashboardService = inject(DashboardService);
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
+
+  private readonly defaultOverview: DashboardOverview = {
+    currency: 'NGN',
+    hero: {
+      totalWalletBalance: 0,
+      voucherBalance: 0,
+      autoshipBalance: 0,
+    },
+    stats: {
+      cashoutBalance: 0,
+      totalEarnings: 0,
+      totalPayout: 0,
+      productVoucher: 0,
+      totalDownlines: 0,
+      totalCpvs: 0,
+    },
+  };
 
   isPaid = this.userService.isPaid;
   currentUser = this.userService.currentUser;
@@ -131,14 +156,41 @@ export class DashboardComponent implements OnInit {
   });
 
   recentActivities = this.activityService.getRecentActivities(5);
+  overview = signal<DashboardOverview>(this.defaultOverview);
+  dashboardTransactions = signal<DashboardTransaction[]>([]);
+  transactionsNextCursor = signal<string | null>(null);
 
   readonly phaseOneDashboardEnabled = true;
 
   quickActions: QuickAction[] = [
-    { id: 'create-referral', label: 'Create successline', route: '/network/referrals' },
-    { id: 'wallet', label: 'Fund wallet', route: '/wallet' },
-    { id: 'withdrawals', label: 'Withdraw', route: '/withdrawals' },
-    { id: 'commissions', label: 'View commissions', route: '/commissions' },
+    {
+      id: 'create-referral',
+      label: 'Create Successline',
+      route: '/network',
+      icon: 'pi-user-plus',
+      description: 'Register a new member under your network.',
+    },
+    {
+      id: 'wallet',
+      label: 'Fund Wallet',
+      route: '/wallet',
+      icon: 'pi-wallet',
+      description: 'Top up your wallet balances instantly.',
+    },
+    {
+      id: 'withdrawals',
+      label: 'Withdraw Funds',
+      route: '/withdrawals',
+      icon: 'pi-arrow-up-right',
+      description: 'Request payout to your saved bank account.',
+    },
+    {
+      id: 'commissions',
+      label: 'View Commissions',
+      route: '/commissions',
+      icon: 'pi-chart-line',
+      description: 'Track earnings and bonus performance.',
+    },
   ];
 
   todayTasks = computed<DashboardTask[]>(() => {
@@ -201,7 +253,7 @@ export class DashboardComponent implements OnInit {
 
   /** Bar chart (last 7 months) and entrance animation */
   barsAnimated = false;
-  cardsVisible = [false, false, false, false];
+  cardsVisible: boolean[] = [];
 
   get salesMonths(): string[] {
     return this.salesData?.labels?.slice(-7) ?? [];
@@ -221,34 +273,86 @@ export class DashboardComponent implements OnInit {
   }
 
   get statCardsData(): { label: string; value: string; icon: string; gradient: string }[] {
-    const summary = this.activeSummary();
-    const wallet = this.activeWallet();
-    const ngn = this.ngnWallet();
-    const usd = this.usdWallet();
-    const cash = wallet?.cashBalance ?? 0;
-    const sym = this.displayCurrency() === 'NGN' ? '₦' : '$';
-    const symNgn = '₦';
-    const symUsd = '$';
+    const hero = this.overview().hero;
+    const stats = this.overview().stats;
+    const sym = this.overview().currency === 'NGN' ? '₦' : '$';
     const fmt = (n: number) =>
       new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(n);
     const bgPrimary = 'linear-gradient(180deg,#49A321 0%,#3d8a1c 100%)';
     const bgMuted = 'linear-gradient(180deg,#64748b 0%,#475569 100%)';
     return [
-      { label: 'Wallet Balance', value: sym + fmt(cash), icon: 'pi-wallet', gradient: bgPrimary },
       {
-        label: 'Total Referrals',
-        value: String(summary.directReferrals ?? 0),
-        icon: 'pi-users',
+        label: 'Total Wallet Balance',
+        value: sym + fmt(hero.totalWalletBalance),
+        icon: 'pi-wallet',
+        gradient: bgPrimary,
+      },
+      {
+        label: 'Vouchers',
+        value: sym + fmt(hero.voucherBalance),
+        icon: 'pi-ticket',
         gradient: bgMuted,
       },
       {
-        label: 'Total Commissions',
-        value: symNgn + fmt(summary.totalEarnings ?? 0),
-        icon: 'pi-money-bill',
+        label: 'Autoship',
+        value: sym + fmt(hero.autoshipBalance),
+        icon: 'pi-refresh',
         gradient: bgPrimary,
       },
-      { label: 'Orders', value: '0', icon: 'pi-shopping-bag', gradient: bgMuted },
+      {
+        label: 'Cashout Balance',
+        value: sym + fmt(stats.cashoutBalance),
+        icon: 'pi-wallet',
+        gradient: bgPrimary,
+      },
+      {
+        label: 'Total Earnings',
+        value: sym + fmt(stats.totalEarnings),
+        icon: 'pi-chart-line',
+        gradient: bgMuted,
+      },
+      {
+        label: 'Total Payout',
+        value: sym + fmt(stats.totalPayout),
+        icon: 'pi-arrow-up-right',
+        gradient: bgPrimary,
+      },
+      {
+        label: 'Product Voucher',
+        value: sym + fmt(stats.productVoucher),
+        icon: 'pi-ticket',
+        gradient: bgMuted,
+      },
+      {
+        label: 'Total Downlines',
+        value: fmt(stats.totalDownlines),
+        icon: 'pi-users',
+        gradient: bgPrimary,
+      },
+      {
+        label: 'Total CPVs',
+        value: fmt(stats.totalCpvs),
+        icon: 'pi-chart-bar',
+        gradient: bgMuted,
+      }
     ];
+  }
+
+  formatTransactionAmount(tx: DashboardTransaction): string {
+    const sign = tx.type === 'Debit' ? '-' : '+';
+    const sym = tx.currency === 'USD' ? '$' : '₦';
+    const n = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(tx.amount);
+    return `${sign}${sym}${n}`;
+  }
+
+  getTransactionStatusClass(status: DashboardTransaction['status']): string {
+    if (status === 'Completed') return 'text-mlm-green-700 bg-mlm-green-50 border-mlm-green-200';
+    if (status === 'Pending') return 'text-mlm-warning bg-mlm-warning/10 border-mlm-warning/30';
+    return 'text-mlm-red-600 bg-mlm-red-50 border-mlm-red-200';
+  }
+
+  currencySymbolFromOverview(): '₦' | '$' {
+    return this.overview().currency === 'NGN' ? '₦' : '$';
   }
 
   getBarHeight(val: number): string {
@@ -356,6 +460,32 @@ export class DashboardComponent implements OnInit {
 
     // Fetch wallets and earnings when user is paid (for balance/earnings display)
     if (this.isPaid()) {
+      this.dashboardService.getOverview().subscribe({
+        next: (overview) => {
+          this.overview.set(overview ?? this.defaultOverview);
+          this.cardsVisible = new Array(this.statCardsData.length).fill(false);
+          this.animateCards();
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.overview.set(this.defaultOverview);
+          this.cdr.markForCheck();
+        },
+      });
+
+      this.dashboardService.getTransactions(10).subscribe({
+        next: (res) => {
+          this.dashboardTransactions.set(res.items ?? []);
+          this.transactionsNextCursor.set(res.nextCursor ?? null);
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.dashboardTransactions.set([]);
+          this.transactionsNextCursor.set(null);
+          this.cdr.markForCheck();
+        },
+      });
+
       this.walletService.fetchWallets().subscribe({
         next: () => this.cdr.markForCheck(),
         error: () => {
@@ -396,12 +526,18 @@ export class DashboardComponent implements OnInit {
 
     this.initCharts();
 
+    this.cardsVisible = new Array(this.statCardsData.length).fill(false);
+    this.animateCards();
+  }
+
+  private animateCards(): void {
     // Entrance animation for stat cards and bar chart
     setTimeout(() => {
       this.barsAnimated = true;
       this.cdr.markForCheck();
     }, 400);
-    [0, 80, 160, 240].forEach((delay, i) => {
+    this.cardsVisible.forEach((_v, i) => {
+      const delay = i * 80;
       setTimeout(() => {
         this.cardsVisible[i] = true;
         this.cdr.markForCheck();
