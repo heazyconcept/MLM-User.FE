@@ -102,7 +102,7 @@
                           }
                         </p>
                         <div class="flex gap-2">
-                          <button (click)="openTransferDialog('REGISTRATION')"
+                          <button (click)="openTransferDialog('REGISTRATION', wallet.currency)"
                             [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
                             class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
                             Pay from Cash
@@ -160,7 +160,7 @@
                           }
                         </p>
                         <div class="flex gap-2">
-                          <button (click)="openTransferDialog('VOUCHER')"
+                          <button (click)="openTransferDialog('VOUCHER', wallet.currency)"
                             [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
                             class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
                             Top Up
@@ -189,7 +189,7 @@
                           }
                         </p>
                         <div class="flex gap-2">
-                          <button (click)="openTransferDialog('AUTOSHIP')"
+                          <button (click)="openTransferDialog('AUTOSHIP', wallet.currency)"
                             [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
                             class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
                             Top Up
