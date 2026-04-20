@@ -195,14 +195,20 @@ export class WalletComponent implements OnInit {
     return d ?? null;
   });
 
-  /** Open transfer dialog pre-selected to a target wallet */
-  openTransferDialog(toWalletType?: 'AUTOSHIP' | 'VOUCHER' | 'REGISTRATION'): void {
+  /** Open transfer dialog pre-selected to a target wallet and source currency */
+  openTransferDialog(
+    toWalletType?: 'AUTOSHIP' | 'VOUCHER' | 'REGISTRATION',
+    currency?: 'NGN' | 'USD'
+  ): void {
     this.dialogService.open(WalletTransferComponent, {
       header: 'Transfer Funds',
       width: '480px',
       contentStyle: { 'max-height': '600px', overflow: 'auto' },
       baseZIndex: 10000,
-      data: { toWalletType: toWalletType ?? 'AUTOSHIP' }
+      data: {
+        toWalletType: toWalletType ?? 'AUTOSHIP',
+        currency: currency ?? this.userService.currentUser()?.currency ?? 'NGN'
+      }
     });
   }
 

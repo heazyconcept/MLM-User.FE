@@ -130,12 +130,13 @@ export class WalletTransferComponent implements OnInit {
   private walletService = inject(WalletService);
   private userService = inject(UserService);
 
-  currency = computed(() => this.userService.displayCurrency());
-  currencySymbol = computed(() => (this.currency() === 'NGN' ? '₦' : '$'));
+  private transferCurrency = signal<'NGN' | 'USD'>(this.userService.displayCurrency());
+  currency = computed(() => this.transferCurrency());
+  currencySymbol = computed(() => (this.transferCurrency() === 'NGN' ? '₦' : '$'));
 
   cashBalance = computed(() => {
     const w = this.walletService.allWallets();
-    const curr = this.currency();
+    const curr = this.transferCurrency();
     const wallet = w.find(ww => ww.currency === curr);
     return wallet?.cashBalance ?? 0;
   });
@@ -163,6 +164,12 @@ export class WalletTransferComponent implements OnInit {
     if (data?.toWalletType) {
       this.transferForm.patchValue({ toWalletType: data.toWalletType });
     }
+
+    const incomingCurrency = data?.currency;
+    if (incomingCurrency === 'NGN' || incomingCurrency === 'USD') {
+      this.transferCurrency.set(incomingCurrency);
+    }
+
     // Set max validator based on cash balance
     const max = this.cashBalance();
     if (max > 0) {
@@ -186,7 +193,7 @@ export class WalletTransferComponent implements OnInit {
       fromWalletType: 'CASH',
       toWalletType,
       amount,
-      currency: this.currency()
+      currency: this.transferCurrency()
     };
 
     this.walletService.transferBetweenWallets(request).subscribe({

@@ -5,36 +5,45 @@ import { ChartModule } from 'primeng/chart';
 import { SkeletonModule } from 'primeng/skeleton';
 import { UserService } from '../../services/user.service';
 import { CommissionService } from '../../services/commission.service';
-import { EarningsService } from '../../services/earnings.service';
+import {
+  EarningsService,
+  EarningsCardHistoryItem,
+  EarningsCardHistoryStatus,
+  EarningsCardKey,
+  EarningsCardUnit,
+  EarningsCardsSummaryResponse,
+} from '../../services/earnings.service';
 import { SettingsService } from '../../services/settings.service';
 import { EarningsTabsComponent } from './earnings-tabs.component';
 
-type EarningCardKey =
-  | 'PDPA'
-  | 'CDPA'
-  | 'REGISTRATION_PV'
-  | 'DIRECT_REFERRAL_PV'
-  | 'PPPC'
-  | 'DRPPC'
-  | 'CPPC'
-  | 'PERSONAL_CPV'
-  | 'CPV_CASH_BONUS';
+const HISTORY_CARD_ORDER: EarningsCardKey[] = [
+  'PDPA',
+  'CDPA',
+  'REGISTRATION_PV',
+  'DIRECT_REFERRAL_PV',
+  'PPPC',
+  'DRPPC',
+  'CPPC',
+  'PERSONAL_CPV',
+  'CPV_CASH_BONUS',
+];
 
-type HistoryRowStatus = 'POSTED' | 'PENDING' | 'FAILED';
-
-interface CardHistoryRow {
-  id: string;
-  date: string;
-  status: HistoryRowStatus;
-  source: string;
-  value: number;
-  unit: 'MONEY' | 'PV';
-}
+const HISTORY_CARD_META: Record<EarningsCardKey, { label: string; defaultUnit: EarningsCardUnit }> = {
+  PDPA: { label: 'PDPA', defaultUnit: 'MONEY' },
+  CDPA: { label: 'CDPA', defaultUnit: 'MONEY' },
+  REGISTRATION_PV: { label: 'Registration PV', defaultUnit: 'PV' },
+  DIRECT_REFERRAL_PV: { label: 'Direct Referral PV', defaultUnit: 'PV' },
+  PPPC: { label: 'PPPC', defaultUnit: 'MONEY' },
+  DRPPC: { label: 'DRPPC', defaultUnit: 'MONEY' },
+  CPPC: { label: 'CPPC', defaultUnit: 'MONEY' },
+  PERSONAL_CPV: { label: 'Personal CPV', defaultUnit: 'PV' },
+  CPV_CASH_BONUS: { label: 'CPV Cash Bonus', defaultUnit: 'MONEY' },
+};
 
 interface HistoryCardConfig {
-  key: EarningCardKey;
+  key: EarningsCardKey;
   label: string;
-  unit: 'MONEY' | 'PV';
+  unit: EarningsCardUnit;
   value: number;
 }
 
@@ -62,7 +71,14 @@ export class EarningsOverviewComponent implements OnInit {
 
   allCommissionEntries = this.commissionService.getAllCommissions();
   recentEntries = computed(() => this.allCommissionEntries().slice(0, 5));
-  selectedHistoryCardKey = signal<EarningCardKey>('PDPA');
+  selectedHistoryCardKey = signal<EarningsCardKey>('PDPA');
+  historyCardsSummary = signal<EarningsCardsSummaryResponse | null>(null);
+  historyRows = signal<EarningsCardHistoryItem[]>([]);
+  historyNextCursor = signal<string | null>(null);
+  historyCurrency = signal<'NGN' | 'USD'>('NGN');
+  isHistoryLoading = signal(false);
+  isHistoryLoadingMore = signal(false);
+  historyError = signal<string | null>(null);
 
   pdpaRate = computed(() => {
     // If backend returns rates directly, we could use them here if we map them.
@@ -146,112 +162,32 @@ export class EarningsOverviewComponent implements OnInit {
   chartOptions: any;
   private selectedChartRange: 'Last 30 days' | 'Last 7 days' | 'This month' | 'Last 3 months' = 'Last 30 days';
 
-  historyCards = computed<HistoryCardConfig[]>(() => [
-    { key: 'PDPA', label: 'PDPA', unit: 'MONEY', value: this.pdpaEarned() },
-    { key: 'CDPA', label: 'CDPA', unit: 'MONEY', value: this.cdpaEarned() },
-    { key: 'REGISTRATION_PV', label: 'Registration PV', unit: 'PV', value: this.registrationPv().total },
-    { key: 'DIRECT_REFERRAL_PV', label: 'Direct Referral PV', unit: 'PV', value: this.directReferralPv() },
-    { key: 'PPPC', label: 'PPPC', unit: 'MONEY', value: this.pppcEarned() },
-    { key: 'DRPPC', label: 'DRPPC', unit: 'MONEY', value: this.drppcEarned() },
-    { key: 'CPPC', label: 'CPPC', unit: 'MONEY', value: this.cppcEarned() },
-    { key: 'PERSONAL_CPV', label: 'Personal CPV', unit: 'PV', value: this.cpvSummary().personalCpv },
-    { key: 'CPV_CASH_BONUS', label: 'CPV Cash Bonus', unit: 'MONEY', value: this.cpvSummary().cpvCashBonus },
-  ]);
+  historyCards = computed<HistoryCardConfig[]>(() => {
+    const summary = this.historyCardsSummary();
+
+    return HISTORY_CARD_ORDER.map((key) => {
+      const meta = HISTORY_CARD_META[key];
+      const cardValue = summary?.cards[key];
+
+      return {
+        key,
+        label: meta.label,
+        unit: cardValue?.unit ?? meta.defaultUnit,
+        value: cardValue?.value ?? 0,
+      };
+    });
+  });
 
   selectedHistoryCard = computed(() =>
     this.historyCards().find(c => c.key === this.selectedHistoryCardKey()) ?? this.historyCards()[0]
   );
 
-  historyRowsForSelectedCard = computed<CardHistoryRow[]>(() => {
-    const key = this.selectedHistoryCardKey();
-    const earningsRows = this.allCommissionEntries();
-    const cpvRows = this.cpvSummary().history ?? [];
-
-    const mapStatus = (s: string): HistoryRowStatus => {
-      const status = s.toUpperCase();
-      if (status === 'APPROVED') return 'POSTED';
-      if (status === 'PENDING') return 'PENDING';
-      return 'FAILED';
-    };
-
-    if (key === 'PERSONAL_CPV') {
-      return cpvRows
-        .filter(r => r.personalCpv > 0)
-        .map((r, i) => ({
-          id: `pcpv-${i}-${r.date}`,
-          date: r.date,
-          status: 'POSTED' as HistoryRowStatus,
-          source: this.normalizeCpvSource(r.source, r.pvType),
-          value: r.personalCpv,
-          unit: 'PV' as 'PV',
-        }))
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 20);
-    }
-
-    if (key === 'REGISTRATION_PV') {
-      return cpvRows
-        .filter(r => {
-          const source = (r.source ?? '').toUpperCase();
-          return source.includes('REGISTRATION');
-        })
-        .map((r, i) => ({
-          id: `rpv-${i}-${r.date}`,
-          date: r.date,
-          status: 'POSTED' as HistoryRowStatus,
-          source: this.normalizeCpvSource(r.source, r.pvType),
-          value: r.totalCpv,
-          unit: 'PV' as 'PV',
-        }))
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 20);
-    }
-
-    if (key === 'DIRECT_REFERRAL_PV') {
-      return cpvRows
-        .filter(r => (r.source ?? '').toUpperCase().includes('DIRECT_REFERRAL'))
-        .map((r, i) => ({
-          id: `drpv-${i}-${r.date}`,
-          date: r.date,
-          status: 'POSTED' as HistoryRowStatus,
-          source: this.normalizeCpvSource(r.source, r.pvType),
-          value: r.totalCpv,
-          unit: 'PV' as 'PV',
-        }))
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 20);
-    }
-
-    const earningTypeMap: Record<EarningCardKey, string[]> = {
-      PDPA: ['PDPA'],
-      CDPA: ['CDPA'],
-      PPPC: ['Personal Product Commission', 'Merchant Personal Product'],
-      DRPPC: ['Direct Referral Product Commission', 'Merchant Direct Referral Product'],
-      CPPC: ['Community Product Commission', 'Merchant Community Product'],
-      CPV_CASH_BONUS: ['CPV Cash Bonus'],
-      REGISTRATION_PV: [],
-      DIRECT_REFERRAL_PV: [],
-      PERSONAL_CPV: [],
-    };
-
-    const acceptedTypes = earningTypeMap[key] ?? [];
-    return earningsRows
-      .filter(e => acceptedTypes.includes(e.type))
-      .map(e => ({
-        id: e.id,
-        date: e.date,
-        status: mapStatus(e.status),
-        source: e.source,
-        value: e.amount,
-        unit: 'MONEY' as 'MONEY',
-      }))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 20);
-  });
+  historyRowsForSelectedCard = computed(() => this.historyRows());
 
   ngOnInit(): void {
     if (this.userService.isPaid()) {
       this.earningsService.fetchEarningsSectionData();
+      this.loadHistoryCardsSummary();
     }
   }
 
@@ -263,31 +199,102 @@ export class EarningsOverviewComponent implements OnInit {
     });
   }
 
-  selectHistoryCard(cardKey: EarningCardKey): void {
+  selectHistoryCard(cardKey: EarningsCardKey): void {
+    if (this.selectedHistoryCardKey() === cardKey) {
+      return;
+    }
+
     this.selectedHistoryCardKey.set(cardKey);
+    this.fetchSelectedCardHistory(cardKey, false);
   }
 
-  getHistoryStatusClass(status: HistoryRowStatus): string {
+  loadMoreHistory(): void {
+    const nextCursor = this.historyNextCursor();
+    if (!nextCursor || this.isHistoryLoading() || this.isHistoryLoadingMore()) {
+      return;
+    }
+
+    this.fetchSelectedCardHistory(this.selectedHistoryCardKey(), true, nextCursor);
+  }
+
+  getHistoryStatusClass(status: EarningsCardHistoryStatus): string {
     if (status === 'POSTED') return 'text-emerald-700 bg-emerald-50 border-emerald-200';
     if (status === 'PENDING') return 'text-amber-700 bg-amber-50 border-amber-200';
     return 'text-red-700 bg-red-50 border-red-200';
   }
 
-  formatHistoryValue(row: CardHistoryRow): string {
-    if (row.unit === 'PV') {
+  formatHistoryValue(row: EarningsCardHistoryItem): string {
+    if (this.selectedHistoryCard()?.unit === 'PV') {
       return `${row.value.toLocaleString()} PV`;
     }
-    return `${this.currencySymbol()}${row.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
+    const symbol = this.getCurrencySymbol(this.historyCurrency());
+    return `${symbol}${row.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   }
 
-  private normalizeCpvSource(source?: string, pvType?: string): string {
-    if (source && source.trim().length > 0) {
-      return source.replace(/_/g, ' ');
+  formatHistoryCardValue(card: HistoryCardConfig): string {
+    if (card.unit === 'PV') {
+      return `${card.value.toLocaleString()} PV`;
     }
-    if (pvType && pvType.trim().length > 0) {
-      return pvType.replace(/_/g, ' ');
+
+    const currency = this.historyCardsSummary()?.currency ?? this.displayCurrency();
+    const symbol = this.getCurrencySymbol(currency);
+    return `${symbol}${card.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  }
+
+  private loadHistoryCardsSummary(): void {
+    this.historyError.set(null);
+    this.isHistoryLoading.set(true);
+
+    this.earningsService.fetchEarningsCardsSummary().subscribe({
+      next: (summary) => {
+        this.historyCardsSummary.set(summary);
+        this.historyCurrency.set(summary.currency);
+        this.fetchSelectedCardHistory(this.selectedHistoryCardKey(), false);
+      },
+      error: () => {
+        this.historyError.set('Failed to load earnings cards. Please try again.');
+        this.isHistoryLoading.set(false);
+      },
+    });
+  }
+
+  private fetchSelectedCardHistory(cardKey: EarningsCardKey, append: boolean, cursor?: string): void {
+    this.historyError.set(null);
+
+    if (append) {
+      this.isHistoryLoadingMore.set(true);
+    } else {
+      this.isHistoryLoading.set(true);
+      this.historyRows.set([]);
+      this.historyNextCursor.set(null);
     }
-    return 'CPV activity';
+
+    this.earningsService
+      .fetchEarningsCardHistory(cardKey, {
+        limit: 20,
+        cursor,
+      })
+      .subscribe({
+        next: (response) => {
+          this.historyCurrency.set(response.currency);
+          this.historyRows.set(append ? [...this.historyRows(), ...response.items] : response.items);
+          this.historyNextCursor.set(response.nextCursor ?? null);
+        },
+        error: () => {
+          this.historyError.set('Failed to load card history. Please try again.');
+          this.isHistoryLoading.set(false);
+          this.isHistoryLoadingMore.set(false);
+        },
+        complete: () => {
+          this.isHistoryLoading.set(false);
+          this.isHistoryLoadingMore.set(false);
+        },
+      });
+  }
+
+  private getCurrencySymbol(currency: 'NGN' | 'USD'): string {
+    return currency === 'NGN' ? '₦' : '$';
   }
 
   buildChartData() {

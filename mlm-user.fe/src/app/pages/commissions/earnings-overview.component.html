@@ -188,11 +188,17 @@
                   [class.bg-white]="selectedHistoryCardKey() !== card.key"
                   [class.text-mlm-secondary]="selectedHistoryCardKey() !== card.key"
                   [class.border-mlm-secondary/30]="selectedHistoryCardKey() !== card.key">
-                  {{ card.label }}
+                  {{ card.label }} · {{ formatHistoryCardValue(card) }}
                 </button>
               }
             </div>
           </div>
+
+          @if (historyError()) {
+            <div class="px-5 py-3 text-sm text-red-700 bg-red-50 border-b border-red-100">
+              {{ historyError() }}
+            </div>
+          }
 
           <div class="overflow-x-auto overscroll-x-contain">
             <table class="w-full min-w-max text-sm">
@@ -205,32 +211,53 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-mlm-secondary/15 bg-white">
-                @for (row of historyRowsForSelectedCard(); track row.id) {
-                  <tr>
-                    <td class="px-5 py-4 text-sm text-mlm-secondary whitespace-nowrap">{{ row.date | date:'MMM d, yyyy' }}</td>
-                    <td class="px-5 py-4">
-                      <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold border"
-                            [class]="getHistoryStatusClass(row.status)">
-                        {{ row.status }}
-                      </span>
-                    </td>
-                    <td class="px-5 py-4 text-sm text-mlm-secondary">{{ row.source }}</td>
-                    <td class="px-5 py-4 text-sm font-medium text-mlm-text tabular-nums text-right whitespace-nowrap">
-                      {{ formatHistoryValue(row) }}
-                    </td>
-                  </tr>
-                }
-
-                @if (historyRowsForSelectedCard().length === 0) {
+                @if (isHistoryLoading()) {
                   <tr>
                     <td colspan="4" class="px-5 py-8 text-sm text-center text-mlm-secondary">
-                      No history rows available for this card yet.
+                      Loading history...
                     </td>
                   </tr>
+                } @else {
+                  @for (row of historyRowsForSelectedCard(); track row.id) {
+                    <tr>
+                      <td class="px-5 py-4 text-sm text-mlm-secondary whitespace-nowrap">{{ row.date | date:'MMM d, yyyy' }}</td>
+                      <td class="px-5 py-4">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold border"
+                              [class]="getHistoryStatusClass(row.status)">
+                          {{ row.status }}
+                        </span>
+                      </td>
+                      <td class="px-5 py-4 text-sm text-mlm-secondary">{{ row.source }}</td>
+                      <td class="px-5 py-4 text-sm font-medium text-mlm-text tabular-nums text-right whitespace-nowrap">
+                        {{ formatHistoryValue(row) }}
+                      </td>
+                    </tr>
+                  }
+
+                  @if (historyRowsForSelectedCard().length === 0) {
+                    <tr>
+                      <td colspan="4" class="px-5 py-8 text-sm text-center text-mlm-secondary">
+                        No history rows available for this card yet.
+                      </td>
+                    </tr>
+                  }
                 }
               </tbody>
             </table>
           </div>
+
+          @if (historyNextCursor()) {
+            <div class="px-5 py-4 bg-white border-t border-mlm-secondary/15 flex justify-center">
+              <button
+                type="button"
+                (click)="loadMoreHistory()"
+                class="px-4 py-2 text-xs font-medium rounded-lg border border-mlm-secondary/30 text-mlm-text hover:bg-mlm-secondary/5 disabled:opacity-60 disabled:cursor-not-allowed"
+                [disabled]="isHistoryLoadingMore()"
+              >
+                {{ isHistoryLoadingMore() ? 'Loading...' : 'Load more' }}
+              </button>
+            </div>
+          }
         </div>
 
         <!-- ─── Product Purchase Commissions ──────── -->

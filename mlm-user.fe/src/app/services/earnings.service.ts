@@ -115,6 +115,70 @@ export interface EarningsSummaryDto {
   byType?: Record<string, number>;
 }
 
+export type EarningsCardKey =
+  | 'PDPA'
+  | 'CDPA'
+  | 'REGISTRATION_PV'
+  | 'DIRECT_REFERRAL_PV'
+  | 'PPPC'
+  | 'DRPPC'
+  | 'CPPC'
+  | 'PERSONAL_CPV'
+  | 'CPV_CASH_BONUS';
+
+export type EarningsCardUnit = 'MONEY' | 'PV';
+
+export type EarningsCardHistoryStatus = 'POSTED' | 'PENDING' | 'FAILED';
+
+export interface EarningsCardValueDto {
+  value: number;
+  unit: EarningsCardUnit;
+}
+
+export interface EarningsCardsSummaryResponse {
+  currency: 'NGN' | 'USD';
+  cards: Record<EarningsCardKey, EarningsCardValueDto>;
+}
+
+export interface EarningsCardHistoryItem {
+  id: string;
+  date: string;
+  status: EarningsCardHistoryStatus;
+  source: string;
+  sourceRef?: string;
+  value: number;
+  runningBalance?: number;
+  description?: string;
+}
+
+export interface EarningsCardHistoryResponse {
+  cardKey: EarningsCardKey;
+  unit: EarningsCardUnit;
+  currency: 'NGN' | 'USD';
+  items: EarningsCardHistoryItem[];
+  nextCursor?: string;
+}
+
+export interface EarningsCardHistoryQuery {
+  limit?: number;
+  cursor?: string;
+  from?: string;
+  to?: string;
+  status?: EarningsCardHistoryStatus;
+}
+
+const EARNINGS_CARD_KEYS: EarningsCardKey[] = [
+  'PDPA',
+  'CDPA',
+  'REGISTRATION_PV',
+  'DIRECT_REFERRAL_PV',
+  'PPPC',
+  'DRPPC',
+  'CPPC',
+  'PERSONAL_CPV',
+  'CPV_CASH_BONUS'
+];
+
 @Injectable({
   providedIn: 'root'
 })
@@ -239,6 +303,28 @@ export class EarningsService {
     );
   }
 
+  fetchEarningsCardsSummary(): Observable<EarningsCardsSummaryResponse> {
+    return this.api.get<Record<string, unknown>>('earnings/cards/summary').pipe(
+      map((raw) => this.mapEarningsCardsSummary(raw))
+    );
+  }
+
+  fetchEarningsCardHistory(
+    cardKey: EarningsCardKey,
+    query: EarningsCardHistoryQuery = {}
+  ): Observable<EarningsCardHistoryResponse> {
+    const params: Record<string, string | number> = {};
+    if (query.limit != null) params['limit'] = query.limit;
+    if (query.cursor) params['cursor'] = query.cursor;
+    if (query.from) params['from'] = query.from;
+    if (query.to) params['to'] = query.to;
+    if (query.status) params['status'] = query.status;
+
+    return this.api
+      .get<Record<string, unknown>>(`earnings/cards/${cardKey}/history`, params)
+      .pipe(map((raw) => this.mapEarningsCardHistory(cardKey, raw)));
+  }
+
   private mapCpvResponse(raw: Record<string, unknown>): CpvSummaryDto {
     // API shape: { totalCpv, lastUpdated, transactions[], milestones[], milestonesAchieved[], cpvCashBonus }
     const totalCpv = Number(raw['totalCpv'] ?? 0);
@@ -301,6 +387,67 @@ export class EarningsService {
       nextMilestoneName,
       milestones,
       history
+    };
+  }
+
+  private mapEarningsCardsSummary(raw: Record<string, unknown>): EarningsCardsSummaryResponse {
+    const cardsRaw = (raw['cards'] ?? {}) as Record<string, unknown>;
+    const currency = String(raw['currency'] ?? 'NGN') === 'USD' ? 'USD' : 'NGN';
+
+    const cards = EARNINGS_CARD_KEYS.reduce((acc, key) => {
+      const fallbackUnit: EarningsCardUnit =
+        key === 'REGISTRATION_PV' || key === 'DIRECT_REFERRAL_PV' || key === 'PERSONAL_CPV'
+          ? 'PV'
+          : 'MONEY';
+
+      const rawValue = cardsRaw[key] as Record<string, unknown> | undefined;
+      const unitRaw = String(rawValue?.['unit'] ?? fallbackUnit).toUpperCase();
+
+      acc[key] = {
+        value: Number(rawValue?.['value'] ?? 0),
+        unit: unitRaw === 'PV' ? 'PV' : 'MONEY'
+      };
+
+      return acc;
+    }, {} as Record<EarningsCardKey, EarningsCardValueDto>);
+
+    return {
+      currency,
+      cards
+    };
+  }
+
+  private mapEarningsCardHistory(
+    cardKey: EarningsCardKey,
+    raw: Record<string, unknown>
+  ): EarningsCardHistoryResponse {
+    const rawItems = (raw['items'] ?? []) as Record<string, unknown>[];
+    const unitRaw = String(raw['unit'] ?? '').toUpperCase();
+
+    const items: EarningsCardHistoryItem[] = rawItems.map((item, index) => {
+      const statusRaw = String(item['status'] ?? 'POSTED').toUpperCase();
+      const status: EarningsCardHistoryStatus =
+        statusRaw === 'PENDING' ? 'PENDING' : statusRaw === 'FAILED' ? 'FAILED' : 'POSTED';
+
+      return {
+        id: String(item['id'] ?? `${cardKey}-${index}`),
+        date: String(item['date'] ?? ''),
+        status,
+        source: String(item['source'] ?? '—'),
+        sourceRef: item['sourceRef'] ? String(item['sourceRef']) : undefined,
+        value: Number(item['value'] ?? 0),
+        runningBalance:
+          item['runningBalance'] != null ? Number(item['runningBalance']) : undefined,
+        description: item['description'] ? String(item['description']) : undefined
+      };
+    });
+
+    return {
+      cardKey,
+      unit: unitRaw === 'PV' ? 'PV' : 'MONEY',
+      currency: String(raw['currency'] ?? 'NGN') === 'USD' ? 'USD' : 'NGN',
+      items,
+      nextCursor: raw['nextCursor'] ? String(raw['nextCursor']) : undefined
     };
   }
 
