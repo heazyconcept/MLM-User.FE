@@ -121,7 +121,7 @@
               Creating order…
             </span>
           } @else {
-            {{ fulfilmentOption() === 'pickup' && !selectedPickupId() ? 'Select a pickup location' : 'Confirm Order' }}
+            {{ fulfilmentOption() === 'pickup' && !selectedPickupId() ? 'Select a pickup location' : fulfilmentOption() === 'delivery' && !deliveryAddress().trim() ? 'Enter delivery address' : 'Confirm Order' }}
           }
         </button>
       </div>

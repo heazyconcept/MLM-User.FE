@@ -127,7 +127,7 @@
 
   <p-drawer
     [visible]="fulfilmentDrawerVisible()"
-    (visibleChange)="fulfilmentDrawerVisible.set($event)"
+    (visibleChange)="onDrawerVisibleChange($event)"
     position="right"
     [style]="{ width: 'min(100vw, 520px)' }"
     styleClass="border-0 !bg-white overflow-hidden flex flex-col"

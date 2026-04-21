@@ -52,6 +52,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
   fulfilmentDrawerVisible = signal(false);
   pendingOrderData = signal<any>(null);
   orderSubmitting = signal(false);
+  pendingOrdersRedirect = signal(false);
 
   private bodyOverflowPrevious = '';
 
@@ -192,14 +193,13 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
         this.orderService.payOrderWithWallet(order.id, orderData.wallet).subscribe({
           next: () => {
             this.orderSubmitting.set(false);
-            this.fulfilmentDrawerVisible.set(false);
             this.pendingOrderData.set(null);
             this.messageService.add({
               severity: 'success',
               summary: 'Order placed',
               detail: 'Order created successfully. Redirecting to your orders.',
             });
-            this.router.navigate(['/orders']);
+            this.closeDrawerAndRedirectToOrders();
           },
           error: (err) => {
             this.orderSubmitting.set(false);
@@ -232,7 +232,37 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     this.fulfilmentDrawerVisible.set(false);
   }
 
+  onDrawerVisibleChange(visible: boolean): void {
+    this.fulfilmentDrawerVisible.set(visible);
+    if (!visible && this.pendingOrdersRedirect()) {
+      this.pendingOrdersRedirect.set(false);
+      this.cleanupLingeringDrawerMask();
+      this.router.navigate(['/orders']);
+    }
+  }
+
+  private closeDrawerAndRedirectToOrders(): void {
+    this.pendingOrdersRedirect.set(true);
+    this.fulfilmentDrawerVisible.set(false);
+
+    // Fallback redirect in case visibleChange is not emitted during programmatic close.
+    window.setTimeout(() => {
+      if (!this.pendingOrdersRedirect()) {
+        return;
+      }
+      this.pendingOrdersRedirect.set(false);
+      this.cleanupLingeringDrawerMask();
+      this.router.navigate(['/orders']);
+    }, 250);
+  }
+
+  private cleanupLingeringDrawerMask(): void {
+    const masks = document.querySelectorAll('.p-drawer-mask.p-overlay-mask');
+    masks.forEach((mask) => mask.remove());
+  }
+
   ngOnDestroy(): void {
     document.body.style.overflow = this.bodyOverflowPrevious || '';
+    this.cleanupLingeringDrawerMask();
   }
 }

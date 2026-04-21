@@ -31,7 +31,7 @@ export class OrderPreviewComponent {
 
   fulfilmentOption = this.orderService.fulfilmentOption;
   selectedPickupId = signal<string | null>(null);
-  deliveryAddress = signal<string>('12 Marina Street, Lagos Island, Lagos');
+  deliveryAddress = signal<string>('');
   deliveryFee = 1500;
 
   pickupLocations = signal<PickupLocation[]>([]);
@@ -102,7 +102,7 @@ export class OrderPreviewComponent {
     if (this.fulfilmentOption() === 'pickup') {
       return !!this.selectedPickupId();
     }
-    return true;
+    return this.deliveryAddress().trim().length > 0;
   }
 
   onConfirm(): void {

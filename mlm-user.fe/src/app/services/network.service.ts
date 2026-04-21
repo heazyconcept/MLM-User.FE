@@ -168,7 +168,7 @@ export class NetworkService {
           });
 
           const user = profile ?? this.userService.currentUser();
-          const teamSize = downlines.length > 0 ? downlines.reduce((sum, d) => sum + d.teamSize, 0) + downlines.length : 0;
+          const teamSize = downlines.length;
           const directRefs = user?.directReferrals ?? downlines.filter((d) => d.level === 1).length;
           const activeLegs = user?.activeLegs ?? Math.min(directRefs, 2);
           const rank = user?.rank ?? '—';
