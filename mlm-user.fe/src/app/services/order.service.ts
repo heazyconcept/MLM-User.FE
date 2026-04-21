@@ -23,6 +23,7 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
+  reference: string;
   date: string;
   items: OrderItem[];
   total: number;
@@ -69,6 +70,7 @@ export class OrderService {
       result = result.filter(
         (o) =>
           o.id.toLowerCase().includes(query) ||
+          o.reference.toLowerCase().includes(query) ||
           o.items.some((i) => i.name.toLowerCase().includes(query)),
       );
     }
@@ -163,8 +165,12 @@ export class OrderService {
   }
 
   private mapOrder(o: any): Order {
+    const rawId = String(o.id ?? '');
+    const reference = String(o.reference ?? '').trim() || rawId;
+
     return {
-      id: o.id,
+      id: rawId,
+      reference,
       date: o.createdAt || new Date().toISOString(),
       items: o.items
         ? o.items.map((i: any) => ({
