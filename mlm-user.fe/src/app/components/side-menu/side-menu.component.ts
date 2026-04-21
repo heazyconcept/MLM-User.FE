@@ -155,12 +155,6 @@ export class SideMenuComponent {
                 route: '/commissions',
                 requiresPayment: true,
               },
-              {
-                label: 'Activity Log',
-                icon: 'pi pi-list',
-                route: '/commissions/activity',
-                requiresPayment: true,
-              },
             ],
           },
           {

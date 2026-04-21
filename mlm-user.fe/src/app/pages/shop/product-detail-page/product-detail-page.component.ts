@@ -18,7 +18,6 @@ import { ProductGalleryComponent } from '../../../components/product-gallery/pro
 import { QuantitySelectorComponent } from '../../../components/quantity-selector/quantity-selector.component';
 import { BadgeComponent } from '../../../components/badge/badge.component';
 import { PurchaseSummaryModalComponent } from '../components/purchase-summary-modal.component';
-import { OrderSuccessComponent } from '../components/order-success.component';
 import { DrawerModule } from 'primeng/drawer';
 import { OrderPreviewComponent } from '../../orders/order-preview/order-preview.component';
 
@@ -194,28 +193,13 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
           next: () => {
             this.orderSubmitting.set(false);
             this.fulfilmentDrawerVisible.set(false);
-            const successRef = this.dialogService.open(OrderSuccessComponent, {
-              data: {
-                orderId: order.id,
-                productName: orderData.product.name,
-                productImage: orderData.product.images[0],
-                quantity: orderData.quantity,
-                wallet: orderData.wallet,
-                total: order.total,
-                totalPV: orderData.product.pv * orderData.quantity,
-              },
-              header: '',
-              width: '90vw',
-              style: { maxWidth: '450px' },
-              closable: false,
-              closeOnEscape: false,
+            this.pendingOrderData.set(null);
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Order placed',
+              detail: 'Order created successfully. Redirecting to your orders.',
             });
-            if (successRef) {
-              successRef.onClose.subscribe((res) => {
-                if (res?.action === 'view-orders') this.router.navigate(['/orders']);
-                else if (res?.action === 'continue') this.router.navigate(['/marketplace']);
-              });
-            }
+            this.router.navigate(['/orders']);
           },
           error: (err) => {
             this.orderSubmitting.set(false);
