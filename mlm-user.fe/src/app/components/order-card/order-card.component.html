@@ -1,11 +1,11 @@
 <a
   [routerLink]="[baseRoute(), order().id]"
   class="block py-5 hover:bg-gray-50/50 transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2 -mx-px px-px"
-  [attr.aria-label]="'View order ' + order().id">
+  [attr.aria-label]="'View order ' + order().reference">
   <div class="flex flex-col sm:flex-row sm:items-center gap-4">
     <div class="flex-1 min-w-0">
       <div class="flex flex-wrap items-center gap-2 mb-1">
-        <span class="text-sm font-bold text-mlm-text">{{ order().id }}</span>
+        <span class="text-sm font-bold text-mlm-text">{{ order().reference }}</span>
         <app-status-badge [status]="order().status" size="sm"></app-status-badge>
       </div>
       <p class="text-xs text-mlm-secondary mb-1">{{ formatDate(order().date) }}</p>

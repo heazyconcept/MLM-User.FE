@@ -15,7 +15,7 @@
 
         <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
           <div class="border-b border-gray-200 pb-6 mb-6">
-            <h1 class="text-2xl font-bold text-mlm-text mb-2">Order {{ o.id }}</h1>
+            <h1 class="text-2xl font-bold text-mlm-text mb-2">Order {{ o.reference }}</h1>
             <p class="text-sm text-mlm-secondary mb-4">{{ formatDate(o.date) }}</p>
             <div class="flex flex-wrap items-center gap-3">
               <app-status-badge [status]="o.status" size="lg"></app-status-badge>
