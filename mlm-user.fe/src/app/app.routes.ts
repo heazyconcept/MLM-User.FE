@@ -301,14 +301,6 @@ export const routes: Routes = [
             (m) => m.LevelCommissionTableComponent,
           ),
       },
-      {
-        path: 'activity',
-        loadComponent: () =>
-          import('./pages/commissions/earnings-activity/earnings-activity.component').then(
-            (m) => m.EarningsActivityComponent,
-          ),
-        data: { title: 'Activity Log' },
-      },
     ],
   },
   {
