@@ -182,18 +182,36 @@ export class OrderService {
   }
 
   private mapStatus(backendStatus: string): OrderStatus {
-    switch (backendStatus) {
+    const status = String(backendStatus ?? '').toUpperCase();
+
+    switch (status) {
       case 'PENDING':
       case 'CREATED':
         return 'Pending';
+      case 'APPROVED':
       case 'PAID':
+      case 'PROCESSING':
+      case 'CONFIRMED':
         return 'Processing';
+      case 'READY_FOR_PICKUP':
+      case 'READY FOR PICKUP':
+        return 'Ready for Pickup';
+      case 'OUT_FOR_DELIVERY':
+      case 'OUT FOR DELIVERY':
+      case 'IN_TRANSIT':
+      case 'SHIPPED':
+        return 'Out for Delivery';
       case 'DELIVERED':
+      case 'COMPLETED':
+      case 'RECEIVED':
         return 'Delivered';
       case 'CANCELLED':
+      case 'CANCELED':
+      case 'DECLINED':
+      case 'FAILED':
         return 'Cancelled';
       default:
-        return 'Pending';
+        return 'Processing';
     }
   }
 
