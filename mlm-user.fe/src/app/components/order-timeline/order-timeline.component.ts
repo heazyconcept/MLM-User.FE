@@ -10,7 +10,7 @@ import { OrderStatus } from '../../services/order.service';
 })
 export class OrderTimelineComponent {
   currentStatus = input.required<OrderStatus>();
-  statuses = input<OrderStatus[]>(['Pending', 'Processing', 'Ready for Pickup', 'Out for Delivery', 'Delivered', 'Cancelled']);
+  statuses = input<OrderStatus[]>(['Pending', 'Processing', 'Approved', 'Ready for Pickup', 'Out for Delivery', 'Delivered', 'Cancelled']);
 
   steps = computed(() => {
     const list = this.statuses();

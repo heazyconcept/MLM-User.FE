@@ -9,6 +9,7 @@ export type OrderWalletType = 'cash' | 'voucher' | 'autoship';
 export type OrderStatus =
   | 'Pending'
   | 'Processing'
+  | 'Approved'
   | 'Ready for Pickup'
   | 'Out for Delivery'
   | 'Delivered'
@@ -38,6 +39,7 @@ export interface Order {
 const ORDER_STATUSES: OrderStatus[] = [
   'Pending',
   'Processing',
+  'Approved',
   'Ready for Pickup',
   'Out for Delivery',
   'Delivered',
@@ -189,6 +191,7 @@ export class OrderService {
       case 'CREATED':
         return 'Pending';
       case 'APPROVED':
+        return 'Approved';
       case 'PAID':
       case 'PROCESSING':
       case 'CONFIRMED':
