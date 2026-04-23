@@ -318,12 +318,6 @@ export class DashboardComponent implements OnInit {
         gradient: bgPrimary,
       },
       {
-        label: 'Product Voucher',
-        value: sym + fmt(stats.productVoucher),
-        icon: 'pi-ticket',
-        gradient: bgMuted,
-      },
-      {
         label: 'Total Downlines',
         value: fmt(stats.totalDownlines),
         icon: 'pi-users',
