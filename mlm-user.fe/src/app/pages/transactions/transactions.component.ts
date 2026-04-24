@@ -195,7 +195,10 @@ export class TransactionsComponent implements OnInit {
   formatTransactionAmount(tx: DashboardTransaction): string {
     const sign = tx.type === 'Debit' ? '-' : '+';
     const sym = tx.currency === 'USD' ? '$' : '₦';
-    const n = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(tx.amount);
+    const n = new Intl.NumberFormat('en-NG', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(tx.amount);
     return `${sign}${sym}${n}`;
   }
 
