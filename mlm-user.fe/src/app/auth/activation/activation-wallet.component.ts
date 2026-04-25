@@ -170,6 +170,6 @@ export class ActivationWalletComponent implements OnInit {
 
   formatAmount(amount: number, currency: 'NGN' | 'USD'): string {
     const sym = currency === 'NGN' ? '₦' : '$';
-    return `${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    return `${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 }

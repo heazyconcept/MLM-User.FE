@@ -78,7 +78,7 @@
             </div>
             <div class="flex items-center gap-2 lg:justify-end">
               @if (getNextStageToGo() !== null) {
-                <span class="text-sm font-semibold text-white/90">₦{{ getNextStageToGo() | number:'1.0-0' }} to go</span>
+                <span class="text-sm font-semibold text-white/90">₦{{ getNextStageToGo() | number:'1.2-2' }} to go</span>
               } @else {
                 <span class="text-sm font-semibold text-white/90">{{ getPointsToGo() | number }} points to go</span>
               }
@@ -218,8 +218,8 @@
                 <tr class="hover:bg-gray-50/50 transition-colors">
                   <td class="px-4 py-3 font-medium text-gray-900">{{ sb.stage }}</td>
                   <td class="px-4 py-3 text-gray-700">{{ sb.rankName }}</td>
-                  <td class="px-4 py-3 text-right font-semibold text-gray-900">₦{{ sb.bonusAmount | number:'1.0-0' }}</td>
-                  <td class="px-4 py-3 text-right text-gray-600">₦{{ sb.earned | number:'1.0-0' }}</td>
+                  <td class="px-4 py-3 text-right font-semibold text-gray-900">₦{{ sb.bonusAmount | number:'1.2-2' }}</td>
+                  <td class="px-4 py-3 text-right text-gray-600">₦{{ sb.earned | number:'1.2-2' }}</td>
                   <td class="px-4 py-3">
                     @if (sb.paidAt) {
                       <span class="inline-flex items-center gap-1 text-green-600">
