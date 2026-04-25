@@ -276,56 +276,59 @@ export class DashboardComponent implements OnInit {
     const hero = this.overview().hero;
     const stats = this.overview().stats;
     const sym = this.overview().currency === 'NGN' ? '₦' : '$';
-    const fmt = (n: number) =>
-      new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(n);
+    const fmt2 = (n: number) =>
+      new Intl.NumberFormat('en-NG', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(n);
     const bgPrimary = 'linear-gradient(180deg,#49A321 0%,#3d8a1c 100%)';
     const bgMuted = 'linear-gradient(180deg,#64748b 0%,#475569 100%)';
     return [
       {
         label: 'Total Wallet Balance',
-        value: sym + fmt(hero.totalWalletBalance),
+        value: sym + fmt2(hero.totalWalletBalance),
         icon: 'pi-wallet',
         gradient: bgPrimary,
       },
       {
         label: 'Vouchers',
-        value: sym + fmt(hero.voucherBalance),
+        value: sym + fmt2(hero.voucherBalance),
         icon: 'pi-ticket',
         gradient: bgMuted,
       },
       {
         label: 'Autoship',
-        value: sym + fmt(hero.autoshipBalance),
+        value: sym + fmt2(hero.autoshipBalance),
         icon: 'pi-refresh',
         gradient: bgPrimary,
       },
       {
         label: 'Cashout Balance',
-        value: sym + fmt(stats.cashoutBalance),
+        value: sym + fmt2(stats.cashoutBalance),
         icon: 'pi-wallet',
         gradient: bgPrimary,
       },
       {
         label: 'Total Earnings',
-        value: sym + fmt(stats.totalEarnings),
+        value: sym + fmt2(stats.totalEarnings),
         icon: 'pi-chart-line',
         gradient: bgMuted,
       },
       {
         label: 'Total Payout',
-        value: sym + fmt(stats.totalPayout),
+        value: sym + fmt2(stats.totalPayout),
         icon: 'pi-arrow-up-right',
         gradient: bgPrimary,
       },
       {
         label: 'Total Downlines',
-        value: fmt(stats.totalDownlines),
+        value: new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(stats.totalDownlines),
         icon: 'pi-users',
         gradient: bgPrimary,
       },
       {
         label: 'Total CPVs',
-        value: fmt(stats.totalCpvs),
+        value: fmt2(stats.totalCpvs),
         icon: 'pi-chart-bar',
         gradient: bgMuted,
       }
@@ -336,7 +339,7 @@ export class DashboardComponent implements OnInit {
     const sign = tx.type === 'Debit' ? '-' : '+';
     const sym = tx.currency === 'USD' ? '$' : '₦';
     const n = new Intl.NumberFormat('en-NG', {
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(tx.amount);
     return `${sign}${sym}${n}`;
@@ -405,7 +408,10 @@ export class DashboardComponent implements OnInit {
   activityBadge(activity: { amount?: number; currency?: string; type: string }): string {
     if (activity.amount == null) return '';
     const sym = activity.currency === 'USD' ? '$' : '₦';
-    const n = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(
+    const n = new Intl.NumberFormat('en-NG', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(
       Math.abs(activity.amount),
     );
     return activity.type === 'Withdrawal' ? `-${sym}${n}` : `+${sym}${n}`;

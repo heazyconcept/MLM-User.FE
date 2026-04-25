@@ -59,7 +59,7 @@
                 <div class="col-span-2 text-right whitespace-nowrap">
                   @if (bonus.amount) {
                     <span class="text-sm font-semibold text-gray-900">
-                      {{ bonus.currency === 'NGN' ? '₦' : '$' }}{{ bonus.amount | number:'1.0-0' }}
+                      {{ bonus.currency === 'NGN' ? '₦' : '$' }}{{ bonus.amount | number:'1.2-2' }}
                     </span>
                   } @else {
                     <span class="text-sm text-gray-400">—</span>

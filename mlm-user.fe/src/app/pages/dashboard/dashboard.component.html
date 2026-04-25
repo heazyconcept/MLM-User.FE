@@ -270,7 +270,7 @@
                     </div>
                     <span class="font-bold text-mlm-warm-900 font-mono text-[13px] xl:text-sm 2xl:text-base"
                       >{{ displayCurrency() === 'NGN' ? '₦' : '$'
-                      }}{{ item.value | number: '1.0-0' }}</span
+                      }}{{ item.value | number: '1.2-2' }}</span
                     >
                   </div>
                   <div class="h-1.5 xl:h-2 2xl:h-2.5 rounded-full overflow-hidden bg-mlm-warm-100">
@@ -288,7 +288,7 @@
                 <span class="font-bold text-mlm-warm-900 text-[13px] xl:text-sm 2xl:text-base">Total Earnings</span>
                 <span class="font-extrabold text-mlm-primary font-mono text-[17px] xl:text-lg 2xl:text-xl"
                   >{{ displayCurrency() === 'NGN' ? '₦' : '$'
-                  }}{{ activeSummary().totalEarnings | number: '1.0-0' }}</span
+                  }}{{ activeSummary().totalEarnings | number: '1.2-2' }}</span
                 >
               </div>
             </div>

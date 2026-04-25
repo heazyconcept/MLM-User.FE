@@ -108,7 +108,7 @@
             <div class="flex items-center justify-between mb-4">
               <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Earnings contribution</span>
               <span class="text-xs text-mlm-secondary">
-                Total: <span class="font-medium text-mlm-text">{{ currencySymbol() }}{{ totalEarningsContribution() | number:'1.0-0' }}</span>
+                Total: <span class="font-medium text-mlm-text">{{ currencySymbol() }}{{ totalEarningsContribution() | number:'1.2-2' }}</span>
               </span>
             </div>
 
@@ -118,7 +118,7 @@
                 <div class="flex items-center justify-between mb-1.5">
                   <span class="text-xs text-mlm-secondary">From direct referrals</span>
                   <span class="text-xs font-medium text-mlm-text tabular-nums">
-                    {{ currencySymbol() }}{{ earningsContribution().fromDirectReferrals | number:'1.0-0' }}
+                    {{ currencySymbol() }}{{ earningsContribution().fromDirectReferrals | number:'1.2-2' }}
                   </span>
                 </div>
                 <div class="h-[3px] w-full bg-mlm-secondary/10 rounded-full overflow-hidden">
@@ -133,7 +133,7 @@
                 <div class="flex items-center justify-between mb-1.5">
                   <span class="text-xs text-mlm-secondary">From team volume (CPV)</span>
                   <span class="text-xs font-medium text-mlm-text tabular-nums">
-                    {{ currencySymbol() }}{{ earningsContribution().fromTeamCpv | number:'1.0-0' }}
+                    {{ currencySymbol() }}{{ earningsContribution().fromTeamCpv | number:'1.2-2' }}
                   </span>
                 </div>
                 <div class="h-[3px] w-full bg-mlm-secondary/10 rounded-full overflow-hidden">
@@ -148,7 +148,7 @@
                 <div class="flex items-center justify-between mb-1.5">
                   <span class="text-xs text-mlm-secondary">Personal sales</span>
                   <span class="text-xs font-medium text-mlm-text tabular-nums">
-                    {{ currencySymbol() }}{{ earningsContribution().personalSales | number:'1.0-0' }}
+                    {{ currencySymbol() }}{{ earningsContribution().personalSales | number:'1.2-2' }}
                   </span>
                 </div>
                 <div class="h-[3px] w-full bg-mlm-secondary/10 rounded-full overflow-hidden">

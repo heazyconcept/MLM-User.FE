@@ -178,7 +178,11 @@ export class WalletComponent implements OnInit {
     const adminUsd = AUTOSHIP_ADMIN_FEE_USD[pkg] ?? 1;
     const sym = currency === 'NGN' ? '₦' : '$';
     const rate = currency === 'NGN' ? NGN_TO_USD_RATE : 1;
-    const fmt = (v: number) => `${sym}${(v * rate).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+    const fmt = (v: number) =>
+      `${sym}${(v * rate).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}`;
     return {
       amount: fmt(usd),
       amountUsd: `$${usd}`,

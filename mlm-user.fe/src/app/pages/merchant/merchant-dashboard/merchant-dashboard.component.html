@@ -96,7 +96,7 @@
                   class="text-white font-extrabold font-mono text-4xl tracking-tight leading-tight mb-2"
                 >
                   {{ displayCurrency() === 'NGN' ? '₦' : '$' }}
-                  {{ totalMerchantSales() | number: '1.0-0' }}
+                  {{ totalMerchantSales() | number: '1.2-2' }}
                 </p>
 
                 <div class="flex gap-2.5 mt-6">
@@ -241,7 +241,7 @@
                     </div>
                     <span class="font-bold text-mlm-warm-900 font-mono text-[13px]">
                       {{ displayCurrency() === 'NGN' ? '₦' : '$'
-                      }}{{ item.value | number: '1.0-0' }}
+                      }}{{ item.value | number: '1.2-2' }}
                     </span>
                   </div>
                   <div class="h-1.5 rounded-full overflow-hidden bg-mlm-warm-100">
@@ -259,7 +259,7 @@
                 <span class="font-bold text-mlm-warm-900 text-[13px]">Total Earnings</span>
                 <span class="font-extrabold text-mlm-primary font-mono text-[17px]">
                   {{ displayCurrency() === 'NGN' ? '₦' : '$'
-                  }}{{ earnings()?.merchantEarnings?.totalEarnings ?? 0 | number: '1.0-0' }}
+                  }}{{ earnings()?.merchantEarnings?.totalEarnings ?? 0 | number: '1.2-2' }}
                 </span>
               </div>
             </div>

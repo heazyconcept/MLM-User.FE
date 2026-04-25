@@ -217,7 +217,10 @@ export class MerchantDashboardComponent implements OnInit {
   activityBadge(activity: { amount?: number; currency?: string; type: string }): string {
     if (activity.amount == null) return '';
     const sym = activity.currency === 'USD' ? '$' : '₦';
-    const n = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(
+    const n = new Intl.NumberFormat('en-NG', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(
       Math.abs(activity.amount),
     );
     return `+${sym}${n}`; // simplified for merchant
