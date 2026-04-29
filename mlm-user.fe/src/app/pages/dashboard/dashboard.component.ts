@@ -275,6 +275,7 @@ export class DashboardComponent implements OnInit {
   get statCardsData(): { label: string; value: string; icon: string; gradient: string }[] {
     const hero = this.overview().hero;
     const stats = this.overview().stats;
+    const summary = this.activeSummary();
     const sym = this.overview().currency === 'NGN' ? '₦' : '$';
     const fmt2 = (n: number) =>
       new Intl.NumberFormat('en-NG', {
@@ -283,6 +284,7 @@ export class DashboardComponent implements OnInit {
       }).format(n);
     const bgPrimary = 'linear-gradient(180deg,#49A321 0%,#3d8a1c 100%)';
     const bgMuted = 'linear-gradient(180deg,#64748b 0%,#475569 100%)';
+    const bgBlue = 'linear-gradient(180deg,#3b82f6 0%,#2563eb 100%)';
     return [
       {
         label: 'Total Wallet Balance',
@@ -330,6 +332,24 @@ export class DashboardComponent implements OnInit {
         label: 'Total CPVs',
         value: fmt2(stats.totalCpvs),
         icon: 'pi-chart-bar',
+        gradient: bgMuted,
+      },
+      {
+        label: 'Product Purchase Earnings',
+        value: sym + fmt2(summary.ppvEarnings ?? 0),
+        icon: 'pi-shopping-bag',
+        gradient: bgBlue,
+      },
+      {
+        label: 'Personal Daily Activity',
+        value: sym + fmt2(summary.pdpaEarnings ?? 0),
+        icon: 'pi-chart-line',
+        gradient: bgPrimary,
+      },
+      {
+        label: 'Community Daily Activity',
+        value: sym + fmt2(summary.cdpaEarnings ?? 0),
+        icon: 'pi-users',
         gradient: bgMuted,
       }
     ];

@@ -7,12 +7,22 @@ import { DashboardService, DashboardTransaction } from '../../services/dashboard
 type DateRangePreset = 'all' | 'today' | 'last7days' | 'last30days' | 'thisMonth';
 type TransactionStatus = DashboardTransaction['status'];
 type TransactionType = DashboardTransaction['type'];
+type TransactionTab = 'all' | 'earnings' | 'wallet' | 'withdrawals' | 'payments';
 
 type TransactionFilters = {
   dateRange: DateRangePreset;
   type: TransactionType | 'all';
   status: TransactionStatus | 'all';
   searchQuery: string;
+};
+
+type TabSummary = {
+  count: number;
+  netAmount: number;
+  creditAmount: number;
+  debitAmount: number;
+  pendingCount: number;
+  completedCount: number;
 };
 
 @Component({
@@ -31,6 +41,7 @@ type TransactionFilters = {
 export class TransactionsComponent implements OnInit {
   private dashboardService = inject(DashboardService);
 
+  activeTab = signal<TransactionTab>('all');
   allTransactions = signal<DashboardTransaction[]>([]);
   nextCursor = signal<string | null>(null);
   isLoading = signal(false);
@@ -44,9 +55,22 @@ export class TransactionsComponent implements OnInit {
   // Local state
   searchInput = signal('');
 
+  tabOptions: Array<{ label: string; value: TransactionTab }> = [
+    { label: 'All', value: 'all' },
+    { label: 'Earnings', value: 'earnings' },
+    { label: 'Wallet', value: 'wallet' },
+    { label: 'Withdrawals', value: 'withdrawals' },
+    { label: 'Payments', value: 'payments' },
+  ];
+
   transactions = computed(() => {
     let result = [...this.allTransactions()];
     const f = this.filters();
+    const tab = this.activeTab();
+
+    if (tab !== 'all') {
+      result = result.filter((t) => this.resolveTransactionTab(t) === tab);
+    }
 
     result = this.applyDateFilter(result, f.dateRange);
 
@@ -70,6 +94,47 @@ export class TransactionsComponent implements OnInit {
 
   transactionCount = computed(() => this.transactions().length);
   totalTransactionCount = computed(() => this.allTransactions().length);
+
+  summary = computed<TabSummary>(() => {
+    const items = this.transactions();
+    return items.reduce<TabSummary>(
+      (acc, tx) => {
+        const amount = Math.abs(tx.amount);
+        const isCredit = this.isCredit(tx);
+        acc.count += 1;
+        acc.netAmount += isCredit ? amount : -amount;
+        if (isCredit) {
+          acc.creditAmount += amount;
+        } else {
+          acc.debitAmount += amount;
+        }
+        if (tx.status === 'Pending') {
+          acc.pendingCount += 1;
+        }
+        if (tx.status === 'Completed') {
+          acc.completedCount += 1;
+        }
+        return acc;
+      },
+      {
+        count: 0,
+        netAmount: 0,
+        creditAmount: 0,
+        debitAmount: 0,
+        pendingCount: 0,
+        completedCount: 0,
+      }
+    );
+  });
+
+  emptyStateMessage = computed(() => {
+    const tab = this.activeTab();
+    if (tab === 'earnings') return 'No earnings transactions available yet.';
+    if (tab === 'wallet') return 'No wallet transactions available yet.';
+    if (tab === 'withdrawals') return 'No withdrawal transactions available yet.';
+    if (tab === 'payments') return 'No payment transactions available yet.';
+    return 'No transactions available.';
+  });
 
   // Filter options
   dateRangeOptions = [
@@ -106,6 +171,14 @@ export class TransactionsComponent implements OnInit {
     this.loadInitialTransactions();
   }
 
+  onTabChange(tab: TransactionTab): void {
+    if (tab === this.activeTab()) {
+      return;
+    }
+    this.activeTab.set(tab);
+    this.resetAndLoadTransactions();
+  }
+
   onSearchInput(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
     this.searchInput.set(value);
@@ -138,10 +211,11 @@ export class TransactionsComponent implements OnInit {
   }
 
   exportCSV(): void {
-    const headers = ['Date', 'Description', 'Type', 'Amount', 'Status'];
+    const headers = ['Date', 'Description', 'Category', 'Type', 'Amount', 'Status'];
     const rows = this.transactions().map((tx) => [
       new Date(tx.date).toISOString(),
       tx.description,
+      this.getTransactionCategoryLabel(tx),
       this.isCredit(tx) ? 'Credit' : 'Debit',
       this.formatTransactionAmount(tx),
       tx.status
@@ -175,7 +249,7 @@ export class TransactionsComponent implements OnInit {
     }
 
     this.isLoading.set(true);
-    this.dashboardService.getTransactions(20, cursor).subscribe({
+    this.dashboardService.getTransactions(20, cursor, this.getTabQuery()).subscribe({
       next: (res) => {
         const nextItems = res.items ?? [];
         this.allTransactions.update((items) => [...items, ...nextItems]);
@@ -190,6 +264,58 @@ export class TransactionsComponent implements OnInit {
 
   isCredit(transaction: DashboardTransaction): boolean {
     return transaction.type === 'Credit';
+  }
+
+  isActiveTab(tab: TransactionTab): boolean {
+    return this.activeTab() === tab;
+  }
+
+  getTransactionCategoryLabel(tx: DashboardTransaction): string {
+    const raw = tx.category?.trim() || tx.source?.trim();
+    if (!raw) {
+      return this.getTabLabel(this.resolveTransactionTab(tx));
+    }
+    return raw
+      .split(/[_\s-]+/)
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase())
+      .join(' ');
+  }
+
+  getTabDescription(): string {
+    const tab = this.activeTab();
+    if (tab === 'earnings') {
+      return 'Track commissions and bonus drops from registration, product, and voucher activity.';
+    }
+    if (tab === 'wallet') {
+      return 'Monitor wallet funding, transfers, and wallet adjustments.';
+    }
+    if (tab === 'withdrawals') {
+      return 'Review withdrawal requests, approvals, and settlement progress.';
+    }
+    if (tab === 'payments') {
+      return 'Inspect payment charges and processor-related transaction logs.';
+    }
+    return 'View and filter all your financial activities across earnings, wallet, withdrawals, and payments.';
+  }
+
+  getTabLabel(tab: TransactionTab): string {
+    return this.tabOptions.find((option) => option.value === tab)?.label ?? 'All';
+  }
+
+  formatSummaryAmount(amount: number): string {
+    const symbol = this.detectDisplayCurrencySymbol();
+    const absAmount = Math.abs(amount);
+    const formatted = new Intl.NumberFormat('en-NG', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(absAmount);
+
+    if (amount === 0) {
+      return `${symbol}${formatted}`;
+    }
+
+    const sign = amount > 0 ? '+' : '-';
+    return `${sign}${symbol}${formatted}`;
   }
 
   formatTransactionAmount(tx: DashboardTransaction): string {
@@ -210,7 +336,7 @@ export class TransactionsComponent implements OnInit {
 
   private loadInitialTransactions(): void {
     this.isLoading.set(true);
-    this.dashboardService.getTransactions(20).subscribe({
+    this.dashboardService.getTransactions(20, undefined, this.getTabQuery()).subscribe({
       next: (res) => {
         this.allTransactions.set(res.items ?? []);
         this.nextCursor.set(res.nextCursor ?? null);
@@ -222,6 +348,65 @@ export class TransactionsComponent implements OnInit {
         this.isLoading.set(false);
       }
     });
+  }
+
+  private resetAndLoadTransactions(): void {
+    this.allTransactions.set([]);
+    this.nextCursor.set(null);
+    this.loadInitialTransactions();
+  }
+
+  private getTabQuery(): { category?: string } {
+    const tab = this.activeTab();
+    if (tab === 'all') {
+      return {};
+    }
+    return { category: tab };
+  }
+
+  private resolveTransactionTab(tx: DashboardTransaction): TransactionTab {
+    const normalized = `${tx.category ?? ''} ${tx.source ?? ''} ${tx.description ?? ''}`.toLowerCase();
+
+    if (this.matchesKeywords(normalized, ['withdrawal', 'cashout', 'payout'])) {
+      return 'withdrawals';
+    }
+
+    if (this.matchesKeywords(normalized, ['wallet', 'funding', 'top up', 'topup', 'transfer'])) {
+      return 'wallet';
+    }
+
+    if (this.matchesKeywords(normalized, ['payment', 'charge', 'processor', 'gateway', 'bank transfer'])) {
+      return 'payments';
+    }
+
+    if (
+      this.matchesKeywords(normalized, [
+        'earning',
+        'commission',
+        'bonus',
+        'referral',
+        'registration',
+        'product',
+        'voucher',
+        'pv',
+      ])
+    ) {
+      return 'earnings';
+    }
+
+    return 'all';
+  }
+
+  private matchesKeywords(value: string, keywords: string[]): boolean {
+    return keywords.some((keyword) => value.includes(keyword));
+  }
+
+  private detectDisplayCurrencySymbol(): '$' | '₦' {
+    const [first] = this.transactions();
+    if (!first) {
+      return '₦';
+    }
+    return first.currency === 'USD' ? '$' : '₦';
   }
 
   private applyDateFilter(transactions: DashboardTransaction[], dateRange: DateRangePreset): DashboardTransaction[] {

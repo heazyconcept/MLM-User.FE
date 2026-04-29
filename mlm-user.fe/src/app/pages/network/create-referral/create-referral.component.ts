@@ -22,7 +22,7 @@ import { getRequiredAmount, REGISTRATION_FEE_NGN } from '../../../core/constants
 
 const PACKAGE_OPTIONS = Object.keys(REGISTRATION_FEE_NGN).map(pkg => ({
   value: pkg,
-  label: pkg.charAt(0) + pkg.slice(1).toLowerCase()
+  label: `${pkg.charAt(0) + pkg.slice(1).toLowerCase()} - ₦${REGISTRATION_FEE_NGN[pkg as keyof typeof REGISTRATION_FEE_NGN].toLocaleString()}`
 }));
 
 const CURRENCY_OPTIONS = [
@@ -83,7 +83,7 @@ export class CreateReferralComponent implements OnInit {
   placementParentOptions = computed(() =>
     this.placementParents().map(p => ({
       value: p.userId,
-      label: p.email ? `${p.username} (${p.email})` : p.username
+      label: p.username
     }))
   );
 

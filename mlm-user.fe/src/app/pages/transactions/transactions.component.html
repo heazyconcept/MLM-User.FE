@@ -9,7 +9,7 @@
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h1 class="text-2xl font-bold text-gray-900 mb-1">Transactions</h1>
-              <p class="text-gray-500 text-sm">View and filter all your financial activities.</p>
+              <p class="text-gray-500 text-sm">{{ getTabDescription() }}</p>
             </div>
             <div class="flex gap-2">
               <p-button 
@@ -21,64 +21,23 @@
             </div>
           </div>
 
-          <!-- Search Bar -->
-          <div class="relative">
-            <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-            <input 
-              type="text" 
-              [value]="searchInput()"
-              (input)="onSearchInput($event)"
-              placeholder="Search by description, reference, or ID..." 
-              class="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary/20 transition-all font-normal text-gray-900 placeholder:text-gray-400">
-          </div>
-
-          <!-- Filter Dropdowns -->
-          <div class="flex flex-wrap items-center gap-3">
-            <!-- Date Range Filter -->
-            <select 
-              [value]="filters().dateRange"
-              (change)="onDateRangeChange($event)"
-              class="bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 cursor-pointer">
-              @for (option of dateRangeOptions; track option.value) {
-                <option [value]="option.value">{{ option.label }}</option>
-              }
-            </select>
-
-            <!-- Type Filter -->
-            <select 
-              [value]="filters().type"
-              (change)="onTypeChange($event)"
-              class="bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 cursor-pointer">
-              @for (option of typeOptions; track option.value) {
-                <option [value]="option.value">{{ option.label }}</option>
-              }
-            </select>
-
-            <!-- Status Filter -->
-            <select 
-              [value]="filters().status"
-              (change)="onStatusChange($event)"
-              class="bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 cursor-pointer">
-              @for (option of statusOptions; track option.value) {
-                <option [value]="option.value">{{ option.label }}</option>
-              }
-            </select>
-
-            <!-- Clear Filters -->
-            @if (hasActiveFilters()) {
-              <button 
-                (click)="onClearFilters()"
-                class="flex items-center gap-2 text-sm font-medium text-mlm-primary hover:text-mlm-primary/80 transition-colors">
-                <i class="pi pi-filter-slash text-xs"></i>
-                Clear Filters
+          <!-- Tabs -->
+          <div class="flex flex-wrap gap-2 rounded-xl bg-mlm-background/80 p-1.5 border border-mlm-warm-200">
+            @for (tab of tabOptions; track tab.value) {
+              <button
+                type="button"
+                (click)="onTabChange(tab.value)"
+                class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
+                [class.bg-white]="isActiveTab(tab.value)"
+                [class.text-mlm-warm-900]="isActiveTab(tab.value)"
+                [class.shadow-sm]="isActiveTab(tab.value)"
+                [class.text-mlm-warm-600]="!isActiveTab(tab.value)"
+                [class.hover:text-mlm-warm-900]="!isActiveTab(tab.value)">
+                {{ tab.label }}
               </button>
             }
-
-            <!-- Results Count -->
-            <span class="text-sm text-gray-500 ml-auto">
-              Showing {{ transactionCount() }} of {{ totalTransactionCount() }} transactions
-            </span>
           </div>
+
         </div>
 
         <!-- Transactions Table -->
@@ -89,6 +48,7 @@
                 <tr>
                   <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Date</th>
                   <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Description</th>
+                  <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Category</th>
                   <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Type</th>
                   <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Amount</th>
                   <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Status</th>
@@ -99,6 +59,11 @@
                   <tr class="hover:bg-mlm-warm-50/60 transition-colors">
                     <td class="px-4 py-3 text-xs text-mlm-warm-600 whitespace-nowrap">{{ tx.date | date: 'MMM d, y · h:mm a' }}</td>
                     <td class="px-4 py-3 text-sm text-mlm-warm-900 min-w-60">{{ tx.description }}</td>
+                    <td class="px-4 py-3 text-xs text-mlm-warm-700 whitespace-nowrap">
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-full border border-mlm-warm-200 bg-white font-semibold">
+                        {{ getTransactionCategoryLabel(tx) }}
+                      </span>
+                    </td>
                     <td class="px-4 py-3">
                       <span
                         class="inline-flex items-center px-2.5 py-1 rounded-full border text-[11px] font-semibold"
@@ -127,8 +92,8 @@
                 }
                 @if (transactions().length === 0) {
                   <tr>
-                    <td colspan="5" class="px-4 py-8 text-center text-sm text-mlm-warm-500">
-                      No transactions available.
+                    <td colspan="6" class="px-4 py-8 text-center text-sm text-mlm-warm-500">
+                      {{ emptyStateMessage() }}
                     </td>
                   </tr>
                 }

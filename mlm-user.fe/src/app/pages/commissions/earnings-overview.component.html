@@ -97,7 +97,7 @@
                 <div class="flex items-center justify-between mb-2">
                   <div>
                     <p class="text-xs font-medium text-mlm-text">Autoship wallet ({{ autoshipPercentage() }}%)</p>
-                    <p class="text-[11px] text-mlm-secondary mt-0.5">{{ currencySymbol() }}{{ monthlyAutoshipAmount() | number:'1.2-2' }}/mo requirement</p>
+                    <p class="text-[11px] text-mlm-secondary mt-0.5">{{ currencySymbol() }}{{ monthlyAutoshipAmount() | number:'1.0-0' }}/mo requirement</p>
                   </div>
                   <span class="text-sm font-medium text-mlm-text tabular-nums">
                     {{ currencySymbol() }}{{ autoshipBalance() | number:'1.2-2' }}
@@ -373,7 +373,7 @@
         <div class="border border-mlm-secondary/15 rounded-xl overflow-hidden">
           <div class="px-5 py-4 bg-white border-b border-mlm-secondary/15 flex items-center justify-between">
             <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Recent transactions</span>
-            <a routerLink="/commissions/breakdown" class="text-[11px] font-medium text-mlm-primary hover:underline">View all →</a>
+            <a routerLink="/commissions/breakdown" class="text-[11px] font-medium text-mlm-primary hover:underline cursor-pointer">View all →</a>
           </div>
 
           <div class="divide-y divide-mlm-secondary/15">
