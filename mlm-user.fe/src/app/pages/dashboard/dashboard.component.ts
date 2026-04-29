@@ -293,13 +293,13 @@ export class DashboardComponent implements OnInit {
         gradient: bgPrimary,
       },
       {
-        label: 'Vouchers',
+        label: 'Product Voucher',
         value: sym + fmt2(hero.voucherBalance),
         icon: 'pi-ticket',
         gradient: bgMuted,
       },
       {
-        label: 'Autoship',
+        label: 'Autoship Voucher',
         value: sym + fmt2(hero.autoshipBalance),
         icon: 'pi-refresh',
         gradient: bgPrimary,
