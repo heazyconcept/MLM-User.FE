@@ -61,12 +61,55 @@ Use this endpoint for the Recent Transactions table rows.
       "type": "Credit",
       "amount": 50000,
       "currency": "NGN",
-      "status": "Completed"
+      "status": "Completed",
+      "category": "wallet",
+      "source": "wallet_funding",
+      "subType": "bank_transfer",
+      "reference": "PAY_12345",
+      "direction": "inflow",
+      "metadata": {
+        "channel": "bank_transfer"
+      }
     }
   ],
   "nextCursor": "opaque_cursor_here"
 }
 ```
+
+### Suggested additive query params
+
+The endpoint should accept these optional params without breaking existing clients:
+
+1. `category` (`earnings` | `wallet` | `withdrawals` | `payments`) - enables tab-level filtering.
+2. `from` (ISO datetime) - lower date bound.
+3. `to` (ISO datetime) - upper date bound.
+4. `status` (`Completed` | `Pending` | `Failed`) - status filter.
+5. `type` (`Credit` | `Debit`) - direction filter.
+6. `search` (string) - server-side search against description/reference.
+
+If unsupported params are passed, backend may ignore them during rollout, but should preserve response shape.
+
+### Category mapping for tabbed Transactions page
+
+To support full visibility of earnings inflow sources (registration, product, voucher), backend should map ledger records consistently:
+
+1. `earnings`
+   - Registration commissions and bonuses
+   - Product commissions/bonuses
+   - Voucher/PV-related earnings credits
+2. `wallet`
+   - Wallet funding/top-up
+   - Wallet transfers and wallet adjustments
+3. `withdrawals`
+   - Withdrawal request, approval, payout lifecycle entries
+4. `payments`
+   - Payment processor charges, reversals, and payment-linked records
+
+`source` should carry finer-grained machine-friendly values (for example, `registration_bonus`, `product_commission`, `voucher_bonus`, `wallet_funding`, `withdrawal_payout`).
+
+### Compatibility note
+
+These fields are additive. Existing consumers that only use `id`, `date`, `description`, `type`, `amount`, `currency`, and `status` continue to work without change.
 
 ## UI Mapping (Already Implemented)
 

@@ -31,6 +31,9 @@ export interface CommissionSummary {
   communityBonus: number;
   productBonus: number;
   matchingBonus: number;
+  ppvEarnings: number;
+  pdpaEarnings: number;
+  cdpaEarnings: number;
   directReferrals: number;
 }
 
@@ -116,6 +119,7 @@ export class CommissionService {
         communityBonus: approved.filter((e) => e.type === 'Community Bonus').reduce((acc, curr) => acc + curr.amount, 0),
         productBonus: approved.filter((e) => e.type === 'Product Bonus').reduce((acc, curr) => acc + curr.amount, 0),
         matchingBonus: approved.filter((e) => e.type === 'Matching Bonus').reduce((acc, curr) => acc + curr.amount, 0),
+        ppvEarnings: approved.filter((e) => e.type === 'Personal Product Commission').reduce((acc, curr) => acc + curr.amount, 0),
         pdpaEarnings: approved.filter((e) => e.type === 'PDPA').reduce((acc, curr) => acc + curr.amount, 0),
         cdpaEarnings: approved.filter((e) => e.type === 'CDPA').reduce((acc, curr) => acc + curr.amount, 0),
         directReferrals: approved.filter((e) => e.type === 'Direct Referral').length

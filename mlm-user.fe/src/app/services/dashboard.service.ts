@@ -27,11 +27,26 @@ export type DashboardTransaction = {
   amount: number;
   currency: 'NGN' | 'USD';
   status: 'Completed' | 'Pending' | 'Failed';
+  category?: string;
+  source?: string;
+  subType?: string;
+  reference?: string;
+  direction?: 'inflow' | 'outflow';
+  metadata?: Record<string, string | number | boolean | null>;
 };
 
 export type DashboardTransactionsResponse = {
   items: DashboardTransaction[];
   nextCursor?: string;
+};
+
+export type DashboardTransactionsQuery = {
+  category?: string;
+  from?: string;
+  to?: string;
+  status?: DashboardTransaction['status'];
+  type?: DashboardTransaction['type'];
+  search?: string;
 };
 
 @Injectable({
@@ -44,9 +59,19 @@ export class DashboardService {
     return this.api.get<DashboardOverview>('dashboard/overview');
   }
 
-  getTransactions(limit = 10, cursor?: string): Observable<DashboardTransactionsResponse> {
+  getTransactions(
+    limit = 10,
+    cursor?: string,
+    query?: DashboardTransactionsQuery
+  ): Observable<DashboardTransactionsResponse> {
     const params: Record<string, string | number> = { limit };
     if (cursor) params['cursor'] = cursor;
+    if (query?.category) params['category'] = query.category;
+    if (query?.from) params['from'] = query.from;
+    if (query?.to) params['to'] = query.to;
+    if (query?.status) params['status'] = query.status;
+    if (query?.type) params['type'] = query.type;
+    if (query?.search) params['search'] = query.search;
     return this.api.get<DashboardTransactionsResponse>('dashboard/transactions', params);
   }
 }
