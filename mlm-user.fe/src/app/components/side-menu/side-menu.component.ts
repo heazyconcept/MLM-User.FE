@@ -263,9 +263,10 @@ export class SideMenuComponent {
       return;
     }
 
-    // Toggle submenu if has children
+    // Parent items are expand/collapse controls; leaf items perform navigation.
     if (item.children && item.children.length > 0) {
       this.toggleSubMenu(item.label);
+      return;
     }
 
     // Navigate if has route
