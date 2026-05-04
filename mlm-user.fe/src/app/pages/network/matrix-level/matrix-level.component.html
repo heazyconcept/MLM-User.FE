@@ -1,158 +1,167 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
-    <div class="px-4 sm:px-6 lg:px-8 mx-auto">
+    <div class="px-4 sm:px-6 lg:px-8 mx-auto max-w-5xl">
       <div class="space-y-8 animate-fade-in">
-        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div class="space-y-2">
-              <p class="text-xs font-semibold uppercase tracking-[0.3em] text-mlm-primary">Matrix level viewer</p>
-              <h1 class="text-2xl font-bold text-gray-900">Level {{ level() }} — Downlines</h1>
-              <p class="text-gray-500 text-sm">View users placed on level {{ level() }} of your matrix.</p>
-            </div>
 
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:min-w-176">
-              <label class="space-y-2 text-sm font-medium text-gray-700">
-                <span>Level</span>
-                <select
-                  class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-mlm-primary focus:outline-none focus:ring-2 focus:ring-mlm-primary/15"
-                  [value]="level()"
-                  (change)="onLevelChange($event)">
-                  @for (option of levelOptions; track option) {
-                    <option [value]="option">Level {{ option }}</option>
-                  }
-                </select>
-              </label>
-
-              <label class="space-y-2 text-sm font-medium text-gray-700">
-                <span>Page size</span>
-                <select
-                  class="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 focus:border-mlm-primary focus:outline-none focus:ring-2 focus:ring-mlm-primary/15"
-                  [value]="limit()"
-                  (change)="onLimitChange($event)">
-                  @for (option of pageSizeOptions; track option) {
-                    <option [value]="option">{{ option }} per page</option>
-                  }
-                </select>
-              </label>
-
-              <label class="space-y-2 text-sm font-medium text-gray-700 sm:col-span-2 lg:col-span-1">
-                <span>Search</span>
-                <div class="relative">
-                  <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                  <input
-                    type="text"
-                    [ngModel]="searchQuery()"
-                    (input)="onSearchInput($event)"
-                    placeholder="Search username, email or phone"
-                    class="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-400 focus:border-mlm-primary focus:outline-none focus:ring-2 focus:ring-mlm-primary/15">
-                </div>
-              </label>
-            </div>
+        <!-- ─── Header ──────────────────────────────── -->
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div>
+            <h1 class="text-xl font-medium text-mlm-text tracking-tight">
+              Level {{ level() }} — Downlines
+            </h1>
+            <p class="mt-1 text-sm text-mlm-secondary">
+              View members placed on level {{ level() }} of your matrix.
+            </p>
           </div>
 
-          @if (errorMessage()) {
-            <div class="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {{ errorMessage() }}
-            </div>
-          }
+          <!-- Controls -->
+          <div class="flex items-center gap-2 shrink-0">
 
-          <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-            <span class="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700">
-              Showing {{ totalRecords() === 0 ? 0 : showingFrom() }}-{{ showingTo() }} of {{ totalRecords() }}
-            </span>
-            <span class="rounded-full bg-mlm-green-50 px-3 py-1 font-medium text-mlm-primary">
-              Page {{ currentPage() }} of {{ totalPages() }}
-            </span>
-            <span class="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700">
-              Search scope: server-side
-            </span>
+            <!-- Level select -->
+            <div class="relative">
+              <select
+                [value]="level()"
+                (change)="onLevelChange($event)"
+                class="appearance-none h-9 pl-3 pr-8 text-sm font-medium text-mlm-text bg-white border border-mlm-secondary/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-mlm-primary/20 focus:border-mlm-primary/40 cursor-pointer transition-colors"
+              >
+                @for (option of levelOptions; track option) {
+                  <option [value]="option">Level {{ option }}</option>
+                }
+              </select>
+              <i class="pi pi-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-mlm-secondary pointer-events-none"></i>
+            </div>
+
+            <!-- Search -->
+            <div class="relative">
+              <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-mlm-secondary/60 pointer-events-none"></i>
+              <input
+                type="text"
+                [ngModel]="searchQuery()"
+                (input)="onSearchInput($event)"
+                placeholder="Search member…"
+                class="h-9 w-48 sm:w-56 pl-8 pr-3 text-sm text-mlm-text bg-white border border-mlm-secondary/20 rounded-lg placeholder:text-mlm-secondary/50 focus:outline-none focus:ring-1 focus:ring-mlm-primary/20 focus:border-mlm-primary/40 transition-colors"
+              />
+            </div>
+
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        @if (errorMessage()) {
+          <div class="px-4 py-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm">
+            {{ errorMessage() }}
+          </div>
+        }
+
+        <!-- ─── Table container ─────────────────────── -->
+        <div class="border border-mlm-secondary/15 rounded-xl overflow-hidden">
+
+          <!-- Table meta bar -->
+          <div class="px-5 py-3.5 bg-white border-b border-mlm-secondary/15 flex items-center justify-between gap-4">
+            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Members</span>
+            <span class="text-xs text-mlm-secondary tabular-nums">
+              @if (totalRecords() === 0) { 0 results }
+              @else { {{ showingFrom() }}–{{ showingTo() }} of {{ totalRecords() }} }
+            </span>
+          </div>
+
           <p-table
             [value]="isLoading() ? skeletonRows : users()"
             [paginator]="false"
-            [tableStyle]="{ 'min-width': '70rem' }"
+            [tableStyle]="{ 'min-width': '56rem' }"
             styleClass="p-datatable-sm"
-            [rowHover]="true">
+            [rowHover]="true"
+          >
             <ng-template pTemplate="header">
-              <tr>
-                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Member</th>
-                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Contact</th>
-                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Joined</th>
-                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Status</th>
-                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700">Direct</th>
-                <th class="text-xs font-semibold uppercase tracking-wide text-gray-700 text-right">Actions</th>
+              <tr class="bg-mlm-background">
+                <th class="!px-5 !py-3 text-[11px] font-medium uppercase tracking-widest text-mlm-secondary !bg-mlm-background !border-b !border-mlm-secondary/15">Member</th>
+                <th class="!px-5 !py-3 text-[11px] font-medium uppercase tracking-widest text-mlm-secondary !bg-mlm-background !border-b !border-mlm-secondary/15">Contact</th>
+                <th class="!px-5 !py-3 text-[11px] font-medium uppercase tracking-widest text-mlm-secondary !bg-mlm-background !border-b !border-mlm-secondary/15">Joined</th>
+                <th class="!px-5 !py-3 text-[11px] font-medium uppercase tracking-widest text-mlm-secondary !bg-mlm-background !border-b !border-mlm-secondary/15">Status</th>
+                <th class="!px-5 !py-3 text-[11px] font-medium uppercase tracking-widest text-mlm-secondary !bg-mlm-background !border-b !border-mlm-secondary/15">Direct</th>
+                <th class="!px-5 !py-3 text-[11px] font-medium uppercase tracking-widest text-mlm-secondary !bg-mlm-background !border-b !border-mlm-secondary/15 !text-right"></th>
               </tr>
             </ng-template>
 
             <ng-template pTemplate="body" let-user>
               @if (isLoading()) {
-                <tr>
-                  <td>
+                <tr class="!border-b !border-mlm-secondary/10">
+                  <td class="!px-5 !py-4">
                     <div class="flex items-center gap-3">
-                      <p-skeleton shape="circle" size="2.25rem"></p-skeleton>
-                      <div class="space-y-2">
-                        <p-skeleton width="8rem" height="1rem"></p-skeleton>
+                      <p-skeleton shape="circle" size="2rem"></p-skeleton>
+                      <div class="space-y-1.5">
+                        <p-skeleton width="7rem" height="0.875rem"></p-skeleton>
                         <p-skeleton width="5rem" height="0.75rem"></p-skeleton>
                       </div>
                     </div>
                   </td>
-                  <td>
-                    <div class="space-y-2">
-                      <p-skeleton width="10rem" height="1rem"></p-skeleton>
-                      <p-skeleton width="7rem" height="0.75rem"></p-skeleton>
+                  <td class="!px-5 !py-4">
+                    <div class="space-y-1.5">
+                      <p-skeleton width="9rem" height="0.875rem"></p-skeleton>
+                      <p-skeleton width="6rem" height="0.75rem"></p-skeleton>
                     </div>
                   </td>
-                  <td><p-skeleton width="7rem" height="1rem"></p-skeleton></td>
-                  <td><p-skeleton width="5.5rem" height="1.5rem" borderRadius="999px"></p-skeleton></td>
-                  <td><p-skeleton width="5rem" height="1.5rem" borderRadius="999px"></p-skeleton></td>
-                  <td class="text-right"><p-skeleton width="6rem" height="1rem" class="ml-auto"></p-skeleton></td>
+                  <td class="!px-5 !py-4"><p-skeleton width="6rem" height="0.875rem"></p-skeleton></td>
+                  <td class="!px-5 !py-4"><p-skeleton width="4.5rem" height="1.25rem" borderRadius="999px"></p-skeleton></td>
+                  <td class="!px-5 !py-4"><p-skeleton width="4.5rem" height="1.25rem" borderRadius="999px"></p-skeleton></td>
+                  <td class="!px-5 !py-4 text-right"><p-skeleton width="5rem" height="0.875rem" class="ml-auto"></p-skeleton></td>
                 </tr>
               } @else {
-                <tr class="p-selectable-row">
-                  <td>
+                <tr class="!border-b !border-mlm-secondary/10 !bg-white hover:!bg-mlm-background transition-colors">
+
+                  <!-- Member -->
+                  <td class="!px-5 !py-4">
                     <div class="flex items-center gap-3">
-                      <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-mlm-green-100 text-xs font-bold text-mlm-primary">
+                      <div class="flex w-8 h-8 shrink-0 items-center justify-center rounded-full bg-mlm-secondary/10 text-[11px] font-medium text-mlm-secondary">
                         {{ user.username.slice(0, 2).toUpperCase() }}
                       </div>
-                      <div class="space-y-0.5">
-                        <p class="text-sm font-semibold text-gray-900">{{ user.username }}</p>
-                        <p class="text-xs text-gray-500">ID: {{ user.id }}</p>
+                      <div>
+                        <p class="text-sm font-medium text-mlm-text">{{ user.username }}</p>
+                        <p class="text-[11px] text-mlm-secondary font-mono mt-0.5 truncate max-w-[140px]">{{ user.id }}</p>
                       </div>
                     </div>
                   </td>
-                  <td>
-                    <div class="space-y-1">
-                      <p class="text-sm text-gray-700">{{ user.email || 'No email available' }}</p>
-                      <p class="text-xs text-gray-400">{{ user.phone || 'No phone available' }}</p>
-                    </div>
+
+                  <!-- Contact -->
+                  <td class="!px-5 !py-4">
+                    <p class="text-sm text-mlm-text">{{ user.email || '—' }}</p>
+                    <p class="text-xs text-mlm-secondary mt-0.5">{{ user.phone || 'No phone' }}</p>
                   </td>
-                  <td>
-                    <div class="space-y-1">
-                      <p class="text-sm font-medium text-gray-700">{{ user.joinDate | date:'mediumDate' }}</p>
-                      <p class="text-xs text-gray-400">{{ user.joinDate | date:'shortTime' }}</p>
-                    </div>
+
+                  <!-- Joined -->
+                  <td class="!px-5 !py-4">
+                    <p class="text-sm text-mlm-text tabular-nums">{{ user.joinDate | date:'MMM d, yyyy' }}</p>
+                    <p class="text-xs text-mlm-secondary mt-0.5 tabular-nums">{{ user.joinDate | date:'h:mm a' }}</p>
                   </td>
-                  <td>
+
+                  <!-- Status -->
+                  <td class="!px-5 !py-4">
                     <app-status-badge [status]="formatStatus(user.status)" size="sm"></app-status-badge>
                   </td>
-                  <td>
+
+                  <!-- Direct / Indirect -->
+                  <td class="!px-5 !py-4">
                     @if (user.isDirectReferral) {
-                      <span class="inline-flex items-center rounded-full bg-mlm-green-50 px-3 py-1 text-xs font-semibold text-mlm-primary">Direct</span>
+                      <span class="inline-flex items-center text-[11px] font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-full">
+                        Direct
+                      </span>
                     } @else {
-                      <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-500">Indirect</span>
+                      <span class="inline-flex items-center text-[11px] font-medium text-mlm-secondary bg-mlm-secondary/10 px-2.5 py-1 rounded-full">
+                        Indirect
+                      </span>
                     }
                   </td>
-                  <td class="text-right">
-                    <a
-                      routerLink="/profile"
-                      class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 transition-colors hover:border-mlm-primary hover:text-mlm-primary">
-                      <i class="pi pi-user"></i>
-                      View profile
-                    </a>
-                  </td>
+
+                  <!-- Action -->
+                    <!-- <td class="!px-5 !py-4 text-right">
+                      <a
+                        routerLink="/profile"
+                        class="inline-flex items-center gap-1.5 text-xs font-medium text-mlm-secondary hover:text-mlm-text transition-colors group"
+                      >
+                        View profile
+                        <span class="group-hover:translate-x-0.5 transition-transform">→</span>
+                      </a>
+                    </td> -->
+
                 </tr>
               }
             </ng-template>
@@ -160,49 +169,48 @@
             <ng-template pTemplate="emptymessage">
               @if (!isLoading()) {
                 <tr>
-                  <td colspan="6" class="py-20 text-center">
-                    <div class="mx-auto flex max-w-sm flex-col items-center gap-3 text-gray-500">
-                      <div class="flex size-14 items-center justify-center rounded-full bg-gray-100 text-gray-300">
-                        <i class="pi pi-users text-2xl"></i>
-                      </div>
-                      <p class="text-base font-semibold text-gray-700">No users found on this level</p>
-                      <p class="text-sm">Try another level or clear the search field.</p>
-                    </div>
+                  <td colspan="6" class="!px-5 !py-16 !text-center !bg-white">
+                    <p class="text-sm font-medium text-mlm-text mb-1">No members on this level</p>
+                    <p class="text-xs text-mlm-secondary">Try selecting a different level or clearing the search.</p>
                   </td>
                 </tr>
               }
             </ng-template>
           </p-table>
 
-          <div class="flex flex-col gap-4 border-t border-gray-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-sm text-gray-500">
-              Showing {{ totalRecords() === 0 ? 0 : showingFrom() }}-{{ showingTo() }} of {{ totalRecords() }} users
-            </p>
+          <!-- ─── Pagination ───────────────────────── -->
+          <div class="flex items-center justify-between px-5 py-3.5 bg-white border-t border-mlm-secondary/15">
+            <span class="text-xs text-mlm-secondary tabular-nums">
+              Showing {{ totalRecords() === 0 ? 0 : showingFrom() }}–{{ showingTo() }} of {{ totalRecords() }} members
+            </span>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
               <button
                 type="button"
                 (click)="previousPage()"
                 [disabled]="!canGoPrevious() || isLoading()"
-                class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50 hover:border-mlm-primary hover:text-mlm-primary">
-                <i class="pi pi-chevron-left text-xs"></i>
-                Previous
+                class="h-8 px-3 text-xs font-medium text-mlm-text bg-white border border-mlm-secondary/20 rounded-lg hover:border-mlm-secondary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+              >
+                <i class="pi pi-chevron-left text-[10px]"></i>
+                Prev
               </button>
 
-              <div class="rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700">
-                Page {{ currentPage() }} / {{ totalPages() }}
-              </div>
+              <span class="h-8 px-3 flex items-center text-xs font-medium text-mlm-secondary bg-mlm-background border border-mlm-secondary/15 rounded-lg tabular-nums">
+                {{ currentPage() }} / {{ totalPages() }}
+              </span>
 
               <button
                 type="button"
                 (click)="nextPage()"
                 [disabled]="!canGoNext() || isLoading()"
-                class="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50 hover:border-mlm-primary hover:text-mlm-primary">
+                class="h-8 px-3 text-xs font-medium text-mlm-text bg-white border border-mlm-secondary/20 rounded-lg hover:border-mlm-secondary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+              >
                 Next
-                <i class="pi pi-chevron-right text-xs"></i>
+                <i class="pi pi-chevron-right text-[10px]"></i>
               </button>
             </div>
           </div>
+
         </div>
       </div>
     </div>
