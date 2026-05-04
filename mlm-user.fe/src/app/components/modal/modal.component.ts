@@ -1,5 +1,4 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ModalService } from '../../services/modal.service';
 
 import { Router } from '@angular/router';
@@ -7,7 +6,7 @@ import { Router } from '@angular/router';
 @Component({
   selector: 'app-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './modal.component.html',
   styles: []
 })

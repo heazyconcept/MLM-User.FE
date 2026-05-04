@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 
-export type ModalType = 'success' | 'error';
+export type ModalType = 'success' | 'error' | 'info' | 'warning';
 
 export interface ModalState {
   isOpen: boolean;
@@ -8,6 +8,7 @@ export interface ModalState {
   title: string;
   message: string;
   redirectTo?: string;
+  onClose?: () => void;
 }
 
 @Injectable({
@@ -31,7 +32,24 @@ export class ModalService {
     });
   }
 
+  /**
+   * Open modal with an onClose callback (used by realtime notifications to advance the queue).
+   */
+  openWithCallback(type: ModalType, title: string, message: string, onClose: () => void) {
+    this.modalState.set({
+      isOpen: true,
+      type,
+      title,
+      message,
+      onClose
+    });
+  }
+
   close() {
-    this.modalState.update(state => ({ ...state, isOpen: false }));
+    const onClose = this.modalState().onClose;
+    this.modalState.update(state => ({ ...state, isOpen: false, onClose: undefined }));
+    if (onClose) {
+      onClose();
+    }
   }
 }

@@ -1,9 +1,10 @@
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { SideMenuComponent } from '../../components/side-menu/side-menu.component';
 import { DashboardHeaderComponent } from '../../components/dashboard-header/dashboard-header.component';
 import { LayoutService } from '../../services/layout.service';
+import { RealTimeNotificationService } from '../../services/realtime-notification.service';
 
 @Component({
   selector: 'app-dashboard-layout',
@@ -12,8 +13,17 @@ import { LayoutService } from '../../services/layout.service';
   templateUrl: './dashboard-layout.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DashboardLayoutComponent {
+export class DashboardLayoutComponent implements OnInit, OnDestroy {
   layoutService = inject(LayoutService);
   isSidebarCollapsed = this.layoutService.isSidebarCollapsed;
-}
 
+  private realtimeNotifications = inject(RealTimeNotificationService);
+
+  ngOnInit(): void {
+    this.realtimeNotifications.initialize();
+  }
+
+  ngOnDestroy(): void {
+    this.realtimeNotifications.disconnect();
+  }
+}

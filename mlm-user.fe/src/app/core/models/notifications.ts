@@ -142,6 +142,43 @@ export const NOTIFICATION_TYPES_BY_CATEGORY: Record<NotificationCategory, Notifi
   ],
 };
 
+/**
+ * Backend notification category (uppercase, used in wire payloads).
+ * Different from the frontend `NotificationCategory` which is lowercase plural.
+ */
+export type BackendNotificationCategory =
+  | 'EARNING'
+  | 'WALLET'
+  | 'WITHDRAWAL'
+  | 'PAYMENT'
+  | 'ORDER'
+  | 'MERCHANT'
+  | 'ACCOUNT'
+  | 'SYSTEM';
+
+/** Socket.io event payload (ReceiveNotification) */
+export interface NotificationWirePayload {
+  id: string;
+  type: NotificationType;
+  category: BackendNotificationCategory;
+  title: string;
+  message: string;
+  amount?: number;
+  currency?: string;
+  metadata?: Record<string, unknown>;
+  isRead: boolean;
+  createdAt: string;
+}
+
+/** REST list response for GET /notifications */
+export interface NotificationListResponse {
+  notifications: ApiNotificationItem[];
+  total: number;
+  unreadCount: number;
+  limit: number;
+  offset: number;
+}
+
 /** Map API type to UI badge type for display. */
 export function notificationTypeToUiType(
   type: NotificationType
