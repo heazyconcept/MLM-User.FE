@@ -1,6 +1,6 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
-    <div class="px-4 sm:px-6 lg:px-8 mx-auto max-w-5xl">
+    <div class="px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl">
       <div class="space-y-8 animate-fade-in">
 
         <!-- ─── Header ──────────────────────────────── -->
@@ -49,138 +49,108 @@
         @if (errorMessage()) {
           <div class="px-4 py-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm">
             {{ errorMessage() }}
-          </div>
-        }
-
-        <!-- ─── Table container ─────────────────────── -->
-        <div class="border border-mlm-secondary/15 rounded-xl overflow-hidden">
+          </div        <!-- ─── Table container ─────────────────────── -->
+        <div class="bg-white rounded-2xl border border-mlm-warm-200 overflow-hidden">
 
           <!-- Table meta bar -->
-          <div class="px-5 py-3.5 bg-white border-b border-mlm-secondary/15 flex items-center justify-between gap-4">
-            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Members</span>
-            <span class="text-xs text-mlm-secondary tabular-nums">
+          <div class="px-5 py-3.5 bg-white border-b border-mlm-warm-200 flex items-center justify-between gap-4">
+            <span class="text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Members</span>
+            <span class="text-xs text-mlm-warm-600 tabular-nums font-medium">
               @if (totalRecords() === 0) { 0 results }
               @else { {{ showingFrom() }}–{{ showingTo() }} of {{ totalRecords() }} }
             </span>
           </div>
 
-          <p-table
-            [value]="isLoading() ? skeletonRows : users()"
-            [paginator]="false"
-            [tableStyle]="{ 'min-width': '56rem' }"
-            styleClass="p-datatable-sm"
-            [rowHover]="true"
-          >
-            <ng-template pTemplate="header">
-              <tr class="bg-mlm-background">
-                <th class="!px-5 !py-3 text-[11px] font-medium uppercase tracking-widest text-mlm-secondary !bg-mlm-background !border-b !border-mlm-secondary/15">Member</th>
-                <th class="!px-5 !py-3 text-[11px] font-medium uppercase tracking-widest text-mlm-secondary !bg-mlm-background !border-b !border-mlm-secondary/15">Contact</th>
-                <th class="!px-5 !py-3 text-[11px] font-medium uppercase tracking-widest text-mlm-secondary !bg-mlm-background !border-b !border-mlm-secondary/15">Joined</th>
-                <th class="!px-5 !py-3 text-[11px] font-medium uppercase tracking-widest text-mlm-secondary !bg-mlm-background !border-b !border-mlm-secondary/15">Status</th>
-                <th class="!px-5 !py-3 text-[11px] font-medium uppercase tracking-widest text-mlm-secondary !bg-mlm-background !border-b !border-mlm-secondary/15">Direct</th>
-                <th class="!px-5 !py-3 text-[11px] font-medium uppercase tracking-widest text-mlm-secondary !bg-mlm-background !border-b !border-mlm-secondary/15 !text-right"></th>
-              </tr>
-            </ng-template>
-
-            <ng-template pTemplate="body" let-user>
-              @if (isLoading()) {
-                <tr class="!border-b !border-mlm-secondary/10">
-                  <td class="!px-5 !py-4">
-                    <div class="flex items-center gap-3">
-                      <p-skeleton shape="circle" size="2rem"></p-skeleton>
-                      <div class="space-y-1.5">
-                        <p-skeleton width="7rem" height="0.875rem"></p-skeleton>
-                        <p-skeleton width="5rem" height="0.75rem"></p-skeleton>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="!px-5 !py-4">
-                    <div class="space-y-1.5">
-                      <p-skeleton width="9rem" height="0.875rem"></p-skeleton>
-                      <p-skeleton width="6rem" height="0.75rem"></p-skeleton>
-                    </div>
-                  </td>
-                  <td class="!px-5 !py-4"><p-skeleton width="6rem" height="0.875rem"></p-skeleton></td>
-                  <td class="!px-5 !py-4"><p-skeleton width="4.5rem" height="1.25rem" borderRadius="999px"></p-skeleton></td>
-                  <td class="!px-5 !py-4"><p-skeleton width="4.5rem" height="1.25rem" borderRadius="999px"></p-skeleton></td>
-                  <td class="!px-5 !py-4 text-right"><p-skeleton width="5rem" height="0.875rem" class="ml-auto"></p-skeleton></td>
-                </tr>
-              } @else {
-                <tr class="!border-b !border-mlm-secondary/10 !bg-white hover:!bg-mlm-background transition-colors">
-
-                  <!-- Member -->
-                  <td class="!px-5 !py-4">
-                    <div class="flex items-center gap-3">
-                      <div class="flex w-8 h-8 shrink-0 items-center justify-center rounded-full bg-mlm-secondary/10 text-[11px] font-medium text-mlm-secondary">
-                        {{ user.username.slice(0, 2).toUpperCase() }}
-                      </div>
-                      <div>
-                        <p class="text-sm font-medium text-mlm-text">{{ user.username }}</p>
-                        <p class="text-[11px] text-mlm-secondary font-mono mt-0.5 truncate max-w-[140px]">{{ user.id }}</p>
-                      </div>
-                    </div>
-                  </td>
-
-                  <!-- Contact -->
-                  <td class="!px-5 !py-4">
-                    <p class="text-sm text-mlm-text">{{ user.email || '—' }}</p>
-                    <p class="text-xs text-mlm-secondary mt-0.5">{{ user.phone || 'No phone' }}</p>
-                  </td>
-
-                  <!-- Joined -->
-                  <td class="!px-5 !py-4">
-                    <p class="text-sm text-mlm-text tabular-nums">{{ user.joinDate | date:'MMM d, yyyy' }}</p>
-                    <p class="text-xs text-mlm-secondary mt-0.5 tabular-nums">{{ user.joinDate | date:'h:mm a' }}</p>
-                  </td>
-
-                  <!-- Status -->
-                  <td class="!px-5 !py-4">
-                    <app-status-badge [status]="formatStatus(user.status)" size="sm"></app-status-badge>
-                  </td>
-
-                  <!-- Direct / Indirect -->
-                  <td class="!px-5 !py-4">
-                    @if (user.isDirectReferral) {
-                      <span class="inline-flex items-center text-[11px] font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-full">
-                        Direct
-                      </span>
-                    } @else {
-                      <span class="inline-flex items-center text-[11px] font-medium text-mlm-secondary bg-mlm-secondary/10 px-2.5 py-1 rounded-full">
-                        Indirect
-                      </span>
-                    }
-                  </td>
-
-                  <!-- Action -->
-                    <!-- <td class="!px-5 !py-4 text-right">
-                      <a
-                        routerLink="/profile"
-                        class="inline-flex items-center gap-1.5 text-xs font-medium text-mlm-secondary hover:text-mlm-text transition-colors group"
-                      >
-                        View profile
-                        <span class="group-hover:translate-x-0.5 transition-transform">→</span>
-                      </a>
-                    </td> -->
-
-                </tr>
-              }
-            </ng-template>
-
-            <ng-template pTemplate="emptymessage">
-              @if (!isLoading()) {
+          <div class="overflow-x-auto border-b border-mlm-warm-200">
+            <table class="min-w-full text-left">
+              <thead class="bg-mlm-background">
                 <tr>
-                  <td colspan="6" class="!px-5 !py-16 !text-center !bg-white">
-                    <p class="text-sm font-medium text-mlm-text mb-1">No members on this level</p>
-                    <p class="text-xs text-mlm-secondary">Try selecting a different level or clearing the search.</p>
-                  </td>
+                  <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Member</th>
+                  <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Contact</th>
+                  <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Joined</th>
+                  <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Status</th>
+                  <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Direct</th>
                 </tr>
-              }
-            </ng-template>
-          </p-table>
+              </thead>
+              <tbody class="divide-y divide-mlm-warm-200">
+                @if (isLoading()) {
+                  @for (i of skeletonRows; track i) {
+                    <tr class="hover:bg-mlm-warm-50/60 transition-colors">
+                      <td class="px-5 py-4">
+                        <div class="flex items-center gap-3">
+                          <p-skeleton shape="circle" size="2rem"></p-skeleton>
+                          <div class="space-y-1.5">
+                            <p-skeleton width="7rem" height="0.875rem"></p-skeleton>
+                            <p-skeleton width="5rem" height="0.75rem"></p-skeleton>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-5 py-4">
+                        <div class="space-y-1.5">
+                          <p-skeleton width="9rem" height="0.875rem"></p-skeleton>
+                          <p-skeleton width="6rem" height="0.75rem"></p-skeleton>
+                        </div>
+                      </td>
+                      <td class="px-5 py-4"><p-skeleton width="6rem" height="0.875rem"></p-skeleton></td>
+                      <td class="px-5 py-4"><p-skeleton width="4.5rem" height="1.25rem" borderRadius="999px"></p-skeleton></td>
+                      <td class="px-5 py-4"><p-skeleton width="4.5rem" height="1.25rem" borderRadius="999px"></p-skeleton></td>
+                    </tr>
+                  }
+                } @else {
+                  @for (user of users(); track user.id) {
+                    <tr class="hover:bg-mlm-warm-50/60 transition-colors">
+                      <td class="px-5 py-4">
+                        <div class="flex items-center gap-3">
+                          <div class="flex w-8 h-8 shrink-0 items-center justify-center rounded-full bg-mlm-warm-100 text-[11px] font-bold text-mlm-warm-700 border border-mlm-warm-200">
+                            {{ user.username.slice(0, 2).toUpperCase() }}
+                          </div>
+                          <div>
+                            <p class="text-sm font-semibold text-mlm-warm-900">{{ user.username }}</p>
+                            <p class="text-[11px] text-mlm-warm-500 font-mono mt-0.5 truncate max-w-[140px]">{{ user.id }}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-5 py-4">
+                        <p class="text-sm text-mlm-warm-900">{{ user.email || '—' }}</p>
+                        <p class="text-xs text-mlm-warm-500 mt-0.5">{{ user.phone || 'No phone' }}</p>
+                      </td>
+                      <td class="px-5 py-4">
+                        <p class="text-sm text-mlm-warm-900 tabular-nums">{{ user.joinDate | date:'MMM d, yyyy' }}</p>
+                        <p class="text-xs text-mlm-warm-500 mt-0.5 tabular-nums">{{ user.joinDate | date:'h:mm a' }}</p>
+                      </td>
+                      <td class="px-5 py-4">
+                        <app-status-badge [status]="formatStatus(user.status)" size="sm"></app-status-badge>
+                      </td>
+                      <td class="px-5 py-4">
+                        @if (user.isDirectReferral) {
+                          <span class="inline-flex items-center text-[11px] font-bold text-mlm-green-700 bg-mlm-green-50 border border-mlm-green-200 px-2.5 py-1 rounded-full">
+                            Direct
+                          </span>
+                        } @else {
+                          <span class="inline-flex items-center text-[11px] font-bold text-mlm-warm-600 bg-mlm-warm-100 border border-mlm-warm-200 px-2.5 py-1 rounded-full">
+                            Indirect
+                          </span>
+                        }
+                      </td>
+                    </tr>
+                  }
+
+                  @if (users().length === 0) {
+                    <tr>
+                      <td colspan="5" class="px-5 py-16 text-center">
+                        <p class="text-sm font-semibold text-mlm-warm-900 mb-1">No members on this level</p>
+                        <p class="text-xs text-mlm-warm-500">Try selecting a different level or clearing the search.</p>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
 
           <!-- ─── Pagination ───────────────────────── -->
-          <div class="flex items-center justify-between px-5 py-3.5 bg-white border-t border-mlm-secondary/15">
-            <span class="text-xs text-mlm-secondary tabular-nums">
+          <div class="flex items-center justify-between px-5 py-4 bg-white">
+            <span class="text-xs text-mlm-warm-600 tabular-nums font-medium">
               Showing {{ totalRecords() === 0 ? 0 : showingFrom() }}–{{ showingTo() }} of {{ totalRecords() }} members
             </span>
 
@@ -189,13 +159,13 @@
                 type="button"
                 (click)="previousPage()"
                 [disabled]="!canGoPrevious() || isLoading()"
-                class="h-8 px-3 text-xs font-medium text-mlm-text bg-white border border-mlm-secondary/20 rounded-lg hover:border-mlm-secondary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                class="h-8 px-3 text-xs font-semibold text-mlm-warm-700 bg-white border border-mlm-warm-200 rounded-lg hover:bg-mlm-warm-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
               >
                 <i class="pi pi-chevron-left text-[10px]"></i>
                 Prev
               </button>
 
-              <span class="h-8 px-3 flex items-center text-xs font-medium text-mlm-secondary bg-mlm-background border border-mlm-secondary/15 rounded-lg tabular-nums">
+              <span class="h-8 px-3 flex items-center text-xs font-semibold text-mlm-warm-700 bg-mlm-background border border-mlm-warm-200 rounded-lg tabular-nums">
                 {{ currentPage() }} / {{ totalPages() }}
               </span>
 
@@ -203,7 +173,14 @@
                 type="button"
                 (click)="nextPage()"
                 [disabled]="!canGoNext() || isLoading()"
-                class="h-8 px-3 text-xs font-medium text-mlm-text bg-white border border-mlm-secondary/20 rounded-lg hover:border-mlm-secondary/40 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                class="h-8 px-3 text-xs font-semibold text-mlm-warm-700 bg-white border border-mlm-warm-200 rounded-lg hover:bg-mlm-warm-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+              >
+                Next
+                <i class="pi pi-chevron-right text-[10px]"></i>
+              </button>
+            </div>
+          </div>
+        </div>nter gap-1.5"
               >
                 Next
                 <i class="pi pi-chevron-right text-[10px]"></i>
