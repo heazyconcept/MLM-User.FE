@@ -87,10 +87,13 @@ export class CreateReferralComponent implements OnInit {
 
   /** Map direct referrals to dropdown options for "Place under" */
   placementParentOptions = computed(() =>
-    this.directReferrals().map(dr => ({
-      value: dr.id,
-      label: `${dr.username} (${dr.firstName} ${dr.lastName})`
-    }))
+    this.directReferrals().map(dr => {
+      const fullName = [dr.firstName, dr.lastName].filter(n => !!n && n.trim().length > 0).join(' ');
+      return {
+        value: dr.id,
+        label: fullName ? `${dr.username} (${fullName})` : dr.username
+      };
+    })
   );
 
   packageOptions = PACKAGE_OPTIONS;
