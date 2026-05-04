@@ -492,6 +492,8 @@ export class DashboardComponent implements OnInit {
         },
         error: () => {
           this.overview.set(this.defaultOverview);
+          this.cardsVisible = new Array(this.statCardsData.length).fill(false);
+          this.animateCards();
           this.cdr.markForCheck();
         },
       });
@@ -548,9 +550,6 @@ export class DashboardComponent implements OnInit {
     this.cdr.markForCheck();
 
     this.initCharts();
-
-    this.cardsVisible = new Array(this.statCardsData.length).fill(false);
-    this.animateCards();
   }
 
   private animateCards(): void {
