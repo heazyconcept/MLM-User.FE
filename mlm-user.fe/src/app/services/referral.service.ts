@@ -58,6 +58,7 @@ export interface DownlineItem {
   rank?: string;
   stage?: string;
   profilePhotoUrl?: string;
+  isDirectReferral: boolean;
 }
 
 export interface CreateReferralRequest {
@@ -72,6 +73,60 @@ export interface CreateReferralRequest {
 export interface CreateReferralResponse {
   userId: string;
   email?: string;
+}
+
+export interface ReferralStats {
+  teamSize: number;
+  totalDirectReferrals: number;
+  totalActiveDirectReferrals: number;
+  isLeader: boolean;
+}
+
+export interface DirectReferralItem {
+  id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  package: string;
+  isActive: boolean;
+  isRegistrationPaid: boolean;
+  createdAt: string;
+  profilePhotoUrl?: string;
+}
+
+export interface MatrixLevelUser {
+  id: string;
+  username: string;
+  email?: string | null;
+  phone?: string | null;
+  joinDate: string;
+  status: 'ACTIVE' | 'UNPAID' | 'SUSPENDED' | string;
+  isDirectReferral: boolean;
+  profilePhotoUrl?: string | null;
+}
+
+export interface MatrixLevelPagination {
+  totalRecords: number;
+  currentOffset: number;
+  limit: number;
+  hasNext: boolean;
+}
+
+export interface MatrixLevelResponse {
+  status: 'success' | 'error';
+  data: {
+    levelRequested: number;
+    pagination: MatrixLevelPagination;
+    users: MatrixLevelUser[];
+  };
+}
+
+export interface MatrixLevelQuery {
+  level: number;
+  limit?: number;
+  offset?: number;
+  search?: string;
 }
 
 // ── Service ─────────────────────────────────────────────────────────
@@ -126,13 +181,16 @@ export class ReferralService {
         params
       )
       .pipe(
-        map((res) => {
-          const arr = Array.isArray(res)
-            ? res
-            : (res['data'] ?? res['items'] ?? res['downlines'] ?? []) as Record<string, unknown>[];
-          return arr.map((raw) => this.mapDownlineItem(raw));
-        }),
-        catchError(() => of([]))
+        map((res) => this.mapDownlinesResponse(res)),
+        catchError(() => {
+          if (depth == null) return of([]);
+          return this.api
+            .get<Record<string, unknown>[] | Record<string, unknown>>('referrals/me/downlines')
+            .pipe(
+              map((res) => this.mapDownlinesResponse(res)),
+              catchError(() => of([]))
+            );
+        })
       );
   }
 
@@ -227,6 +285,105 @@ export class ReferralService {
     );
   }
 
+  /** GET /referrals/me/direct-referrals */
+  getDirectReferrals(limit = 50, offset = 0): Observable<DirectReferralItem[]> {
+    return this.api
+      .get<Record<string, unknown>[] | Record<string, unknown>>(
+        'referrals/me/direct-referrals',
+        { limit: String(limit), offset: String(offset) }
+      )
+      .pipe(
+        map((res) => {
+          const arr = Array.isArray(res)
+            ? res
+            : (res['data'] ?? res['items'] ?? []) as Record<string, unknown>[];
+          return arr.map((raw) => ({
+            id: String(raw['id'] ?? ''),
+            username: String(raw['username'] ?? ''),
+            email: String(raw['email'] ?? ''),
+            firstName: String(raw['firstName'] ?? ''),
+            lastName: String(raw['lastName'] ?? ''),
+            package: String(raw['package'] ?? ''),
+            isActive: (raw['isActive'] ?? false) as boolean,
+            isRegistrationPaid: (raw['isRegistrationPaid'] ?? false) as boolean,
+            createdAt: String(raw['createdAt'] ?? ''),
+            profilePhotoUrl: raw['profilePhotoUrl'] as string | undefined
+          }));
+        }),
+        catchError(() => of([]))
+      );
+  }
+
+  /** GET /referrals/me/matrix-level */
+  getMatrixLevelUsers(query: MatrixLevelQuery): Observable<MatrixLevelResponse> {
+    const level = this.clampNumber(query.level, 1, 13, 1);
+    const limit = this.clampNumber(query.limit ?? 20, 1, 200, 20);
+    const offset = this.clampNumber(query.offset ?? 0, 0, Number.MAX_SAFE_INTEGER, 0);
+    const search = query.search?.trim() ?? '';
+
+    const page = Math.floor(offset / limit) + 1;
+
+    const params: Record<string, string | number> = {
+      level,
+      page,
+      limit
+    };
+
+    if (search) {
+      params['search'] = search;
+    }
+
+    return this.api
+      .get<Record<string, unknown> | Record<string, unknown>[]>('referrals/me/matrix-level', params)
+      .pipe(
+        map((res) => this.normalizeMatrixLevelResponse(res, level, limit, offset)),
+        catchError((error) => {
+          if (error?.status === 404) {
+            const networkParams: Record<string, string | number> = {
+              level,
+              page,
+              limit
+            };
+            if (search) {
+              networkParams['search'] = search;
+            }
+            return this.api
+              .get<Record<string, unknown> | Record<string, unknown>[]>('network/levels', networkParams)
+              .pipe(
+                map((res) => this.normalizeMatrixLevelResponse(res, level, limit, offset)),
+                catchError(() =>
+                  this.getDownlines().pipe(
+                    map((downlines) => this.buildMatrixLevelFallback(downlines, level, limit, offset, search))
+                  )
+                )
+              );
+          }
+
+          return this.getDownlines().pipe(
+            map((downlines) => this.buildMatrixLevelFallback(downlines, level, limit, offset, search))
+          );
+        })
+      );
+  }
+
+  /** GET /referrals/me/stats */
+  getReferralStats(): Observable<ReferralStats> {
+    return this.api.get<Record<string, unknown>>('referrals/me/stats').pipe(
+      map((res) => ({
+        teamSize: Number(res['teamSize'] ?? 0),
+        totalDirectReferrals: Number(res['totalDirectReferrals'] ?? 0),
+        totalActiveDirectReferrals: Number(res['totalActiveDirectReferrals'] ?? 0),
+        isLeader: (res['isLeader'] ?? false) as boolean
+      })),
+      catchError(() => of({
+        teamSize: 0,
+        totalDirectReferrals: 0,
+        totalActiveDirectReferrals: 0,
+        isLeader: false
+      }))
+    );
+  }
+
   // ── Private helpers ───────────────────────────────────────────────
 
   private mapDownlineItem(raw: Record<string, unknown>): DownlineItem {
@@ -252,7 +409,152 @@ export class ReferralService {
       teamSize: Number(raw['teamSize'] ?? raw['team_size'] ?? raw['downlineCount'] ?? raw['downline_count'] ?? 0),
       rank: (raw['rank'] as string | undefined) ?? undefined,
       stage: (raw['stage'] as string | undefined) ?? undefined,
-      profilePhotoUrl: raw['profilePhotoUrl'] as string | undefined
+      profilePhotoUrl: raw['profilePhotoUrl'] as string | undefined,
+      isDirectReferral: (raw['isDirectReferral'] ?? raw['is_direct_referral'] ?? false) as boolean
     };
+  }
+
+  private mapDownlinesResponse(
+    res: Record<string, unknown>[] | Record<string, unknown>
+  ): DownlineItem[] {
+    const arr = Array.isArray(res)
+      ? res
+      : (res['data'] ?? res['items'] ?? res['downlines'] ?? []) as Record<string, unknown>[];
+    return arr.map((raw) => this.mapDownlineItem(raw));
+  }
+
+  private normalizeMatrixLevelResponse(
+    raw: Record<string, unknown> | Record<string, unknown>[],
+    level: number,
+    limit: number,
+    offset: number
+  ): MatrixLevelResponse {
+    const data = Array.isArray(raw) ? { users: raw } : (raw['data'] as Record<string, unknown> | undefined) ?? raw;
+    const usersSource = Array.isArray(data)
+      ? data
+      : (data['users'] ?? data['items'] ?? data['data'] ?? data['downlines'] ?? []) as Record<string, unknown>[];
+    const users = usersSource.map((item) => this.mapMatrixLevelUser(item));
+
+    const paginationSource = !Array.isArray(data) ? (data['pagination'] as Record<string, unknown> | undefined) : undefined;
+    const currentLimit = this.readNumber(
+      paginationSource?.['limit'] ?? data['limit'] ?? limit,
+      limit
+    );
+    const currentPage = this.readNumber(
+      paginationSource?.['currentPage'] ?? data['currentPage'] ?? 0,
+      0
+    );
+    const totalPages = this.readNumber(
+      paginationSource?.['totalPages'] ?? data['totalPages'] ?? 0,
+      0
+    );
+    const totalRecords = this.readNumber(
+      paginationSource?.['totalRecords']
+        ?? data['totalRecords']
+        ?? data['total_records']
+        ?? (totalPages > 0 ? totalPages * currentLimit : users.length),
+      users.length
+    );
+    const offsetFromPage = currentPage > 0 ? (currentPage - 1) * currentLimit : undefined;
+    const currentOffsetCandidate = paginationSource?.['currentOffset']
+      ?? paginationSource?.['offset']
+      ?? data['currentOffset']
+      ?? offsetFromPage
+      ?? offset;
+    const currentOffset = this.readNumber(currentOffsetCandidate, offset);
+    const hasNextValue = paginationSource?.['hasNext']
+      ?? paginationSource?.['hasNextPage']
+      ?? data['hasNext']
+      ?? data['hasNextPage'];
+    const hasNext = hasNextValue != null
+      ? Boolean(hasNextValue)
+      : (totalPages > 0 && currentPage > 0)
+        ? currentPage < totalPages
+        : currentOffset + users.length < totalRecords;
+
+    return {
+      status: 'success',
+      data: {
+        levelRequested: level,
+        pagination: {
+          totalRecords,
+          currentOffset,
+          limit: currentLimit,
+          hasNext
+        },
+        users
+      }
+    };
+  }
+
+  private buildMatrixLevelFallback(
+    downlines: DownlineItem[],
+    level: number,
+    limit: number,
+    offset: number,
+    search: string
+  ): MatrixLevelResponse {
+    const normalizedSearch = search.trim().toLowerCase();
+    const filtered = downlines.filter((item) => {
+      if (item.level !== level) return false;
+      if (!normalizedSearch) return true;
+      return [item.username, item.email ?? '', item.fullName ?? '']
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedSearch);
+    });
+
+    const page = filtered.slice(offset, offset + limit);
+
+    return {
+      status: 'success',
+      data: {
+        levelRequested: level,
+        pagination: {
+          totalRecords: filtered.length,
+          currentOffset: offset,
+          limit,
+          hasNext: offset + limit < filtered.length
+        },
+        users: page.map((item) => this.mapMatrixLevelFallbackUser(item))
+      }
+    };
+  }
+
+  private mapMatrixLevelUser(raw: Record<string, unknown>): MatrixLevelUser {
+    return {
+      id: String(raw['id'] ?? raw['userId'] ?? raw['user_id'] ?? ''),
+      username: String(raw['username'] ?? raw['name'] ?? raw['fullName'] ?? raw['email'] ?? '—'),
+      email: (raw['email'] as string | undefined) ?? null,
+      phone: (raw['phone'] as string | undefined) ?? (raw['phoneNumber'] as string | undefined) ?? null,
+      joinDate: String(raw['joinDate'] ?? raw['createdAt'] ?? raw['created_at'] ?? raw['registeredAt'] ?? new Date().toISOString()),
+      status: String(raw['status'] ?? (raw['isActive'] ?? raw['is_active'] ? 'ACTIVE' : 'UNPAID')),
+      isDirectReferral: (raw['isDirectReferral'] ?? raw['is_direct_referral'] ?? false) as boolean,
+      profilePhotoUrl: (raw['profilePhotoUrl'] as string | undefined) ?? (raw['profile_photo_url'] as string | undefined) ?? null
+    };
+  }
+
+  private mapMatrixLevelFallbackUser(item: DownlineItem): MatrixLevelUser {
+    return {
+      id: item.id,
+      username: item.username,
+      email: item.email ?? null,
+      phone: null,
+      joinDate: item.joinDate.toISOString(),
+      status: item.status === 'active' ? 'ACTIVE' : 'UNPAID',
+      isDirectReferral: item.isDirectReferral,
+      profilePhotoUrl: null
+    };
+  }
+
+  private clampNumber(value: number, min: number, max: number, fallback: number): number {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return fallback;
+    return Math.min(max, Math.max(min, Math.trunc(numeric)));
+  }
+
+  private readNumber(value: unknown, fallback: number): number {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : fallback;
   }
 }

@@ -9,6 +9,7 @@
 @import "primeicons/primeicons.css";
 
 @theme {
+  --font-sans: 'Montserrat', sans-serif;
   --color-mlm-primary: #49A321;
   --color-mlm-secondary: #64748b;
   --color-brand-green-light: #DCEDC8;
@@ -119,7 +120,7 @@
 body {
   background-color: var(--background-color);
   color: var(--text-color);
-  font-family: 'Geist', sans-serif;
+  font-family: 'Montserrat', sans-serif;
 }
 
 .pill-btn {

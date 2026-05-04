@@ -11,7 +11,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 @Component({
   selector: 'app-performance-cpv',
   standalone: true,
-  imports: [CommonModule, RouterModule, StatCardComponent, SkeletonModule],
+  imports: [CommonModule, RouterModule, SkeletonModule],
   templateUrl: './performance-cpv.component.html'
 })
 export class PerformanceCpvComponent implements OnInit, AfterViewInit {

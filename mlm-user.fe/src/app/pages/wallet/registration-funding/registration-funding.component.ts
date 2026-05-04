@@ -44,16 +44,6 @@ const PROVIDER_OPTIONS_USD: { value: ProviderOption; label: string }[] = [
     <div class="space-y-5">
 
       @if (state() === 'form') {
-        <!-- Package Info -->
-        <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
-          <div class="flex items-center justify-between mb-1">
-            <p class="text-xs font-semibold text-blue-800 uppercase tracking-wide">{{ selectedPackageLabel() }} Package</p>
-            <span class="text-[10px] font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">{{ currency() }}</span>
-          </div>
-          <p class="text-lg font-bold text-blue-700">{{ currencySymbol() }}{{ requiredAmount() | number:'1.0-0' }}</p>
-          <p class="text-[10px] text-blue-600 mt-0.5">Registration fee + admin fee</p>
-        </div>
-
         <form [formGroup]="fundForm" (ngSubmit)="onSubmit()" class="space-y-4">
 
           <!-- Amount -->
@@ -211,10 +201,6 @@ export class RegistrationFundingComponent {
       amount: [null as number | null, [Validators.required, Validators.min(1)]],
       provider: [(currency === 'NGN' ? 'PAYSTACK' : 'USDT') as ProviderOption, Validators.required]
     });
-
-    // Pre-fill amount with required amount for the fixed package context.
-    const amount = getRequiredAmount(defaultPkg, currency);
-    this.fundForm.patchValue({ amount });
   }
 
   onSubmit(): void {
