@@ -12,13 +12,14 @@ import {
   DynamicDialogConfig,
   DialogService
 } from 'primeng/dynamicdialog';
-import { ReferralService, CreateReferralRequest, PlacementParent } from '../../../services/referral.service';
+import { ReferralService, CreateReferralRequest, type DirectReferralItem } from '../../../services/referral.service';
 import { RegistrationFundingComponent } from '../../wallet/registration-funding/registration-funding.component';
 import { WalletService } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
 import { NetworkService } from '../../../services/network.service';
 import { ModalService } from '../../../services/modal.service';
 import { getRequiredAmount, REGISTRATION_FEE_NGN } from '../../../core/constants/registration.constants';
+import { forkJoin } from 'rxjs';
 
 const PACKAGE_OPTIONS = Object.keys(REGISTRATION_FEE_NGN).map(pkg => ({
   value: pkg,
@@ -59,7 +60,8 @@ export class CreateReferralComponent implements OnInit {
 
   isSubmitting = signal(false);
   formError = signal('');
-  placementParents = signal<PlacementParent[]>([]);
+  directReferrals = signal<DirectReferralItem[]>([]);
+  isLeader = signal(false);
 
   selectedPackage = signal('SILVER');
   selectedCurrency = signal<'NGN' | 'USD'>('NGN');
@@ -80,10 +82,14 @@ export class CreateReferralComponent implements OnInit {
 
   hasInsufficientBalance = computed(() => this.registrationBalance() < this.requiredAmount());
 
+  /** Show placement dropdown only when user is a leader (>= 3 direct referrals) */
+  showPlacementDropdown = computed(() => this.isLeader() && this.directReferrals().length > 0);
+
+  /** Map direct referrals to dropdown options for "Place under" */
   placementParentOptions = computed(() =>
-    this.placementParents().map(p => ({
-      value: p.userId,
-      label: p.username
+    this.directReferrals().map(dr => ({
+      value: dr.id,
+      label: `${dr.username} (${dr.firstName} ${dr.lastName})`
     }))
   );
 
@@ -113,17 +119,20 @@ export class CreateReferralComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Fetch placement parents to determine if spillover dropdown is needed
-    this.referralService.getPlacementParents().subscribe((parents) => {
-      this.placementParents.set(parents);
+    // Fetch stats and direct referrals in parallel
+    forkJoin({
+      stats: this.referralService.getReferralStats(),
+      directRefs: this.referralService.getDirectReferrals(200, 0)
+    }).subscribe(({ stats, directRefs }) => {
+      this.isLeader.set(stats.isLeader);
+      this.directReferrals.set(directRefs);
 
-      if (!this.initialPlacementParentUserId) {
-        return;
-      }
-
-      const existsInOptions = parents.some((parent) => parent.userId === this.initialPlacementParentUserId);
-      if (!existsInOptions) {
-        this.form.patchValue({ placementParentUserId: null }, { emitEvent: false });
+      // Validate pre-selected placement parent
+      if (this.initialPlacementParentUserId) {
+        const existsInOptions = directRefs.some(dr => dr.id === this.initialPlacementParentUserId);
+        if (!existsInOptions) {
+          this.form.patchValue({ placementParentUserId: null }, { emitEvent: false });
+        }
       }
     });
 

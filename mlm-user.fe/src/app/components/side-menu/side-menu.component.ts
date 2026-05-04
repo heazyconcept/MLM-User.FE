@@ -107,10 +107,23 @@ export class SideMenuComponent {
                 requiresPayment: true,
               },
               {
-                label: 'Matrix Tree',
+                label: 'Matrix',
                 icon: 'pi pi-sitemap',
-                route: '/network/matrix',
                 requiresPayment: true,
+                children: [
+                  {
+                    label: 'Tree View',
+                    icon: 'pi pi-sitemap',
+                    route: '/network/matrix',
+                    requiresPayment: true,
+                  },
+                  ...Array.from({ length: 13 }, (_, i) => ({
+                    label: `Level ${i + 1}`,
+                    icon: 'pi pi-users',
+                    route: `/network/matrix/level/${i + 1}`,
+                    requiresPayment: true,
+                  }))
+                ]
               },
               {
                 label: 'Downline',
@@ -217,12 +230,27 @@ export class SideMenuComponent {
         const hasActiveChild = item.children?.some(
           (child: MenuItem) => child.route && currentUrl.startsWith(child.route),
         );
+        const hasActiveGrandchild = item.children?.some(
+          (child: MenuItem) => child.children?.some(
+            (gc: MenuItem) => gc.route && currentUrl.startsWith(gc.route),
+          ),
+        );
         const isParentActive =
           item.route && (currentUrl === item.route || currentUrl.startsWith(item.route + '/'));
 
-        if (hasActiveChild || (isParentActive && item.children)) {
+        if (hasActiveChild || hasActiveGrandchild || (isParentActive && item.children)) {
           this.toggleSubMenu(item.label, true);
         }
+
+        // Also expand nested children if they have an active grandchild
+        item.children?.forEach((child: MenuItem) => {
+          const childHasActiveRoute = child.children?.some(
+            (gc: MenuItem) => gc.route && currentUrl.startsWith(gc.route),
+          );
+          if (childHasActiveRoute) {
+            this.toggleSubMenu(child.label, true);
+          }
+        });
       });
     });
   }

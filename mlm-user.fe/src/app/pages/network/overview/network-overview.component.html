@@ -44,37 +44,41 @@
 
             <a [routerLink]="['/network/downline']"
                class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer">
-              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Total team size (downlines)</span>
-              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ summary().teamSize }}</span>
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Total team size</span>
+              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ referralStats().teamSize }}</span>
               <span class="inline-flex items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full w-fit font-medium">
-                ↑ Increasing
+                All levels
               </span>
             </a>
 
             <a [routerLink]="['/network/referrals']"
                class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer">
               <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Direct successlines</span>
-              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ summary().directReferrals }}</span>
+              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ referralStats().totalDirectReferrals }}</span>
               <span class="inline-flex items-center gap-1 text-[11px] text-mlm-secondary bg-mlm-secondary/10 px-2 py-0.5 rounded-full w-fit font-medium">
-                Active
+                Total
               </span>
             </a>
 
-            <a [routerLink]="['/network/matrix']"
+            <a [routerLink]="['/network/referrals']"
                class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer">
-              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Active legs</span>
-              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ summary().activeLegs }}</span>
-              <span class="inline-flex items-center gap-1 text-[11px] text-mlm-secondary bg-mlm-secondary/10 px-2 py-0.5 rounded-full w-fit font-medium">
-                Stable
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Active direct referrals</span>
+              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ referralStats().totalActiveDirectReferrals }}</span>
+              <span class="inline-flex items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full w-fit font-medium">
+                Paid & Active
               </span>
             </a>
 
             <a [routerLink]="['/network/performance']"
                class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer border-t-2 border-t-mlm-primary">
-              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Current rank</span>
-              <span class="text-3xl font-medium text-mlm-text leading-none">{{ summary().rank }}</span>
-              <span class="text-[11px] text-mlm-secondary">
-                Next: <span class="font-semibold text-mlm-primary">{{ summary().nextRank }}</span>
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Leader status</span>
+              <span class="text-3xl font-medium text-mlm-text leading-none">{{ referralStats().isLeader ? 'Leader' : 'Member' }}</span>
+              <span class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full w-fit font-medium"
+                    [class.text-green-700]="referralStats().isLeader"
+                    [class.bg-green-50]="referralStats().isLeader"
+                    [class.text-mlm-secondary]="!referralStats().isLeader"
+                    [class.bg-mlm-secondary/10]="!referralStats().isLeader">
+                {{ referralStats().isLeader ? '≥ 3 DR' : '< 3 DR' }}
               </span>
             </a>
 

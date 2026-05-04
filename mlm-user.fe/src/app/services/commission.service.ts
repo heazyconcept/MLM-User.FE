@@ -17,6 +17,8 @@ export interface CommissionEntry {
   date: string;
   type: CommissionType;
   source: string; // User Name or Order Ref
+  sourceDescription?: string;
+  earningType?: string;
   amount: number;
   currency: 'NGN' | 'USD';
   status: CommissionStatus;
@@ -89,11 +91,13 @@ export interface CpvSummary {
 export class CommissionService {
   private earningsService = inject(EarningsService);
 
-  private mapToCommissionEntry = (e: { id: string; date: string; type: string; source: string; amount: number; currency: 'NGN' | 'USD'; status: string }): CommissionEntry => ({
+  private mapToCommissionEntry = (e: { id: string; date: string; type: string; source: string; sourceDescription?: string; earningType?: string; amount: number; currency: 'NGN' | 'USD'; status: string }): CommissionEntry => ({
     id: e.id,
     date: e.date,
     type: e.type as CommissionType,
+    earningType: e.earningType,
     source: e.source,
+    sourceDescription: e.sourceDescription,
     amount: e.amount,
     currency: e.currency,
     status: e.status as CommissionStatus

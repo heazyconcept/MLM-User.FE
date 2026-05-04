@@ -6,7 +6,7 @@ import { BadgeComponent } from '../../../components/badge/badge.component';
 @Component({
   selector: 'app-product-card',
   standalone: true,
-  imports: [CommonModule, BadgeComponent],
+  imports: [CommonModule],
   templateUrl: './product-card.component.html',
   styles: [`
     :host {

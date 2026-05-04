@@ -58,6 +58,7 @@ export interface DownlineMember {
   teamSize: number;
   rank?: string;
   stage?: string;
+  isDirectReferral: boolean;
 }
 
 @Injectable({

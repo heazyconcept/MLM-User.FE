@@ -96,26 +96,72 @@
               </div>
             } -->
 
-          <!-- Stat cards -->
+          <!-- Previous outline board design (Commented out per request) -->
+          <!--
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 xl:gap-6 2xl:gap-8 mb-6 xl:mb-8 2xl:mb-10">
             @for (card of statCardsData; track card.label; let i = $index) {
               <div
-                class="rounded-2xl p-5 xl:p-6 2xl:p-8 xl:min-h-35 2xl:min-h-[160px] transition-all duration-300 border border-transparent"
-                [style.background]="card.gradient"
+                class="transition-all duration-300"
                 [style.opacity]="cardsVisible[i] ? '1' : '0'"
                 [style.transform]="cardsVisible[i] ? 'translateY(0)' : 'translateY(12px)'"
               >
-                <div class="text-2xl xl:text-3xl 2xl:text-4xl mb-2.5 xl:mb-3 text-white">
-                  <i [class]="'pi ' + card.icon"></i>
-                </div>
-                <p class="font-bold uppercase text-white/80 mb-1.5 text-[11px] xl:text-xs 2xl:text-sm tracking-wide">
-                  {{ card.label }}
-                </p>
-                <p
-                  class="text-white font-extrabold font-mono text-[22px] xl:text-2xl 2xl:text-[28px] tracking-tight leading-tight"
+                <div
+                  class="group relative overflow-hidden rounded-2xl p-5 xl:p-6 2xl:p-8 h-full transition-all duration-300 border-2 border-mlm-warm-300 bg-white hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_#49A321] cursor-pointer"
                 >
-                  {{ card.value }}
-                </p>
+                  <div class="absolute inset-0 opacity-[0.04] pointer-events-none" style="background-image: linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px); background-size: 24px 24px;"></div>
+                  
+                  <i [class]="'pi ' + card.icon + ' absolute -bottom-4 -right-4 text-9xl opacity-[0.02] group-hover:opacity-[0.05] group-hover:scale-110 group-hover:-rotate-12 transition-all duration-500 pointer-events-none'"></i>
+
+                  <div class="relative z-10 flex flex-col h-full justify-between gap-6 xl:gap-8">
+                    <div class="flex items-start justify-between">
+                      <p class="font-bold uppercase text-mlm-warm-500 text-[11px] xl:text-xs 2xl:text-sm tracking-[0.15em] max-w-[75%] leading-relaxed mt-1">
+                        {{ card.label }}
+                      </p>
+                      <div class="w-10 h-10 xl:w-12 xl:h-12 rounded-xl border-2 border-mlm-warm-300 flex items-center justify-center bg-white group-hover:bg-mlm-primary/5 transition-all duration-300 shrink-0">
+                        <i [class]="'pi ' + card.icon + ' text-lg xl:text-xl text-mlm-primary transition-colors'"></i>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p
+                        class="text-mlm-warm-900 font-extrabold font-mono text-3xl xl:text-4xl 2xl:text-[42px] tracking-tighter"
+                      >
+                        {{ card.value }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+          -->
+
+          <!-- New Clean Dashboard Design Inspired by Reference -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 xl:gap-6 2xl:gap-8 mb-6 xl:mb-8 2xl:mb-10">
+            @for (card of statCardsData; track card.label; let i = $index) {
+              <div
+                class="transition-all duration-300"
+                [style.opacity]="cardsVisible[i] ? '1' : '0'"
+                [style.transform]="cardsVisible[i] ? 'translateY(0)' : 'translateY(12px)'"
+              >
+                <div class="rounded-[20px] p-5 xl:p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] transition-all duration-300 flex flex-col justify-between h-full min-h-[130px] border border-white/50 hover:-translate-y-1"
+                     [class]="i % 4 === 0 ? 'bg-[#ff5a5f]/10' : i % 4 === 1 ? 'bg-[#ffb400]/15' : i % 4 === 2 ? 'bg-[#ff7e67]/15' : 'bg-[#00a699]/10'">
+                  <!-- Header with Icon & Label -->
+                  <div class="flex items-center gap-2.5 mb-5 xl:mb-6">
+                    <div class="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 shadow-sm" 
+                         [class]="i % 4 === 0 ? 'bg-[#ff5a5f] text-white' : i % 4 === 1 ? 'bg-[#ffb400] text-white' : i % 4 === 2 ? 'bg-[#ff7e67] text-white' : 'bg-[#00a699] text-white'">
+                      <i [class]="'pi ' + card.icon + ' text-sm'"></i>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-xs xl:text-[13px] font-bold text-gray-800 truncate">{{ card.label }}</p>
+                    </div>
+                  </div>
+
+                  <!-- Value and bottom stats -->
+                  <div>
+                    <h3 class="text-3xl xl:text-4xl 2xl:text-[40px] font-extrabold text-gray-900 tracking-tighter leading-none">{{ card.value }}</h3>
+                  </div>
+                </div>
               </div>
             }
           </div>

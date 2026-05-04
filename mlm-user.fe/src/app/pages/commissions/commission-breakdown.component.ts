@@ -31,4 +31,13 @@ export class CommissionBreakdownComponent implements OnInit {
       this.earningsService.fetchEarningsSectionData();
     }
   }
+
+  formatEarningType(type: string | undefined): string {
+    if (!type) return '—';
+    return type
+      .toLowerCase()
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
 }

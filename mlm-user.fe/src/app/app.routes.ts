@@ -239,6 +239,12 @@ export const routes: Routes = [
         data: { title: 'Matrix Tree' },
       },
       {
+        path: 'matrix/level/:level',
+        loadComponent: () =>
+          import('./pages/network/matrix-level/matrix-level.component').then((m) => m.MatrixLevelComponent),
+        data: { title: 'Matrix Level View' },
+      },
+      {
         path: 'downline',
         loadComponent: () =>
           import('./pages/network/downline/downline-list.component').then(

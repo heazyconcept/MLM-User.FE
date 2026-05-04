@@ -12,6 +12,8 @@ export interface EarningsEntryDto {
   currency: 'NGN' | 'USD';
   status: string;
   source: string;
+  sourceDescription?: string;
+  earningType?: string;
   level?: number;
 }
 
@@ -537,9 +539,9 @@ export class EarningsService {
       String(raw['earningType'] ?? raw['type'] ?? raw['ledgerEarningType'] ?? raw['source'] ?? 'Bonus');
     const level = raw['level'] != null ? Number(raw['level']) : undefined;
 
-    // For community referral, use level in source display
+    // Extract source reference
     let source = String(
-      raw['source'] ?? raw['narrative'] ?? raw['description'] ?? raw['reference'] ?? '—'
+      raw['reference'] ?? raw['source'] ?? raw['narrative'] ?? raw['description'] ?? '—'
     );
     if (type.toUpperCase() === 'COMMUNITY_REFERRAL' && level != null) {
       source = `Level ${level}`;
@@ -552,10 +554,12 @@ export class EarningsService {
       id: String(raw['id'] ?? raw['ledgerEntryId'] ?? crypto.randomUUID()),
       date: String(date),
       type: this.normalizeEarningType(type),
+      earningType: type,
       amount: Number(raw['amount'] ?? raw['credit'] ?? 0),
       currency: currency === 'USD' ? 'USD' : 'NGN',
       status: this.normalizeEarningStatus(status),
       source,
+      sourceDescription: raw['sourceDescription'] ? String(raw['sourceDescription']) : undefined,
       level
     };
   }
