@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { TableModule } from 'primeng/table';
+
 import { SkeletonModule } from 'primeng/skeleton';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import { ReferralService, type MatrixLevelUser } from '../../../services/referral.service';
@@ -17,33 +17,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     CommonModule,
     RouterModule,
     FormsModule,
-    TableModule,
     SkeletonModule,
     StatusBadgeComponent,
   ],
   templateUrl: './matrix-level.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: [`
-    :host ::ng-deep .p-datatable .p-datatable-thead > tr > th {
-      padding: 1rem 1.5rem;
-      background-color: #f9fafb;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    :host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
-      padding: 1rem 1.5rem;
-      border-bottom: 1px solid #f3f4f6;
-    }
-    
-    :host ::ng-deep .p-datatable .p-datatable-tbody > tr.p-selectable-row:hover {
-      background-color: #f9fafb;
-      transition: background-color 0.2s ease;
-    }
-    
-    :host ::ng-deep .p-datatable .p-datatable-tbody > tr.p-selectable-row {
-      transition: background-color 0.2s ease;
-    }
-  `]
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MatrixLevelComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
