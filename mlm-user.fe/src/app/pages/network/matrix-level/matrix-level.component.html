@@ -70,8 +70,9 @@
                   <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Member</th>
                   <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Contact</th>
                   <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Joined</th>
+                  <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Stage</th>
+                  <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Level</th>
                   <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Status</th>
-                  <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Direct</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-mlm-warm-200">
@@ -94,7 +95,8 @@
                         </div>
                       </td>
                       <td class="px-5 py-4"><p-skeleton width="6rem" height="0.875rem"></p-skeleton></td>
-                      <td class="px-5 py-4"><p-skeleton width="4.5rem" height="1.25rem" borderRadius="999px"></p-skeleton></td>
+                      <td class="px-5 py-4"><p-skeleton width="4rem" height="0.875rem"></p-skeleton></td>
+                      <td class="px-5 py-4"><p-skeleton width="3rem" height="0.875rem"></p-skeleton></td>
                       <td class="px-5 py-4"><p-skeleton width="4.5rem" height="1.25rem" borderRadius="999px"></p-skeleton></td>
                     </tr>
                   }
@@ -108,7 +110,6 @@
                           </div>
                           <div>
                             <p class="text-sm font-semibold text-mlm-warm-900">{{ user.username }}</p>
-                            <p class="text-[11px] text-mlm-warm-500 font-mono mt-0.5 truncate max-w-[140px]">{{ user.id }}</p>
                           </div>
                         </div>
                       </td>
@@ -121,25 +122,22 @@
                         <p class="text-xs text-mlm-warm-500 mt-0.5 tabular-nums">{{ user.joinDate | date:'h:mm a' }}</p>
                       </td>
                       <td class="px-5 py-4">
-                        <app-status-badge [status]="formatStatus(user.status)" size="sm"></app-status-badge>
+                        <p class="text-sm text-mlm-warm-900">{{ getStageLabel(user) }}</p>
                       </td>
                       <td class="px-5 py-4">
-                        @if (user.isDirectReferral) {
-                          <span class="inline-flex items-center text-[11px] font-bold text-mlm-green-700 bg-mlm-green-50 border border-mlm-green-200 px-2.5 py-1 rounded-full">
-                            Direct
-                          </span>
-                        } @else {
-                          <span class="inline-flex items-center text-[11px] font-bold text-mlm-warm-600 bg-mlm-warm-100 border border-mlm-warm-200 px-2.5 py-1 rounded-full">
-                            Indirect
-                          </span>
-                        }
+                        <p class="text-sm text-mlm-warm-900 tabular-nums">
+                          {{ getLevelLabel(user) }}
+                        </p>
+                      </td>
+                      <td class="px-5 py-4">
+                        <app-status-badge [status]="formatStatus(user.status)" size="sm"></app-status-badge>
                       </td>
                     </tr>
                   }
 
                   @if (users().length === 0) {
                     <tr>
-                      <td colspan="5" class="px-5 py-16 text-center">
+                      <td colspan="6" class="px-5 py-16 text-center">
                         <p class="text-sm font-semibold text-mlm-warm-900 mb-1">No members on this level</p>
                         <p class="text-xs text-mlm-warm-500">Try selecting a different level or clearing the search.</p>
                       </td>

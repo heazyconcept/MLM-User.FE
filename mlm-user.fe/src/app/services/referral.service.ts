@@ -104,6 +104,8 @@ export interface MatrixLevelUser {
   status: 'ACTIVE' | 'UNPAID' | 'SUSPENDED' | string;
   isDirectReferral: boolean;
   profilePhotoUrl?: string | null;
+  level?: number | null;
+  stage?: string | number | null;
 }
 
 export interface MatrixLevelPagination {
@@ -530,7 +532,17 @@ export class ReferralService {
       joinDate: String(raw['joinDate'] ?? raw['createdAt'] ?? raw['created_at'] ?? raw['registeredAt'] ?? new Date().toISOString()),
       status: String(raw['status'] ?? (raw['isActive'] ?? raw['is_active'] ? 'ACTIVE' : 'UNPAID')),
       isDirectReferral: (raw['isDirectReferral'] ?? raw['is_direct_referral'] ?? false) as boolean,
-      profilePhotoUrl: (raw['profilePhotoUrl'] as string | undefined) ?? (raw['profile_photo_url'] as string | undefined) ?? null
+      profilePhotoUrl: (raw['profilePhotoUrl'] as string | undefined) ?? (raw['profile_photo_url'] as string | undefined) ?? null,
+      level: raw['level'] != null
+        ? Number(raw['level'])
+        : raw['matrixLevel'] != null
+          ? Number(raw['matrixLevel'])
+          : raw['matrix_level'] != null
+            ? Number(raw['matrix_level'])
+            : raw['depth'] != null
+              ? Number(raw['depth'])
+              : null,
+      stage: (raw['stageName'] ?? raw['stage'] ?? raw['stage_name']) as string | number | null
     };
   }
 
@@ -543,7 +555,9 @@ export class ReferralService {
       joinDate: item.joinDate.toISOString(),
       status: item.status === 'active' ? 'ACTIVE' : 'UNPAID',
       isDirectReferral: item.isDirectReferral,
-      profilePhotoUrl: null
+      profilePhotoUrl: null,
+      level: item.level,
+      stage: item.stage ?? null
     };
   }
 
