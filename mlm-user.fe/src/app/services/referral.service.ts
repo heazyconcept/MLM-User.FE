@@ -78,7 +78,7 @@ export interface CreateReferralResponse {
 export interface ReferralStats {
   teamSize: number;
   totalDirectReferrals: number;
-  totalActiveDirectReferrals: number;
+  totalLeaders: number;
   isLeader: boolean;
 }
 
@@ -374,13 +374,13 @@ export class ReferralService {
       map((res) => ({
         teamSize: Number(res['teamSize'] ?? 0),
         totalDirectReferrals: Number(res['totalDirectReferrals'] ?? 0),
-        totalActiveDirectReferrals: Number(res['totalActiveDirectReferrals'] ?? 0),
+        totalLeaders: Number(res['totalLeaders'] ?? 0),
         isLeader: (res['isLeader'] ?? false) as boolean
       })),
       catchError(() => of({
         teamSize: 0,
         totalDirectReferrals: 0,
-        totalActiveDirectReferrals: 0,
+        totalLeaders: 0,
         isLeader: false
       }))
     );

@@ -62,23 +62,25 @@
 
             <a [routerLink]="['/network/referrals']"
                class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer">
-              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Active direct referrals</span>
-              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ referralStats().totalActiveDirectReferrals }}</span>
-              <span class="inline-flex items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full w-fit font-medium">
-                Paid & Active
-              </span>
-            </a>
-
-            <a [routerLink]="['/network/performance']"
-               class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer border-t-2 border-t-mlm-primary">
-              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Leader status</span>
-              <span class="text-3xl font-medium text-mlm-text leading-none">{{ referralStats().isLeader ? 'Leader' : 'Member' }}</span>
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Total leaders</span>
+              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ referralStats().totalLeaders }}</span>
               <span class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full w-fit font-medium"
                     [class.text-green-700]="referralStats().isLeader"
                     [class.bg-green-50]="referralStats().isLeader"
                     [class.text-mlm-secondary]="!referralStats().isLeader"
                     [class.bg-mlm-secondary/10]="!referralStats().isLeader">
-                {{ referralStats().isLeader ? '≥ 3 DR' : '< 3 DR' }}
+                {{ referralStats().isLeader ? 'Leader' : 'Member' }}
+              </span>
+            </a>
+
+            <a [routerLink]="['/network/performance']"
+               class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer border-t-2 border-t-mlm-primary">
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Rank</span>
+              <span class="text-3xl font-medium text-mlm-text leading-none">
+                {{ currentUser()?.rank || '—' }}
+              </span>
+              <span class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full w-fit font-medium text-mlm-secondary bg-mlm-secondary/10">
+                {{ currentUser()?.stage ?? '—' }}
               </span>
             </a>
 

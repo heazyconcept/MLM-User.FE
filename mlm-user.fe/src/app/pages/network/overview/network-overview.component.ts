@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { NetworkService } from '../../../services/network.service';
 import { ReferralService, type ReferralStats } from '../../../services/referral.service';
+import { UserService } from '../../../services/user.service';
 import { SkeletonModule } from 'primeng/skeleton';
 import { DialogService } from 'primeng/dynamicdialog';
 import { CreateReferralComponent } from '../create-referral/create-referral.component';
@@ -17,6 +18,7 @@ import { CreateReferralComponent } from '../create-referral/create-referral.comp
 export class NetworkOverviewComponent implements OnInit {
   private networkService = inject(NetworkService);
   private referralService = inject(ReferralService);
+  private userService = inject(UserService);
   private dialogService = inject(DialogService);
   summary = this.networkService.networkSummary;
   cpvSummary = this.networkService.cpvSummary;
@@ -24,11 +26,12 @@ export class NetworkOverviewComponent implements OnInit {
   placement = this.networkService.placementInfo;
   isLoading = this.networkService.isLoading;
   error = this.networkService.error;
+  currentUser = this.userService.currentUser;
 
   referralStats = signal<ReferralStats>({
     teamSize: 0,
     totalDirectReferrals: 0,
-    totalActiveDirectReferrals: 0,
+    totalLeaders: 0,
     isLeader: false
   });
   statsLoading = signal(false);
