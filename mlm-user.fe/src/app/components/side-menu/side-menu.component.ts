@@ -32,6 +32,15 @@ interface MenuSection {
       :host {
         display: block;
       }
+
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
     `,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -109,21 +118,19 @@ export class SideMenuComponent {
               {
                 label: 'Matrix',
                 icon: 'pi pi-sitemap',
+                route: '/network/matrix',
                 requiresPayment: true,
-                children: [
-                  {
-                    label: 'Tree View',
-                    icon: 'pi pi-sitemap',
-                    route: '/network/matrix',
-                    requiresPayment: true,
-                  },
-                  ...Array.from({ length: 13 }, (_, i) => ({
-                    label: `Level ${i + 1}`,
-                    icon: 'pi pi-users',
-                    route: `/network/matrix/level/${i + 1}`,
-                    requiresPayment: true,
-                  }))
-                ]
+              },
+              {
+                label: 'Matrix Levels',
+                icon: 'pi pi-list',
+                requiresPayment: true,
+                children: Array.from({ length: 13 }, (_, i) => ({
+                  label: `Level ${i + 1}`,
+                  icon: 'pi pi-users',
+                  route: `/network/matrix/level/${i + 1}`,
+                  requiresPayment: true,
+                }))
               },
               {
                 label: 'Downline',
