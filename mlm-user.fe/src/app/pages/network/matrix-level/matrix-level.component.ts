@@ -6,7 +6,7 @@ import { MessageService } from 'primeng/api';
 
 import { SkeletonModule } from 'primeng/skeleton';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
-import { ReferralService, type MatrixLevelUser } from '../../../services/referral.service';
+import { ReferralService, type DownlineItem, type MatrixLevelUser } from '../../../services/referral.service';
 import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -42,6 +42,7 @@ export class MatrixLevelComponent implements OnInit {
   hasNext = signal<boolean>(false);
   errorMessage = signal<string | null>(null);
   searchQuery = signal<string>('');
+  private downlineMap = signal<Map<string, DownlineItem>>(new Map());
 
   readonly levelOptions = Array.from({ length: 13 }, (_, index) => index + 1);
   readonly pageSizeOptions = [10, 20, 50];
@@ -64,6 +65,7 @@ export class MatrixLevelComponent implements OnInit {
   readonly canGoNext = computed(() => this.hasNext() || this.offset() + this.limit() < this.totalRecords());
 
   ngOnInit(): void {
+    this.loadDownlines();
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const levelParam = params.get('level');
       const level = this.clampLevel(levelParam);
@@ -183,9 +185,73 @@ export class MatrixLevelComponent implements OnInit {
     return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   }
 
+  getTreeLevel(user: MatrixLevelUser): number | null {
+    const downline = this.downlineMap().get(user.id);
+    if (downline?.level != null) {
+      return Number.isFinite(downline.level) ? Number(downline.level) : null;
+    }
+
+    const levelValue = user.level;
+    return Number.isFinite(levelValue) ? Number(levelValue) : null;
+  }
+
+  getStageLabel(user: MatrixLevelUser): string {
+    const downline = this.downlineMap().get(user.id);
+    const stageValue = downline?.stage ?? user.stage;
+    if (typeof stageValue === 'string' && stageValue.trim()) {
+      const trimmed = stageValue.trim();
+      if (/entry\s*level/i.test(trimmed)) {
+        return 'Stage 1';
+      }
+      const cleaned = trimmed.replace(/[,\s]*level\s*\d+$/i, '').trim();
+      return cleaned.toLowerCase().startsWith('stage')
+        ? cleaned
+        : `Stage ${cleaned}`;
+    }
+
+    if (typeof stageValue === 'number' && Number.isFinite(stageValue)) {
+      return `Stage ${stageValue}`;
+    }
+
+    if (this.getTreeLevel(user) === 1) {
+      return 'Stage 1';
+    }
+
+    return '—';
+  }
+
+  getLevelLabel(user: MatrixLevelUser): string {
+    const downline = this.downlineMap().get(user.id);
+    const stageValue = downline?.stage ?? user.stage;
+    if (typeof stageValue === 'string' && /entry\s*level/i.test(stageValue)) {
+      return 'Entry level';
+    }
+
+    const levelValue = this.getTreeLevel(user);
+    if (levelValue != null) {
+      return `Level ${levelValue}`;
+    }
+
+    return '—';
+  }
+
   private clampLevel(levelParam: string | null): number {
     const parsed = Number(levelParam ?? 1);
     if (!Number.isFinite(parsed)) return 1;
     return Math.min(13, Math.max(1, Math.trunc(parsed)));
   }
+
+  private loadDownlines(): void {
+    this.referralService
+      .getDownlines()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((downlines) => {
+        const map = new Map<string, DownlineItem>();
+        for (const downline of downlines) {
+          map.set(downline.id, downline);
+        }
+        this.downlineMap.set(map);
+      });
+  }
+
 }
