@@ -89,7 +89,7 @@
                       </a>
                       <!-- Nested submenu (Level 2) -->
                       @if (child.children && child.children.length > 0 && openMenus().has(child.label)) {
-                        <ul class="mt-1 ml-4 space-y-0.5 border-l border-mlm-warm-100 pl-3 max-h-[300px] overflow-y-auto">
+                        <ul class="mt-1 ml-4 space-y-0.5 border-l border-mlm-warm-100 pl-3 max-h-[300px] overflow-y-auto hide-scrollbar">
                           @for (grandchild of child.children; track grandchild.label) {
                             <li>
                               <a
@@ -217,7 +217,7 @@
                       </a>
                       <!-- Nested submenu (Level 2) -->
                       @if (child.children && child.children.length > 0 && openMenus().has(child.label)) {
-                        <ul class="mt-1 ml-4 space-y-0.5 border-l border-mlm-warm-100 pl-3 max-h-[300px] overflow-y-auto">
+                        <ul class="mt-1 ml-4 space-y-0.5 border-l border-mlm-warm-100 pl-3 max-h-[300px] overflow-y-auto hide-scrollbar">
                           @for (grandchild of child.children; track grandchild.label) {
                             <li>
                               <a
