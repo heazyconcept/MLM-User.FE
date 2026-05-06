@@ -7,13 +7,15 @@ import { CardModule } from 'primeng/card';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
-import { DynamicDialogConfig, DynamicDialogRef, DynamicDialogModule } from 'primeng/dynamicdialog';
+import { DynamicDialogConfig, DynamicDialogRef, DynamicDialogModule, DialogService } from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Router } from '@angular/router';
 import { WalletService } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
+import { OnboardingService } from '../../../services/onboarding.service';
 import { formatWithdrawalAmountInWords } from '../../../core/utils/amount-in-words';
+import { ProfileComponent } from '../../profile/profile.component';
 
 @Component({
   selector: 'app-withdrawal',
@@ -38,8 +40,10 @@ export class WithdrawalComponent implements OnInit {
   private fb = inject(FormBuilder);
   private walletService = inject(WalletService);
   private userService = inject(UserService);
+  private onboardingService = inject(OnboardingService);
   private confirmationService = inject(ConfirmationService);
   private router = inject(Router);
+  private dialogService = inject(DialogService);
 
 
   currency = signal<'NGN' | 'USD' | null>(null);
@@ -48,17 +52,25 @@ export class WithdrawalComponent implements OnInit {
     return curr ? this.walletService.getWallet(curr)() : null;
   });
 
+  private bankDetailsFromApi = signal<{
+    bankName?: string;
+    accountNumber?: string;
+    accountName?: string;
+  }>({});
+
   bankDetails = computed(() => {
+    const api = this.bankDetailsFromApi();
     const user = this.userService.currentUser();
     return {
-      bankName: user?.bankName,
-      accountNumber: user?.accountNumber,
-      accountName: user?.accountName
+      bankName: api.bankName || user?.bankName,
+      accountNumber: api.accountNumber || user?.accountNumber,
+      accountName: api.accountName || user?.accountName
     };
   });
 
   withdrawalForm: FormGroup;
   isSubmitting = signal(false);
+  private hasShownMissingBankPrompt = signal(false);
 
   /** Latest amount control value for spelled-out line */
   private amountValue!: Signal<number | null>;
@@ -87,6 +99,8 @@ export class WithdrawalComponent implements OnInit {
         this.withdrawalForm.get('amount')?.updateValueAndValidity();
       }
     }
+
+    this.refreshBankDetails(true);
   }
 
   onSubmit() {
@@ -111,6 +125,74 @@ export class WithdrawalComponent implements OnInit {
   hasBankDetails(): boolean {
     const bank = this.bankDetails();
     return !!(bank.bankName && bank.accountNumber && bank.accountName);
+  }
+
+  private maybePromptForMissingBankDetails(): void {
+    if (this.hasShownMissingBankPrompt() || this.hasBankDetails()) return;
+    this.hasShownMissingBankPrompt.set(true);
+
+    this.confirmationService.confirm({
+      header: 'Complete Your Profile',
+      message: 'Bank details are required before you can request a withdrawal.',
+      icon: 'pi pi-info-circle',
+      acceptButtonProps: { label: 'Complete Profile', severity: 'success' },
+      rejectVisible: false,
+      accept: () => this.openProfileDialog(),
+    });
+  }
+
+  private openProfileDialog(): void {
+    const ref = this.dialogService.open(ProfileComponent, {
+      header: 'Complete Profile',
+      width: '860px',
+      contentStyle: { 'max-height': '85vh', overflow: 'auto' },
+      baseZIndex: 11000,
+      data: {
+        startInEdit: true,
+        dialogMode: true,
+        closeOnSave: true,
+      }
+    });
+
+    ref?.onClose.subscribe(() => {
+      this.refreshBankDetails(false);
+    });
+  }
+
+  private refreshBankDetails(checkForPrompt: boolean): void {
+    this.onboardingService.getBankDetails().subscribe({
+      next: (data: Record<string, unknown>) => {
+        const bankName = (data['bankName'] ?? data['bank_name']) as string | undefined;
+        const accountNumber =
+          (data['accountNumber'] ?? data['account_number']) as string | undefined;
+        const accountNumberMasked =
+          (data['accountNumberMasked'] ?? data['account_number_masked']) as string | undefined;
+        const accountName = (data['accountName'] ?? data['account_name']) as string | undefined;
+        const displayAccountNumber = accountNumber ?? accountNumberMasked;
+
+        if (bankName || displayAccountNumber || accountName) {
+          this.bankDetailsFromApi.set({
+            bankName,
+            accountNumber: displayAccountNumber,
+            accountName,
+          });
+          this.userService.updateProfile({
+            bankName: bankName ?? undefined,
+            accountNumber: displayAccountNumber ?? undefined,
+            accountName: accountName ?? undefined,
+          });
+        }
+
+        if (checkForPrompt) {
+          this.maybePromptForMissingBankDetails();
+        }
+      },
+      error: () => {
+        if (checkForPrompt) {
+          this.maybePromptForMissingBankDetails();
+        }
+      }
+    });
   }
 
   private processWithdrawal() {

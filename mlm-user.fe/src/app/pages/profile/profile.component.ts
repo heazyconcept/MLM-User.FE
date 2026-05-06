@@ -7,6 +7,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { BadgeModule } from 'primeng/badge';
+import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { UserService } from '../../services/user.service';
 import { OnboardingService } from '../../services/onboarding.service';
 import { ModalService } from '../../services/modal.service';
@@ -33,10 +34,14 @@ export class ProfileComponent implements OnInit {
   private onboardingService = inject(OnboardingService);
   private modalService = inject(ModalService);
   private cdr = inject(ChangeDetectorRef);
+  private dialogConfig = inject(DynamicDialogConfig, { optional: true });
+  private dialogRef = inject(DynamicDialogRef, { optional: true });
 
   isEditMode = signal<boolean>(false);
   isSaving = signal<boolean>(false);
   currentUser = this.userService.currentUser;
+  isDialogMode = signal<boolean>(false);
+  private closeOnSave = true;
 
   profileForm = this.fb.group({
     firstName: ['', [Validators.required]],
@@ -50,9 +55,21 @@ export class ProfileComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    const dialogData = this.dialogConfig?.data as
+      | { startInEdit?: boolean; dialogMode?: boolean; closeOnSave?: boolean }
+      | undefined;
+    if (dialogData?.dialogMode) {
+      this.isDialogMode.set(true);
+      this.closeOnSave = dialogData.closeOnSave !== false;
+    }
+
     const user = this.currentUser();
     if (user) {
       this.populateForm(user);
+    }
+
+    if (dialogData?.startInEdit) {
+      this.isEditMode.set(true);
     }
 
     // Load bank details
@@ -105,6 +122,10 @@ export class ProfileComponent implements OnInit {
   }
 
   cancelEdit(): void {
+    if (this.isDialogMode()) {
+      this.dialogRef?.close(false);
+      return;
+    }
     const user = this.currentUser();
     if (user) {
       this.populateForm(user);
@@ -163,5 +184,9 @@ export class ProfileComponent implements OnInit {
     this.isEditMode.set(false);
     this.cdr.markForCheck();
     this.modalService.open('success', 'Profile Updated', 'Your profile has been updated successfully.');
+
+    if (this.isDialogMode() && this.closeOnSave) {
+      this.dialogRef?.close(true);
+    }
   }
 }

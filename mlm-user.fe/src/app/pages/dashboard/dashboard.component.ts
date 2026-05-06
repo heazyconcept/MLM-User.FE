@@ -6,6 +6,7 @@ import {
   ChangeDetectorRef,
   OnInit,
   effect,
+  OnDestroy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
@@ -70,7 +71,7 @@ type QuickAction = {
   templateUrl: './dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private userService = inject(UserService);
   private paymentService = inject(PaymentService);
@@ -84,6 +85,9 @@ export class DashboardComponent implements OnInit {
   private dashboardService = inject(DashboardService);
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
+
+  private statCountUpFrame: number | null = null;
+  private lastStatTargets: number[] = [];
 
   private readonly defaultOverview: DashboardOverview = {
     currency: 'NGN',
@@ -159,6 +163,7 @@ export class DashboardComponent implements OnInit {
   overview = signal<DashboardOverview>(this.defaultOverview);
   dashboardTransactions = signal<DashboardTransaction[]>([]);
   transactionsNextCursor = signal<string | null>(null);
+  animatedStatValues = signal<number[]>([]);
 
   readonly phaseOneDashboardEnabled = true;
 
@@ -273,86 +278,141 @@ export class DashboardComponent implements OnInit {
   }
 
   get statCardsData(): { label: string; value: string; icon: string; gradient: string }[] {
+    const configs = this.buildStatCardConfigs();
+    const values = this.animatedStatValues();
+    return configs.map((config, index) => ({
+      label: config.label,
+      value: this.formatStatValue(config, values[index] ?? 0),
+      icon: config.icon,
+      gradient: config.gradient,
+    }));
+  }
+
+  private buildStatCardConfigs(): Array<{
+    label: string;
+    value: number;
+    icon: string;
+    gradient: string;
+    format: 'currency' | 'number' | 'decimal';
+    currencySymbol?: string;
+  }> {
     const hero = this.overview().hero;
     const stats = this.overview().stats;
     const summary = this.activeSummary();
     const sym = this.overview().currency === 'NGN' ? '₦' : '$';
-    const fmt2 = (n: number) =>
-      new Intl.NumberFormat('en-NG', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(n);
     const bgPrimary = 'linear-gradient(180deg,#49A321 0%,#3d8a1c 100%)';
     const bgMuted = 'linear-gradient(180deg,#64748b 0%,#475569 100%)';
     const bgBlue = 'linear-gradient(180deg,#3b82f6 0%,#2563eb 100%)';
     return [
       {
         label: 'Total Wallet Balance',
-        value: sym + fmt2(hero.totalWalletBalance),
+        value: hero.totalWalletBalance,
         icon: 'pi-wallet',
         gradient: bgPrimary,
+        format: 'currency',
+        currencySymbol: sym,
       },
       {
         label: 'Product Voucher',
-        value: sym + fmt2(hero.voucherBalance),
+        value: hero.voucherBalance,
         icon: 'pi-ticket',
         gradient: bgMuted,
+        format: 'currency',
+        currencySymbol: sym,
       },
       {
         label: 'Autoship Voucher',
-        value: sym + fmt2(hero.autoshipBalance),
+        value: hero.autoshipBalance,
         icon: 'pi-refresh',
         gradient: bgPrimary,
+        format: 'currency',
+        currencySymbol: sym,
       },
       {
         label: 'Cashout Balance',
-        value: sym + fmt2(stats.cashoutBalance),
+        value: stats.cashoutBalance,
         icon: 'pi-wallet',
         gradient: bgPrimary,
+        format: 'currency',
+        currencySymbol: sym,
       },
       {
         label: 'Total Earnings',
-        value: sym + fmt2(stats.totalEarnings),
+        value: stats.totalEarnings,
         icon: 'pi-chart-line',
         gradient: bgMuted,
+        format: 'currency',
+        currencySymbol: sym,
       },
       {
         label: 'Total Payout',
-        value: sym + fmt2(stats.totalPayout),
+        value: stats.totalPayout,
         icon: 'pi-arrow-up-right',
         gradient: bgPrimary,
+        format: 'currency',
+        currencySymbol: sym,
       },
       {
         label: 'Total Downlines',
-        value: new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(stats.totalDownlines),
+        value: stats.totalDownlines,
         icon: 'pi-users',
         gradient: bgPrimary,
+        format: 'number',
       },
       {
         label: 'Total CPVs',
-        value: fmt2(stats.totalCpvs),
+        value: stats.totalCpvs,
         icon: 'pi-chart-bar',
         gradient: bgMuted,
+        format: 'decimal',
       },
       {
         label: 'Product Purchase Earnings',
-        value: sym + fmt2(summary.ppvEarnings ?? 0),
+        value: summary.ppvEarnings ?? 0,
         icon: 'pi-shopping-bag',
         gradient: bgBlue,
+        format: 'currency',
+        currencySymbol: sym,
       },
       {
         label: 'Personal Daily Activity',
-        value: sym + fmt2(summary.pdpaEarnings ?? 0),
+        value: summary.pdpaEarnings ?? 0,
         icon: 'pi-chart-line',
         gradient: bgPrimary,
+        format: 'currency',
+        currencySymbol: sym,
       },
       {
         label: 'Community Daily Activity',
-        value: sym + fmt2(summary.cdpaEarnings ?? 0),
+        value: summary.cdpaEarnings ?? 0,
         icon: 'pi-users',
         gradient: bgMuted,
-      }
+        format: 'currency',
+        currencySymbol: sym,
+      },
     ];
+  }
+
+  private formatStatValue(
+    config: { format: 'currency' | 'number' | 'decimal'; currencySymbol?: string },
+    value: number,
+  ): string {
+    if (config.format === 'number') {
+      return new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(value);
+    }
+
+    if (config.format === 'decimal') {
+      return new Intl.NumberFormat('en-NG', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(value);
+    }
+
+    const formatted = new Intl.NumberFormat('en-NG', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+    return `${config.currencySymbol ?? ''}${formatted}`;
   }
 
   formatTransactionAmount(tx: DashboardTransaction): string {
@@ -472,6 +532,20 @@ export class DashboardComponent implements OnInit {
       // Mark for check when payment status changes
       this.cdr.markForCheck();
     });
+
+    effect(() => {
+      if (!this.isPaid()) {
+        return;
+      }
+
+      const targets = this.buildStatCardConfigs().map((config) => config.value);
+      if (this.areTargetsEqual(targets, this.lastStatTargets)) {
+        return;
+      }
+
+      this.lastStatTargets = targets;
+      this.startStatCountUp(targets);
+    });
   }
 
   ngOnInit(): void {
@@ -552,6 +626,13 @@ export class DashboardComponent implements OnInit {
     this.initCharts();
   }
 
+  ngOnDestroy(): void {
+    if (this.statCountUpFrame != null) {
+      cancelAnimationFrame(this.statCountUpFrame);
+      this.statCountUpFrame = null;
+    }
+  }
+
   private animateCards(): void {
     // Entrance animation for stat cards and bar chart
     setTimeout(() => {
@@ -565,6 +646,40 @@ export class DashboardComponent implements OnInit {
         this.cdr.markForCheck();
       }, delay + 100);
     });
+  }
+
+  private startStatCountUp(targets: number[]): void {
+    if (this.statCountUpFrame != null) {
+      cancelAnimationFrame(this.statCountUpFrame);
+      this.statCountUpFrame = null;
+    }
+
+    this.animatedStatValues.set(targets.map(() => 0));
+    const duration = 900;
+    const start = performance.now();
+
+    const step = (now: number) => {
+      const elapsed = now - start;
+      const progress = Math.min(1, elapsed / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const next = targets.map((value) => value * eased);
+      this.animatedStatValues.set(next);
+      this.cdr.markForCheck();
+
+      if (progress < 1) {
+        this.statCountUpFrame = requestAnimationFrame(step);
+      }
+    };
+
+    this.statCountUpFrame = requestAnimationFrame(step);
+  }
+
+  private areTargetsEqual(next: number[], prev: number[]): boolean {
+    if (next.length !== prev.length) return false;
+    for (let i = 0; i < next.length; i += 1) {
+      if (next[i] !== prev[i]) return false;
+    }
+    return true;
   }
 
   private initCharts() {
