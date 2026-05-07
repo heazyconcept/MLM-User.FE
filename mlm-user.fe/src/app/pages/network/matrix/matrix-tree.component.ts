@@ -343,6 +343,14 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
     }
 
     const tryRestore = (attempt = 0) => {
+      // Wait for the new network data to finish loading before attempting to find the node
+      if (this.networkService.isLoading()) {
+        if (attempt < 40) {
+          window.setTimeout(() => tryRestore(attempt + 1), 100);
+        }
+        return;
+      }
+
       const nextNode = this.networkService.findNode(nodeId);
       if (nextNode) {
         this.navigationStack.set([]);
@@ -350,8 +358,8 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
         return;
       }
 
-      if (attempt < 20) {
-        window.setTimeout(() => tryRestore(attempt + 1), 200);
+      if (attempt < 40) {
+        window.setTimeout(() => tryRestore(attempt + 1), 100);
       }
     };
 
