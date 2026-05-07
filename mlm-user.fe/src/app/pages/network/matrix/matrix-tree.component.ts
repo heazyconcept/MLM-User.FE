@@ -365,27 +365,58 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
   }
 
   private autoFitZoom(): void {
-    if (this.userAdjustedZoom || this.autoFitDone) return;
-    const viewport = this.matrixViewport?.nativeElement;
-    if (!viewport) return;
+  if (this.userAdjustedZoom || this.autoFitDone) return;
 
-    const { width: viewportWidth, height: viewportHeight } = viewport.getBoundingClientRect();
-    if (!viewportWidth || !viewportHeight) return;
+  const viewport = this.matrixViewport?.nativeElement;
+  if (!viewport) return;
 
-    const metrics = this.getTreeMetrics(this.currentRootNode());
-    const nodeWidth = 140;
-    const nodeHeight = 120;
-    const hGap = 40;
-    const vGap = 80;
-    const estimatedWidth = metrics.maxNodes * nodeWidth + Math.max(0, metrics.maxNodes - 1) * hGap;
-    const estimatedHeight = metrics.levels * nodeHeight + Math.max(0, metrics.levels - 1) * vGap;
+  // wait for DOM render
+  requestAnimationFrame(() => {
+    const chartElement = viewport.querySelector(
+      '.p-organizationchart'
+    ) as HTMLElement;
 
-    if (!estimatedWidth || !estimatedHeight) return;
-    const scale = Math.min(viewportWidth / estimatedWidth, viewportHeight / estimatedHeight, 1);
-    const clamped = Math.max(0.2, Math.min(scale, 1));
-    this.zoomLevel.set(clamped);
+    if (!chartElement) return;
+
+    const viewportRect = viewport.getBoundingClientRect();
+
+    const treeWidth = chartElement.scrollWidth;
+    const treeHeight = chartElement.scrollHeight;
+
+    if (!treeWidth || !treeHeight) return;
+
+    // padding buffer
+    const horizontalPadding = 120;
+    const verticalPadding = 80;
+
+    const scaleX =
+      (viewportRect.width - horizontalPadding) / treeWidth;
+
+    const scaleY =
+      (viewportRect.height - verticalPadding) / treeHeight;
+
+    const scale = Math.min(scaleX, scaleY, 1);
+
+    // prevent tiny unreadable tree
+    const finalScale = Math.max(scale, 0.35);
+
+    this.zoomLevel.set(finalScale);
+
+    // center scroll position
+    setTimeout(() => {
+      const scaledWidth = treeWidth * finalScale;
+      const scaledHeight = treeHeight * finalScale;
+
+      viewport.scrollLeft =
+        (scaledWidth - viewport.clientWidth) / 2;
+
+      viewport.scrollTop =
+        (scaledHeight - viewport.clientHeight) / 2;
+    });
+
     this.autoFitDone = true;
-  }
+  });
+}
 
   private getTreeMetrics(root: MatrixNode): { levels: number; maxNodes: number } {
     const levelCounts = new Map<number, number>();
