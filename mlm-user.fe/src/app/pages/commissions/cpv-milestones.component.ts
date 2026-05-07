@@ -22,8 +22,9 @@ export class CpvMilestonesComponent implements OnInit {
   private earningsService = inject(EarningsService);
 
   cpvSummary = this.commissionService.getCpvSummary();
+  cpvTotals = this.earningsService.cpvSummary;
   milestones = this.commissionService.getMilestones();
-  cpvHistory = this.commissionService.getCpvHistory();
+  cpvHistory = computed(() => this.earningsService.cpvSummary().history ?? []);
 
   registrationPv = computed(() => {
     const summary = this.earningsService.earningsSummary();

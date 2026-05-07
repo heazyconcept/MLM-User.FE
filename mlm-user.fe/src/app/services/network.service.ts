@@ -1,7 +1,14 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { forkJoin, of } from 'rxjs';
-import { tap, catchError, finalize } from 'rxjs/operators';
-import { ReferralService, type DownlineItem, type SponsorInfo, type PlacementInfo, type UplineNode } from './referral.service';
+import { tap, catchError, finalize, map } from 'rxjs/operators';
+import {
+  ReferralService,
+  type DownlineItem,
+  type SponsorInfo,
+  type PlacementInfo,
+  type UplineNode,
+  type MatrixTreeResponse
+} from './referral.service';
 import { UserService } from './user.service';
 import { EarningsService } from './earnings.service';
 
@@ -111,6 +118,7 @@ export class NetworkService {
   readonly uplineChain = signal<UplineNode[]>([]);
 
   private _inFlight = false;
+  private _matrixInFlight = false;
 
   constructor() {}
 
@@ -124,6 +132,7 @@ export class NetworkService {
     const sponsor$ = this.referralService.getSponsor();
     const downlines$ = this.referralService.getDownlines();
     const placement$ = this.referralService.getPlacement();
+    const matrix$ = this.referralService.getMatrixTree();
     const upline$ = this.referralService.getUpline();
     const cpv$ = this.earningsService.fetchCpvSummary();
     const earnings$ = this.earningsService.fetchEarningsSummary();
@@ -133,6 +142,7 @@ export class NetworkService {
       refInfo: refInfo$,
       sponsor: sponsor$,
       downlines: downlines$,
+      matrix: matrix$,
       placement: placement$,
       upline: upline$,
       cpv: cpv$,
@@ -140,7 +150,7 @@ export class NetworkService {
       profile: profile$
     })
       .pipe(
-        tap(({ refInfo, sponsor, downlines, placement, upline, cpv, profile }) => {
+        tap(({ refInfo, sponsor, downlines, matrix, placement, upline, cpv, profile }) => {
           const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
           const currentUsername = (
             (profile as Record<string, unknown> | null)?.['username'] as string | undefined
@@ -185,7 +195,14 @@ export class NetworkService {
             rankProgress
           });
 
-          this.matrixTree.set(this.buildTreeFromDownlines(downlines, profile as any));
+          const matrixResponse = (matrix as MatrixTreeResponse | null) ?? { levels: [] };
+          const matrixTree = this.buildTreeFromMatrixResponse(
+            matrixResponse,
+            profile as Record<string, unknown> | null
+          );
+          const fallbackTree = this.buildTreeFromDownlines(downlines, profile as any);
+          const hasMatrixLevels = (matrixResponse.levels?.length ?? 0) > 0;
+          this.matrixTree.set(hasMatrixLevels ? matrixTree : fallbackTree);
         }),
         catchError((err) => {
           this.error.set('Failed to load network data. Please try again.');
@@ -200,6 +217,33 @@ export class NetworkService {
         })
       )
       .subscribe();
+  }
+
+  fetchMatrixTree(username?: string) {
+    if (this._matrixInFlight) return of(this.matrixTree());
+    this._matrixInFlight = true;
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    return this.referralService
+      .getMatrixTree(username)
+      .pipe(
+        map((response) => this.buildTreeFromMatrixResponse(response ?? { levels: [] }, null)),
+        tap((tree) => {
+          this.matrixTree.set(tree);
+        }),
+        catchError((err) => {
+          this.error.set('Failed to load matrix tree. Please try again.');
+          if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+            console.error('[NetworkService] fetchMatrixTree failed:', err);
+          }
+          return of(this.matrixTree());
+        }),
+        finalize(() => {
+          this._matrixInFlight = false;
+          this.isLoading.set(false);
+        })
+      );
   }
 
   private buildTreeFromDownlines(downlines: DownlineItem[], profile?: Record<string, unknown> | null): MatrixNode {
@@ -289,6 +333,104 @@ export class NetworkService {
       stage: rootStage || undefined,
       children
     };
+  }
+
+  private buildTreeFromMatrixResponse(
+    response: MatrixTreeResponse,
+    profile?: Record<string, unknown> | null
+  ): MatrixNode {
+    const levels = response.levels ?? [];
+    if (!levels.length) {
+      return this._emptyMatrix;
+    }
+
+    const nodesByUsername = new Map<string, MatrixNode>();
+    const nodesById = new Map<string, MatrixNode>();
+    let maxLevel = 0;
+
+    for (const levelEntry of levels) {
+      const levelNumber = Number(levelEntry.level ?? 0);
+      maxLevel = Math.max(maxLevel, levelNumber);
+      for (const user of levelEntry.users ?? []) {
+        const username = String(user.username ?? '').trim();
+        if (!username) {
+          continue;
+        }
+        const userId = String(user.userId ?? username);
+        const status = user.isActive === false ? 'inactive' : 'active';
+        const node: MatrixNode = {
+          id: userId,
+          username,
+          package: null,
+          level: user.relativeLevel != null ? Number(user.relativeLevel) : levelNumber,
+          status,
+          rank: user.rank ?? undefined,
+          stage: user.stageLabel ?? undefined,
+          children: []
+        };
+        nodesByUsername.set(username, node);
+        nodesById.set(node.id, node);
+      }
+    }
+
+    for (const levelEntry of levels) {
+      for (const user of levelEntry.users ?? []) {
+        const username = String(user.username ?? '').trim();
+        if (!username) continue;
+        const parentUsername = String(user.parentUsername ?? '').trim();
+        if (!parentUsername) continue;
+
+        const parent = nodesByUsername.get(parentUsername);
+        const child = nodesByUsername.get(username);
+        if (!parent || !child) continue;
+
+        child.parentId = parent.id;
+        parent.children = parent.children ?? [];
+        parent.children.push(child);
+      }
+    }
+
+    for (const node of nodesById.values()) {
+      const children = node.children ?? [];
+      children.forEach((child, index) => {
+        child.position = this.getPositionByIndex(index);
+      });
+
+      if (node.level < maxLevel) {
+        while (children.length < 3) {
+          const emptyIndex = children.length;
+          children.push({
+            id: `empty-${node.id}-${emptyIndex}`,
+            username: 'Empty Slot',
+            package: null,
+            level: node.level + 1,
+            status: 'empty',
+            parentId: node.id,
+            position: this.getPositionByIndex(emptyIndex),
+            children: []
+          });
+        }
+      }
+    }
+
+    const rootUsername = String(response.rootUsername ?? '').trim();
+    const rootNode =
+      (rootUsername && nodesByUsername.get(rootUsername))
+      || (this.userService.currentUser()?.username && nodesByUsername.get(String(this.userService.currentUser()?.username)))
+      || (levels[0]?.users?.[0]?.username
+        ? nodesByUsername.get(String(levels[0].users[0].username))
+        : undefined);
+
+    if (!rootNode) {
+      return this._emptyMatrix;
+    }
+    return rootNode;
+  }
+
+  private getPositionByIndex(index: number): 'left' | 'center' | 'right' {
+    if (index === 0) return 'left';
+    if (index === 1) return 'center';
+    return 'right';
   }
 
   getReferralLink() {

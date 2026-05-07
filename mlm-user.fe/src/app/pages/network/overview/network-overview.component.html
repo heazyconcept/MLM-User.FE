@@ -76,7 +76,7 @@
             <a [routerLink]="['/network/performance']"
                class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer border-t-2 border-t-mlm-primary">
               <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Rank</span>
-              <span class="text-3xl font-medium text-mlm-text leading-none">
+              <span class="text-xl sm:text-3xl font-medium text-mlm-text leading-tight break-words whitespace-normal">
                 {{ currentUser()?.rank || '—' }}
               </span>
               <span class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full w-fit font-medium text-mlm-secondary bg-mlm-secondary/10">

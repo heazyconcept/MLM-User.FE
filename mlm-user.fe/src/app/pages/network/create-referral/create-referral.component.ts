@@ -23,13 +23,8 @@ import { WalletService } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
 import { NetworkService } from '../../../services/network.service';
 import { ModalService } from '../../../services/modal.service';
-import { getRequiredAmount, REGISTRATION_FEE_NGN } from '../../../core/constants/registration.constants';
+import { getRequiredAmount, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, NGN_TO_USD_RATE } from '../../../core/constants/registration.constants';
 import { forkJoin } from 'rxjs';
-
-const PACKAGE_OPTIONS = Object.keys(REGISTRATION_FEE_NGN).map(pkg => ({
-  value: pkg,
-  label: `${pkg.charAt(0) + pkg.slice(1).toLowerCase()} - ₦${REGISTRATION_FEE_NGN[pkg as keyof typeof REGISTRATION_FEE_NGN].toLocaleString()}`
-}));
 
 const CURRENCY_OPTIONS = [
   { value: 'NGN', label: 'NGN (₦)' },
@@ -81,6 +76,15 @@ export class CreateReferralComponent implements OnInit {
   });
   requiredAmount = computed(() => getRequiredAmount(this.selectedPackage(), this.selectedCurrency()));
 
+  packageBaseOptions = [
+    { label: 'Nickel', value: 'NICKEL' },
+    { label: 'Silver', value: 'SILVER' },
+    { label: 'Gold', value: 'GOLD' },
+    { label: 'Platinum', value: 'PLATINUM' },
+    { label: 'Ruby', value: 'RUBY' },
+    { label: 'Diamond', value: 'DIAMOND' }
+  ];
+
   registrationBalance = computed(() => {
     const wallets = this.walletService.allWallets();
     const curr = this.selectedCurrency();
@@ -93,7 +97,20 @@ export class CreateReferralComponent implements OnInit {
   /** Show placement field only when user is a leader (>= 3 direct referrals) */
   showPlacementDropdown = computed(() => this.isLeader() && this.directReferrals().length > 0);
 
-  packageOptions = PACKAGE_OPTIONS;
+  packageOptions = computed(() => {
+    const currency = this.selectedCurrency();
+
+    return this.packageBaseOptions.map((pkg) => {
+      if (!currency) {
+        return pkg;
+      }
+
+      return {
+        ...pkg,
+        label: `${pkg.label} (${this.getPackagePriceLabel(pkg.value, currency)})`
+      };
+    });
+  });
   currencyOptions = CURRENCY_OPTIONS;
   form: FormGroup;
   private initialPlacementParentUsername: string | null;
@@ -182,6 +199,21 @@ export class CreateReferralComponent implements OnInit {
         this.placementInvalidReason.set(null);
       }
     });
+  }
+
+  private getPackagePriceLabel(packageCode: string, currency: string): string {
+    const registrationFeeNgn = REGISTRATION_FEE_NGN[packageCode] ?? REGISTRATION_FEE_NGN['NICKEL'];
+    const adminFeeNgn = ADMIN_FEE_NGN[packageCode] ?? ADMIN_FEE_NGN['NICKEL'];
+    const totalNgn = registrationFeeNgn + adminFeeNgn;
+
+    if (currency === 'USD') {
+      const registrationFeeUsd = Math.round(registrationFeeNgn / NGN_TO_USD_RATE);
+      const adminFeeUsd = Math.round(adminFeeNgn / NGN_TO_USD_RATE);
+      const totalUsd = registrationFeeUsd + adminFeeUsd;
+      return `$${registrationFeeUsd.toLocaleString()} reg + $${adminFeeUsd.toLocaleString()} admin = $${totalUsd.toLocaleString()}`;
+    }
+
+    return `₦${registrationFeeNgn.toLocaleString()} reg + ₦${adminFeeNgn.toLocaleString()} admin = ₦${totalNgn.toLocaleString()}`;
   }
 
   getPlacementValidationMessage(): string | null {

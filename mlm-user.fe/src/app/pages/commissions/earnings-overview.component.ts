@@ -133,11 +133,26 @@ export class EarningsOverviewComponent implements OnInit {
 
   cpvSummary = this.earningsService.cpvSummary;
 
+  personalCpv = computed(() => {
+    const cardsSummary = this.historyCardsSummary();
+    const cardValue = cardsSummary?.cards?.PERSONAL_CPV?.value;
+    return cardValue != null ? cardValue : this.cpvSummary().personalCpv;
+  });
+
   /** Registration PV from /earnings/summary (same source used by CPV tab). */
   registrationPv = computed(() => {
+    const cardsSummary = this.historyCardsSummary();
+    const cardTotal = cardsSummary?.cards?.REGISTRATION_PV?.value;
     const summary = this.earningsService.earningsSummary();
     const registration = summary.instantRegistrationPv ?? 0;
     const community = summary.communityRegistrationPv ?? 0;
+    if (cardTotal != null) {
+      return {
+        registration: cardTotal,
+        community: 0,
+        total: cardTotal
+      };
+    }
     return {
       registration,
       community,

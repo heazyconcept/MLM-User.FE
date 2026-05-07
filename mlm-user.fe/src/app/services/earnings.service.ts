@@ -57,6 +57,7 @@ export interface CpvHistoryDto {
 }
 
 export interface CpvSummaryDto {
+  totalCpv: number;
   personalCpv: number;
   teamCpv: number;
   requiredCpv: number;
@@ -189,6 +190,7 @@ export class EarningsService {
   private settingsService = inject(SettingsService);
 
   private cpvSignal = signal<CpvSummaryDto>({
+    totalCpv: 0,
     personalCpv: 0,
     teamCpv: 0,
     requiredCpv: 0,
@@ -274,7 +276,7 @@ export class EarningsService {
       tap((cpv) => this.cpvSignal.set(cpv)),
       catchError(() => {
         this.cpvSignal.set({
-          personalCpv: 0, teamCpv: 0, requiredCpv: 0, cycle: '',
+          totalCpv: 0, personalCpv: 0, teamCpv: 0, requiredCpv: 0, cycle: '',
           currentStage: 0, totalStages: 0, cpvCashBonus: 0,
           nextMilestoneName: '', milestones: [], history: []
         });
@@ -379,6 +381,7 @@ export class EarningsService {
     const teamCpv = Math.max(totalCpv - personalCpv, 0);
 
     return {
+      totalCpv,
       personalCpv,
       teamCpv,
       requiredCpv,

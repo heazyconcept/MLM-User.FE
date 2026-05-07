@@ -58,14 +58,14 @@
     <div class="grid grid-cols-2 gap-3">
       <div class="flex flex-col gap-1.5">
         <label for="cr-package" class="text-sm font-semibold text-gray-700">Package</label>
-        <p-select
+        <select
           formControlName="package"
-          inputId="cr-package"
-          [options]="packageOptions"
-          optionLabel="label"
-          optionValue="value"
-          styleClass="w-full">
-        </p-select>
+          id="cr-package"
+          class="w-full rounded-lg border border-mlm-secondary/30 px-3 py-2 text-sm text-mlm-text bg-white focus:outline-none focus:ring-1 focus:ring-mlm-primary/20">
+          @for (option of packageOptions(); track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
       </div>
       <div class="flex flex-col gap-1.5">
         <label for="cr-currency" class="text-sm font-semibold text-gray-700">Currency</label>
