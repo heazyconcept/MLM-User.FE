@@ -15,6 +15,7 @@ export type DashboardOverview = {
     totalPayout: number;
     productVoucher: number;
     totalDownlines: number;
+    directSuccesslines?: number;
     totalCpvs: number;
   };
 };

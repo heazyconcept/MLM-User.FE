@@ -102,6 +102,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       totalPayout: 0,
       productVoucher: 0,
       totalDownlines: 0,
+      directSuccesslines: 0,
       totalCpvs: 0,
     },
   };
@@ -360,6 +361,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
         format: 'number',
       },
       {
+        label: 'Direct Successlines',
+        value: stats.directSuccesslines ?? 0,
+        icon: 'pi-user-plus',
+        gradient: bgMuted,
+        format: 'number',
+      },
+      {
         label: 'Total CPVs',
         value: stats.totalCpvs,
         icon: 'pi-chart-bar',
@@ -375,7 +383,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         currencySymbol: sym,
       },
       {
-        label: 'Personal Daily Activity',
+        label: 'PDPA Earnings',
         value: summary.pdpaEarnings ?? 0,
         icon: 'pi-chart-line',
         gradient: bgPrimary,
@@ -383,7 +391,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         currencySymbol: sym,
       },
       {
-        label: 'Community Daily Activity',
+        label: 'CDPA Earnings',
         value: summary.cdpaEarnings ?? 0,
         icon: 'pi-users',
         gradient: bgMuted,

@@ -58,6 +58,10 @@ export interface CpvHistoryDto {
 
 export interface CpvSummaryDto {
   totalCpv: number;
+  instantPv?: number;
+  communityPv?: number;
+  directReferralPv?: number;
+  totalPv?: number;
   personalCpv: number;
   teamCpv: number;
   requiredCpv: number;
@@ -332,6 +336,10 @@ export class EarningsService {
   private mapCpvResponse(raw: Record<string, unknown>): CpvSummaryDto {
     // API shape: { totalCpv, lastUpdated, transactions[], milestones[], milestonesAchieved[], cpvCashBonus }
     const totalCpv = Number(raw['totalCpv'] ?? 0);
+    const instantPv = raw['instantPv'] != null ? Number(raw['instantPv']) : undefined;
+    const communityPv = raw['communityPv'] != null ? Number(raw['communityPv']) : undefined;
+    const directReferralPv = raw['directReferralPv'] != null ? Number(raw['directReferralPv']) : undefined;
+    const totalPv = raw['totalPv'] != null ? Number(raw['totalPv']) : undefined;
 
     const requiredCpv = Number(raw['requiredCpv'] ?? raw['required_cpv'] ?? 0);
     const cycle = String(raw['cycle'] ?? raw['lastUpdated'] ?? '');
@@ -382,6 +390,10 @@ export class EarningsService {
 
     return {
       totalCpv,
+      instantPv,
+      communityPv,
+      directReferralPv,
+      totalPv,
       personalCpv,
       teamCpv,
       requiredCpv,
