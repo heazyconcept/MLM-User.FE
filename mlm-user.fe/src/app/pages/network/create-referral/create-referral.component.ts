@@ -23,6 +23,7 @@ import { WalletService } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
 import { NetworkService } from '../../../services/network.service';
 import { ModalService } from '../../../services/modal.service';
+import { RealTimeNotificationService } from '../../../services/realtime-notification.service';
 import { getRequiredAmount, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, NGN_TO_USD_RATE } from '../../../core/constants/registration.constants';
 import { forkJoin } from 'rxjs';
 
@@ -56,6 +57,7 @@ export class CreateReferralComponent implements OnInit {
   private userService = inject(UserService);
   private networkService = inject(NetworkService);
   private modalService = inject(ModalService);
+  private realtimeNotificationService = inject(RealTimeNotificationService);
   private config = inject(DynamicDialogConfig);
 
   isSubmitting = signal(false);
@@ -281,6 +283,11 @@ export class CreateReferralComponent implements OnInit {
         // Refresh wallet + network data
         this.walletService.fetchWallets().subscribe();
         this.networkService.fetchNetworkData();
+        
+        // Trigger a check for real-time notifications shortly after, in case WebSockets are delayed
+        setTimeout(() => {
+          this.realtimeNotificationService.syncUnreadNotifications();
+        }, 1500);
       },
       error: (err) => {
         this.isSubmitting.set(false);

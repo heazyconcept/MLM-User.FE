@@ -1,9 +1,10 @@
-import { Injectable, inject, signal, computed, OnDestroy } from '@angular/core';
+import { Injectable, inject, signal, computed, OnDestroy, effect } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
 import { ModalService, ModalType } from './modal.service';
 import { NotificationService } from './notification.service';
+import { MessageService } from 'primeng/api';
 import { ApiService } from './api.service';
 import {
   NotificationWirePayload,
@@ -27,6 +28,7 @@ export class RealTimeNotificationService {
   private authService = inject(AuthService);
   private modalService = inject(ModalService);
   private notificationService = inject(NotificationService);
+  private messageService = inject(MessageService);
   private api = inject(ApiService);
 
   private socket: Socket | null = null;
@@ -39,6 +41,17 @@ export class RealTimeNotificationService {
 
   readonly connectionStatus = signal<ConnectionStatus>('disconnected');
   readonly isConnected = computed(() => this.connectionStatus() === 'connected');
+
+  private pollingIntervalId?: any;
+
+  constructor() {
+    effect(() => {
+      const isOpen = this.modalService.modalState().isOpen;
+      if (!isOpen && !this.isShowingModal) {
+        setTimeout(() => this.showNextIfIdle(), 100);
+      }
+    });
+  }
 
   /**
    * Initialize the real-time notification system.
@@ -56,15 +69,35 @@ export class RealTimeNotificationService {
     }
 
     // Phase A: REST catch-up
-    this.fetchAndDisplayCatchUp(token);
+    this.syncUnreadNotifications(token);
 
     // Phase B: WebSocket live feed
     this.connectWebSocket(token);
+
+    // Phase C: Fallback Polling (Safety net if WebSockets are failing/delayed)
+    this.startFallbackPolling(token);
+  }
+
+  private startFallbackPolling(token: string): void {
+    if (this.pollingIntervalId) {
+      clearInterval(this.pollingIntervalId);
+    }
+    // Poll every 15 seconds as a reliable backup to WebSockets
+    this.pollingIntervalId = setInterval(() => {
+      // Only poll if we're not currently showing a modal, to avoid overlapping checks
+      if (!this.isShowingModal && !this.modalService.modalState().isOpen) {
+        this.syncUnreadNotifications(token);
+      }
+    }, 15000);
   }
 
   // ─── Phase A: REST Catch-Up ──────────────────────────────────────────
 
-  private fetchAndDisplayCatchUp(_token: string): void {
+  /**
+   * Pull unread notifications and display any unseen ones as modal popups.
+   * Safe to call after actions that should surface a new server-generated notification immediately.
+   */
+  syncUnreadNotifications(_token?: string): void {
     this.api
       .get<NotificationListResponse | ApiNotificationItem[]>('notifications', {
         status: 'unread',
@@ -79,9 +112,15 @@ export class RealTimeNotificationService {
 
           if (items.length === 0) return;
 
+          const unseen = items.filter((notif) => !this.displayedNotificationIds.includes(notif.id));
+          if (unseen.length === 0) {
+            this.notificationService.loadUnreadCount().subscribe();
+            return;
+          }
+
           // Show up to MAX_CATCHUP_MODALS as modal popups
-          const toShow = items.slice(0, MAX_CATCHUP_MODALS);
-          const ids = items.map((n) => n.id);
+          const toShow = unseen.slice(0, MAX_CATCHUP_MODALS);
+          const ids = unseen.map((n) => n.id);
           this.displayedNotificationIds.push(...ids);
 
           toShow.forEach((notif) => {
@@ -99,7 +138,49 @@ export class RealTimeNotificationService {
           this.notificationService.loadUnreadCount().subscribe();
         },
         error: (err) => {
-          console.error('[RealTime] Failed to fetch catch-up notifications:', err);
+          console.error('[RealTime] Failed to fetch unread notifications:', err);
+        },
+      });
+  }
+
+  /**
+   * Pull unread notifications and surface any unseen ones as toast popups.
+   * Useful after an action that should generate a server notification immediately.
+   */
+  refreshUnreadToasts(): void {
+    this.api
+      .get<NotificationListResponse | ApiNotificationItem[]>('notifications', {
+        status: 'unread',
+        limit: 50,
+        offset: 0,
+      })
+      .subscribe({
+        next: (raw) => {
+          const items: ApiNotificationItem[] = Array.isArray(raw)
+            ? raw
+            : raw?.notifications ?? [];
+
+          const unseen = items.filter((notif) => !this.displayedNotificationIds.includes(notif.id));
+          if (unseen.length === 0) {
+            this.notificationService.loadUnreadCount().subscribe();
+            return;
+          }
+
+          unseen.slice(0, MAX_CATCHUP_MODALS).forEach((notif) => {
+            this.messageService.add({
+              severity: notificationTypeToUiType(notif.type),
+              summary: notif.title ?? notif.type.replace(/_/g, ' '),
+              detail: notif.message ?? notif.body ?? '',
+            });
+          });
+
+          const ids = unseen.map((n) => n.id);
+          this.displayedNotificationIds.push(...ids);
+          this.markNotificationsAsRead(ids);
+          this.notificationService.loadUnreadCount().subscribe();
+        },
+        error: (err) => {
+          console.error('[RealTime] Failed to refresh unread toast notifications:', err);
         },
       });
   }
@@ -197,6 +278,9 @@ export class RealTimeNotificationService {
   private showNextIfIdle(): void {
     if (this.isShowingModal || this.notificationQueue.length === 0) return;
 
+    // Wait if the global modal service is already displaying a modal
+    if (this.modalService.modalState().isOpen) return;
+
     const next = this.notificationQueue.shift()!;
     this.isShowingModal = true;
 
@@ -237,5 +321,9 @@ export class RealTimeNotificationService {
     this.notificationQueue = [];
     this.isShowingModal = false;
     this.initialized = false;
+    if (this.pollingIntervalId) {
+      clearInterval(this.pollingIntervalId);
+      this.pollingIntervalId = undefined;
+    }
   }
 }
