@@ -20,7 +20,7 @@
             <!-- Level select -->
             <div class="relative">
               <select
-                [value]="level()"
+                [ngModel]="level()"
                 (change)="onLevelChange($event)"
                 class="appearance-none h-9 pl-3 pr-8 text-sm font-medium text-mlm-text bg-white border border-mlm-secondary/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-mlm-primary/20 focus:border-mlm-primary/40 cursor-pointer transition-colors"
               >
