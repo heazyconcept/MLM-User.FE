@@ -40,44 +40,36 @@
       <div class="mt-8 space-y-8 animate-fade-in">
 
         <!-- ─── Registration PV ─────────────────────── -->
-        <div class="grid grid-cols-3 divide-x divide-mlm-secondary/15 border border-mlm-secondary/15 rounded-xl overflow-hidden">
+        <div class="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 divide-x divide-mlm-secondary/15 border border-mlm-secondary/15 rounded-xl overflow-hidden">
 
           <div class="bg-white px-5 py-4 flex flex-col gap-1">
             <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Instant PV</span>
-            <span class="text-3xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ registrationPv().instant }}</span>
+            <span class="text-3xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ cpvTotals().instantPv ?? 0 }}</span>
             <span class="text-[11px] text-mlm-secondary">from registration</span>
           </div>
 
           <div class="bg-white px-5 py-4 flex flex-col gap-1">
             <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Community PV</span>
-            <span class="text-3xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ registrationPv().community }}</span>
+            <span class="text-3xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ cpvTotals().communityPv ?? 0 }}</span>
             <span class="text-[11px] text-mlm-secondary">distributed to upline</span>
           </div>
 
+          <div class="bg-white px-5 py-4 flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Direct referral PV</span>
+            <span class="text-3xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ cpvTotals().directReferralPv ?? 0 }}</span>
+            <span class="text-[11px] text-mlm-secondary">from direct activations</span>
+          </div>
+
           <div class="bg-white px-5 py-4 flex flex-col gap-1 border-t-2 border-t-mlm-primary">
-            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Total registration PV</span>
-            <span class="text-3xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ registrationPv().total }}</span>
-            <span class="text-[11px] text-mlm-secondary">PV at activation</span>
+            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Total PV</span>
+            <span class="text-3xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ cpvTotals().totalPv ?? 0 }}</span>
+            <span class="text-[11px] text-mlm-secondary">combined PV</span>
           </div>
 
         </div>
 
         <!-- ─── CPV Summary ─────────────────────────── -->
-        <div class="grid grid-cols-2 divide-x divide-mlm-secondary/15 border border-mlm-secondary/15 rounded-xl overflow-hidden">
-
-          <div class="bg-white px-5 py-4 flex flex-col gap-1">
-            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Total CPV volume</span>
-            <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ cpvTotals().totalCpv | number }}</span>
-            <span class="text-[11px] text-mlm-secondary">points accumulated</span>
-          </div>
-
-          <div class="bg-white px-5 py-4 flex flex-col gap-1">
-            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Personal CPV</span>
-            <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none mt-1">{{ cpvTotals().personalCpv | number }}</span>
-            <span class="text-[11px] text-mlm-secondary">from your activity</span>
-          </div>
-
-        </div>
+        <!-- CPV summary cards removed per updated requirements -->
 
         <!-- ─── Next Milestone Progress ────────────── -->
         <div class="border border-mlm-secondary/15 rounded-xl bg-white px-5 py-5">
