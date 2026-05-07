@@ -12,7 +12,12 @@ import {
   DynamicDialogConfig,
   DialogService
 } from 'primeng/dynamicdialog';
-import { ReferralService, CreateReferralRequest, type DirectReferralItem } from '../../../services/referral.service';
+import {
+  ReferralService,
+  CreateReferralRequest,
+  type DirectReferralItem,
+  type PlacementValidationReason
+} from '../../../services/referral.service';
 import { RegistrationFundingComponent } from '../../wallet/registration-funding/registration-funding.component';
 import { WalletService } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
@@ -62,6 +67,9 @@ export class CreateReferralComponent implements OnInit {
   formError = signal('');
   directReferrals = signal<DirectReferralItem[]>([]);
   isLeader = signal(false);
+  placementValid = signal<boolean | null>(null);
+  placementValidating = signal(false);
+  placementInvalidReason = signal<PlacementValidationReason | null>(null);
 
   selectedPackage = signal('SILVER');
   selectedCurrency = signal<'NGN' | 'USD'>('NGN');
@@ -82,30 +90,19 @@ export class CreateReferralComponent implements OnInit {
 
   hasInsufficientBalance = computed(() => this.registrationBalance() < this.requiredAmount());
 
-  /** Show placement dropdown only when user is a leader (>= 3 direct referrals) */
+  /** Show placement field only when user is a leader (>= 3 direct referrals) */
   showPlacementDropdown = computed(() => this.isLeader() && this.directReferrals().length > 0);
-
-  /** Map direct referrals to dropdown options for "Place under" */
-  placementParentOptions = computed(() =>
-    this.directReferrals().map(dr => {
-      const fullName = [dr.firstName, dr.lastName].filter(n => !!n && n.trim().length > 0).join(' ');
-      return {
-        value: dr.id,
-        label: fullName ? `${dr.username} (${fullName})` : dr.username
-      };
-    })
-  );
 
   packageOptions = PACKAGE_OPTIONS;
   currencyOptions = CURRENCY_OPTIONS;
   form: FormGroup;
-  private initialPlacementParentUserId: string | null;
+  private initialPlacementParentUsername: string | null;
 
   constructor() {
     const currency = this.userService.displayCurrency() as 'NGN' | 'USD';
     this.selectedCurrency.set(currency);
-    this.initialPlacementParentUserId =
-      (this.config.data?.['placementParentUserId'] as string | null | undefined) ?? null;
+    this.initialPlacementParentUsername =
+      (this.config.data?.['placementParentUsername'] as string | null | undefined) ?? null;
 
     this.form = this.fb.group({
       email: ['', [Validators.email]],
@@ -113,12 +110,18 @@ export class CreateReferralComponent implements OnInit {
       password: ['', [Validators.required, Validators.minLength(8)]],
       package: ['SILVER', Validators.required],
       currency: [currency, Validators.required],
-      placementParentUserId: [this.initialPlacementParentUserId]
+      placementParentUsername: [this.initialPlacementParentUsername]
     });
 
     // Watch package & currency changes
     this.form.get('package')?.valueChanges.subscribe((pkg: string) => this.selectedPackage.set(pkg));
     this.form.get('currency')?.valueChanges.subscribe((c: string) => this.selectedCurrency.set(c as 'NGN' | 'USD'));
+    this.form.get('placementParentUsername')?.valueChanges.subscribe(() => {
+      this.placementValid.set(null);
+      this.placementValidating.set(false);
+      this.placementInvalidReason.set(null);
+      this.formError.set('');
+    });
   }
 
   ngOnInit(): void {
@@ -129,14 +132,6 @@ export class CreateReferralComponent implements OnInit {
     }).subscribe(({ stats, directRefs }) => {
       this.isLeader.set(stats.isLeader);
       this.directReferrals.set(directRefs);
-
-      // Validate pre-selected placement parent
-      if (this.initialPlacementParentUserId) {
-        const existsInOptions = directRefs.some(dr => dr.id === this.initialPlacementParentUserId);
-        if (!existsInOptions) {
-          this.form.patchValue({ placementParentUserId: null }, { emitEvent: false });
-        }
-      }
     });
 
     // Ensure wallet balances are loaded so we can show the registration balance
@@ -162,14 +157,70 @@ export class CreateReferralComponent implements OnInit {
     });
   }
 
+  onPlacementBlur(): void {
+    const placementUsername = this.form.get('placementParentUsername')?.value?.trim();
+    if (!placementUsername) {
+      this.placementValid.set(null);
+      this.placementValidating.set(false);
+      this.placementInvalidReason.set(null);
+      return;
+    }
+
+    this.placementValidating.set(true);
+    this.placementValid.set(null);
+    this.placementInvalidReason.set(null);
+
+    this.referralService.validatePlacementUsername(placementUsername).subscribe({
+      next: (res) => {
+        this.placementValidating.set(false);
+        this.placementValid.set(res.valid === true);
+        this.placementInvalidReason.set(res.valid ? null : res.reason ?? null);
+      },
+      error: () => {
+        this.placementValidating.set(false);
+        this.placementValid.set(false);
+        this.placementInvalidReason.set(null);
+      }
+    });
+  }
+
+  getPlacementValidationMessage(): string | null {
+    const placementUsername = this.form.get('placementParentUsername')?.value?.trim();
+    if (!placementUsername) return null;
+    if (this.placementValidating()) return 'Checking placement...';
+    if (this.placementValid() === true) return 'Placement username verified.';
+    if (this.placementValid() === false) {
+      const reason = this.placementInvalidReason();
+      if (reason === 'USER_NOT_FOUND') return 'Placement username not found.';
+      if (reason === 'NOT_IN_DOWNLINE') return 'Placement user is not in your downline.';
+      if (reason === 'MATRIX_FULL') return 'Placement user matrix is full.';
+      return 'Placement username is not valid.';
+    }
+    return null;
+  }
+
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
-    const { email, username, password, package: pkg, currency, placementParentUserId } = this.form.value;
+    const { email, username, password, package: pkg, currency, placementParentUsername } = this.form.value;
     if (!username || !password || !pkg || !currency) return;
+
+    const placementUsernameTrim = placementParentUsername?.trim();
+    if (placementUsernameTrim && this.placementValidating()) {
+      this.formError.set('Placement validation is in progress. Please wait.');
+      return;
+    }
+
+    if (placementUsernameTrim && this.placementValid() !== true) {
+      if (this.placementValid() === null) {
+        this.onPlacementBlur();
+      }
+      this.formError.set('Please enter a valid placement username.');
+      return;
+    }
 
     this.isSubmitting.set(true);
     this.formError.set('');
@@ -181,7 +232,7 @@ export class CreateReferralComponent implements OnInit {
       password,
       package: pkg,
       currency,
-      ...(placementParentUserId ? { placementParentUserId } : {})
+      ...(placementUsernameTrim ? { placementParentUsername: placementUsernameTrim } : {})
     };
 
     this.referralService.createReferral(request).subscribe({
