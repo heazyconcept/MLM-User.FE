@@ -133,7 +133,7 @@
         label="Create Referral"
         icon="pi pi-user-plus"
         [loading]="isSubmitting()"
-        [disabled]="form.invalid || isSubmitting() || hasInsufficientBalance()">
+        [disabled]="form.invalid || isSubmitting() || hasInsufficientBalance() || placementValidating() || ((form.get('placementParentUsername')?.value?.trim()?.length ?? 0) > 0 && placementValid() !== true)">
       </p-button>
     </div>
   </form>
