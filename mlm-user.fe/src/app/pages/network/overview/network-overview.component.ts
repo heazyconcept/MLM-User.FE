@@ -57,12 +57,18 @@ export class NetworkOverviewComponent implements OnInit {
   }
 
   openCreateReferralDialog(): void {
-    this.dialogService.open(CreateReferralComponent, {
+    const dialogRef = this.dialogService.open(CreateReferralComponent, {
       header: 'Create Successline',
       width: '520px',
       contentStyle: { 'max-height': '700px', overflow: 'auto' },
       baseZIndex: 10000,
       data: { returnUrl: '/network' }
+    });
+
+    dialogRef?.onClose.subscribe((created) => {
+      if (created !== true) return;
+      this.networkService.fetchNetworkData();
+      this.fetchReferralStats();
     });
   }
 }
