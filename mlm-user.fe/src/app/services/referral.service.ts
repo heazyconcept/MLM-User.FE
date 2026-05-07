@@ -119,6 +119,33 @@ export interface MatrixLevelUser {
   stage?: string | number | null;
 }
 
+export interface MatrixTreeUser {
+  userId: string;
+  username: string;
+  email?: string | null;
+  phone?: string | null;
+  isActive?: boolean | null;
+  isRegistrationPaid?: boolean | null;
+  createdAt?: string | null;
+  relativeLevel?: number | null;
+  parentUsername?: string | null;
+  stageLabel?: string | null;
+  rank?: string | null;
+}
+
+export interface MatrixTreeLevel {
+  level: number;
+  users: MatrixTreeUser[];
+}
+
+export interface MatrixTreeResponse {
+  rootUserId?: string | null;
+  rootUsername?: string | null;
+  depth?: number | null;
+  totalUsers?: number | null;
+  levels?: MatrixTreeLevel[];
+}
+
 export interface MatrixLevelPagination {
   totalRecords: number;
   currentOffset: number;
@@ -398,6 +425,48 @@ export class ReferralService {
             map((downlines) => this.buildMatrixLevelFallback(downlines, level, limit, offset, search))
           );
         })
+      );
+  }
+
+  /** GET /referrals/me/matrix */
+  getMatrixTree(username?: string): Observable<MatrixTreeResponse> {
+    const params = username?.trim() ? { username: username.trim() } : undefined;
+    return this.api
+      .get<Record<string, unknown> | null>('referrals/me/matrix', params)
+      .pipe(
+        map((res) => {
+          if (!res) return { levels: [] } as MatrixTreeResponse;
+          const levelsRaw = (res['levels'] ?? []) as Record<string, unknown>[];
+          const levels = levelsRaw.map((level) => {
+            const usersRaw = (level['users'] ?? []) as Record<string, unknown>[];
+            const users = usersRaw.map((user) => ({
+              userId: String(user['userId'] ?? user['id'] ?? ''),
+              username: String(user['username'] ?? ''),
+              email: (user['email'] as string | null | undefined) ?? null,
+              phone: (user['phone'] as string | null | undefined) ?? null,
+              isActive: (user['isActive'] as boolean | null | undefined) ?? null,
+              isRegistrationPaid: (user['isRegistrationPaid'] as boolean | null | undefined) ?? null,
+              createdAt: (user['createdAt'] as string | null | undefined) ?? null,
+              relativeLevel: (user['relativeLevel'] as number | null | undefined) ?? null,
+              parentUsername: (user['parentUsername'] as string | null | undefined) ?? null,
+              stageLabel: (user['stageLabel'] as string | null | undefined) ?? null,
+              rank: (user['rank'] as string | null | undefined) ?? null
+            }));
+            return {
+              level: Number(level['level'] ?? 0),
+              users
+            };
+          });
+
+          return {
+            rootUserId: (res['rootUserId'] as string | null | undefined) ?? null,
+            rootUsername: (res['rootUsername'] as string | null | undefined) ?? null,
+            depth: (res['depth'] as number | null | undefined) ?? null,
+            totalUsers: (res['totalUsers'] as number | null | undefined) ?? null,
+            levels
+          } as MatrixTreeResponse;
+        }),
+        catchError(() => of({ levels: [] } as MatrixTreeResponse))
       );
   }
 

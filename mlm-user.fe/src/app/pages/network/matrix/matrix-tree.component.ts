@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, effect, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NetworkService, MatrixNode } from '../../../services/network.service';
 import { OrganizationChartModule } from 'primeng/organizationchart';
@@ -29,10 +29,12 @@ interface FlatNode {
   providers: [DialogService],
   templateUrl: './matrix-tree.component.html'
 })
-export class MatrixTreeComponent implements OnInit {
+export class MatrixTreeComponent implements OnInit, AfterViewInit {
   private networkService = inject(NetworkService);
   private dialogService = inject(DialogService);
   originalRoot = computed(() => this.networkService.matrixTree());
+
+  @ViewChild('matrixViewport', { static: true }) matrixViewport?: ElementRef<HTMLElement>;
 
   // Navigation state
   currentRootNode = signal<MatrixNode>(this.networkService.matrixTree());
@@ -63,8 +65,10 @@ export class MatrixTreeComponent implements OnInit {
     });
   }
 
-  /** Default zoom &lt; 1 so the full tree fits in view on load; user can zoom in from here. */
+  /** Default zoom is overridden by auto-fit unless the user manually adjusts zoom. */
   zoomLevel = signal(0.5);
+  private userAdjustedZoom = false;
+  private autoFitDone = false;
 
   isLoading = computed(() => this.networkService.isLoading());
   error = computed(() => this.networkService.error() ?? null);
@@ -72,9 +76,11 @@ export class MatrixTreeComponent implements OnInit {
   constructor() {
     effect(() => {
       const root = this.originalRoot();
-      if (this.currentRootNode().id === 'root' && root.id === 'root') {
+      if (this.currentRootNode().id === 'root') {
         this.currentRootNode.set(root);
       }
+
+      this.requestAutoFit();
     });
   }
 
@@ -82,9 +88,13 @@ export class MatrixTreeComponent implements OnInit {
     this.networkService.fetchNetworkData();
   }
 
+  ngAfterViewInit(): void {
+    this.requestAutoFit();
+  }
+
   // Computed: check if viewing original root
   isRootView = computed(() => {
-    return this.currentRootNode().id === this.originalRoot().id;
+    return this.navigationStack().length === 0;
   });
 
   // Computed: current matrix tree (from currentRootNode) converted to PrimeNG TreeNode format
@@ -133,10 +143,12 @@ export class MatrixTreeComponent implements OnInit {
   }
 
   zoomIn() {
+    this.userAdjustedZoom = true;
     this.zoomLevel.update(z => Math.min(z + 0.2, 2));
   }
 
   zoomOut() {
+    this.userAdjustedZoom = true;
     this.zoomLevel.update(z => Math.max(z - 0.2, 0.4));
   }
 
@@ -151,21 +163,7 @@ export class MatrixTreeComponent implements OnInit {
       return;
     }
     
-    // Add current root to navigation stack (only if different)
-    const currentRoot = this.currentRootNode();
-    if (currentRoot.id !== node.id) {
-      this.navigationStack.update(stack => [...stack, currentRoot]);
-    }
-    
-    // Find the full node structure from original tree
-    // This ensures we get the complete node with all its children
-    const fullNode = this.networkService.findNode(node.id);
-    if (fullNode) {
-      // Set as new root - the level will be adjusted to 0 in matrixTree computed
-      this.currentRootNode.set(fullNode);
-    } else {
-      console.warn(`Node with id ${node.id} not found in tree structure`);
-    }
+    this.loadMatrixRoot(node.username, true);
   }
 
   // Navigate back to original root
@@ -173,16 +171,16 @@ export class MatrixTreeComponent implements OnInit {
     if (this.navigationStack().length > 0) {
       const previousNode = this.navigationStack()[this.navigationStack().length - 1];
       this.navigationStack.update(stack => stack.slice(0, -1));
-      this.currentRootNode.set(previousNode);
+      this.loadMatrixRoot(previousNode.username, false);
     } else {
-      this.currentRootNode.set(this.originalRoot());
+      this.loadMatrixRoot(undefined, false);
     }
   }
 
   // Navigate to top (original root)
   navigateToTop() {
     this.navigationStack.set([]);
-    this.currentRootNode.set(this.originalRoot());
+    this.loadMatrixRoot(undefined, false);
   }
 
   // Convert MatrixNode to PrimeNG TreeNode format
@@ -360,6 +358,59 @@ export class MatrixTreeComponent implements OnInit {
     tryRestore();
   }
 
+  private requestAutoFit(): void {
+    if (this.userAdjustedZoom || this.autoFitDone) return;
+    if (typeof window === 'undefined') return;
+    window.setTimeout(() => this.autoFitZoom(), 0);
+  }
+
+  private autoFitZoom(): void {
+    if (this.userAdjustedZoom || this.autoFitDone) return;
+    const viewport = this.matrixViewport?.nativeElement;
+    if (!viewport) return;
+
+    const { width: viewportWidth, height: viewportHeight } = viewport.getBoundingClientRect();
+    if (!viewportWidth || !viewportHeight) return;
+
+    const metrics = this.getTreeMetrics(this.currentRootNode());
+    const nodeWidth = 140;
+    const nodeHeight = 120;
+    const hGap = 40;
+    const vGap = 80;
+    const estimatedWidth = metrics.maxNodes * nodeWidth + Math.max(0, metrics.maxNodes - 1) * hGap;
+    const estimatedHeight = metrics.levels * nodeHeight + Math.max(0, metrics.levels - 1) * vGap;
+
+    if (!estimatedWidth || !estimatedHeight) return;
+    const scale = Math.min(viewportWidth / estimatedWidth, viewportHeight / estimatedHeight, 1);
+    const clamped = Math.max(0.2, Math.min(scale, 1));
+    this.zoomLevel.set(clamped);
+    this.autoFitDone = true;
+  }
+
+  private getTreeMetrics(root: MatrixNode): { levels: number; maxNodes: number } {
+    const levelCounts = new Map<number, number>();
+    const queue: Array<{ node: MatrixNode; level: number }> = [{ node: root, level: 0 }];
+    let maxLevel = 0;
+
+    while (queue.length) {
+      const item = queue.shift();
+      if (!item) break;
+      maxLevel = Math.max(maxLevel, item.level);
+      levelCounts.set(item.level, (levelCounts.get(item.level) ?? 0) + 1);
+
+      for (const child of item.node.children ?? []) {
+        queue.push({ node: child, level: item.level + 1 });
+      }
+    }
+
+    let maxNodes = 1;
+    for (const count of levelCounts.values()) {
+      maxNodes = Math.max(maxNodes, count);
+    }
+
+    return { levels: maxLevel + 1, maxNodes };
+  }
+
   isCurrentRoot(nodeId: string): boolean {
     return nodeId === this.currentRootNode().id;
   }
@@ -381,5 +432,20 @@ export class MatrixTreeComponent implements OnInit {
 
   onDialogVisibleChange(visible: boolean): void {
     if (!visible) this.closeNodeDetails();
+  }
+
+  private loadMatrixRoot(username?: string, pushStack = false): void {
+    if (pushStack) {
+      const currentRoot = this.currentRootNode();
+      if (currentRoot.id) {
+        this.navigationStack.update(stack => [...stack, currentRoot]);
+      }
+    }
+
+    this.networkService.fetchMatrixTree(username).subscribe((tree) => {
+      this.currentRootNode.set(tree);
+      this.autoFitDone = false;
+      this.requestAutoFit();
+    });
   }
 }
