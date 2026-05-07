@@ -11,6 +11,17 @@ export interface ValidateReferralResponse {
   uplineUserId?: string;
 }
 
+export type PlacementValidationReason = 'USER_NOT_FOUND' | 'NOT_IN_DOWNLINE' | 'MATRIX_FULL';
+
+export interface ValidatePlacementResponse {
+  valid: boolean;
+  userId?: string;
+  username?: string;
+  directChildrenCount?: number;
+  matrixWidth?: number;
+  reason?: PlacementValidationReason;
+}
+
 export interface ReferralInfo {
   referralUsername: string;
   referrerName?: string;
@@ -67,7 +78,7 @@ export interface CreateReferralRequest {
   password: string;
   package: string;
   currency: string;
-  placementParentUserId?: string;
+  placementParentUsername?: string;
 }
 
 export interface CreateReferralResponse {
@@ -152,6 +163,28 @@ export class ReferralService {
         map((res) => ({
           valid: res['valid'] === true,
           uplineUserId: res['uplineUserId'] as string | undefined
+        })),
+        catchError(() => of({ valid: false }))
+      );
+  }
+
+  /** POST /referrals/validate-placement */
+  validatePlacementUsername(placementUsername: string): Observable<ValidatePlacementResponse> {
+    if (!placementUsername?.trim()) {
+      return of({ valid: false });
+    }
+    return this.api
+      .post<Record<string, unknown>>('referrals/validate-placement', {
+        placementUsername: placementUsername.trim()
+      })
+      .pipe(
+        map((res) => ({
+          valid: res['valid'] === true,
+          userId: res['userId'] as string | undefined,
+          username: res['username'] as string | undefined,
+          directChildrenCount: res['directChildrenCount'] as number | undefined,
+          matrixWidth: res['matrixWidth'] as number | undefined,
+          reason: res['reason'] as PlacementValidationReason | undefined
         })),
         catchError(() => of({ valid: false }))
       );
@@ -276,8 +309,8 @@ export class ReferralService {
     if (request.email?.trim()) {
       body['email'] = request.email.trim();
     }
-    if (request.placementParentUserId) {
-      body['placementParentUserId'] = request.placementParentUserId;
+    if (request.placementParentUsername) {
+      body['placementParentUsername'] = request.placementParentUsername;
     }
     return this.api.post<Record<string, unknown>>('referrals/create', body).pipe(
       map((res) => ({

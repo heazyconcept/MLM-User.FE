@@ -132,7 +132,7 @@ export class RegisterComponent implements OnInit {
     package: ['', [Validators.required]],
     currency: ['', [Validators.required]],
     referralUsername: [environment.defaultReferralUsername ?? ''],
-    placementParentUserId: [''],
+    placementParentUsername: [''],
     acceptTerms: [false, [Validators.requiredTrue]]
   }, { validators: this.passwordMatchValidator });
 
@@ -286,7 +286,7 @@ export class RegisterComponent implements OnInit {
 
       const formValue = this.registerForm.value;
       const referralUsername = formValue.referralUsername?.trim();
-      const placementId = formValue.placementParentUserId?.trim();
+      const placementUsername = formValue.placementParentUsername?.trim();
       const emailTrim = formValue.email?.trim() ?? '';
       const payload: RegisterRequest = {
         username: formValue.username!,
@@ -295,7 +295,7 @@ export class RegisterComponent implements OnInit {
         package: formValue.package!,
         currency: formValue.currency!,
         ...(referralUsername ? { referralUsername } : {}),
-        ...(placementId ? { placementParentUserId: placementId } : {})
+        ...(placementUsername ? { placementParentUsername: placementUsername } : {})
       };
 
       this.authService.register(payload).subscribe({

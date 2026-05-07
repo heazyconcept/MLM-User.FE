@@ -17,7 +17,7 @@ export interface RegisterRequest {
   package: string;
   currency: string;
   referralUsername?: string;
-  placementParentUserId?: string;
+  placementParentUsername?: string;
 }
 
 export interface LoginRequest {

@@ -84,20 +84,33 @@
     @if (showPlacementDropdown()) {
       <div class="flex flex-col gap-1.5">
         <label for="cr-placement" class="text-sm font-semibold text-gray-700">
-          Referral Username
+          Placement Username
           <span class="font-normal text-gray-500 text-xs">(spillover)</span>
         </label>
-        <p-select
-          formControlName="placementParentUserId"
-          inputId="cr-placement"
-          [options]="placementParentOptions()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Auto-place (leftmost)"
-          [showClear]="true"
-          styleClass="w-full">
-        </p-select>
-        <small class="text-gray-500 text-xs">You have {{ directReferrals().length }} direct referrals. Choose which leg receives the new member, or leave blank for auto-placement.</small>
+        <div class="relative">
+          <input
+            pInputText
+            formControlName="placementParentUsername"
+            id="cr-placement"
+            placeholder="e.g. janedoe (optional)"
+            class="w-full"
+            (blur)="onPlacementBlur()" />
+          @if (placementValidating()) {
+            <i class="pi pi-spin pi-spinner text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 text-sm"></i>
+          } @else if (placementValid() === true) {
+            <i class="pi pi-check text-green-500 absolute right-3 top-1/2 -translate-y-1/2 text-sm"></i>
+          } @else if (placementValid() === false) {
+            <i class="pi pi-times text-red-500 absolute right-3 top-1/2 -translate-y-1/2 text-sm"></i>
+          }
+        </div>
+        @if (getPlacementValidationMessage(); as placementMessage) {
+          <small
+            class="text-xs mt-1"
+            [class]="placementValid() === false ? 'text-red-500' : (placementValid() === true ? 'text-mlm-success' : 'text-slate-500')">
+            {{ placementMessage }}
+          </small>
+        }
+        <small class="text-gray-500 text-xs">Enter the placement username to route the new member, or leave blank for auto-placement.</small>
       </div>
     }
 

@@ -40,7 +40,7 @@ export class MatrixTreeComponent implements OnInit {
   nodeForModal = signal<MatrixNode | null>(null);
   showMatrixInfo = signal(false);
 
-  openCreateReferralDialog(options?: { placementParentUserId?: string | null; focusNodeId?: string }): void {
+  openCreateReferralDialog(options?: { placementParentUsername?: string | null; focusNodeId?: string }): void {
     const dialogRef = this.dialogService.open(CreateReferralComponent, {
       header: 'Create Referral',
       width: '520px',
@@ -48,7 +48,7 @@ export class MatrixTreeComponent implements OnInit {
       baseZIndex: 10000,
       data: {
         returnUrl: '/network/matrix',
-        placementParentUserId: options?.placementParentUserId ?? null
+        placementParentUsername: options?.placementParentUsername ?? null
       }
     });
 
@@ -311,21 +311,22 @@ export class MatrixTreeComponent implements OnInit {
       return;
     }
 
-    const placementParentUserId = this.getPlacementParentIdFromEmptyNode(node);
+    const placementParentUsername = this.getPlacementParentUsernameFromEmptyNode(node);
     const focusNodeId = this.getFocusNodeIdFromEmptyNode(node);
 
     this.openCreateReferralDialog({
-      placementParentUserId,
+      placementParentUsername,
       focusNodeId
     });
   }
 
-  private getPlacementParentIdFromEmptyNode(node: MatrixNode): string | null {
+  private getPlacementParentUsernameFromEmptyNode(node: MatrixNode): string | null {
     const parentId = node.parentId;
     if (!parentId || parentId === 'root' || parentId.startsWith('empty-') || parentId.startsWith('e-')) {
       return null;
     }
-    return parentId;
+    const parentNode = this.networkService.findNode(parentId);
+    return parentNode?.username ?? null;
   }
 
   private getFocusNodeIdFromEmptyNode(node: MatrixNode): string {
