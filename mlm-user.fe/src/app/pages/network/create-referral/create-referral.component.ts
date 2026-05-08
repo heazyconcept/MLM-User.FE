@@ -68,6 +68,9 @@ export class CreateReferralComponent implements OnInit {
   placementValidating = signal(false);
   placementInvalidReason = signal<PlacementValidationReason | null>(null);
 
+  referralValid = signal<boolean | null>(null);
+  referralValidating = signal(false);
+
   selectedPackage = signal('SILVER');
   selectedCurrency = signal<'NGN' | 'USD'>('NGN');
 
@@ -129,7 +132,8 @@ export class CreateReferralComponent implements OnInit {
       password: ['', [Validators.required, Validators.minLength(8)]],
       package: ['SILVER', Validators.required],
       currency: [currency, Validators.required],
-      placementParentUsername: [this.initialPlacementParentUsername]
+      placementParentUsername: [this.initialPlacementParentUsername],
+      referralUsername: ['']
     });
 
     // Watch package & currency changes
@@ -140,6 +144,20 @@ export class CreateReferralComponent implements OnInit {
       this.placementValidating.set(false);
       this.placementInvalidReason.set(null);
       this.formError.set('');
+    });
+    this.form.get('referralUsername')?.valueChanges.subscribe(() => {
+      this.referralValid.set(null);
+      this.referralValidating.set(false);
+      this.formError.set('');
+      
+      const placementUsername = this.form.get('placementParentUsername')?.value?.trim();
+      if (placementUsername) {
+        this.placementValid.set(null);
+        this.placementValidating.set(false);
+        this.placementInvalidReason.set(null);
+        // Automatically re-validate placement against new sponsor context if needed
+        // but wait for blur to prevent race conditions during typing
+      }
     });
   }
 
@@ -178,6 +196,8 @@ export class CreateReferralComponent implements OnInit {
 
   onPlacementBlur(): void {
     const placementUsername = this.form.get('placementParentUsername')?.value?.trim();
+    const referralUsername = this.form.get('referralUsername')?.value?.trim();
+    
     if (!placementUsername) {
       this.placementValid.set(null);
       this.placementValidating.set(false);
@@ -189,7 +209,7 @@ export class CreateReferralComponent implements OnInit {
     this.placementValid.set(null);
     this.placementInvalidReason.set(null);
 
-    this.referralService.validatePlacementUsername(placementUsername).subscribe({
+    this.referralService.validatePlacementUsername(placementUsername, referralUsername).subscribe({
       next: (res) => {
         this.placementValidating.set(false);
         this.placementValid.set(res.valid === true);
@@ -199,6 +219,29 @@ export class CreateReferralComponent implements OnInit {
         this.placementValidating.set(false);
         this.placementValid.set(false);
         this.placementInvalidReason.set(null);
+      }
+    });
+  }
+
+  onReferralBlur(): void {
+    const username = this.form.get('referralUsername')?.value?.trim();
+    if (!username) {
+      this.referralValid.set(null);
+      this.referralValidating.set(false);
+      return;
+    }
+
+    this.referralValidating.set(true);
+    this.referralValid.set(null);
+
+    this.referralService.validateReferralUsername(username).subscribe({
+      next: (res) => {
+        this.referralValidating.set(false);
+        this.referralValid.set(res.valid === true);
+      },
+      error: () => {
+        this.referralValidating.set(false);
+        this.referralValid.set(false);
       }
     });
   }
@@ -226,10 +269,20 @@ export class CreateReferralComponent implements OnInit {
     if (this.placementValid() === false) {
       const reason = this.placementInvalidReason();
       if (reason === 'USER_NOT_FOUND') return 'Placement username not found.';
-      if (reason === 'NOT_IN_DOWNLINE') return 'Placement user is not in your downline.';
+      if (reason === 'NOT_IN_DOWNLINE') return 'Placement user is not in the sponsor\'s downline.';
       if (reason === 'MATRIX_FULL') return 'Placement user matrix is full.';
+      if (reason === 'SPONSOR_NOT_FOUND') return 'Delegated sponsor not found.';
       return 'Placement username is not valid.';
     }
+    return null;
+  }
+
+  getReferralValidationMessage(): string | null {
+    const username = this.form.get('referralUsername')?.value?.trim();
+    if (!username) return null;
+    if (this.referralValidating()) return 'Checking referral username...';
+    if (this.referralValid() === true) return 'Referral username verified.';
+    if (this.referralValid() === false) return 'Referral username is not valid.';
     return null;
   }
 
@@ -239,7 +292,7 @@ export class CreateReferralComponent implements OnInit {
       return;
     }
 
-    const { email, username, password, package: pkg, currency, placementParentUsername } = this.form.value;
+    const { email, username, password, package: pkg, currency, placementParentUsername, referralUsername } = this.form.value;
     if (!username || !password || !pkg || !currency) return;
 
     const placementUsernameTrim = placementParentUsername?.trim();
@@ -256,6 +309,20 @@ export class CreateReferralComponent implements OnInit {
       return;
     }
 
+    const referralUsernameTrim = referralUsername?.trim();
+    if (referralUsernameTrim && this.referralValidating()) {
+      this.formError.set('Referral validation is in progress. Please wait.');
+      return;
+    }
+
+    if (referralUsernameTrim && this.referralValid() !== true) {
+      if (this.referralValid() === null) {
+        this.onReferralBlur();
+      }
+      this.formError.set('Please enter a valid referral username.');
+      return;
+    }
+
     this.isSubmitting.set(true);
     this.formError.set('');
 
@@ -266,7 +333,8 @@ export class CreateReferralComponent implements OnInit {
       password,
       package: pkg,
       currency,
-      ...(placementUsernameTrim ? { placementParentUsername: placementUsernameTrim } : {})
+      ...(placementUsernameTrim ? { placementParentUsername: placementUsernameTrim } : {}),
+      ...(referralUsernameTrim ? { referralUsername: referralUsernameTrim } : {})
     };
 
     this.referralService.createReferral(request).subscribe({
