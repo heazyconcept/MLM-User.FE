@@ -234,6 +234,10 @@ export class CreateReferralComponent implements OnInit {
     if (!username) {
       this.referralValid.set(null);
       this.referralValidating.set(false);
+      
+      if (this.form.get('placementParentUsername')?.value?.trim()) {
+        this.onPlacementBlur();
+      }
       return;
     }
 
@@ -244,6 +248,10 @@ export class CreateReferralComponent implements OnInit {
       next: (res) => {
         this.referralValidating.set(false);
         this.referralValid.set(res.valid === true);
+        
+        if (this.form.get('placementParentUsername')?.value?.trim()) {
+          this.onPlacementBlur();
+        }
       },
       error: () => {
         this.referralValidating.set(false);
