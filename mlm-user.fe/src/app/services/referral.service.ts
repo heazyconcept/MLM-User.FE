@@ -11,7 +11,7 @@ export interface ValidateReferralResponse {
   uplineUserId?: string;
 }
 
-export type PlacementValidationReason = 'USER_NOT_FOUND' | 'NOT_IN_DOWNLINE' | 'MATRIX_FULL';
+export type PlacementValidationReason = 'USER_NOT_FOUND' | 'NOT_IN_DOWNLINE' | 'MATRIX_FULL' | 'SPONSOR_NOT_FOUND';
 
 export interface ValidatePlacementResponse {
   valid: boolean;
@@ -79,6 +79,7 @@ export interface CreateReferralRequest {
   package: string;
   currency: string;
   placementParentUsername?: string;
+  referralUsername?: string;
 }
 
 export interface CreateReferralResponse {
@@ -196,14 +197,21 @@ export class ReferralService {
   }
 
   /** POST /referrals/validate-placement */
-  validatePlacementUsername(placementUsername: string): Observable<ValidatePlacementResponse> {
+  validatePlacementUsername(placementUsername: string, referralUsername?: string): Observable<ValidatePlacementResponse> {
     if (!placementUsername?.trim()) {
       return of({ valid: false });
     }
+    
+    const body: Record<string, unknown> = {
+      placementUsername: placementUsername.trim()
+    };
+    
+    if (referralUsername?.trim()) {
+      body['referralUsername'] = referralUsername.trim();
+    }
+    
     return this.api
-      .post<Record<string, unknown>>('referrals/validate-placement', {
-        placementUsername: placementUsername.trim()
-      })
+      .post<Record<string, unknown>>('referrals/validate-placement', body)
       .pipe(
         map((res) => ({
           valid: res['valid'] === true,
@@ -338,6 +346,9 @@ export class ReferralService {
     }
     if (request.placementParentUsername) {
       body['placementParentUsername'] = request.placementParentUsername;
+    }
+    if (request.referralUsername) {
+      body['referralUsername'] = request.referralUsername;
     }
     return this.api.post<Record<string, unknown>>('referrals/create', body).pipe(
       map((res) => ({
