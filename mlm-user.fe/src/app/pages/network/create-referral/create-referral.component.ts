@@ -126,14 +126,15 @@ export class CreateReferralComponent implements OnInit {
     this.initialPlacementParentUsername =
       (this.config.data?.['placementParentUsername'] as string | null | undefined) ?? null;
 
+    const currentUser = this.userService.currentUser();
     this.form = this.fb.group({
+      referralUsername: [currentUser?.username ?? ''],
       email: ['', [Validators.email]],
       username: ['', Validators.required],
       password: ['', [Validators.required, Validators.minLength(8)]],
       package: ['SILVER', Validators.required],
       currency: [currency, Validators.required],
-      placementParentUsername: [this.initialPlacementParentUsername],
-      referralUsername: ['']
+      placementParentUsername: [this.initialPlacementParentUsername]
     });
 
     // Watch package & currency changes
@@ -173,6 +174,11 @@ export class CreateReferralComponent implements OnInit {
 
     // Ensure wallet balances are loaded so we can show the registration balance
     this.walletService.fetchWallets().subscribe();
+
+    // Trigger initial validation for pre-filled referral username
+    if (this.form.get('referralUsername')?.value?.trim()) {
+      this.onReferralBlur();
+    }
   }
 
   /** Same flow as Wallet page → Fund Registration Wallet (nested above this dialog). */
