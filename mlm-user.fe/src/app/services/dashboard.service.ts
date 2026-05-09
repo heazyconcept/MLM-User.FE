@@ -29,6 +29,7 @@ export type DashboardTransaction = {
   currency: 'NGN' | 'USD';
   status: 'Completed' | 'Pending' | 'Failed';
   category?: string;
+  categoryGroup?: string;
   source?: string;
   subType?: string;
   reference?: string;

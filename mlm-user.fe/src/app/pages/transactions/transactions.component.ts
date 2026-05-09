@@ -363,7 +363,7 @@ export class TransactionsComponent implements OnInit {
   }
 
   getTransactionCategoryLabel(tx: DashboardTransaction): string {
-    const raw = tx.category?.trim() || tx.source?.trim();
+    const raw = tx.categoryGroup?.trim() || tx.source?.trim();
     if (!raw) {
       return this.getTabLabel(this.resolveTransactionTab(tx));
     }
