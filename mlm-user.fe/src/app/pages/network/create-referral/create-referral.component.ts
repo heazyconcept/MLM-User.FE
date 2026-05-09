@@ -70,6 +70,7 @@ export class CreateReferralComponent implements OnInit {
 
   referralValid = signal<boolean | null>(null);
   referralValidating = signal(false);
+  referralUsernameValue = signal<string>('');
 
   selectedPackage = signal('SILVER');
   selectedCurrency = signal<'NGN' | 'USD'>('NGN');
@@ -99,8 +100,20 @@ export class CreateReferralComponent implements OnInit {
 
   hasInsufficientBalance = computed(() => this.registrationBalance() < this.requiredAmount());
 
-  /** Show placement field only when user is a leader (>= 3 direct referrals) */
-  showPlacementDropdown = computed(() => this.isLeader() && this.directReferrals().length > 0);
+  /**
+   * Show placement field when:
+   *   - the entered referral username differs from the logged-in user's username, OR
+   *   - the user is a leader with at least one direct referral.
+   */
+  showPlacementDropdown = computed(() => {
+    const currentUsername = (this.userService.currentUser()?.username ?? '').trim().toLowerCase();
+    const referralUsername = this.referralUsernameValue().trim().toLowerCase();
+    const referralIsDifferent = referralUsername.length > 0 && referralUsername !== currentUsername;
+    if (referralIsDifferent) {
+      return true;
+    }
+    return this.isLeader() && this.directReferrals().length > 0;
+  });
 
   packageOptions = computed(() => {
     const currency = this.selectedCurrency();
@@ -127,6 +140,7 @@ export class CreateReferralComponent implements OnInit {
       (this.config.data?.['placementParentUsername'] as string | null | undefined) ?? null;
 
     const currentUser = this.userService.currentUser();
+    this.referralUsernameValue.set(currentUser?.username ?? '');
     this.form = this.fb.group({
       referralUsername: [currentUser?.username ?? ''],
       email: ['', [Validators.email]],
@@ -146,7 +160,8 @@ export class CreateReferralComponent implements OnInit {
       this.placementInvalidReason.set(null);
       this.formError.set('');
     });
-    this.form.get('referralUsername')?.valueChanges.subscribe(() => {
+    this.form.get('referralUsername')?.valueChanges.subscribe((value: string | null) => {
+      this.referralUsernameValue.set(value ?? '');
       this.referralValid.set(null);
       this.referralValidating.set(false);
       this.formError.set('');

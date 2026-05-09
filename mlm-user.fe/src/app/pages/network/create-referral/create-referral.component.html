@@ -110,7 +110,7 @@
       </div>
     </div>
 
-    <!-- Placement Parent (only shown when user is a leader with >= 3 DR) -->
+    <!-- Placement Parent (shown when referral username differs from current user, or user is a leader with direct referrals) -->
     @if (showPlacementDropdown()) {
       <div class="flex flex-col gap-1.5">
         <label for="cr-placement" class="text-sm font-semibold text-gray-700">
