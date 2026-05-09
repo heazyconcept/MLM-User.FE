@@ -466,7 +466,7 @@ export class TransactionsComponent implements OnInit {
   }
 
   private resolveTransactionTab(tx: DashboardTransaction): TransactionTab {
-    const normalized = `${tx.category ?? ''} ${tx.source ?? ''} ${tx.description ?? ''}`.toLowerCase();
+    const normalized = `${tx.categoryGroup ?? ''}`.toLowerCase();
 
     if (this.matchesKeywords(normalized, ['withdrawal', 'cashout', 'payout'])) {
       return 'withdrawals';
