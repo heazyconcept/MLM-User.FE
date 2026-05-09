@@ -12,7 +12,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 type DateRangePreset = 'all' | 'today' | 'last7days' | 'last30days' | 'thisMonth';
 type TransactionStatus = DashboardTransaction['status'];
 type TransactionType = DashboardTransaction['type'];
-type TransactionTab = 'all' | 'earnings' | 'breakdown' | 'wallet' | 'withdrawals' | 'payments';
+type TransactionTab = 'all' | 'earnings' | 'breakdown' | 'wallet' | 'withdrawals' | 'payments' | 'autoship';
 
 type TransactionFilters = {
   dateRange: DateRangePreset;
@@ -98,6 +98,7 @@ export class TransactionsComponent implements OnInit {
     { label: 'Wallet', value: 'wallet' },
     { label: 'Withdrawals', value: 'withdrawals' },
     { label: 'Payments', value: 'payments' },
+    { label: 'Autoship', value: 'autoship' },
   ];
 
   transactions = computed(() => {
@@ -176,6 +177,7 @@ export class TransactionsComponent implements OnInit {
     if (tab === 'wallet') return 'No wallet transactions available yet.';
     if (tab === 'withdrawals') return 'No withdrawal transactions available yet.';
     if (tab === 'payments') return 'No payment transactions available yet.';
+    if (tab === 'autoship') return 'No autoship transactions available yet.';
     return 'No transactions available.';
   });
 
@@ -387,6 +389,9 @@ export class TransactionsComponent implements OnInit {
     if (tab === 'payments') {
       return 'Inspect payment charges and processor-related transaction logs.';
     }
+    if (tab === 'autoship') {
+      return 'Track autoship subscriptions, renewals, and recurring product orders.';
+    }
     return 'View and filter all your financial activities across earnings, wallet, withdrawals, and payments.';
   }
 
@@ -470,6 +475,10 @@ export class TransactionsComponent implements OnInit {
 
     if (this.matchesKeywords(normalized, ['withdrawal', 'cashout', 'payout'])) {
       return 'withdrawals';
+    }
+
+    if (this.matchesKeywords(normalized, ['autoship', 'auto-ship', 'auto ship', 'subscription', 'recurring'])) {
+      return 'autoship';
     }
 
     if (this.matchesKeywords(normalized, ['wallet', 'funding', 'top up', 'topup', 'transfer'])) {
