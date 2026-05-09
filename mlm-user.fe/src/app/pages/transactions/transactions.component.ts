@@ -3,11 +3,16 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DashboardService, DashboardTransaction } from '../../services/dashboard.service';
+import { CommissionService } from '../../services/commission.service';
+import { EarningsService } from '../../services/earnings.service';
+import { UserService } from '../../services/user.service';
+import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
+import { SkeletonModule } from 'primeng/skeleton';
 
 type DateRangePreset = 'all' | 'today' | 'last7days' | 'last30days' | 'thisMonth';
 type TransactionStatus = DashboardTransaction['status'];
 type TransactionType = DashboardTransaction['type'];
-type TransactionTab = 'all' | 'earnings' | 'wallet' | 'withdrawals' | 'payments';
+type TransactionTab = 'all' | 'earnings' | 'breakdown' | 'wallet' | 'withdrawals' | 'payments';
 
 type TransactionFilters = {
   dateRange: DateRangePreset;
@@ -32,7 +37,9 @@ type TabSummary = {
     CommonModule,
     FormsModule,
     ButtonModule,
-    DatePipe
+    DatePipe,
+    StatusBadgeComponent,
+    SkeletonModule
   ],
   templateUrl: './transactions.component.html',
   
@@ -40,6 +47,13 @@ type TabSummary = {
 })
 export class TransactionsComponent implements OnInit {
   private dashboardService = inject(DashboardService);
+  private commissionService = inject(CommissionService);
+  private earningsService = inject(EarningsService);
+  userService = inject(UserService);
+
+  allCommissions = this.commissionService.getAllCommissions();
+  earningsIsLoading = this.earningsService.isLoading;
+  earningsError = this.earningsService.error;
 
   activeTab = signal<TransactionTab>('all');
   allTransactions = signal<DashboardTransaction[]>([]);
@@ -55,9 +69,32 @@ export class TransactionsComponent implements OnInit {
   // Local state
   searchInput = signal('');
 
+  // Pagination state for transactions table (client-side slice)
+  txPage = signal(1);
+  txPageSize = signal(10);
+  displayedTransactions = computed(() => {
+    const start = (this.txPage() - 1) * this.txPageSize();
+    return this.transactions().slice(start, start + this.txPageSize());
+  });
+  txTotalPages = computed(() => Math.max(1, Math.ceil(this.transactions().length / this.txPageSize())));
+  txCanGoPrevious = computed(() => this.txPage() > 1);
+  txCanGoNext = computed(() => this.txPage() < this.txTotalPages());
+
+  // Pagination state for commissions (breakdown)
+  commPage = signal(1);
+  commPageSize = signal(10);
+  displayedCommissions = computed(() => {
+    const start = (this.commPage() - 1) * this.commPageSize();
+    return this.allCommissions().slice(start, start + this.commPageSize());
+  });
+  commTotalPages = computed(() => Math.max(1, Math.ceil(this.allCommissions().length / this.commPageSize())));
+  commCanGoPrevious = computed(() => this.commPage() > 1);
+  commCanGoNext = computed(() => this.commPage() < this.commTotalPages());
+
   tabOptions: Array<{ label: string; value: TransactionTab }> = [
     { label: 'All', value: 'all' },
     { label: 'Earnings', value: 'earnings' },
+    { label: 'Earning Breakdown', value: 'breakdown' },
     { label: 'Wallet', value: 'wallet' },
     { label: 'Withdrawals', value: 'withdrawals' },
     { label: 'Payments', value: 'payments' },
@@ -87,6 +124,11 @@ export class TransactionsComponent implements OnInit {
       result = result.filter(
         (t) => t.description.toLowerCase().includes(q) || t.id.toLowerCase().includes(q)
       );
+    }
+
+    // If current tx page becomes invalid (e.g., filters reduced items), clamp it
+    if (this.txPage() > Math.max(1, Math.ceil(result.length / this.txPageSize()))) {
+      this.txPage.set(1);
     }
 
     return result;
@@ -130,6 +172,7 @@ export class TransactionsComponent implements OnInit {
   emptyStateMessage = computed(() => {
     const tab = this.activeTab();
     if (tab === 'earnings') return 'No earnings transactions available yet.';
+    if (tab === 'breakdown') return 'No commission breakdown available yet.';
     if (tab === 'wallet') return 'No wallet transactions available yet.';
     if (tab === 'withdrawals') return 'No withdrawal transactions available yet.';
     if (tab === 'payments') return 'No payment transactions available yet.';
@@ -169,6 +212,9 @@ export class TransactionsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadInitialTransactions();
+    if (this.userService.isPaid()) {
+      this.earningsService.fetchEarningsSectionData();
+    }
   }
 
   onTabChange(tab: TransactionTab): void {
@@ -183,21 +229,29 @@ export class TransactionsComponent implements OnInit {
     const value = (event.target as HTMLInputElement).value;
     this.searchInput.set(value);
     this.filters.update((f) => ({ ...f, searchQuery: value }));
+    this.txPage.set(1);
+    this.commPage.set(1);
   }
 
   onDateRangeChange(event: Event): void {
     const value = (event.target as HTMLSelectElement).value as DateRangePreset;
     this.filters.update((f) => ({ ...f, dateRange: value }));
+    this.txPage.set(1);
+    this.commPage.set(1);
   }
 
   onTypeChange(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
     this.filters.update((f) => ({ ...f, type: value as TransactionType | 'all' }));
+    this.txPage.set(1);
+    this.commPage.set(1);
   }
 
   onStatusChange(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
     this.filters.update((f) => ({ ...f, status: value as TransactionStatus | 'all' }));
+    this.txPage.set(1);
+    this.commPage.set(1);
   }
 
   onClearFilters(): void {
@@ -208,6 +262,8 @@ export class TransactionsComponent implements OnInit {
       status: 'all',
       searchQuery: ''
     });
+    this.txPage.set(1);
+    this.commPage.set(1);
   }
 
   exportCSV(): void {
@@ -262,6 +318,42 @@ export class TransactionsComponent implements OnInit {
     });
   }
 
+  // Transactions pagination controls
+  txPreviousPage(): void {
+    if (this.txPage() > 1) this.txPage.update((p) => p - 1);
+  }
+  txNextPage(): void {
+    if (this.txPage() < this.txTotalPages()) this.txPage.update((p) => p + 1);
+  }
+  txShowingFrom(): number {
+    const from = (this.txPage() - 1) * this.txPageSize() + 1;
+    return this.transactions().length === 0 ? 0 : from;
+  }
+  txShowingTo(): number {
+    return Math.min(this.transactions().length, this.txPage() * this.txPageSize());
+  }
+  txTotalRecords(): number {
+    return this.transactions().length;
+  }
+
+  // Commissions pagination controls
+  commPreviousPage(): void {
+    if (this.commPage() > 1) this.commPage.update((p) => p - 1);
+  }
+  commNextPage(): void {
+    if (this.commPage() < this.commTotalPages()) this.commPage.update((p) => p + 1);
+  }
+  commShowingFrom(): number {
+    const from = (this.commPage() - 1) * this.commPageSize() + 1;
+    return this.allCommissions().length === 0 ? 0 : from;
+  }
+  commShowingTo(): number {
+    return Math.min(this.allCommissions().length, this.commPage() * this.commPageSize());
+  }
+  commTotalRecords(): number {
+    return this.allCommissions().length;
+  }
+
   isCredit(transaction: DashboardTransaction): boolean {
     return transaction.type === 'Credit';
   }
@@ -276,7 +368,7 @@ export class TransactionsComponent implements OnInit {
       return this.getTabLabel(this.resolveTransactionTab(tx));
     }
     return raw
-      .split(/[_\s-]+/)
+      .split(/[_\\s-]+/)
       .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase())
       .join(' ');
   }
@@ -300,6 +392,15 @@ export class TransactionsComponent implements OnInit {
 
   getTabLabel(tab: TransactionTab): string {
     return this.tabOptions.find((option) => option.value === tab)?.label ?? 'All';
+  }
+
+  formatEarningType(type: string | undefined): string {
+    if (!type) return '—';
+    return type
+      .toLowerCase()
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   }
 
   formatSummaryAmount(amount: number): string {
