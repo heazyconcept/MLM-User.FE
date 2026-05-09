@@ -213,7 +213,9 @@ export class TransactionsComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.loadInitialTransactions();
+    if (this.activeTab() !== 'breakdown') {
+      this.loadInitialTransactions();
+    }
     if (this.userService.isPaid()) {
       this.earningsService.fetchEarningsSectionData();
     }
@@ -224,6 +226,9 @@ export class TransactionsComponent implements OnInit {
       return;
     }
     this.activeTab.set(tab);
+    if (tab === 'breakdown') {
+      return;
+    }
     this.resetAndLoadTransactions();
   }
 
@@ -302,7 +307,7 @@ export class TransactionsComponent implements OnInit {
 
   loadMoreTransactions(): void {
     const cursor = this.nextCursor();
-    if (!cursor || this.isLoading()) {
+    if (!cursor || this.isLoading() || this.activeTab() === 'breakdown') {
       return;
     }
 
@@ -441,6 +446,9 @@ export class TransactionsComponent implements OnInit {
   }
 
   private loadInitialTransactions(): void {
+    if (this.activeTab() === 'breakdown') {
+      return;
+    }
     this.isLoading.set(true);
     this.dashboardService.getTransactions(20, undefined, this.getTabQuery()).subscribe({
       next: (res) => {
