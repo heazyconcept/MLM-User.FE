@@ -66,6 +66,7 @@ export class CreateReferralComponent implements OnInit {
   isSubmitting = signal(false);
   formError = signal('');
   directReferrals = signal<DirectReferralItem[]>([]);
+  placementOptions = signal<Array<{ label: string; value: string }>>([]);
   isLeader = signal(false);
   placementValid = signal<boolean | null>(null);
   placementValidating = signal(false);
@@ -103,19 +104,8 @@ export class CreateReferralComponent implements OnInit {
 
   hasInsufficientBalance = computed(() => this.registrationBalance() < this.requiredAmount());
 
-  /**
-   * Show placement field when:
-   *   - the entered referral username differs from the logged-in user's username, OR
-   *   - the user is a leader with at least one direct referral.
-   */
   showPlacementDropdown = computed(() => {
-    const currentUsername = (this.userService.currentUser()?.username ?? '').trim().toLowerCase();
-    const referralUsername = this.referralUsernameValue().trim().toLowerCase();
-    const referralIsDifferent = referralUsername.length > 0 && referralUsername !== currentUsername;
-    if (referralIsDifferent) {
-      return true;
-    }
-    return this.isLeader() && this.directReferrals().length > 0;
+    return true;
   });
 
   packageOptions = computed(() => {
@@ -192,6 +182,8 @@ export class CreateReferralComponent implements OnInit {
       this.directReferrals.set(directRefs);
     });
 
+    this.loadPlacementOptions(this.form.get('referralUsername')?.value ?? '');
+
     // Ensure wallet balances are loaded so we can show the registration balance
     this.walletService.fetchWallets().subscribe();
 
@@ -245,6 +237,32 @@ export class CreateReferralComponent implements OnInit {
         this.placementValidating.set(false);
         this.placementValid.set(false);
         this.placementInvalidReason.set(null);
+      }
+    });
+  }
+
+  private loadPlacementOptions(username: string): void {
+    this.referralService.getDirectReferrals(50, 0, username).subscribe({
+      next: (items) => {
+        this.directReferrals.set(items);
+        this.placementOptions.set(
+          items.map((item) => ({
+            label:
+              item.firstName || item.lastName
+                ? `${item.username} (${[item.firstName, item.lastName].filter(Boolean).join(' ')})`
+                : item.username,
+            value: item.username
+          }))
+        );
+
+        const currentPlacement = this.form.get('placementParentUsername')?.value?.trim();
+        if (currentPlacement && !items.some((item) => item.username === currentPlacement)) {
+          this.form.get('placementParentUsername')?.setValue('', { emitEvent: true });
+        }
+      },
+      error: () => {
+        this.directReferrals.set([]);
+        this.placementOptions.set([]);
       }
     });
   }

@@ -359,11 +359,20 @@ export class ReferralService {
   }
 
   /** GET /referrals/me/direct-referrals */
-  getDirectReferrals(limit = 50, offset = 0): Observable<DirectReferralItem[]> {
+  getDirectReferrals(limit = 50, offset = 0, username = ''): Observable<DirectReferralItem[]> {
+    const params: Record<string, string> = {
+      limit: String(limit),
+      offset: String(offset)
+    };
+
+    if (username.trim()) {
+      params['username'] = username.trim();
+    }
+
     return this.api
       .get<Record<string, unknown>[] | Record<string, unknown>>(
         'referrals/me/direct-referrals',
-        { limit: String(limit), offset: String(offset) }
+        params
       )
       .pipe(
         map((res) => {
