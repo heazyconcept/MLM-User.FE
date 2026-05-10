@@ -28,11 +28,12 @@
                 type="button"
                 (click)="onTabChange(tab.value)"
                 class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
-                [class.bg-white]="isActiveTab(tab.value)"
-                [class.text-mlm-warm-900]="isActiveTab(tab.value)"
+                [class.bg-mlm-primary]="isActiveTab(tab.value)"
+                [class.text-white]="isActiveTab(tab.value)"
                 [class.shadow-sm]="isActiveTab(tab.value)"
                 [class.text-mlm-warm-600]="!isActiveTab(tab.value)"
-                [class.hover:text-mlm-warm-900]="!isActiveTab(tab.value)">
+                [class.hover:text-mlm-warm-900]="!isActiveTab(tab.value)"
+                [class.hover:bg-white]="!isActiveTab(tab.value)">
                 {{ tab.label }}
               </button>
             }

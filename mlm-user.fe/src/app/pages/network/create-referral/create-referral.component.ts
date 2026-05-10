@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -26,6 +26,8 @@ import { ModalService } from '../../../services/modal.service';
 import { RealTimeNotificationService } from '../../../services/realtime-notification.service';
 import { getRequiredAmount, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, NGN_TO_USD_RATE } from '../../../core/constants/registration.constants';
 import { forkJoin } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 const CURRENCY_OPTIONS = [
   { value: 'NGN', label: 'NGN (₦)' },
@@ -49,6 +51,7 @@ const CURRENCY_OPTIONS = [
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CreateReferralComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   private ref = inject(DynamicDialogRef);
   private dialogService = inject(DialogService);
   private fb = inject(FormBuilder);
@@ -154,26 +157,28 @@ export class CreateReferralComponent implements OnInit {
     // Watch package & currency changes
     this.form.get('package')?.valueChanges.subscribe((pkg: string) => this.selectedPackage.set(pkg));
     this.form.get('currency')?.valueChanges.subscribe((c: string) => this.selectedCurrency.set(c as 'NGN' | 'USD'));
-    this.form.get('placementParentUsername')?.valueChanges.subscribe(() => {
+    this.form.get('placementParentUsername')?.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(() => {
       this.placementValid.set(null);
       this.placementValidating.set(false);
       this.placementInvalidReason.set(null);
       this.formError.set('');
+      this.onPlacementBlur();
     });
-    this.form.get('referralUsername')?.valueChanges.subscribe((value: string | null) => {
+    this.form.get('referralUsername')?.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe((value: string | null) => {
       this.referralUsernameValue.set(value ?? '');
       this.referralValid.set(null);
       this.referralValidating.set(false);
       this.formError.set('');
-      
-      const placementUsername = this.form.get('placementParentUsername')?.value?.trim();
-      if (placementUsername) {
-        this.placementValid.set(null);
-        this.placementValidating.set(false);
-        this.placementInvalidReason.set(null);
-        // Automatically re-validate placement against new sponsor context if needed
-        // but wait for blur to prevent race conditions during typing
-      }
+
+      this.onReferralBlur();
     });
   }
 
