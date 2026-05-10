@@ -20,6 +20,7 @@ export class RankingComponent implements OnInit {
   userService = inject(UserService);
   private commissionService = inject(CommissionService);
   private earningsService = inject(EarningsService);
+  private readonly rankingAmountDivisor = 10;
 
   rankInfo = this.commissionService.getRankInfo();
   isLoading = this.earningsService.isLoading;
@@ -64,5 +65,9 @@ export class RankingComponent implements OnInit {
 
   getCompletedReqs(): number {
     return this.rankInfo().requirements.filter(r => r.completed).length;
+  }
+
+  formatRankingAmount(amount: number): number {
+    return amount / this.rankingAmountDivisor;
   }
 }
