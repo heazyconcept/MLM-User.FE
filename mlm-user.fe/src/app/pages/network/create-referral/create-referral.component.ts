@@ -169,6 +169,7 @@ export class CreateReferralComponent implements OnInit {
       this.formError.set('');
 
       this.onReferralBlur();
+      this.loadPlacementOptions(value ?? '');
     });
   }
 
