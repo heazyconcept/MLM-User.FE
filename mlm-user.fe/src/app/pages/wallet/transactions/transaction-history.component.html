@@ -17,20 +17,24 @@
       <div class="flex gap-4 mb-6 border-b border-gray-200">
         <button 
           (click)="setTab('payments')"
+          [class.bg-mlm-primary/10]="activeTab() === 'payments'"
+          [class.bg-transparent]="activeTab() !== 'payments'"
           [class.border-mlm-primary]="activeTab() === 'payments'"
           [class.text-mlm-primary]="activeTab() === 'payments'"
           [class.border-transparent]="activeTab() !== 'payments'"
           [class.text-gray-500]="activeTab() !== 'payments'"
-          class="px-4 py-3 font-semibold text-sm border-b-2 transition-colors hover:text-mlm-primary">
+          class="px-4 py-3 font-semibold text-sm border-b-2 rounded-t-lg transition-colors hover:text-mlm-primary">
           <i class="pi pi-wallet mr-2"></i>Payments
         </button>
         <button 
           (click)="setTab('audit')"
+          [class.bg-mlm-primary/10]="activeTab() === 'audit'"
+          [class.bg-transparent]="activeTab() !== 'audit'"
           [class.border-mlm-primary]="activeTab() === 'audit'"
           [class.text-mlm-primary]="activeTab() === 'audit'"
           [class.border-transparent]="activeTab() !== 'audit'"
           [class.text-gray-500]="activeTab() !== 'audit'"
-          class="px-4 py-3 font-semibold text-sm border-b-2 transition-colors hover:text-mlm-primary">
+          class="px-4 py-3 font-semibold text-sm border-b-2 rounded-t-lg transition-colors hover:text-mlm-primary">
           <i class="pi pi-history mr-2"></i>Audit Logs
         </button>
       </div>
@@ -197,4 +201,3 @@
     </div>
   </div>
 </div>
-
