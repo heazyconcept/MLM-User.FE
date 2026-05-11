@@ -1,189 +1,334 @@
-<div class="min-h-screen bg-slate-50">
+<div class="min-h-screen bg-mlm-background">
   <main class="py-8">
-    <div class="px-4 sm:px-6 lg:px-8 mx-auto">
-      @if (error()) {
-        <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 text-sm">
-          {{ error() }}
-        </div>
-      }
-      @if (isLoading()) {
-        <div class="space-y-6">
-          <p-skeleton width="200px" height="2rem"></p-skeleton>
-          <p-skeleton width="100%" height="400px" borderRadius="12px"></p-skeleton>
-        </div>
-      } @else {
-      <div class="space-y-6 h-full flex flex-col animate-fade-in">
-        <!-- Header -->
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            @if (!isRootView()) {
-              <button 
+    <div class="px-4 sm:px-6 lg:px-8 mx-auto max-w-full">
+      <div class="space-y-6 flex flex-col h-full">
+        <!-- ─── Header ──────────────────────────────── -->
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div class="flex items-center gap-3">
+            @if (!isRootView() && activeTab() === 'entry') {
+              <button
                 (click)="navigateToTop()"
-                class="group flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 text-gray-700 text-sm font-medium shadow-sm hover:shadow">
-                <i class="pi pi-arrow-left text-xs group-hover:-translate-x-0.5 transition-transform duration-200"></i>
-                <span>Back to Top</span>
+                class="h-9 px-3 text-sm font-medium text-mlm-text border border-mlm-secondary/20 bg-white rounded-lg hover:border-mlm-secondary/40 transition-colors flex items-center gap-1.5"
+              >
+                <i class="pi pi-arrow-left text-[10px]"></i>
+                Back
               </button>
             }
             <div>
-              <h1 class="text-xl font-semibold text-gray-900 mb-1">
-                @if (isRootView()) {
-                  Matrix View
+              <h1 class="text-xl font-medium text-mlm-text tracking-tight">
+                @if (activeTab() === 'entry') {
+                  @if (isRootView()) {
+                    Matrix view
+                  } @else {
+                    {{ currentRootNode().username }}'s network
+                  }
                 } @else {
-                  {{ currentRootNode().username }}'s Network
+                  Stage {{ activeStageNumber() }} matrix
                 }
               </h1>
-              <p class="text-gray-500 text-xs">Visualise your binary tree structure</p>
+              <p class="mt-0.5 text-sm text-mlm-secondary">Visualise your binary tree structure.</p>
             </div>
           </div>
-          <!-- Actions & Controls -->
-          <div class="flex items-center gap-3">
-            <button (click)="openCreateReferralDialog()"
-                    class="bg-mlm-primary text-white px-4 py-2 rounded-xl font-semibold text-sm shadow-md hover:bg-mlm-primary/90 transition-all flex items-center justify-center gap-2">
-              <i class="pi pi-user-plus text-xs"></i>
-              <span class="hidden sm:inline">Create Referral</span>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <button
+              (click)="zoomOut()"
+              class="w-9 h-9 flex items-center justify-center border border-mlm-secondary/20 bg-white rounded-lg hover:border-mlm-secondary/40 text-mlm-secondary hover:text-mlm-text transition-colors"
+            >
+              <i class="pi pi-minus text-xs"></i>
             </button>
-            
-            <!-- Zoom Controls -->
-            <div class="flex gap-1.5">
-              <button (click)="zoomIn()" class="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-500 hover:text-gray-700 shadow-sm">
-                <i class="pi pi-plus text-xs"></i>
-              </button>
-              <button (click)="zoomOut()" class="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-500 hover:text-gray-700 shadow-sm">
-                <i class="pi pi-minus text-xs"></i>
-              </button>
-            </div>
+            <button
+              (click)="zoomIn()"
+              class="w-9 h-9 flex items-center justify-center border border-mlm-secondary/20 bg-white rounded-lg hover:border-mlm-secondary/40 text-mlm-secondary hover:text-mlm-text transition-colors"
+            >
+              <i class="pi pi-plus text-xs"></i>
+            </button>
+            <button
+              (click)="openCreateReferralDialog()"
+              class="h-9 px-4 text-sm font-medium text-white bg-mlm-primary rounded-lg hover:bg-mlm-primary/90 transition-colors flex items-center gap-2"
+            >
+              <i class="pi pi-user-plus text-xs"></i>
+              <span class="hidden sm:inline">Create referral</span>
+            </button>
           </div>
         </div>
 
-        <!-- Matrix Info Panel -->
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <!-- ─── Tabs ─────────────────────────────────── -->
+        <div class="border-b border-mlm-secondary/15 overflow-x-auto">
+          <div class="flex items-end min-w-max">
+            @for (tab of stageTabs; track tab.value) {
+              <button
+                type="button"
+                (click)="onTabChange(tab.value)"
+                class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
+                [class.border-mlm-primary]="activeTab() === tab.value"
+                [class.text-mlm-primary]="activeTab() === tab.value"
+                [class.border-transparent]="activeTab() !== tab.value"
+                [class.text-mlm-secondary]="activeTab() !== tab.value"
+                [class.hover:text-mlm-text]="activeTab() !== tab.value"
+              >
+                {{ tab.label }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- ─── How it works accordion ──────────────── -->
+        <div class="border border-mlm-secondary/15 rounded-xl overflow-hidden bg-white">
           <button
             type="button"
-            class="w-full flex items-center justify-between px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            (click)="showMatrixInfo.set(!showMatrixInfo())">
-            <span class="flex items-center gap-2">
-              <i class="pi pi-info-circle text-mlm-primary"></i>
-              How the Matrix Works
-            </span>
-            <i class="pi text-xs text-gray-400"
-               [class.pi-chevron-down]="!showMatrixInfo()"
-               [class.pi-chevron-up]="showMatrixInfo()"></i>
+            class="w-full flex items-center justify-between px-5 py-3.5 text-sm text-mlm-text hover:bg-mlm-background transition-colors"
+            (click)="showMatrixInfo.set(!showMatrixInfo())"
+          >
+            <span class="font-medium">How the matrix works</span>
+            <i
+              class="pi text-[10px] text-mlm-secondary"
+              [class.pi-chevron-down]="!showMatrixInfo()"
+              [class.pi-chevron-up]="showMatrixInfo()"
+            ></i>
           </button>
           @if (showMatrixInfo()) {
-            <div class="px-5 pb-5 space-y-4 text-sm text-gray-600 border-t border-gray-100 pt-4 animate-fade-in">
-              <div>
-                <h3 class="font-semibold text-gray-900 mb-1">3×1 and 3×2 Team Forced Matrix</h3>
-                <p>Each member refers 3 people directly. The structure fills level by level — your first 3 go under you (Level 1), their referrals go to Level 2, and so on through 13 levels across 6 stages.</p>
-              </div>
-              <div>
-                <h3 class="font-semibold text-gray-900 mb-1">Follow Your Leader</h3>
-                <p>New placements follow the sponsor's position in the matrix. Your downlines are placed directly beneath you, filling left to right.</p>
-              </div>
-              <div>
-                <h3 class="font-semibold text-gray-900 mb-1">Spillover</h3>
-                <p>If you refer more than 3 people, the 4th and beyond "spill over" under your first leg (leftmost), continuing left to right, filling the next available slots in the tree.</p>
-              </div>
-              <div>
-                <h3 class="font-semibold text-gray-900 mb-1">6 Stages, 13 Levels</h3>
-                <div class="mt-2 overflow-x-auto">
-                  <table class="w-full text-xs border-collapse">
-                    <thead>
-                      <tr class="bg-gray-50">
-                        <th class="text-left px-3 py-2 font-semibold text-gray-500">Stage</th>
-                        <th class="text-left px-3 py-2 font-semibold text-gray-500">Rank</th>
-                        <th class="text-left px-3 py-2 font-semibold text-gray-500">Levels</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                      <tr><td class="px-3 py-2">1</td><td class="px-3 py-2">Stakeholder</td><td class="px-3 py-2">1 – 2</td></tr>
-                      <tr><td class="px-3 py-2">2</td><td class="px-3 py-2">Mentor</td><td class="px-3 py-2">3 – 4</td></tr>
-                      <tr><td class="px-3 py-2">3</td><td class="px-3 py-2">Manager</td><td class="px-3 py-2">5 – 7</td></tr>
-                      <tr><td class="px-3 py-2">4</td><td class="px-3 py-2">Director</td><td class="px-3 py-2">8 – 9</td></tr>
-                      <tr><td class="px-3 py-2">5</td><td class="px-3 py-2">Senior Director</td><td class="px-3 py-2">10 – 11</td></tr>
-                      <tr><td class="px-3 py-2">6</td><td class="px-3 py-2">Consultant</td><td class="px-3 py-2">12 – 13</td></tr>
-                    </tbody>
-                  </table>
-                </div>
+            <div
+              class="border-t border-mlm-secondary/15 px-5 py-4 space-y-3 text-sm text-mlm-secondary animate-fade-in"
+            >
+              <p>
+                <span class="font-medium text-mlm-text">3×1 Forced Matrix</span> — each member
+                refers 3 people. Fills stage by stage across 6 stages.
+              </p>
+              <p>
+                <span class="font-medium text-mlm-text">Spillover</span> — referrals beyond 3 spill
+                under your leftmost leg, filling left to right.
+              </p>
+              <div class="border border-mlm-secondary/15 rounded-lg overflow-hidden mt-3">
+                <table class="w-full text-xs">
+                  <thead class="bg-mlm-background">
+                    <tr>
+                      <th
+                        class="text-left px-4 py-2 text-[11px] uppercase tracking-widest text-mlm-secondary font-medium"
+                      >
+                        Stage
+                      </th>
+                      <th
+                        class="text-left px-4 py-2 text-[11px] uppercase tracking-widest text-mlm-secondary font-medium"
+                      >
+                        Rank
+                      </th>
+                      <th
+                        class="text-left px-4 py-2 text-[11px] uppercase tracking-widest text-mlm-secondary font-medium"
+                      >
+                        Levels
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-mlm-secondary/10">
+                    <tr>
+                      <td class="px-4 py-2 text-mlm-secondary">1</td>
+                      <td class="px-4 py-2 text-mlm-text font-medium">Stakeholder</td>
+                      <td class="px-4 py-2 text-mlm-secondary">1–2</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 text-mlm-secondary">2</td>
+                      <td class="px-4 py-2 text-mlm-text font-medium">Mentor</td>
+                      <td class="px-4 py-2 text-mlm-secondary">3–4</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 text-mlm-secondary">3</td>
+                      <td class="px-4 py-2 text-mlm-text font-medium">Manager</td>
+                      <td class="px-4 py-2 text-mlm-secondary">5–7</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 text-mlm-secondary">4</td>
+                      <td class="px-4 py-2 text-mlm-text font-medium">Director</td>
+                      <td class="px-4 py-2 text-mlm-secondary">8–9</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 text-mlm-secondary">5</td>
+                      <td class="px-4 py-2 text-mlm-text font-medium">Senior Director</td>
+                      <td class="px-4 py-2 text-mlm-secondary">10–11</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 text-mlm-secondary">6</td>
+                      <td class="px-4 py-2 text-mlm-text font-medium">Consultant</td>
+                      <td class="px-4 py-2 text-mlm-secondary">12–13</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           }
         </div>
 
-        <!-- Tree View (desktop and mobile) - same interaction model across breakpoints -->
-        <div class="flex-1 bg-white rounded-2xl border border-gray-100 relative overflow-hidden shadow-sm min-h-[500px] h-[calc(100vh-12rem)]">
-          <!-- Draggable/Scrollable Area -->
-          <div
-  #matrixViewport
-  class="absolute inset-0 overflow-auto p-10 cursor-grab active:cursor-grabbing"
->
-<div
-  [style.transform]="'scale(' + zoomLevel() + ')'"
-  class="transition-transform duration-300 origin-top"
->              <p-organization-chart 
-                [value]="matrixTree()" 
-                (onNodeSelect)="onNodeSelect($event)">
-                <ng-template let-node pTemplate="default">
-                  @if (node.data) {
-                    @if (node.data.status === 'empty') {
-                      <!-- Empty Slot -->
-                      <div 
-                        class="flex flex-col items-center justify-center px-6 py-5 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 w-32 cursor-pointer hover:border-mlm-primary/40 hover:bg-mlm-primary/5 transition-colors"
-                        [pTooltip]="getTooltipText(node.data)"
-                        tooltipPosition="top"
-                        (click)="onOpenSlotClick(node.data)">
-                        <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mb-2">
-                          <i class="pi pi-plus text-gray-400 text-sm"></i>
-                        </div>
-                        <span class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Open Slot</span>
-                      </div>
-                    } @else {
-                      <!-- Active/Inactive Node -->
-                      <div 
-                        class="flex flex-col items-center px-5 py-4 w-32 relative"
-                        [class.opacity-50]="node.data.status === 'inactive'"
-                        [class.cursor-pointer]="!isCurrentRoot(node.data.id)"
-                        [class.cursor-default]="isCurrentRoot(node.data.id)"
-                        [pTooltip]="getTooltipText(node.data)"
-                        tooltipPosition="top"
-                        (click)="handleNodeClick(node.data)">
-                        
-                        <!-- Details control: info icon (stops propagation) -->
-                        <button
-                          type="button"
-                          class="absolute top-1 right-1 w-6 h-6 rounded-full bg-gray-200/80 hover:bg-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800 z-10"
-                          (click)="$event.stopPropagation(); openNodeDetails(node.data)"
-                          [pTooltip]="'Details'"
-                          tooltipPosition="top"
-                          aria-label="View details">
-                          <i class="pi pi-info text-[10px]"></i>
-                        </button>
-                        
-                        <!-- Package Badge Circle -->
-                        <div class="w-9 h-9 rounded-full flex items-center justify-center mb-2 text-sm font-bold"
-                             [ngClass]="getPackageBgClass(node.data.package)">
-                          {{ getPackageInitial(node.data.package) }}
-                        </div>
+        <!-- ─── Error ────────────────────────────────── -->
+        @if (error() && activeTab() === 'entry') {
+          <div class="px-4 py-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm">
+            {{ error() }}
+          </div>
+        }
 
-                        <!-- Username -->
-                        <span class="text-xs font-semibold text-gray-800 truncate max-w-full mb-1">{{ node.data.username }}</span>
-                        
-                        <!-- Stage / Rank Badge -->
-                        <span class="text-[10px] font-medium text-blue-500 uppercase tracking-wide">{{ node.data.stage || node.data.rank || getPackageLabel(node.data.package) }}</span>
-                      </div>
-                    }
-                  }
-                </ng-template>
-              </p-organization-chart>
+        <!-- ─── Loading ──────────────────────────────── -->
+        @if (isLoading() && activeTab() === 'entry') {
+          <div
+            class="border border-mlm-secondary/15 rounded-xl bg-white flex items-center justify-center h-96"
+          >
+            <div class="flex flex-col items-center gap-4">
+              <p-skeleton width="180px" height="1rem"></p-skeleton>
+              <div class="flex gap-6">
+                <p-skeleton width="9rem" height="7rem" borderRadius="12px"></p-skeleton>
+                <p-skeleton width="9rem" height="7rem" borderRadius="12px"></p-skeleton>
+                <p-skeleton width="9rem" height="7rem" borderRadius="12px"></p-skeleton>
+              </div>
             </div>
           </div>
-        </div>
+        } @else {
+          @if (stageLoading() && activeTab() !== 'entry') {
+            <div
+              class="border border-mlm-secondary/15 rounded-xl bg-white flex items-center justify-center h-96"
+            >
+              <div class="flex flex-col items-center gap-4">
+                <p-skeleton width="220px" height="1rem"></p-skeleton>
+                <div class="flex gap-6">
+                  <p-skeleton width="11rem" height="8rem" borderRadius="16px"></p-skeleton>
+                  <p-skeleton width="11rem" height="8rem" borderRadius="16px"></p-skeleton>
+                  <p-skeleton width="11rem" height="8rem" borderRadius="16px"></p-skeleton>
+                </div>
+              </div>
+            </div>
+          } @else {
+            <!-- ─── Tree viewport ──────────────────────── -->
+            <div
+              class="border border-mlm-secondary/15 rounded-xl bg-white overflow-hidden relative"
+              style="height: calc(100vh - 22rem); min-height: 480px"
+            >
+              <div
+                #matrixViewport
+                class="absolute inset-0 overflow-auto p-10 cursor-grab active:cursor-grabbing"
+              >
+                <div
+                  [style.transform]="'scale(' + zoomLevel() + ')'"
+                  class="transition-transform duration-300 origin-top"
+                >
+                  <p-organization-chart
+                    [value]="matrixTree()"
+                    (onNodeSelect)="onNodeSelect($event)"
+                  >
+                    <ng-template let-node pTemplate="default">
+                      @if (node.data) {
+                        <!-- ── Empty slot ── -->
+                        @if (node.data.status === 'empty') {
+                          <div
+                            class="flex flex-col items-center justify-center w-44 h-36 rounded-2xl border-2 border-dashed border-mlm-secondary/20 bg-white cursor-pointer hover:border-mlm-primary/40 hover:bg-mlm-primary/5 transition-all group"
+                            [pTooltip]="getTooltipText(node.data)"
+                            tooltipPosition="top"
+                            (click)="onOpenSlotClick(node.data)"
+                          >
+                            <div
+                              class="w-12 h-12 rounded-full bg-mlm-secondary/10 flex items-center justify-center mb-2 group-hover:bg-mlm-primary/10 transition-colors"
+                            >
+                              <i
+                                class="pi pi-plus text-base text-mlm-secondary/50 group-hover:text-mlm-primary/70 transition-colors"
+                              ></i>
+                            </div>
+                            <span
+                              class="text-[11px] font-semibold text-mlm-secondary/50 uppercase tracking-widest group-hover:text-mlm-primary/70 transition-colors"
+                            >
+                              Open slot
+                            </span>
+                          </div>
 
+                        <!-- ── Member node ── -->
+                      } @else {
+                        <div
+                          class="relative flex flex-col items-center w-44 rounded-2xl border-2 bg-emerald-50 transition-all duration-200"
+                          [class.opacity-50]="node.data.status === 'inactive'"
+                          [class.hover:shadow-md]="
+                            activeTab() === 'entry' && !isCurrentRoot(node.data.id)
+                          "
+                          [class.cursor-pointer]="
+                            activeTab() === 'entry' && !isCurrentRoot(node.data.id)
+                          "
+                          [class.cursor-default]="
+                            activeTab() !== 'entry' || isCurrentRoot(node.data.id)
+                          "
+                          [class.border-mlm-primary]="node.data.status === 'active'"
+                          [class.border-mlm-secondary/20]="node.data.status !== 'active'"
+                          [class.ring-2]="isCurrentRoot(node.data.id)"
+                          [class.ring-mlm-primary]="isCurrentRoot(node.data.id)"
+                          [class.ring-offset-2]="isCurrentRoot(node.data.id)"
+                          [pTooltip]="getTooltipText(node.data)"
+                          tooltipPosition="top"
+                          (click)="handleNodeClick(node.data)"
+                        >
+                          <div class="w-full flex flex-col items-center px-4 pt-6 pb-5 gap-2.5">
+                            <!-- Person icon -->
+                            <div
+                              class="w-14 h-14 rounded-full flex items-center justify-center"
+                              [class.bg-mlm-primary/10]="node.data.status === 'active'"
+                              [class.bg-mlm-secondary/10]="node.data.status !== 'active'"
+                            >
+                              <i
+                                class="pi pi-user text-2xl"
+                                [class.text-mlm-primary]="node.data.status === 'active'"
+                                [class.text-mlm-secondary]="node.data.status !== 'active'"
+                              ></i>
+                            </div>
+
+                            <!-- Username -->
+                            <span
+                              class="text-base font-semibold text-mlm-text truncate max-w-full text-center px-1 leading-snug"
+                            >
+                              {{ node.data.username }}@if (node.data.level === 0) { (You) }
+                            </span>
+
+                            <!-- Rank / stage -->
+                            <span class="text-sm font-semibold text-mlm-secondary text-center">
+                              @if (node.data.rank) {
+                                {{ node.data.rank }}
+                              } @else {
+                                —
+                              }
+                              @if (node.data.stage) {
+                                · {{ node.data.stage }}
+                              }
+                            </span>
+
+                            <!-- Status badge -->
+                            <span
+                              class="text-[11px] font-bold uppercase tracking-wider px-3.5 py-1 rounded-full"
+                              [class.bg-mlm-primary/10]="node.data.status === 'active'"
+                              [class.text-mlm-primary]="node.data.status === 'active'"
+                              [class.bg-mlm-secondary/10]="node.data.status !== 'active'"
+                              [class.text-mlm-secondary]="node.data.status !== 'active'"
+                            >
+                              {{ node.data.status === 'active' ? 'Active' : 'Inactive' }}
+                            </span>
+                          </div>
+
+                          <!-- Info button -->
+                          <button
+                            type="button"
+                            class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-mlm-secondary/10 hover:bg-mlm-secondary/20 flex items-center justify-center text-mlm-secondary transition-colors z-10"
+                            (click)="$event.stopPropagation(); openNodeDetails(node.data)"
+                            [pTooltip]="'Details'"
+                            tooltipPosition="top"
+                            aria-label="View details"
+                          >
+                            <i class="pi pi-info text-[9px]"></i>
+                          </button>
+                        </div>
+                      }
+                    }
+                  </ng-template>
+                </p-organization-chart>
+              </div>
+            </div>
+          </div>
+          }
+        }
       </div>
-      }
     </div>
   </main>
 
-  <!-- Node details modal -->
+  <!-- ─── Node detail modal ─────────────────────── -->
   <p-dialog
     [visible]="nodeForModal() !== null"
     (visibleChange)="onDialogVisibleChange($event)"
@@ -193,24 +338,59 @@
     [resizable]="false"
     header="Member details"
     styleClass="w-full max-w-sm"
-    [contentStyle]="{ padding: '1rem' }">
+    [contentStyle]="{ padding: '1.25rem' }"
+  >
     @if (nodeForModal(); as node) {
-      <div class="space-y-3 text-sm">
-        <p><span class="font-semibold text-gray-500">Username</span><br/><span class="text-gray-900">{{ node.username }}</span></p>
-        <p><span class="font-semibold text-gray-500">Package</span><br/><span class="text-gray-900">{{ getPackageLabel(node.package) }}</span></p>
+      <div class="divide-y divide-mlm-secondary/15">
+        <div class="flex items-center justify-between py-3">
+          <span class="text-xs text-mlm-secondary">Username</span>
+          <span class="text-sm font-medium text-mlm-text">{{ node.username }}</span>
+        </div>
+        <div class="flex items-center justify-between py-3">
+          <span class="text-xs text-mlm-secondary">Package</span>
+          <span class="text-sm font-medium text-mlm-text">{{ getPackageLabel(node.package) }}</span>
+        </div>
         @if (node.rank) {
-          <p><span class="font-semibold text-gray-500">Rank</span><br/><span class="text-gray-900">{{ node.rank }}</span></p>
+          <div class="flex items-center justify-between py-3">
+            <span class="text-xs text-mlm-secondary">Rank</span>
+            <span class="text-sm font-medium text-mlm-text">{{ node.rank }}</span>
+          </div>
         }
         @if (node.stage) {
-          <p><span class="font-semibold text-gray-500">Stage</span><br/><span class="text-gray-900">{{ node.stage }}</span></p>
+          <div class="flex items-center justify-between py-3">
+            <span class="text-xs text-mlm-secondary">Stage</span>
+            <span class="text-sm font-medium text-mlm-text">{{ node.stage }}</span>
+          </div>
         }
-        <p><span class="font-semibold text-gray-500">Level</span><br/><span class="text-gray-900">{{ node.level }}</span></p>
-        <p><span class="font-semibold text-gray-500">Status</span><br/><span [class]="node.status === 'active' ? 'text-emerald-600' : 'text-gray-500'">{{ node.status === 'active' ? 'Active' : 'Inactive' }}</span></p>
+        <div class="flex items-center justify-between py-3">
+          <span class="text-xs text-mlm-secondary">Level</span>
+          <span class="text-sm font-medium text-mlm-text tabular-nums">{{ node.level }}</span>
+        </div>
+        <div class="flex items-center justify-between py-3">
+          <span class="text-xs text-mlm-secondary">Status</span>
+          <span
+            class="text-[11px] font-medium px-2.5 py-1 rounded-full"
+            [class.text-mlm-primary]="node.status === 'active'"
+            [class.bg-mlm-primary/10]="node.status === 'active'"
+            [class.text-mlm-secondary]="node.status !== 'active'"
+            [class.bg-mlm-secondary/10]="node.status !== 'active'"
+          >
+            {{ node.status === 'active' ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
         @if (node.directReferrals != null) {
-          <p><span class="font-semibold text-gray-500">Direct Referrals</span><br/><span class="text-gray-900">{{ node.directReferrals }}</span></p>
+          <div class="flex items-center justify-between py-3">
+            <span class="text-xs text-mlm-secondary">Legs</span>
+            <span class="text-sm font-medium text-mlm-text tabular-nums">{{
+              node.directReferrals
+            }}</span>
+          </div>
         }
         @if (node.teamSize != null) {
-          <p><span class="font-semibold text-gray-500">Team Size</span><br/><span class="text-gray-900">{{ node.teamSize }}</span></p>
+          <div class="flex items-center justify-between py-3">
+            <span class="text-xs text-mlm-secondary">Team size</span>
+            <span class="text-sm font-medium text-mlm-text tabular-nums">{{ node.teamSize }}</span>
+          </div>
         }
       </div>
     }
