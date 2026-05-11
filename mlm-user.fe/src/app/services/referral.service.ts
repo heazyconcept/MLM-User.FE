@@ -11,7 +11,11 @@ export interface ValidateReferralResponse {
   uplineUserId?: string;
 }
 
-export type PlacementValidationReason = 'USER_NOT_FOUND' | 'NOT_IN_DOWNLINE' | 'MATRIX_FULL' | 'SPONSOR_NOT_FOUND';
+export type PlacementValidationReason =
+  | 'USER_NOT_FOUND'
+  | 'NOT_IN_DOWNLINE'
+  | 'MATRIX_FULL'
+  | 'SPONSOR_NOT_FOUND';
 
 export interface ValidatePlacementResponse {
   valid: boolean;
@@ -170,10 +174,62 @@ export interface MatrixLevelQuery {
   search?: string;
 }
 
+export interface MatrixStageMember {
+  id: string;
+  username: string;
+  status: 'ACTIVE' | 'UNPAID' | 'SUSPENDED' | string;
+  legs: number;
+  stage?: number | string | null;
+  rank?: string | null;
+  profilePhotoUrl?: string | null;
+}
+
+export interface MatrixStageResponse {
+  status: 'success' | 'error';
+  data: {
+    stage: number;
+    totalMembers: number;
+    members: MatrixStageMember[];
+  };
+}
+
+/** Stage query values for GET /referrals/me/matrix/flow */
+export type MatrixFlowStage =
+  | 'entry'
+  | 'mentor'
+  | 'manager'
+  | 'senior_manager'
+  | 'director'
+  | 'senior_director'
+  | 'consultant';
+
+export interface MatrixFlowUser {
+  id: string;
+  username: string;
+  email?: string | null;
+  phone?: string | null;
+  joinDate: string;
+  status: 'ACTIVE' | 'UNPAID' | 'SUSPENDED' | string;
+  rank: string;
+  stageLabel: string;
+  rankingLevel: number;
+  isCurrentUser: boolean;
+}
+
+export interface MatrixFlowResponse {
+  status: 'success' | 'error';
+  data: {
+    stage: MatrixFlowStage;
+    stageLabel: string;
+    totalUsers: number;
+    users: MatrixFlowUser[];
+  };
+}
+
 // ── Service ─────────────────────────────────────────────────────────
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ReferralService {
   private api = inject(ApiService);
@@ -185,44 +241,45 @@ export class ReferralService {
     }
     return this.api
       .post<Record<string, unknown>>('referrals/validate', {
-        referralUsername: username.trim()
+        referralUsername: username.trim(),
       })
       .pipe(
         map((res) => ({
           valid: res['valid'] === true,
-          uplineUserId: res['uplineUserId'] as string | undefined
+          uplineUserId: res['uplineUserId'] as string | undefined,
         })),
-        catchError(() => of({ valid: false }))
+        catchError(() => of({ valid: false })),
       );
   }
 
   /** POST /referrals/validate-placement */
-  validatePlacementUsername(placementUsername: string, referralUsername?: string): Observable<ValidatePlacementResponse> {
+  validatePlacementUsername(
+    placementUsername: string,
+    referralUsername?: string,
+  ): Observable<ValidatePlacementResponse> {
     if (!placementUsername?.trim()) {
       return of({ valid: false });
     }
-    
+
     const body: Record<string, unknown> = {
-      placementUsername: placementUsername.trim()
+      placementUsername: placementUsername.trim(),
     };
-    
+
     if (referralUsername?.trim()) {
       body['referralUsername'] = referralUsername.trim();
     }
-    
-    return this.api
-      .post<Record<string, unknown>>('referrals/validate-placement', body)
-      .pipe(
-        map((res) => ({
-          valid: res['valid'] === true,
-          userId: res['userId'] as string | undefined,
-          username: res['username'] as string | undefined,
-          directChildrenCount: res['directChildrenCount'] as number | undefined,
-          matrixWidth: res['matrixWidth'] as number | undefined,
-          reason: res['reason'] as PlacementValidationReason | undefined
-        })),
-        catchError(() => of({ valid: false }))
-      );
+
+    return this.api.post<Record<string, unknown>>('referrals/validate-placement', body).pipe(
+      map((res) => ({
+        valid: res['valid'] === true,
+        userId: res['userId'] as string | undefined,
+        username: res['username'] as string | undefined,
+        directChildrenCount: res['directChildrenCount'] as number | undefined,
+        matrixWidth: res['matrixWidth'] as number | undefined,
+        reason: res['reason'] as PlacementValidationReason | undefined,
+      })),
+      catchError(() => of({ valid: false })),
+    );
   }
 
   /** GET /users/me/referral – fetch current referral username & referrer info */
@@ -230,15 +287,12 @@ export class ReferralService {
     return this.api.get<Record<string, unknown>>('users/me/referral').pipe(
       map((res) => ({
         referralUsername: String(
-          res['referralUsername'] ??
-          res['referral_username'] ??
-          res['username'] ??
-          ''
+          res['referralUsername'] ?? res['referral_username'] ?? res['username'] ?? '',
         ).trim(),
         referrerName: (res['referrerName'] ?? res['referrer_name']) as string | undefined,
-        referrerEmail: (res['referrerEmail'] ?? res['referrer_email']) as string | null | undefined
+        referrerEmail: (res['referrerEmail'] ?? res['referrer_email']) as string | null | undefined,
       })),
-      catchError(() => of({ referralUsername: '' }))
+      catchError(() => of({ referralUsername: '' })),
     );
   }
 
@@ -246,10 +300,7 @@ export class ReferralService {
   getDownlines(depth?: number): Observable<DownlineItem[]> {
     const params = depth != null ? { depth: String(depth) } : undefined;
     return this.api
-      .get<Record<string, unknown>[] | Record<string, unknown>>(
-        'referrals/me/downlines',
-        params
-      )
+      .get<Record<string, unknown>[] | Record<string, unknown>>('referrals/me/downlines', params)
       .pipe(
         map((res) => this.mapDownlinesResponse(res)),
         catchError(() => {
@@ -258,9 +309,9 @@ export class ReferralService {
             .get<Record<string, unknown>[] | Record<string, unknown>>('referrals/me/downlines')
             .pipe(
               map((res) => this.mapDownlinesResponse(res)),
-              catchError(() => of([]))
+              catchError(() => of([])),
             );
-        })
+        }),
       );
   }
 
@@ -271,31 +322,37 @@ export class ReferralService {
         if (!res) return null;
         // API returns sponsorId, sponsorEmail, sponsorReferralCode, sponsorLevel
         const sponsorId = (res['sponsorId'] ?? res['sponsor_id']) as string | undefined;
-        const sponsorEmail = (res['sponsorEmail'] ?? res['sponsor_email'] ?? res['email']) as string | undefined;
+        const sponsorEmail = (res['sponsorEmail'] ?? res['sponsor_email'] ?? res['email']) as
+          | string
+          | undefined;
         if (!sponsorId && !sponsorEmail) return null;
         return {
           sponsorId,
           sponsorEmail,
-          sponsorReferralCode: (res['sponsorReferralCode'] ?? res['sponsor_referral_code'] ?? res['referralCode']) as string | undefined,
-          sponsorLevel: res['sponsorLevel'] != null ? Number(res['sponsorLevel']) : undefined
+          sponsorReferralCode: (res['sponsorReferralCode'] ??
+            res['sponsor_referral_code'] ??
+            res['referralCode']) as string | undefined,
+          sponsorLevel: res['sponsorLevel'] != null ? Number(res['sponsorLevel']) : undefined,
         };
       }),
-      catchError(() => of(null))
+      catchError(() => of(null)),
     );
   }
 
   /** GET /referrals/me/upline */
   getUpline(): Observable<UplineNode[]> {
-    return this.api.get<Record<string, unknown>[] | Record<string, unknown>>('referrals/me/upline').pipe(
-      map((res) => {
-        const arr = Array.isArray(res) ? res : [];
-        return arr.map((item) => ({
-          userId: String(item['userId'] ?? item['user_id'] ?? ''),
-          level: Number(item['level'] ?? 0)
-        }));
-      }),
-      catchError(() => of([]))
-    );
+    return this.api
+      .get<Record<string, unknown>[] | Record<string, unknown>>('referrals/me/upline')
+      .pipe(
+        map((res) => {
+          const arr = Array.isArray(res) ? res : [];
+          return arr.map((item) => ({
+            userId: String(item['userId'] ?? item['user_id'] ?? ''),
+            level: Number(item['level'] ?? 0),
+          }));
+        }),
+        catchError(() => of([])),
+      );
   }
 
   /** GET /referrals/me/placement */
@@ -303,34 +360,44 @@ export class ReferralService {
     return this.api.get<Record<string, unknown> | null>('referrals/me/placement').pipe(
       map((res) => {
         if (!res) return null;
-        const parentId = (res['placementParentId'] ?? res['placement_parent_id']) as string | undefined;
+        const parentId = (res['placementParentId'] ?? res['placement_parent_id']) as
+          | string
+          | undefined;
         if (!parentId) return null;
         return {
           placementParentId: String(parentId),
-          placementParentEmail: String(res['placementParentEmail'] ?? res['placement_parent_email'] ?? ''),
-          placementParentReferralCode: String(res['placementParentReferralCode'] ?? res['placement_parent_referral_code'] ?? ''),
+          placementParentEmail: String(
+            res['placementParentEmail'] ?? res['placement_parent_email'] ?? '',
+          ),
+          placementParentReferralCode: String(
+            res['placementParentReferralCode'] ?? res['placement_parent_referral_code'] ?? '',
+          ),
           placementLevel: Number(res['placementLevel'] ?? res['placement_level'] ?? 0),
           placementStage: Number(res['placementStage'] ?? res['placement_stage'] ?? 0),
-          placementStageName: String(res['placementStageName'] ?? res['placement_stage_name'] ?? '')
+          placementStageName: String(
+            res['placementStageName'] ?? res['placement_stage_name'] ?? '',
+          ),
         };
       }),
-      catchError(() => of(null))
+      catchError(() => of(null)),
     );
   }
 
   /** GET /referrals/placement-parents */
   getPlacementParents(): Observable<PlacementParent[]> {
-    return this.api.get<Record<string, unknown>[] | Record<string, unknown>>('referrals/placement-parents').pipe(
-      map((res) => {
-        const arr = Array.isArray(res) ? res : [];
-        return arr.map((item) => ({
-          userId: String(item['userId'] ?? item['user_id'] ?? ''),
-          username: String(item['username'] ?? ''),
-          email: (item['email'] as string | undefined) ?? undefined
-        }));
-      }),
-      catchError(() => of([]))
-    );
+    return this.api
+      .get<Record<string, unknown>[] | Record<string, unknown>>('referrals/placement-parents')
+      .pipe(
+        map((res) => {
+          const arr = Array.isArray(res) ? res : [];
+          return arr.map((item) => ({
+            userId: String(item['userId'] ?? item['user_id'] ?? ''),
+            username: String(item['username'] ?? ''),
+            email: (item['email'] as string | undefined) ?? undefined,
+          }));
+        }),
+        catchError(() => of([])),
+      );
   }
 
   /** POST /referrals/create */
@@ -339,7 +406,7 @@ export class ReferralService {
       username: request.username,
       password: request.password,
       package: request.package,
-      currency: request.currency
+      currency: request.currency,
     };
     if (request.email?.trim()) {
       body['email'] = request.email.trim();
@@ -353,8 +420,8 @@ export class ReferralService {
     return this.api.post<Record<string, unknown>>('referrals/create', body).pipe(
       map((res) => ({
         userId: String(res['userId'] ?? res['user_id'] ?? ''),
-        email: (res['email'] as string | undefined) ?? request.email
-      }))
+        email: (res['email'] as string | undefined) ?? request.email,
+      })),
     );
   }
 
@@ -362,7 +429,7 @@ export class ReferralService {
   getDirectReferrals(limit = 50, offset = 0, username = ''): Observable<DirectReferralItem[]> {
     const params: Record<string, string> = {
       limit: String(limit),
-      offset: String(offset)
+      offset: String(offset),
     };
 
     if (username.trim()) {
@@ -370,15 +437,14 @@ export class ReferralService {
     }
 
     return this.api
-      .get<Record<string, unknown>[] | Record<string, unknown>>(
-        'referrals/me/direct-referrals',
-        params
-      )
+      .get<
+        Record<string, unknown>[] | Record<string, unknown>
+      >('referrals/me/direct-referrals', params)
       .pipe(
         map((res) => {
           const arr = Array.isArray(res)
             ? res
-            : (res['data'] ?? res['items'] ?? []) as Record<string, unknown>[];
+            : ((res['data'] ?? res['items'] ?? []) as Record<string, unknown>[]);
           return arr.map((raw) => ({
             id: String(raw['id'] ?? ''),
             username: String(raw['username'] ?? ''),
@@ -389,10 +455,10 @@ export class ReferralService {
             isActive: (raw['isActive'] ?? false) as boolean,
             isRegistrationPaid: (raw['isRegistrationPaid'] ?? false) as boolean,
             createdAt: String(raw['createdAt'] ?? ''),
-            profilePhotoUrl: raw['profilePhotoUrl'] as string | undefined
+            profilePhotoUrl: raw['profilePhotoUrl'] as string | undefined,
           }));
         }),
-        catchError(() => of([]))
+        catchError(() => of([])),
       );
   }
 
@@ -408,7 +474,7 @@ export class ReferralService {
     const params: Record<string, string | number> = {
       level,
       page,
-      limit
+      limit,
     };
 
     if (search) {
@@ -424,70 +490,138 @@ export class ReferralService {
             const networkParams: Record<string, string | number> = {
               level,
               page,
-              limit
+              limit,
             };
             if (search) {
               networkParams['search'] = search;
             }
             return this.api
-              .get<Record<string, unknown> | Record<string, unknown>[]>('network/levels', networkParams)
+              .get<
+                Record<string, unknown> | Record<string, unknown>[]
+              >('network/levels', networkParams)
               .pipe(
                 map((res) => this.normalizeMatrixLevelResponse(res, level, limit, offset)),
                 catchError(() =>
                   this.getDownlines().pipe(
-                    map((downlines) => this.buildMatrixLevelFallback(downlines, level, limit, offset, search))
-                  )
-                )
+                    map((downlines) =>
+                      this.buildMatrixLevelFallback(downlines, level, limit, offset, search),
+                    ),
+                  ),
+                ),
               );
           }
 
           return this.getDownlines().pipe(
-            map((downlines) => this.buildMatrixLevelFallback(downlines, level, limit, offset, search))
+            map((downlines) =>
+              this.buildMatrixLevelFallback(downlines, level, limit, offset, search),
+            ),
           );
-        })
+        }),
       );
+  }
+
+  /** GET /referrals/me/matrix-stage */
+  getMatrixStage(stage: number): Observable<MatrixStageResponse> {
+    const targetStage = this.clampNumber(stage, 1, 13, 1);
+    const params: Record<string, string | number> = {
+      stage: targetStage,
+    };
+
+    return this.api
+      .get<Record<string, unknown> | Record<string, unknown>[]>('referrals/me/matrix-stage', params)
+      .pipe(
+        map((res) => this.normalizeMatrixStageResponse(res, targetStage)),
+        catchError((error) => {
+          if (error?.status === 404) {
+            return this.getMatrixLevelUsers({ level: targetStage, limit: 200, offset: 0 }).pipe(
+              map((response) => this.mapMatrixLevelToStage(response, targetStage)),
+              catchError(() => of(this.emptyMatrixStage(targetStage))),
+            );
+          }
+
+          return of(this.emptyMatrixStage(targetStage));
+        }),
+      );
+  }
+
+  /** GET /referrals/me/matrix/flow?stage=<stage> */
+  getMatrixFlow(stage: MatrixFlowStage): Observable<MatrixFlowResponse> {
+    const params: Record<string, string> = { stage };
+    return this.api
+      .get<Record<string, unknown> | null>('referrals/me/matrix/flow', params)
+      .pipe(
+        map((res) => {
+          if (!res) return this.emptyMatrixFlow(stage);
+          const data = (res['data'] as Record<string, unknown> | undefined) ?? res;
+          const usersSource = (data['users'] ?? data['items'] ?? []) as Record<string, unknown>[];
+          const users: MatrixFlowUser[] = usersSource.map((u) => ({
+            id: String(u['id'] ?? u['userId'] ?? ''),
+            username: String(u['username'] ?? ''),
+            email: (u['email'] as string | null) ?? null,
+            phone: (u['phone'] as string | null) ?? null,
+            joinDate: String(u['joinDate'] ?? u['createdAt'] ?? new Date().toISOString()),
+            status: String(u['status'] ?? 'UNPAID'),
+            rank: String(u['rank'] ?? ''),
+            stageLabel: String(u['stageLabel'] ?? ''),
+            rankingLevel: this.readNumber(u['rankingLevel'] ?? 0, 0),
+            isCurrentUser: (u['isCurrentUser'] ?? false) as boolean,
+          }));
+          return {
+            status: 'success' as const,
+            data: {
+              stage: String(data['stage'] ?? stage) as MatrixFlowStage,
+              stageLabel: String(data['stageLabel'] ?? ''),
+              totalUsers: this.readNumber(data['totalUsers'] ?? users.length, users.length),
+              users,
+            },
+          };
+        }),
+        catchError(() => of(this.emptyMatrixFlow(stage))),
+      );
+  }
+
+  private emptyMatrixFlow(stage: MatrixFlowStage): MatrixFlowResponse {
+    return { status: 'success', data: { stage, stageLabel: '', totalUsers: 0, users: [] } };
   }
 
   /** GET /referrals/me/matrix */
   getMatrixTree(username?: string): Observable<MatrixTreeResponse> {
     const params = username?.trim() ? { username: username.trim() } : undefined;
-    return this.api
-      .get<Record<string, unknown> | null>('referrals/me/matrix', params)
-      .pipe(
-        map((res) => {
-          if (!res) return { levels: [] } as MatrixTreeResponse;
-          const levelsRaw = (res['levels'] ?? []) as Record<string, unknown>[];
-          const levels = levelsRaw.map((level) => {
-            const usersRaw = (level['users'] ?? []) as Record<string, unknown>[];
-            const users = usersRaw.map((user) => ({
-              userId: String(user['userId'] ?? user['id'] ?? ''),
-              username: String(user['username'] ?? ''),
-              email: (user['email'] as string | null | undefined) ?? null,
-              phone: (user['phone'] as string | null | undefined) ?? null,
-              isActive: (user['isActive'] as boolean | null | undefined) ?? null,
-              isRegistrationPaid: (user['isRegistrationPaid'] as boolean | null | undefined) ?? null,
-              createdAt: (user['createdAt'] as string | null | undefined) ?? null,
-              relativeLevel: (user['relativeLevel'] as number | null | undefined) ?? null,
-              parentUsername: (user['parentUsername'] as string | null | undefined) ?? null,
-              stageLabel: (user['stageLabel'] as string | null | undefined) ?? null,
-              rank: (user['rank'] as string | null | undefined) ?? null
-            }));
-            return {
-              level: Number(level['level'] ?? 0),
-              users
-            };
-          });
-
+    return this.api.get<Record<string, unknown> | null>('referrals/me/matrix', params).pipe(
+      map((res) => {
+        if (!res) return { levels: [] } as MatrixTreeResponse;
+        const levelsRaw = (res['levels'] ?? []) as Record<string, unknown>[];
+        const levels = levelsRaw.map((level) => {
+          const usersRaw = (level['users'] ?? []) as Record<string, unknown>[];
+          const users = usersRaw.map((user) => ({
+            userId: String(user['userId'] ?? user['id'] ?? ''),
+            username: String(user['username'] ?? ''),
+            email: (user['email'] as string | null | undefined) ?? null,
+            phone: (user['phone'] as string | null | undefined) ?? null,
+            isActive: (user['isActive'] as boolean | null | undefined) ?? null,
+            isRegistrationPaid: (user['isRegistrationPaid'] as boolean | null | undefined) ?? null,
+            createdAt: (user['createdAt'] as string | null | undefined) ?? null,
+            relativeLevel: (user['relativeLevel'] as number | null | undefined) ?? null,
+            parentUsername: (user['parentUsername'] as string | null | undefined) ?? null,
+            stageLabel: (user['stageLabel'] as string | null | undefined) ?? null,
+            rank: (user['rank'] as string | null | undefined) ?? null,
+          }));
           return {
-            rootUserId: (res['rootUserId'] as string | null | undefined) ?? null,
-            rootUsername: (res['rootUsername'] as string | null | undefined) ?? null,
-            depth: (res['depth'] as number | null | undefined) ?? null,
-            totalUsers: (res['totalUsers'] as number | null | undefined) ?? null,
-            levels
-          } as MatrixTreeResponse;
-        }),
-        catchError(() => of({ levels: [] } as MatrixTreeResponse))
-      );
+            level: Number(level['level'] ?? 0),
+            users,
+          };
+        });
+
+        return {
+          rootUserId: (res['rootUserId'] as string | null | undefined) ?? null,
+          rootUsername: (res['rootUsername'] as string | null | undefined) ?? null,
+          depth: (res['depth'] as number | null | undefined) ?? null,
+          totalUsers: (res['totalUsers'] as number | null | undefined) ?? null,
+          levels,
+        } as MatrixTreeResponse;
+      }),
+      catchError(() => of({ levels: [] } as MatrixTreeResponse)),
+    );
   }
 
   /** GET /referrals/me/stats */
@@ -497,14 +631,16 @@ export class ReferralService {
         teamSize: Number(res['teamSize'] ?? 0),
         totalDirectReferrals: Number(res['totalDirectReferrals'] ?? 0),
         totalLeaders: Number(res['totalLeaders'] ?? 0),
-        isLeader: (res['isLeader'] ?? false) as boolean
+        isLeader: (res['isLeader'] ?? false) as boolean,
       })),
-      catchError(() => of({
-        teamSize: 0,
-        totalDirectReferrals: 0,
-        totalLeaders: 0,
-        isLeader: false
-      }))
+      catchError(() =>
+        of({
+          teamSize: 0,
+          totalDirectReferrals: 0,
+          totalLeaders: 0,
+          isLeader: false,
+        }),
+      ),
     );
   }
 
@@ -513,8 +649,11 @@ export class ReferralService {
   private mapDownlineItem(raw: Record<string, unknown>): DownlineItem {
     const firstName = String(raw['firstName'] ?? raw['first_name'] ?? '');
     const lastName = String(raw['lastName'] ?? raw['last_name'] ?? '');
-    const fullName = [firstName, lastName].filter(Boolean).join(' ') || String(raw['fullName'] ?? raw['name'] ?? raw['email'] ?? '—');
-    const joinedAt = raw['createdAt'] ?? raw['joinedAt'] ?? raw['registeredAt'] ?? raw['created_at'] ?? Date.now();
+    const fullName =
+      [firstName, lastName].filter(Boolean).join(' ') ||
+      String(raw['fullName'] ?? raw['name'] ?? raw['email'] ?? '—');
+    const joinedAt =
+      raw['createdAt'] ?? raw['joinedAt'] ?? raw['registeredAt'] ?? raw['created_at'] ?? Date.now();
     const joinDate = (() => {
       const d = typeof joinedAt === 'number' ? new Date(joinedAt) : new Date(String(joinedAt));
       return isNaN(d.getTime()) ? new Date() : d;
@@ -529,21 +668,25 @@ export class ReferralService {
       status: (isActive ? 'active' : 'inactive') as 'active' | 'inactive',
       level: Number(raw['level'] ?? raw['depth'] ?? 1),
       package: String(raw['package'] ?? '—'),
-      totalDirects: Number(raw['directReferrals'] ?? raw['direct_referrals'] ?? raw['directReferralsCount'] ?? 0),
-      teamSize: Number(raw['teamSize'] ?? raw['team_size'] ?? raw['downlineCount'] ?? raw['downline_count'] ?? 0),
+      totalDirects: Number(
+        raw['directReferrals'] ?? raw['direct_referrals'] ?? raw['directReferralsCount'] ?? 0,
+      ),
+      teamSize: Number(
+        raw['teamSize'] ?? raw['team_size'] ?? raw['downlineCount'] ?? raw['downline_count'] ?? 0,
+      ),
       rank: (raw['rank'] as string | undefined) ?? undefined,
       stage: (raw['stage'] as string | undefined) ?? undefined,
       profilePhotoUrl: raw['profilePhotoUrl'] as string | undefined,
-      isDirectReferral: (raw['isDirectReferral'] ?? raw['is_direct_referral'] ?? false) as boolean
+      isDirectReferral: (raw['isDirectReferral'] ?? raw['is_direct_referral'] ?? false) as boolean,
     };
   }
 
   private mapDownlinesResponse(
-    res: Record<string, unknown>[] | Record<string, unknown>
+    res: Record<string, unknown>[] | Record<string, unknown>,
   ): DownlineItem[] {
     const arr = Array.isArray(res)
       ? res
-      : (res['data'] ?? res['items'] ?? res['downlines'] ?? []) as Record<string, unknown>[];
+      : ((res['data'] ?? res['items'] ?? res['downlines'] ?? []) as Record<string, unknown>[]);
     return arr.map((raw) => this.mapDownlineItem(raw));
   }
 
@@ -551,50 +694,60 @@ export class ReferralService {
     raw: Record<string, unknown> | Record<string, unknown>[],
     level: number,
     limit: number,
-    offset: number
+    offset: number,
   ): MatrixLevelResponse {
-    const data = Array.isArray(raw) ? { users: raw } : (raw['data'] as Record<string, unknown> | undefined) ?? raw;
+    const data = Array.isArray(raw)
+      ? { users: raw }
+      : ((raw['data'] as Record<string, unknown> | undefined) ?? raw);
     const usersSource = Array.isArray(data)
       ? data
-      : (data['users'] ?? data['items'] ?? data['data'] ?? data['downlines'] ?? []) as Record<string, unknown>[];
+      : ((data['users'] ?? data['items'] ?? data['data'] ?? data['downlines'] ?? []) as Record<
+          string,
+          unknown
+        >[]);
     const users = usersSource.map((item) => this.mapMatrixLevelUser(item));
 
-    const paginationSource = !Array.isArray(data) ? (data['pagination'] as Record<string, unknown> | undefined) : undefined;
+    const paginationSource = !Array.isArray(data)
+      ? (data['pagination'] as Record<string, unknown> | undefined)
+      : undefined;
     const currentLimit = this.readNumber(
       paginationSource?.['limit'] ?? data['limit'] ?? limit,
-      limit
+      limit,
     );
     const currentPage = this.readNumber(
       paginationSource?.['currentPage'] ?? data['currentPage'] ?? 0,
-      0
+      0,
     );
     const totalPages = this.readNumber(
       paginationSource?.['totalPages'] ?? data['totalPages'] ?? 0,
-      0
+      0,
     );
     const totalRecords = this.readNumber(
-      paginationSource?.['totalRecords']
-        ?? data['totalRecords']
-        ?? data['total_records']
-        ?? (totalPages > 0 ? totalPages * currentLimit : users.length),
-      users.length
+      paginationSource?.['totalRecords'] ??
+        data['totalRecords'] ??
+        data['total_records'] ??
+        (totalPages > 0 ? totalPages * currentLimit : users.length),
+      users.length,
     );
     const offsetFromPage = currentPage > 0 ? (currentPage - 1) * currentLimit : undefined;
-    const currentOffsetCandidate = paginationSource?.['currentOffset']
-      ?? paginationSource?.['offset']
-      ?? data['currentOffset']
-      ?? offsetFromPage
-      ?? offset;
+    const currentOffsetCandidate =
+      paginationSource?.['currentOffset'] ??
+      paginationSource?.['offset'] ??
+      data['currentOffset'] ??
+      offsetFromPage ??
+      offset;
     const currentOffset = this.readNumber(currentOffsetCandidate, offset);
-    const hasNextValue = paginationSource?.['hasNext']
-      ?? paginationSource?.['hasNextPage']
-      ?? data['hasNext']
-      ?? data['hasNextPage'];
-    const hasNext = hasNextValue != null
-      ? Boolean(hasNextValue)
-      : (totalPages > 0 && currentPage > 0)
-        ? currentPage < totalPages
-        : currentOffset + users.length < totalRecords;
+    const hasNextValue =
+      paginationSource?.['hasNext'] ??
+      paginationSource?.['hasNextPage'] ??
+      data['hasNext'] ??
+      data['hasNextPage'];
+    const hasNext =
+      hasNextValue != null
+        ? Boolean(hasNextValue)
+        : totalPages > 0 && currentPage > 0
+          ? currentPage < totalPages
+          : currentOffset + users.length < totalRecords;
 
     return {
       status: 'success',
@@ -604,10 +757,10 @@ export class ReferralService {
           totalRecords,
           currentOffset,
           limit: currentLimit,
-          hasNext
+          hasNext,
         },
-        users
-      }
+        users,
+      },
     };
   }
 
@@ -616,7 +769,7 @@ export class ReferralService {
     level: number,
     limit: number,
     offset: number,
-    search: string
+    search: string,
   ): MatrixLevelResponse {
     const normalizedSearch = search.trim().toLowerCase();
     const filtered = downlines.filter((item) => {
@@ -638,10 +791,10 @@ export class ReferralService {
           totalRecords: filtered.length,
           currentOffset: offset,
           limit,
-          hasNext: offset + limit < filtered.length
+          hasNext: offset + limit < filtered.length,
         },
-        users: page.map((item) => this.mapMatrixLevelFallbackUser(item))
-      }
+        users: page.map((item) => this.mapMatrixLevelFallbackUser(item)),
+      },
     };
   }
 
@@ -650,21 +803,34 @@ export class ReferralService {
       id: String(raw['id'] ?? raw['userId'] ?? raw['user_id'] ?? ''),
       username: String(raw['username'] ?? raw['name'] ?? raw['fullName'] ?? raw['email'] ?? '—'),
       email: (raw['email'] as string | undefined) ?? null,
-      phone: (raw['phone'] as string | undefined) ?? (raw['phoneNumber'] as string | undefined) ?? null,
-      joinDate: String(raw['joinDate'] ?? raw['createdAt'] ?? raw['created_at'] ?? raw['registeredAt'] ?? new Date().toISOString()),
-      status: String(raw['status'] ?? (raw['isActive'] ?? raw['is_active'] ? 'ACTIVE' : 'UNPAID')),
+      phone:
+        (raw['phone'] as string | undefined) ?? (raw['phoneNumber'] as string | undefined) ?? null,
+      joinDate: String(
+        raw['joinDate'] ??
+          raw['createdAt'] ??
+          raw['created_at'] ??
+          raw['registeredAt'] ??
+          new Date().toISOString(),
+      ),
+      status: String(
+        raw['status'] ?? ((raw['isActive'] ?? raw['is_active']) ? 'ACTIVE' : 'UNPAID'),
+      ),
       isDirectReferral: (raw['isDirectReferral'] ?? raw['is_direct_referral'] ?? false) as boolean,
-      profilePhotoUrl: (raw['profilePhotoUrl'] as string | undefined) ?? (raw['profile_photo_url'] as string | undefined) ?? null,
-      level: raw['level'] != null
-        ? Number(raw['level'])
-        : raw['matrixLevel'] != null
-          ? Number(raw['matrixLevel'])
-          : raw['matrix_level'] != null
-            ? Number(raw['matrix_level'])
-            : raw['depth'] != null
-              ? Number(raw['depth'])
-              : null,
-      stage: (raw['stageName'] ?? raw['stage'] ?? raw['stage_name']) as string | number | null
+      profilePhotoUrl:
+        (raw['profilePhotoUrl'] as string | undefined) ??
+        (raw['profile_photo_url'] as string | undefined) ??
+        null,
+      level:
+        raw['level'] != null
+          ? Number(raw['level'])
+          : raw['matrixLevel'] != null
+            ? Number(raw['matrixLevel'])
+            : raw['matrix_level'] != null
+              ? Number(raw['matrix_level'])
+              : raw['depth'] != null
+                ? Number(raw['depth'])
+                : null,
+      stage: (raw['stageName'] ?? raw['stage'] ?? raw['stage_name']) as string | number | null,
     };
   }
 
@@ -679,7 +845,7 @@ export class ReferralService {
       isDirectReferral: item.isDirectReferral,
       profilePhotoUrl: null,
       level: item.level,
-      stage: item.stage ?? null
+      stage: item.stage ?? null,
     };
   }
 
@@ -687,6 +853,106 @@ export class ReferralService {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return fallback;
     return Math.min(max, Math.max(min, Math.trunc(numeric)));
+  }
+
+  private normalizeMatrixStageResponse(
+    raw: Record<string, unknown> | Record<string, unknown>[],
+    stage: number,
+  ): MatrixStageResponse {
+    const data = Array.isArray(raw)
+      ? { members: raw }
+      : ((raw['data'] as Record<string, unknown> | undefined) ?? raw);
+    const membersSource = Array.isArray(data)
+      ? data
+      : ((data['members'] ?? data['users'] ?? data['items'] ?? data['data'] ?? []) as Record<
+          string,
+          unknown
+        >[]);
+    const members = membersSource.map((item) => this.mapMatrixStageMember(item, stage));
+    const totalMembers = this.readNumber(
+      (data as Record<string, unknown>)['totalMembers'] ??
+        (data as Record<string, unknown>)['total'] ??
+        (data as Record<string, unknown>)['count'] ??
+        members.length,
+      members.length,
+    );
+    const stageValue = this.readNumber((data as Record<string, unknown>)['stage'] ?? stage, stage);
+
+    return {
+      status: 'success',
+      data: {
+        stage: stageValue,
+        totalMembers,
+        members,
+      },
+    };
+  }
+
+  private mapMatrixStageMember(
+    raw: Record<string, unknown>,
+    fallbackStage: number,
+  ): MatrixStageMember {
+    const statusValue = String(
+      raw['status'] ?? ((raw['isActive'] ?? raw['is_active']) ? 'ACTIVE' : 'UNPAID'),
+    );
+    const legs = this.readNumber(
+      raw['legs'] ??
+        raw['directReferrals'] ??
+        raw['direct_referrals'] ??
+        raw['activeLegs'] ??
+        raw['active_legs'] ??
+        raw['totalDirects'] ??
+        raw['total_directs'] ??
+        0,
+      0,
+    );
+    const stageValue = (raw['stage'] ?? raw['stageName'] ?? raw['stage_name']) as
+      | string
+      | number
+      | null
+      | undefined;
+
+    return {
+      id: String(raw['id'] ?? raw['userId'] ?? raw['user_id'] ?? ''),
+      username: String(raw['username'] ?? raw['name'] ?? raw['fullName'] ?? raw['email'] ?? '—'),
+      status: statusValue,
+      legs,
+      stage: stageValue ?? fallbackStage,
+      rank: (raw['rank'] as string | undefined) ?? null,
+      profilePhotoUrl: (raw['profilePhotoUrl'] as string | undefined) ?? null,
+    };
+  }
+
+  private mapMatrixLevelToStage(response: MatrixLevelResponse, stage: number): MatrixStageResponse {
+    const members: MatrixStageMember[] = response.data.users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      status: user.status,
+      legs: 0,
+      stage: user.stage ?? stage,
+      rank: null,
+      profilePhotoUrl: user.profilePhotoUrl ?? null,
+    }));
+
+    return {
+      status: 'success',
+      data: {
+        stage,
+        totalMembers: response.data.pagination.totalRecords,
+        members,
+      },
+    };
+  }
+
+  private emptyMatrixStage(stage: number): MatrixStageResponse {
+    return {
+      status: 'success',
+      data: {
+        stage,
+        totalMembers: 0,
+        members: [],
+      },
+    };
   }
 
   private readNumber(value: unknown, fallback: number): number {
