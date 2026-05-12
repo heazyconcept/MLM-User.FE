@@ -86,10 +86,12 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
 
   readonly stageTabs: StageTab[] = [
     { label: 'Entry', value: 'entry' },
-    ...Array.from({ length: 6 }, (_, index) => ({
-      label: `Stage ${index + 1}`,
-      value: index + 1,
-    })),
+    { label: 'Mentor', value: 1 },
+    { label: 'Manager', value: 2 },
+    { label: 'Senior Manager', value: 3 },
+    { label: 'Director', value: 4 },
+    { label: 'Senior Director', value: 5 },
+    { label: 'Consultant', value: 6 },
   ];
 
   private readonly STAGE_COLORS: Record<
@@ -767,33 +769,20 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
     let cursor = 0;
     for (let i = 0; i < 3; i += 1) {
       const member = filteredMembers[cursor];
-      if (member) {
-        levelOneNodes.push({
-          id: member.id,
-          username: member.username,
-          package: null,
-          level: 1,
-          status: member.status === 'active' ? 'active' : 'inactive',
-          rank: member.rank,
-          stage: member.stageLabel ?? `Stage ${stage}`,
-          parentId: root.id,
-          position: this.getStagePositionByIndex(i),
-          children: [],
-        });
-        cursor += 1;
-      } else {
-        levelOneNodes.push({
-          id: `stage-${stage}-empty-${root.id}-l1-${i}`,
-          username: 'Empty Slot',
-          package: null,
-          level: 1,
-          status: 'empty',
-          stage: `Stage ${stage}`,
-          parentId: root.id,
-          position: this.getStagePositionByIndex(i),
-          children: [],
-        });
-      }
+      if (!member) break;
+      levelOneNodes.push({
+        id: member.id,
+        username: member.username,
+        package: null,
+        level: 1,
+        status: member.status === 'active' ? 'active' : 'inactive',
+        rank: member.rank,
+        stage: member.stageLabel ?? `Stage ${stage}`,
+        parentId: root.id,
+        position: this.getStagePositionByIndex(i),
+        children: [],
+      });
+      cursor += 1;
     }
 
     for (let parentIndex = 0; parentIndex < levelOneNodes.length; parentIndex += 1) {
@@ -801,33 +790,20 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
       parent.children = [];
       for (let childIndex = 0; childIndex < 3; childIndex += 1) {
         const member = filteredMembers[cursor];
-        if (member) {
-          parent.children.push({
-            id: member.id,
-            username: member.username,
-            package: null,
-            level: 2,
-            status: member.status === 'active' ? 'active' : 'inactive',
-            rank: member.rank,
-            stage: member.stageLabel ?? `Stage ${stage}`,
-            parentId: parent.id,
-            position: this.getStagePositionByIndex(childIndex),
-            children: [],
-          });
-          cursor += 1;
-        } else {
-          parent.children.push({
-            id: `stage-${stage}-empty-${parent.id}-l2-${childIndex}`,
-            username: 'Empty Slot',
-            package: null,
-            level: 2,
-            status: 'empty',
-            stage: `Stage ${stage}`,
-            parentId: parent.id,
-            position: this.getStagePositionByIndex(childIndex),
-            children: [],
-          });
-        }
+        if (!member) break;
+        parent.children.push({
+          id: member.id,
+          username: member.username,
+          package: null,
+          level: 2,
+          status: member.status === 'active' ? 'active' : 'inactive',
+          rank: member.rank,
+          stage: member.stageLabel ?? `Stage ${stage}`,
+          parentId: parent.id,
+          position: this.getStagePositionByIndex(childIndex),
+          children: [],
+        });
+        cursor += 1;
       }
     }
 
@@ -850,77 +826,20 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
 
     const filteredMembers = members
       .filter((member) => member.id !== root.id)
-      .slice(0, 12);
+      .slice(0, 3);
 
-    const levelOneNodes: MatrixNode[] = [];
-    let cursor = 0;
-    for (let i = 0; i < 3; i += 1) {
-      const member = filteredMembers[cursor];
-      if (member) {
-        levelOneNodes.push({
-          id: member.id,
-          username: member.username,
-          package: null,
-          level: 1,
-          status: member.status === 'active' ? 'active' : 'inactive',
-          rank: member.rank,
-          stage: member.stageLabel ?? rootStage,
-          parentId: root.id,
-          position: this.getStagePositionByIndex(i),
-          children: [],
-        });
-        cursor += 1;
-      } else {
-        levelOneNodes.push({
-          id: `entry-empty-${root.id}-l1-${i}`,
-          username: 'Empty Slot',
-          package: null,
-          level: 1,
-          status: 'empty',
-          stage: rootStage,
-          parentId: root.id,
-          position: this.getStagePositionByIndex(i),
-          children: [],
-        });
-      }
-    }
-
-    for (let parentIndex = 0; parentIndex < levelOneNodes.length; parentIndex += 1) {
-      const parent = levelOneNodes[parentIndex];
-      parent.children = [];
-      for (let childIndex = 0; childIndex < 3; childIndex += 1) {
-        const member = filteredMembers[cursor];
-        if (member) {
-          parent.children.push({
-            id: member.id,
-            username: member.username,
-            package: null,
-            level: 2,
-            status: member.status === 'active' ? 'active' : 'inactive',
-            rank: member.rank,
-            stage: member.stageLabel ?? rootStage,
-            parentId: parent.id,
-            position: this.getStagePositionByIndex(childIndex),
-            children: [],
-          });
-          cursor += 1;
-        } else {
-          parent.children.push({
-            id: `entry-empty-${parent.id}-l2-${childIndex}`,
-            username: 'Empty Slot',
-            package: null,
-            level: 2,
-            status: 'empty',
-            stage: rootStage,
-            parentId: parent.id,
-            position: this.getStagePositionByIndex(childIndex),
-            children: [],
-          });
-        }
-      }
-    }
-
-    root.children = levelOneNodes;
+    root.children = filteredMembers.map((member, index) => ({
+      id: member.id,
+      username: member.username,
+      package: null,
+      level: 1,
+      status: member.status === 'active' ? 'active' : 'inactive',
+      rank: member.rank,
+      stage: member.stageLabel ?? rootStage,
+      parentId: root.id,
+      position: this.getStagePositionByIndex(index),
+      children: [],
+    }));
     return root;
   }
 
