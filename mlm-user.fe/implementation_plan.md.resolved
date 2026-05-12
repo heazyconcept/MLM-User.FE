@@ -1,0 +1,122 @@
+# Matrix Tree Stage-Based Redesign
+
+Redesign the matrix tree page from a single org-chart view into a **tabbed stage-based view** matching the new screenshot. Users progress through Entry → Stage 1–13, and each tab shows who has reached that stage.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Backend API contract**: The current `GET /referrals/me/matrix` returns a tree with levels/users. For the new stage tabs, we'll need an endpoint like `GET /referrals/me/matrix-stage?stage=N` that returns the users who have qualified for a given stage. **I'll build the frontend to call this new endpoint, with a fallback to the existing data if it's not ready yet.** Please confirm this is the direction the backend will take, or let me know the exact endpoint/shape.
+
+> [!IMPORTANT]
+> **Stage count**: The screenshot shows Entry + Stage 1–3 visible. You mentioned 13 stages. I'll build **Entry + Stage 1–13** (14 tabs total) with horizontal scrolling on mobile. Confirm this is correct.
+
+## Open Questions
+
+1. **Stage API shape**: Will the backend return something like `{ stage: 3, members: [{ username, legs, status, ... }], totalMembers: 0 }`? Or will it reuse the existing `MatrixTreeResponse` format filtered by stage?
+2. **"Legs" display**: The screenshot shows "0 legs" under a user. Is this the same as `directReferrals` / `activeLegs`? Or a new field?
+3. **Entry tab**: Should the Entry tab keep the current full org-chart tree (PrimeNG OrganizationChart with drill-down), or should it also switch to the simpler card-based display?
+
+## Proposed Changes
+
+### Overview
+
+The matrix tree page gets a complete UI overhaul:
+- **Tab bar** at the top: `Entry | Stage 1 | Stage 2 | … | Stage 13`
+- **Entry tab**: Keeps the existing org-chart tree (your referrals, navigation, zoom, etc.)
+- **Stage tabs**: New card-based view showing isolated user nodes for users who have qualified for that stage, matching the screenshot design (trophy icon, user cards with legs + status, total member count)
+
+---
+
+### Component: Matrix Tree Page
+
+#### [MODIFY] [matrix-tree.component.ts](file:///c:/Users/HP/OneDrive/Documents/MLM-User.FE/mlm-user.fe/src/app/pages/network/matrix/matrix-tree.component.ts)
+
+- Add `activeTab` signal: `'entry' | number` (number = stage 1–13)
+- Add `stageTabs` array: `[{ label: 'Entry', value: 'entry' }, { label: 'Stage 1', value: 1 }, ..., { label: 'Stage 13', value: 13 }]`
+- Add `stageMembers` signal to hold users returned for the active stage
+- Add `stageTotalMembers` signal for total count
+- Add `stageLoading` signal
+- Add `onTabChange(tab)` method — when `'entry'`, use existing tree logic; when a stage number, call new service method
+- Add `loadStageData(stage: number)` method — calls `networkService.fetchMatrixStage(stage)`
+- Keep all existing org-chart logic intact (it only renders when `activeTab === 'entry'`)
+
+#### [MODIFY] [matrix-tree.component.html](file:///c:/Users/HP/OneDrive/Documents/MLM-User.FE/mlm-user.fe/src/app/pages/network/matrix/matrix-tree.component.html)
+
+Major template rewrite:
+
+1. **Tab bar** — horizontal scrollable strip at the top with Entry + Stage 1–13 buttons. Active tab has a distinct bottom border and bold text (matching the screenshot's blue text + underline).
+
+2. **Entry tab content** — wraps the existing org-chart tree (unchanged logic, just wrapped in `@if (activeTab() === 'entry')`)
+
+3. **Stage tab content** — new `@if (activeTab() !== 'entry')` block:
+   - Stage header card with trophy emoji + "Stage N" title
+   - User node cards displayed in a centered layout:
+     - Vertical connector line from top
+     - Card with user icon, username, legs count, ACTIVE/INACTIVE badge
+     - Green border for active, gray for inactive
+   - Footer showing "Total: N members"
+   - Empty state when no members have reached the stage
+
+---
+
+### Service: Network Service
+
+#### [MODIFY] [network.service.ts](file:///c:/Users/HP/OneDrive/Documents/MLM-User.FE/mlm-user.fe/src/app/services/network.service.ts)
+
+- Add `StageMember` interface: `{ id, username, legs, status, stage, rank }`
+- Add `fetchMatrixStage(stage: number)` method:
+  - Calls `referralService.getMatrixStage(stage)` 
+  - Falls back to filtering existing downline data by stage if endpoint is unavailable
+  - Returns `Observable<{ members: StageMember[], totalMembers: number }>`
+
+#### [MODIFY] [referral.service.ts](file:///c:/Users/HP/OneDrive/Documents/MLM-User.FE/mlm-user.fe/src/app/services/referral.service.ts)
+
+- Add `MatrixStageResponse` interface
+- Add `getMatrixStage(stage: number)` method:
+  - `GET /referrals/me/matrix-stage?stage={stage}`
+  - Fallback to `GET /referrals/me/matrix-level?level={stage}` if 404
+  - Maps response to normalized `MatrixStageResponse`
+
+---
+
+### No Route Changes Needed
+
+The tabs are internal to the `matrix-tree` component — no new routes required. The existing `/network/matrix` route stays as-is.
+
+---
+
+### Visual Design (matching screenshot)
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Entry    Stage 1    Stage 2   [Stage 3]  ...        │  ← tab bar
+├──────────────────────────────────────────────────────┤
+│                                                      │
+│  🏆 Stage 3                                          │  ← stage header
+│                                                      │
+│              │                                       │  ← connector line
+│         ┌─────────┐                                  │
+│         │  👤      │                                  │  ← user card
+│         │ osigla   │                                  │
+│         │ 0 legs   │                                  │
+│         │ ACTIVE   │                                  │
+│         └─────────┘                                  │
+│                                                      │
+│  Total: 0 members                                    │  ← footer
+└──────────────────────────────────────────────────────┘
+```
+
+When multiple users reach the same stage, their cards display in a row/grid with connector lines from a shared root line.
+
+## Verification Plan
+
+### Automated Tests
+- `npm run build` — ensure no compilation errors
+- `npm run test` — run existing tests to verify no regressions
+
+### Manual Verification  
+- Navigate to `/network/matrix` in the browser
+- Verify the Entry tab shows the existing org-chart tree
+- Click Stage 1–13 tabs and verify loading/empty states render correctly
+- Verify the tab bar scrolls horizontally on mobile viewports
+- Confirm the stage view matches the screenshot design (trophy, user cards, connector lines)

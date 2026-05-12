@@ -110,36 +110,38 @@
       </div>
     </div>
 
-    <!-- Placement Parent -->
-    <div class="flex flex-col gap-1.5">
-      <label for="cr-placement" class="text-sm font-semibold text-gray-700">
-        Placement Username
-        <span class="font-normal text-gray-500 text-xs">(spillover)</span>
-      </label>
-      <div class="relative">
-        <p-select
-          formControlName="placementParentUsername"
-          id="cr-placement"
-          inputId="cr-placement"
-          [options]="placementOptions()"
-          optionLabel="label"
-          optionValue="value"
-          appendTo="body"
-          [showClear]="true"
-          [filter]="true"
-          placeholder="Select a placement username"
-          styleClass="w-full">
-        </p-select>
+    @if (showPlacementDropdown()) {
+      <!-- Placement Parent -->
+      <div class="flex flex-col gap-1.5">
+        <label for="cr-placement" class="text-sm font-semibold text-gray-700">
+          Placement Username
+          <span class="font-normal text-gray-500 text-xs">(spillover)</span>
+        </label>
+        <div class="relative">
+          <p-select
+            formControlName="placementParentUsername"
+            id="cr-placement"
+            inputId="cr-placement"
+            [options]="placementOptions()"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            [showClear]="true"
+            [filter]="true"
+            placeholder="Select a placement username"
+            styleClass="w-full">
+          </p-select>
+        </div>
+        @if (getPlacementValidationMessage(); as placementMessage) {
+          <small
+            class="text-xs mt-1"
+            [class]="placementValid() === false ? 'text-red-500' : (placementValid() === true ? 'text-mlm-success' : 'text-slate-500')">
+            {{ placementMessage }}
+          </small>
+        }
+        <!-- <small class="text-gray-500 text-xs">Enter the placement username to route the new member, or leave blank for auto-placement.</small> -->
       </div>
-      @if (getPlacementValidationMessage(); as placementMessage) {
-        <small
-          class="text-xs mt-1"
-          [class]="placementValid() === false ? 'text-red-500' : (placementValid() === true ? 'text-mlm-success' : 'text-slate-500')">
-          {{ placementMessage }}
-        </small>
-      }
-      <!-- <small class="text-gray-500 text-xs">Enter the placement username to route the new member, or leave blank for auto-placement.</small> -->
-    </div>
+    }
 
     <!-- Actions -->
     <div class="flex gap-3 pt-2">
