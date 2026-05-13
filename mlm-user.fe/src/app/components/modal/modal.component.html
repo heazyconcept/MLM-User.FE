@@ -1,85 +1,145 @@
 @if (modalService.modalState().isOpen) {
 <div
-  class="fixed inset-0 z-[12000] flex items-center justify-center bg-black/50 backdrop-blur-sm"
-  (click)="close()"
+  class="fixed inset-0 z-[12000] flex items-center justify-center bg-black/50"
+  (click)="onBackdropClick()"
 >
   <div
     class="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all"
     (click)="$event.stopPropagation()"
   >
-    <div class="flex items-center justify-between mb-4">
-      <div class="flex items-center gap-3">
-        @switch (modalService.modalState().type) {
-          @case ('success') {
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-mlm-green-100">
-              <i class="pi pi-check-circle text-lg text-mlm-success"></i>
-            </div>
-          }
-          @case ('error') {
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-mlm-red-100">
-              <i class="pi pi-times-circle text-lg text-mlm-error"></i>
-            </div>
-          }
-          @case ('info') {
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-mlm-blue-100">
-              <i class="pi pi-info-circle text-lg text-mlm-blue-600"></i>
-            </div>
-          }
-          @case ('warning') {
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-100">
-              <i class="pi pi-exclamation-triangle text-lg text-mlm-warning"></i>
-            </div>
-          }
-        }
-        <h3
-          class="text-lg font-medium leading-6"
-          [class.text-mlm-success]="modalService.modalState().type === 'success'"
-          [class.text-mlm-error]="modalService.modalState().type === 'error'"
-          [class.text-mlm-blue-600]="modalService.modalState().type === 'info'"
-          [class.text-mlm-warning]="modalService.modalState().type === 'warning'"
-        >
-          {{ modalService.modalState().title }}
-        </h3>
+    @if (modalService.modalState().type === 'celebration') {
+      <div class="relative overflow-hidden rounded-2xl bg-white p-6">
+        <div class="flex items-center justify-between">
+          <div
+            class="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-slate-600"
+          >
+            Rank Progress
+          </div>
+          <button
+            (click)="dismiss()"
+            class="text-slate-400 hover:text-slate-500 focus:outline-none"
+          >
+            <span class="sr-only">Close</span>
+            <svg
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <div class="mt-5 flex items-center justify-center">
+          <div class="relative flex h-44 w-44 items-center justify-center">
+            <div #celebrationAnimation class="relative h-36 w-36"></div>
+          </div>
+        </div>
+        <div class="mt-5 text-center">
+          <h3 class="text-xl font-semibold text-slate-900">
+            {{ modalService.modalState().title }}
+          </h3>
+          <p class="mt-2 text-sm text-mlm-secondary">
+            {{ modalService.modalState().message }}
+          </p>
+        </div>
+        <div class="mt-6 flex flex-col gap-2">
+          <button
+            type="button"
+            class="inline-flex w-full items-center justify-center rounded-md bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-amber-400"
+            (click)="handlePrimaryAction()"
+          >
+            {{ primaryActionLabel() }}
+          </button>
+          <button
+            type="button"
+            class="inline-flex w-full items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-700"
+            (click)="dismiss()"
+          >
+            Close
+          </button>
+        </div>
       </div>
-      <button
-        (click)="close()"
-        class="text-gray-400 hover:text-gray-500 focus:outline-none"
-      >
-        <span class="sr-only">Close</span>
-        <svg
-          class="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+    } @else {
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          @switch (modalService.modalState().type) {
+            @case ('success') {
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-mlm-green-100">
+                <i class="pi pi-check-circle text-lg text-mlm-success"></i>
+              </div>
+            }
+            @case ('error') {
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-mlm-red-100">
+                <i class="pi pi-times-circle text-lg text-mlm-error"></i>
+              </div>
+            }
+            @case ('info') {
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-mlm-blue-100">
+                <i class="pi pi-info-circle text-lg text-mlm-blue-600"></i>
+              </div>
+            }
+            @case ('warning') {
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-yellow-100">
+                <i class="pi pi-exclamation-triangle text-lg text-mlm-warning"></i>
+              </div>
+            }
+          }
+          <h3
+            class="text-lg font-medium leading-6"
+            [class.text-mlm-success]="modalService.modalState().type === 'success'"
+            [class.text-mlm-error]="modalService.modalState().type === 'error'"
+            [class.text-mlm-blue-600]="modalService.modalState().type === 'info'"
+            [class.text-mlm-warning]="modalService.modalState().type === 'warning'"
+          >
+            {{ modalService.modalState().title }}
+          </h3>
+        </div>
+        <button
+          (click)="close()"
+          class="text-gray-400 hover:text-gray-500 focus:outline-none"
         >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
-      </button>
-    </div>
-    <div class="mt-2">
-      <p class="text-sm text-mlm-secondary">
-        {{ modalService.modalState().message }}
-      </p>
-    </div>
-    <div class="mt-6 flex justify-end">
-      <button
-        type="button"
-        class="inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
-        [class.bg-mlm-success]="modalService.modalState().type === 'success'"
-        [class.bg-mlm-error]="modalService.modalState().type === 'error'"
-        [class.bg-mlm-blue-600]="modalService.modalState().type === 'info'"
-        [class.bg-mlm-warning]="modalService.modalState().type === 'warning'"
-        [class.hover:opacity-90]="true"
-        (click)="close()"
-      >
-        Close
-      </button>
-    </div>
+          <span class="sr-only">Close</span>
+          <svg
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+      <div class="mt-2">
+        <p class="text-sm text-mlm-secondary">
+          {{ modalService.modalState().message }}
+        </p>
+      </div>
+      <div class="mt-6 flex justify-end">
+        <button
+          type="button"
+          class="inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 transition-colors"
+          [class.bg-mlm-success]="modalService.modalState().type === 'success'"
+          [class.bg-mlm-error]="modalService.modalState().type === 'error'"
+          [class.bg-mlm-blue-600]="modalService.modalState().type === 'info'"
+          [class.bg-mlm-warning]="modalService.modalState().type === 'warning'"
+          [class.hover:opacity-90]="true"
+          (click)="close()"
+        >
+          Close
+        </button>
+      </div>
+    }
   </div>
 </div>
 }

@@ -105,7 +105,11 @@ export class CreateReferralComponent implements OnInit {
   hasInsufficientBalance = computed(() => this.registrationBalance() < this.requiredAmount());
 
   showPlacementDropdown = computed(() => {
-    return true;
+    // Only show placement selection when the sponsor's first-level matrix is complete.
+    // "Complete" here means 3 direct downlines that are both paid and active.
+    const completedDirects = this.directReferrals().filter((r) => r.isRegistrationPaid && r.isActive)
+      .length;
+    return completedDirects >= 3;
   });
 
   packageOptions = computed(() => {
@@ -246,6 +250,16 @@ export class CreateReferralComponent implements OnInit {
     this.referralService.getDirectReferrals(50, 0, username).subscribe({
       next: (items) => {
         this.directReferrals.set(items);
+
+        if (!this.showPlacementDropdown()) {
+          this.placementOptions.set([]);
+          const currentPlacement = this.form.get('placementParentUsername')?.value?.trim();
+          if (currentPlacement) {
+            this.form.get('placementParentUsername')?.setValue('', { emitEvent: true });
+          }
+          return;
+        }
+
         this.placementOptions.set(
           items.map((item) => ({
             label:
@@ -396,10 +410,12 @@ export class CreateReferralComponent implements OnInit {
         this.ref.close(true);
         const returnUrl = this.config.data?.returnUrl ?? '/network';
         this.modalService.open(
-          'success',
+          'celebration',
           'Referral Created',
           `New member ${username} has been registered and activated under your network.`,
-          returnUrl
+          returnUrl,
+          'Continue',
+          '/Share.json'
         );
         // Refresh wallet + network data
         this.walletService.fetchWallets().subscribe();

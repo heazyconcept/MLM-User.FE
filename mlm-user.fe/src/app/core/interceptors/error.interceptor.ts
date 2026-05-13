@@ -69,7 +69,13 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       // Skip modal for 404 on GET to onboarding endpoints where 404 means "not set up yet"
-      const expected404GetPaths = ['users/me/bank', 'users/me/identity', 'users/me/preferences'];
+      // and for the placement dropdown lookup where 404 means "no direct referrals to choose from".
+      const expected404GetPaths = [
+        'users/me/bank',
+        'users/me/identity',
+        'users/me/preferences',
+        'referrals/me/direct-referrals'
+      ];
       if (error.status === 404 && req.method === 'GET' && expected404GetPaths.some(path => req.url.includes(path))) {
         return throwError(() => error);
       }

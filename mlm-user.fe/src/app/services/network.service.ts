@@ -7,7 +7,10 @@ import {
   type SponsorInfo,
   type PlacementInfo,
   type UplineNode,
-  type MatrixTreeResponse
+  type MatrixTreeResponse,
+  type MatrixStageResponse,
+  type MatrixFlowStage,
+  type MatrixFlowResponse,
 } from './referral.service';
 import { UserService } from './user.service';
 import { EarningsService } from './earnings.service';
@@ -68,8 +71,29 @@ export interface DownlineMember {
   isDirectReferral: boolean;
 }
 
+export interface StageMember {
+  id: string;
+  username: string;
+  legs: number;
+  status: 'active' | 'inactive';
+  stage: number;
+  rank?: string;
+  stageLabel?: string;
+}
+
+export interface FlowStageMember {
+  id: string;
+  username: string;
+  joinDate: string;
+  status: 'ACTIVE' | 'UNPAID' | 'SUSPENDED';
+  rank: string;
+  stageLabel: string;
+  rankingLevel: number;
+  isCurrentUser: boolean;
+}
+
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class NetworkService {
   private referralService = inject(ReferralService);
@@ -82,7 +106,7 @@ export class NetworkService {
   readonly referralLink = signal<ReferralLink>({
     url: '',
     referralUsername: '',
-    sponsorName: ''
+    sponsorName: '',
   });
 
   readonly networkSummary = signal<NetworkSummary>({
@@ -91,14 +115,14 @@ export class NetworkService {
     activeLegs: 0,
     rank: '—',
     nextRank: '—',
-    rankProgress: 0
+    rankProgress: 0,
   });
 
   readonly cpvSummary = signal<CpvSummary>({
     personalCpv: 0,
     teamCpv: 0,
     requiredCpv: 0,
-    cycle: ''
+    cycle: '',
   });
 
   /** Default empty matrix when no data */
@@ -108,7 +132,7 @@ export class NetworkService {
     package: null,
     level: 0,
     status: 'active',
-    children: []
+    children: [],
   };
 
   readonly matrixTree = signal<MatrixNode>(this._emptyMatrix);
@@ -147,15 +171,15 @@ export class NetworkService {
       upline: upline$,
       cpv: cpv$,
       earnings: earnings$,
-      profile: profile$
+      profile: profile$,
     })
       .pipe(
         tap(({ refInfo, sponsor, downlines, matrix, placement, upline, cpv, profile }) => {
           const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
           const currentUsername = (
-            (profile as Record<string, unknown> | null)?.['username'] as string | undefined
-            ?? this.userService.currentUser()?.username
-            ?? ''
+            ((profile as Record<string, unknown> | null)?.['username'] as string | undefined) ??
+            this.userService.currentUser()?.username ??
+            ''
           ).trim();
           const fromReferralEndpoint = refInfo.referralUsername?.trim() ?? '';
           const linkUsername = fromReferralEndpoint || currentUsername;
@@ -163,7 +187,7 @@ export class NetworkService {
           this.referralLink.set({
             url,
             referralUsername: linkUsername,
-            sponsorName: sponsor?.sponsorEmail ?? refInfo.referrerName ?? ''
+            sponsorName: sponsor?.sponsorEmail ?? refInfo.referrerName ?? '',
           });
 
           this.sponsorInfo.set(sponsor);
@@ -175,7 +199,7 @@ export class NetworkService {
             personalCpv: cpv.personalCpv,
             teamCpv: cpv.teamCpv,
             requiredCpv: cpv.requiredCpv,
-            cycle: cpv.cycle
+            cycle: cpv.cycle,
           });
 
           const user = profile ?? this.userService.currentUser();
@@ -184,7 +208,8 @@ export class NetworkService {
           const activeLegs = user?.activeLegs ?? Math.min(directRefs, 2);
           const rank = user?.rank ?? '—';
           const requiredCpv = cpv.requiredCpv || 1;
-          const rankProgress = requiredCpv > 0 ? Math.min(100, (cpv.teamCpv / requiredCpv) * 100) : 0;
+          const rankProgress =
+            requiredCpv > 0 ? Math.min(100, (cpv.teamCpv / requiredCpv) * 100) : 0;
 
           this.networkSummary.set({
             teamSize: teamSize || directRefs,
@@ -192,13 +217,13 @@ export class NetworkService {
             activeLegs,
             rank,
             nextRank: rank,
-            rankProgress
+            rankProgress,
           });
 
           const matrixResponse = (matrix as MatrixTreeResponse | null) ?? { levels: [] };
           const matrixTree = this.buildTreeFromMatrixResponse(
             matrixResponse,
-            profile as Record<string, unknown> | null
+            profile as Record<string, unknown> | null,
           );
           const fallbackTree = this.buildTreeFromDownlines(downlines, profile as any);
           const hasMatrixLevels = (matrixResponse.levels?.length ?? 0) > 0;
@@ -214,7 +239,7 @@ export class NetworkService {
         finalize(() => {
           this._inFlight = false;
           this.isLoading.set(false);
-        })
+        }),
       )
       .subscribe();
   }
@@ -225,28 +250,70 @@ export class NetworkService {
     this.isLoading.set(true);
     this.error.set(null);
 
-    return this.referralService
-      .getMatrixTree(username)
-      .pipe(
-        map((response) => this.buildTreeFromMatrixResponse(response ?? { levels: [] }, null)),
-        tap((tree) => {
-          this.matrixTree.set(tree);
-        }),
-        catchError((err) => {
-          this.error.set('Failed to load matrix tree. Please try again.');
-          if (typeof ngDevMode !== 'undefined' && ngDevMode) {
-            console.error('[NetworkService] fetchMatrixTree failed:', err);
-          }
-          return of(this.matrixTree());
-        }),
-        finalize(() => {
-          this._matrixInFlight = false;
-          this.isLoading.set(false);
-        })
-      );
+    return this.referralService.getMatrixTree(username).pipe(
+      map((response) => this.buildTreeFromMatrixResponse(response ?? { levels: [] }, null)),
+      tap((tree) => {
+        this.matrixTree.set(tree);
+      }),
+      catchError((err) => {
+        this.error.set('Failed to load matrix tree. Please try again.');
+        if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+          console.error('[NetworkService] fetchMatrixTree failed:', err);
+        }
+        return of(this.matrixTree());
+      }),
+      finalize(() => {
+        this._matrixInFlight = false;
+        this.isLoading.set(false);
+      }),
+    );
   }
 
-  private buildTreeFromDownlines(downlines: DownlineItem[], profile?: Record<string, unknown> | null): MatrixNode {
+  fetchMatrixStage(stage: number) {
+    const targetStage = this.clampStage(stage);
+    return this.referralService.getMatrixStage(targetStage).pipe(
+      map((response) => this.normalizeStageResponse(response, targetStage)),
+      catchError(() => this.buildStageFallback(targetStage)),
+    );
+  }
+
+  fetchMatrixFlow(stage: MatrixFlowStage) {
+    return this.referralService.getMatrixFlow(stage).pipe(
+      map((response) => {
+        if (!response?.data) {
+          return { members: [] as FlowStageMember[], totalMembers: 0, stageLabel: '' };
+        }
+        const members: FlowStageMember[] = (response.data.users ?? []).map((user) => {
+          const normalized = String(user.status ?? '').trim().toUpperCase();
+          const status: 'ACTIVE' | 'UNPAID' | 'SUSPENDED' =
+            normalized === 'ACTIVE' ? 'ACTIVE' : normalized === 'SUSPENDED' ? 'SUSPENDED' : 'UNPAID';
+          return {
+            id: user.id,
+            username: user.username,
+            joinDate: user.joinDate,
+            status,
+            rank: user.rank,
+            stageLabel: user.stageLabel,
+            rankingLevel: user.rankingLevel,
+            isCurrentUser: user.isCurrentUser,
+          };
+        });
+        return {
+          members,
+          totalMembers: Number.isFinite(Number(response.data.totalUsers))
+            ? Number(response.data.totalUsers)
+            : members.length,
+          stageLabel: response.data.stageLabel ?? '',
+        };
+      }),
+      catchError(() => of({ members: [] as FlowStageMember[], totalMembers: 0, stageLabel: '' })),
+    );
+  }
+
+  private buildTreeFromDownlines(
+    downlines: DownlineItem[],
+    profile?: Record<string, unknown> | null,
+  ): MatrixNode {
     const level1 = downlines.filter((d) => d.level === 1);
     const level2 = downlines.filter((d) => d.level === 2);
     const positions: ('left' | 'center' | 'right')[] = ['left', 'center', 'right'];
@@ -270,7 +337,7 @@ export class NetworkService {
           stage: d2.stage,
           directReferrals: d2.totalDirects,
           teamSize: d2.teamSize,
-          children: []
+          children: [],
         }));
       l2Offset += childCount;
 
@@ -283,7 +350,7 @@ export class NetworkService {
           status: 'empty',
           parentId: d.id,
           position: positions[childNodes.length],
-          children: []
+          children: [],
         });
       }
       return {
@@ -298,7 +365,7 @@ export class NetworkService {
         stage: d.stage,
         directReferrals: d.totalDirects,
         teamSize: d.teamSize,
-        children: childNodes
+        children: childNodes,
       };
     });
 
@@ -312,10 +379,37 @@ export class NetworkService {
         parentId: 'root',
         position: positions[children.length],
         children: [
-          { id: `e-${children.length}-0`, username: 'Empty Slot', package: null, level: 2, status: 'empty', parentId: `empty-${children.length}`, position: 'left', children: [] },
-          { id: `e-${children.length}-1`, username: 'Empty Slot', package: null, level: 2, status: 'empty', parentId: `empty-${children.length}`, position: 'center', children: [] },
-          { id: `e-${children.length}-2`, username: 'Empty Slot', package: null, level: 2, status: 'empty', parentId: `empty-${children.length}`, position: 'right', children: [] }
-        ]
+          {
+            id: `e-${children.length}-0`,
+            username: 'Empty Slot',
+            package: null,
+            level: 2,
+            status: 'empty',
+            parentId: `empty-${children.length}`,
+            position: 'left',
+            children: [],
+          },
+          {
+            id: `e-${children.length}-1`,
+            username: 'Empty Slot',
+            package: null,
+            level: 2,
+            status: 'empty',
+            parentId: `empty-${children.length}`,
+            position: 'center',
+            children: [],
+          },
+          {
+            id: `e-${children.length}-2`,
+            username: 'Empty Slot',
+            package: null,
+            level: 2,
+            status: 'empty',
+            parentId: `empty-${children.length}`,
+            position: 'right',
+            children: [],
+          },
+        ],
       });
     }
 
@@ -331,13 +425,13 @@ export class NetworkService {
       status: 'active',
       rank: rootRank || undefined,
       stage: rootStage || undefined,
-      children
+      children,
     };
   }
 
   private buildTreeFromMatrixResponse(
     response: MatrixTreeResponse,
-    profile?: Record<string, unknown> | null
+    profile?: Record<string, unknown> | null,
   ): MatrixNode {
     const levels = response.levels ?? [];
     if (!levels.length) {
@@ -366,7 +460,7 @@ export class NetworkService {
           status,
           rank: user.rank ?? undefined,
           stage: user.stageLabel ?? undefined,
-          children: []
+          children: [],
         };
         nodesByUsername.set(username, node);
         nodesById.set(node.id, node);
@@ -407,7 +501,7 @@ export class NetworkService {
             status: 'empty',
             parentId: node.id,
             position: this.getPositionByIndex(emptyIndex),
-            children: []
+            children: [],
           });
         }
       }
@@ -415,9 +509,10 @@ export class NetworkService {
 
     const rootUsername = String(response.rootUsername ?? '').trim();
     const rootNode =
-      (rootUsername && nodesByUsername.get(rootUsername))
-      || (this.userService.currentUser()?.username && nodesByUsername.get(String(this.userService.currentUser()?.username)))
-      || (levels[0]?.users?.[0]?.username
+      (rootUsername && nodesByUsername.get(rootUsername)) ||
+      (this.userService.currentUser()?.username &&
+        nodesByUsername.get(String(this.userService.currentUser()?.username))) ||
+      (levels[0]?.users?.[0]?.username
         ? nodesByUsername.get(String(levels[0].users[0].username))
         : undefined);
 
@@ -431,6 +526,106 @@ export class NetworkService {
     if (index === 0) return 'left';
     if (index === 1) return 'center';
     return 'right';
+  }
+
+  private normalizeStageResponse(
+    response: MatrixStageResponse,
+    stage: number,
+  ): { members: StageMember[]; totalMembers: number } {
+    if (!response?.data) {
+      return { members: [], totalMembers: 0 };
+    }
+
+    const stageValue = Number(response.data.stage ?? stage);
+    const members = (response.data.members ?? []).map((member) => {
+      const parsedStage = this.readStageNumber(member.stage) ?? stageValue;
+      return {
+        id: member.id,
+        username: member.username,
+        legs: Number(member.legs ?? 0),
+        status: this.normalizeStageStatus(member.status),
+        stage: parsedStage,
+        rank: member.rank ?? undefined,
+      } as StageMember;
+    });
+
+    const totalMembers = Number.isFinite(Number(response.data.totalMembers))
+      ? Number(response.data.totalMembers)
+      : members.length;
+
+    return {
+      members,
+      totalMembers,
+    };
+  }
+
+  private buildStageFallback(stage: number) {
+    const cachedDownlines = this.downlineList();
+    const downlines$ = cachedDownlines.length
+      ? of(cachedDownlines)
+      : this.referralService.getDownlines();
+
+    return downlines$.pipe(
+      map((downlines) => {
+        const members = downlines
+          .map((item) => this.mapDownlineToStageMember(item, stage))
+          .filter((member): member is StageMember => member !== null);
+
+        return {
+          members,
+          totalMembers: members.length,
+        };
+      }),
+    );
+  }
+
+  private mapDownlineToStageMember(item: DownlineItem, stage: number): StageMember | null {
+    const parsedStage = this.readStageNumber(item.stage) ?? item.level;
+    if (parsedStage !== stage) {
+      return null;
+    }
+
+    return {
+      id: item.id,
+      username: item.username,
+      legs: item.totalDirects,
+      status: item.status === 'active' ? 'active' : 'inactive',
+      stage,
+      rank: item.rank,
+    };
+  }
+
+  private normalizeStageStatus(status: unknown): 'active' | 'inactive' {
+    if (status === true) return 'active';
+    const normalized = String(status ?? '')
+      .trim()
+      .toLowerCase();
+    if (!normalized) return 'inactive';
+    if (['active', 'paid', 'enabled', 'approved'].includes(normalized)) return 'active';
+    return 'inactive';
+  }
+
+  private readStageNumber(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return Math.trunc(value);
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      const stageMatch = trimmed.match(/stage\s*(\d+)/i);
+      if (stageMatch?.[1]) return Number(stageMatch[1]);
+      const asNumber = Number(trimmed);
+      if (Number.isFinite(asNumber)) return Math.trunc(asNumber);
+    }
+
+    return null;
+  }
+
+  private clampStage(stage: number): number {
+    const numeric = Number(stage);
+    if (!Number.isFinite(numeric)) return 1;
+    return Math.min(13, Math.max(1, Math.trunc(numeric)));
   }
 
   getReferralLink() {

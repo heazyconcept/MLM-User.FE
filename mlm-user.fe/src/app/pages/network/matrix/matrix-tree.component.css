@@ -1,0 +1,24 @@
+
+/* matrix-tree.component.css */
+
+/* ── Remove PrimeNG's default grey node border & shadow ── */
+::ng-deep .p-organizationchart-node-content {
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* ── Remove the default connector line color if needed ── */
+::ng-deep .p-organizationchart-line-down,
+::ng-deep .p-organizationchart-line-left,
+::ng-deep .p-organizationchart-line-right,
+::ng-deep .p-organizationchart-line-top {
+  border-color: #d1d5db !important; /* keep connector lines but use a soft gray */
+}
+
+/* ── Remove selected node highlight ring PrimeNG adds ── */
+::ng-deep .p-organizationchart-node-content.p-highlight {
+  border: none !important;
+  background: transparent !important;
+}
