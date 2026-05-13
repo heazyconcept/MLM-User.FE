@@ -11,7 +11,9 @@ import {
   NotificationListResponse,
   BackendNotificationCategory,
   ApiNotificationItem,
+  NotificationType,
   notificationTypeToUiType,
+  NOTIFICATION_TYPE_TO_CATEGORY,
 } from '../core/models/notifications';
 
 /** Max number of catch-up notifications to show as modals (rest go silently to list). */
@@ -32,7 +34,13 @@ export class RealTimeNotificationService {
   private api = inject(ApiService);
 
   private socket: Socket | null = null;
-  private notificationQueue: Array<{ type: ModalType; title: string; message: string }> = [];
+  private notificationQueue: Array<{
+    type: ModalType;
+    title: string;
+    message: string;
+    redirectTo?: string;
+    actionLabel?: string;
+  }> = [];
   private isShowingModal = false;
   private initialized = false;
 
@@ -125,10 +133,14 @@ export class RealTimeNotificationService {
 
           toShow.forEach((notif) => {
             const uiType = notificationTypeToUiType(notif.type);
-            const modalType = this.uiTypeToModalType(uiType);
+            const isEarnings = this.isEarningsNotification(notif.type);
+            const modalType = isEarnings ? 'celebration' : this.uiTypeToModalType(uiType);
             const title = notif.title ?? notif.type.replace(/_/g, ' ');
             const message = notif.message ?? notif.body ?? '';
-            this.enqueueNotification(modalType, title, message);
+            const action = isEarnings
+              ? this.getEarningsAction(notif.actionUrl, notif.actionLabel)
+              : undefined;
+            this.enqueueNotification(modalType, title, message, action);
           });
 
           // Mark all as read
@@ -258,8 +270,14 @@ export class RealTimeNotificationService {
   private handleLiveNotification(payload: NotificationWirePayload): void {
     // Determine modal type from the notification category/type
     const modalType = this.categoryToModalType(payload.category);
+    const action = modalType === 'celebration'
+      ? this.getEarningsAction(
+          this.getMetadataString(payload.metadata, 'actionUrl'),
+          this.getMetadataString(payload.metadata, 'actionLabel')
+        )
+      : undefined;
 
-    this.enqueueNotification(modalType, payload.title, payload.message);
+    this.enqueueNotification(modalType, payload.title, payload.message, action);
 
     // Mark as read immediately (single notification)
     this.markNotificationsAsRead([payload.id]);
@@ -270,8 +288,13 @@ export class RealTimeNotificationService {
 
   // ─── Notification Queue (Modal) ──────────────────────────────────────
 
-  private enqueueNotification(type: ModalType, title: string, message: string): void {
-    this.notificationQueue.push({ type, title, message });
+  private enqueueNotification(
+    type: ModalType,
+    title: string,
+    message: string,
+    action?: { redirectTo?: string; actionLabel?: string }
+  ): void {
+    this.notificationQueue.push({ type, title, message, ...action });
     this.showNextIfIdle();
   }
 
@@ -284,17 +307,24 @@ export class RealTimeNotificationService {
     const next = this.notificationQueue.shift()!;
     this.isShowingModal = true;
 
-    this.modalService.openWithCallback(next.type, next.title, next.message, () => {
-      this.isShowingModal = false;
-      this.showNextIfIdle();
-    });
+    this.modalService.openWithCallback(
+      next.type,
+      next.title,
+      next.message,
+      () => {
+        this.isShowingModal = false;
+        this.showNextIfIdle();
+      },
+      next.redirectTo,
+      next.actionLabel
+    );
   }
 
   // ─── Type Mapping Helpers ────────────────────────────────────────────
 
   private categoryToModalType(category: BackendNotificationCategory): ModalType {
     const map: Record<BackendNotificationCategory, ModalType> = {
-      EARNING: 'success',
+      EARNING: 'celebration',
       WALLET: 'info',
       PAYMENT: 'info',
       ORDER: 'info',
@@ -308,6 +338,26 @@ export class RealTimeNotificationService {
 
   private uiTypeToModalType(uiType: 'info' | 'success' | 'warning' | 'error'): ModalType {
     return uiType;
+  }
+
+  private isEarningsNotification(type: NotificationType): boolean {
+    return NOTIFICATION_TYPE_TO_CATEGORY[type] === 'earnings';
+  }
+
+  private getEarningsAction(actionUrl?: string, actionLabel?: string) {
+    return {
+      redirectTo: actionUrl ?? '/commissions',
+      actionLabel: actionLabel ?? 'View details',
+    };
+  }
+
+  private getMetadataString(
+    metadata: Record<string, unknown> | undefined,
+    key: string
+  ): string | undefined {
+    if (!metadata) return undefined;
+    const value = metadata[key];
+    return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
   }
 
   // ─── Cleanup ─────────────────────────────────────────────────────────

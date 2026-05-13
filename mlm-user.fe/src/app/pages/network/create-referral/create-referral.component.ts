@@ -410,10 +410,12 @@ export class CreateReferralComponent implements OnInit {
         this.ref.close(true);
         const returnUrl = this.config.data?.returnUrl ?? '/network';
         this.modalService.open(
-          'success',
+          'celebration',
           'Referral Created',
           `New member ${username} has been registered and activated under your network.`,
-          returnUrl
+          returnUrl,
+          'Continue',
+          '/Share.json'
         );
         // Refresh wallet + network data
         this.walletService.fetchWallets().subscribe();
