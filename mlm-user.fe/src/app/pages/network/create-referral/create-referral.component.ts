@@ -411,7 +411,7 @@ export class CreateReferralComponent implements OnInit {
         const returnUrl = this.config.data?.returnUrl ?? '/network';
         this.modalService.open(
           'celebration',
-          'Referral Created',
+          'Successline Created',
           `New member ${username} has been registered and activated under your network.`,
           returnUrl,
           'Continue',

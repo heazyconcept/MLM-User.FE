@@ -3,23 +3,26 @@ import {
   inject,
   ChangeDetectionStrategy,
   signal,
+  linkedSignal,
   ChangeDetectorRef,
   OnInit,
   computed
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
 import { MessageModule } from 'primeng/message';
 import { PaymentService } from '../../services/payment.service';
 import { UserService } from '../../services/user.service';
 import { RegistrationService, type RegistrationWallet } from '../../services/registration.service';
-import { getRequiredAmount, REGISTRATION_FEE_NGN, IPV_PERCENT, NGN_TO_USD_RATE } from '../../core/constants/registration.constants';
+import { getRequiredAmount, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, IPV_PERCENT, NGN_TO_USD_RATE } from '../../core/constants/registration.constants';
 
 @Component({
   selector: 'app-activation-choice',
   standalone: true,
-  imports: [CommonModule, RouterModule, ButtonModule, MessageModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, SelectModule, MessageModule],
   templateUrl: './activation-choice.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -38,7 +41,30 @@ export class ActivationChoiceComponent implements OnInit {
 
   userCurrency = computed(() => this.userService.currentUser()?.currency ?? 'NGN');
   userPackage = computed(() => this.userService.currentUser()?.package ?? 'NICKEL');
-  requiredAmount = computed(() => getRequiredAmount(this.userPackage(), this.userCurrency()));
+  selectedPackage = linkedSignal(() => this.userPackage());
+  selectedPackageLabel = computed(() => {
+    const pkg = this.selectedPackage();
+    return pkg.charAt(0) + pkg.slice(1).toLowerCase();
+  });
+  requiredAmount = computed(() => getRequiredAmount(this.selectedPackage(), this.userCurrency()));
+
+  packageBaseOptions = [
+    { label: 'Nickel', value: 'NICKEL' },
+    { label: 'Silver', value: 'SILVER' },
+    { label: 'Gold', value: 'GOLD' },
+    { label: 'Platinum', value: 'PLATINUM' },
+    { label: 'Ruby', value: 'RUBY' },
+    { label: 'Diamond', value: 'DIAMOND' }
+  ];
+
+  packageOptions = computed(() => {
+    const currency = this.userCurrency();
+
+    return this.packageBaseOptions.map((pkg) => ({
+      ...pkg,
+      label: `${pkg.label} (${this.getPackagePriceLabel(pkg.value, currency)})`
+    }));
+  });
 
   canActivate = computed(() => {
     const wallet = this.registrationWallet();
@@ -94,7 +120,7 @@ export class ActivationChoiceComponent implements OnInit {
     this.cdr.markForCheck();
 
     const user = this.userService.currentUser();
-    const packageName = user?.package ?? 'SILVER';
+    const packageName = this.selectedPackage();
     const currency = user?.currency ?? 'NGN';
     const callbackUrl = typeof window !== 'undefined'
       ? `${window.location.origin}/auth/payment/callback`
@@ -164,5 +190,25 @@ export class ActivationChoiceComponent implements OnInit {
   formatAmount(amount: number, currency: 'NGN' | 'USD'): string {
     const sym = currency === 'NGN' ? '₦' : '$';
     return `${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  onPackageChange(packageCode: string): void {
+    this.selectedPackage.set((packageCode ?? 'NICKEL').toUpperCase());
+    this.cdr.markForCheck();
+  }
+
+  private getPackagePriceLabel(packageCode: string, currency: string): string {
+    const registrationFeeNgn = REGISTRATION_FEE_NGN[packageCode] ?? REGISTRATION_FEE_NGN['NICKEL'];
+    const adminFeeNgn = ADMIN_FEE_NGN[packageCode] ?? ADMIN_FEE_NGN['NICKEL'];
+    const totalNgn = registrationFeeNgn + adminFeeNgn;
+
+    if (currency === 'USD') {
+      const registrationFeeUsd = Math.round(registrationFeeNgn / NGN_TO_USD_RATE);
+      const adminFeeUsd = Math.round(adminFeeNgn / NGN_TO_USD_RATE);
+      const totalUsd = registrationFeeUsd + adminFeeUsd;
+      return `$${registrationFeeUsd.toLocaleString()} reg + $${adminFeeUsd.toLocaleString()} admin = $${totalUsd.toLocaleString()}`;
+    }
+
+    return `₦${registrationFeeNgn.toLocaleString()} reg + ₦${adminFeeNgn.toLocaleString()} admin = ₦${totalNgn.toLocaleString()}`;
   }
 }
