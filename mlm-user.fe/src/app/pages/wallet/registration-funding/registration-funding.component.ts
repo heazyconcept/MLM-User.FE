@@ -10,7 +10,7 @@ import { DynamicDialogConfig, DynamicDialogRef, DynamicDialogModule } from 'prim
 import { PaymentService } from '../../../services/payment.service';
 import { UserService } from '../../../services/user.service';
 import { WalletService } from '../../../services/wallet.service';
-import { getRequiredAmount } from '../../../core/constants/registration.constants';
+import { getRequiredAmount, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, NGN_TO_USD_RATE } from '../../../core/constants/registration.constants';
 
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const REGISTRATION_FUNDING_FLOW = 'registration_funding';
@@ -46,6 +46,20 @@ const PROVIDER_OPTIONS_USD: { value: ProviderOption; label: string }[] = [
       @if (state() === 'form') {
         <form [formGroup]="fundForm" (ngSubmit)="onSubmit()" class="space-y-4">
 
+          <!-- Package -->
+          <div class="flex flex-col gap-1.5">
+            <label for="reg-package" class="text-sm font-semibold text-gray-700">Package</label>
+            <p-select
+              formControlName="package"
+              inputId="reg-package"
+              [options]="packageOptions()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select package"
+              styleClass="w-full">
+            </p-select>
+          </div>
+
           <!-- Amount -->
           <div class="flex flex-col gap-1.5">
             <label for="reg-amount" class="text-sm font-semibold text-gray-700">Amount</label>
@@ -56,9 +70,13 @@ const PROVIDER_OPTIONS_USD: { value: ProviderOption; label: string }[] = [
               [currency]="currency()"
               [currencyDisplay]="'symbol'"
               [min]="1"
+              [readonly]="true"
               fluid="true"
               placeholder="0.00">
             </p-inputNumber>
+            <small class="text-xs text-gray-500">
+              {{ selectedPackageLabel() }} package requires {{ currencySymbol() }}{{ requiredAmount() | number:'1.2-2' }}.
+            </small>
             @if (fundForm.get('amount')?.invalid && (fundForm.get('amount')?.dirty || fundForm.get('amount')?.touched)) {
               <small class="text-red-500 text-xs">
                 @if (fundForm.get('amount')?.errors?.['required']) {
@@ -177,13 +195,31 @@ export class RegistrationFundingComponent {
   currencySymbol = computed(() => (this.currency() === 'NGN' ? '₦' : '$'));
 
   /** Package context for this funding flow (fixed for the modal session). */
-  selectedPackage = signal(this.userService.currentUser()?.package ?? 'SILVER');
+  selectedPackage = signal('SILVER');
   selectedPackageLabel = computed(() => {
     const pkg = this.selectedPackage();
     return pkg.charAt(0) + pkg.slice(1).toLowerCase();
   });
 
   requiredAmount = computed(() => getRequiredAmount(this.selectedPackage(), this.currency()));
+
+  packageBaseOptions = [
+    { label: 'Nickel', value: 'NICKEL' },
+    { label: 'Silver', value: 'SILVER' },
+    { label: 'Gold', value: 'GOLD' },
+    { label: 'Platinum', value: 'PLATINUM' },
+    { label: 'Ruby', value: 'RUBY' },
+    { label: 'Diamond', value: 'DIAMOND' }
+  ];
+
+  packageOptions = computed(() => {
+    const currency = this.currency();
+
+    return this.packageBaseOptions.map((pkg) => ({
+      ...pkg,
+      label: `${pkg.label} (${this.getPackagePriceLabel(pkg.value, currency)})`
+    }));
+  });
 
   providerOptions = computed(() =>
     this.currency() === 'NGN' ? PROVIDER_OPTIONS_NGN : PROVIDER_OPTIONS_USD
@@ -198,9 +234,18 @@ export class RegistrationFundingComponent {
     this.selectedPackage.set(defaultPkg);
 
     this.fundForm = this.fb.group({
+      package: [defaultPkg, Validators.required],
       amount: [null as number | null, [Validators.required, Validators.min(1)]],
       provider: [(currency === 'NGN' ? 'PAYSTACK' : 'USDT') as ProviderOption, Validators.required]
     });
+
+    this.fundForm.get('package')?.valueChanges.subscribe((pkg: string) => {
+      const normalized = (pkg ?? 'SILVER').toUpperCase();
+      this.selectedPackage.set(normalized);
+      this.fundForm.get('amount')?.setValue(this.requiredAmount(), { emitEvent: false });
+    });
+
+    this.fundForm.get('amount')?.setValue(this.requiredAmount(), { emitEvent: false });
   }
 
   onSubmit(): void {
@@ -296,5 +341,20 @@ export class RegistrationFundingComponent {
 
   cancel(): void {
     this.ref.close();
+  }
+
+  private getPackagePriceLabel(packageCode: string, currency: string): string {
+    const registrationFeeNgn = REGISTRATION_FEE_NGN[packageCode] ?? REGISTRATION_FEE_NGN['NICKEL'];
+    const adminFeeNgn = ADMIN_FEE_NGN[packageCode] ?? ADMIN_FEE_NGN['NICKEL'];
+    const totalNgn = registrationFeeNgn + adminFeeNgn;
+
+    if (currency === 'USD') {
+      const registrationFeeUsd = Math.round(registrationFeeNgn / NGN_TO_USD_RATE);
+      const adminFeeUsd = Math.round(adminFeeNgn / NGN_TO_USD_RATE);
+      const totalUsd = registrationFeeUsd + adminFeeUsd;
+      return `$${registrationFeeUsd.toLocaleString()} reg + $${adminFeeUsd.toLocaleString()} admin = $${totalUsd.toLocaleString()}`;
+    }
+
+    return `₦${registrationFeeNgn.toLocaleString()} reg + ₦${adminFeeNgn.toLocaleString()} admin = ₦${totalNgn.toLocaleString()}`;
   }
 }
