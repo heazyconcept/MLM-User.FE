@@ -241,10 +241,7 @@ export class RegistrationFundingComponent {
     this.fundForm.get('package')?.valueChanges.subscribe((pkg: string) => {
       const normalized = (pkg ?? 'SILVER').toUpperCase();
       this.selectedPackage.set(normalized);
-      this.fundForm.get('amount')?.setValue(this.requiredAmount(), { emitEvent: false });
     });
-
-    this.fundForm.get('amount')?.setValue(this.requiredAmount(), { emitEvent: false });
   }
 
   onSubmit(): void {
