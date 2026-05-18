@@ -836,7 +836,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   openRegistrationFundingDialog(): void {
     const dialogRef = this.dialogService.open(RegistrationFundingComponent, {
       header: 'Fund Registration Wallet',
-      width: '480px',
+      width: 'min(480px, 92vw)',
       contentStyle: { 'max-height': '650px', overflow: 'auto' },
       baseZIndex: 10000,
       data: {
