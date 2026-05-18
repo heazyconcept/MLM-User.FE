@@ -46,20 +46,6 @@ const PROVIDER_OPTIONS_USD: { value: ProviderOption; label: string }[] = [
       @if (state() === 'form') {
         <form [formGroup]="fundForm" (ngSubmit)="onSubmit()" class="space-y-4">
 
-          <!-- Package -->
-          <div class="flex flex-col gap-1.5">
-            <label for="reg-package" class="text-sm font-semibold text-gray-700">Package</label>
-            <p-select
-              formControlName="package"
-              inputId="reg-package"
-              [options]="packageOptions()"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select package"
-              styleClass="w-full">
-            </p-select>
-          </div>
-
           <!-- Amount -->
           <div class="flex flex-col gap-1.5">
             <label for="reg-amount" class="text-sm font-semibold text-gray-700">Amount</label>
@@ -233,14 +219,8 @@ export class RegistrationFundingComponent {
     this.selectedPackage.set(defaultPkg);
 
     this.fundForm = this.fb.group({
-      package: [defaultPkg, Validators.required],
       amount: [null as number | null, [Validators.required, Validators.min(1)]],
       provider: [(currency === 'NGN' ? 'PAYSTACK' : 'USDT') as ProviderOption, Validators.required]
-    });
-
-    this.fundForm.get('package')?.valueChanges.subscribe((pkg: string) => {
-      const normalized = (pkg ?? 'SILVER').toUpperCase();
-      this.selectedPackage.set(normalized);
     });
   }
 
