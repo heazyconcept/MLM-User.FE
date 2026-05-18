@@ -133,7 +133,7 @@ export class RegisterComponent implements OnInit {
     currency: ['', [Validators.required]],
     referralUsername: [environment.defaultReferralUsername ?? ''],
     placementParentUsername: [''],
-    acceptTerms: [false, [Validators.requiredTrue]]
+    acceptTerms: [true, [Validators.requiredTrue]]
   }, { validators: this.passwordMatchValidator });
 
   private passwordValue = toSignal(
