@@ -70,12 +70,11 @@ const PROVIDER_OPTIONS_USD: { value: ProviderOption; label: string }[] = [
               [currency]="currency()"
               [currencyDisplay]="'symbol'"
               [min]="1"
-              [readonly]="true"
               fluid="true"
               placeholder="0.00">
             </p-inputNumber>
             <small class="text-xs text-gray-500">
-              {{ selectedPackageLabel() }} package requires {{ currencySymbol() }}{{ requiredAmount() | number:'1.2-2' }}.
+              {{ selectedPackageLabel() }} package requires {{ currencySymbol() }}{{ requiredAmount() | number:'1.2-2' }} total to activate.
             </small>
             @if (fundForm.get('amount')?.invalid && (fundForm.get('amount')?.dirty || fundForm.get('amount')?.touched)) {
               <small class="text-red-500 text-xs">

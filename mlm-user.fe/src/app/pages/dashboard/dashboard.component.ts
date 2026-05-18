@@ -34,6 +34,10 @@ import {
   DashboardOverview,
   DashboardTransaction,
 } from '../../services/dashboard.service';
+import { RegistrationService, type RegistrationWallet } from '../../services/registration.service';
+import { RegistrationFundingComponent } from '../wallet/registration-funding/registration-funding.component';
+import { DialogService } from 'primeng/dynamicdialog';
+import { getRequiredAmount } from '../../core/constants/registration.constants';
 import { OverlayOptions } from 'primeng/api';
 import { signal } from '@angular/core';
 
@@ -83,6 +87,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private activityService = inject(ActivityService);
   private notificationService = inject(NotificationService);
   private dashboardService = inject(DashboardService);
+  private registrationService = inject(RegistrationService);
+  private dialogService = inject(DialogService);
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
 
@@ -112,6 +118,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
   paymentStatus = this.userService.paymentStatus;
   displayCurrency = this.userService.displayCurrency;
   unreadCount = this.notificationService.unreadCount;
+
+  // Registration wallet state (for unpaid users)
+  registrationWallet = signal<RegistrationWallet | null>(null);
+  registrationWalletLoading = signal(false);
+
+  registrationRequired = computed(() => {
+    const user = this.currentUser();
+    const pkg = user?.package ?? 'NICKEL';
+    const currency = (user?.currency ?? 'NGN') as 'NGN' | 'USD';
+    return getRequiredAmount(pkg, currency);
+  });
+
+  registrationProgress = computed(() => {
+    const wallet = this.registrationWallet();
+    const required = this.registrationRequired();
+    if (!wallet || required === 0) return 0;
+    return Math.min(100, Math.round((wallet.balance / required) * 100));
+  });
+
+  registrationShortfall = computed(() => {
+    const wallet = this.registrationWallet();
+    const required = this.registrationRequired();
+    if (!wallet) return required;
+    return Math.max(0, required - wallet.balance);
+  });
 
   ngnSummary = this.commissionService.getSummary('NGN');
   usdSummary = this.commissionService.getSummary('USD');
@@ -563,6 +594,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Load registration wallet for unpaid users
+    if (!this.isPaid()) {
+      this.registrationWalletLoading.set(true);
+      this.registrationService.getRegistrationWallet().subscribe({
+        next: (wallet) => {
+          this.registrationWallet.set(wallet);
+          this.registrationWalletLoading.set(false);
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.registrationWalletLoading.set(false);
+          this.cdr.markForCheck();
+        },
+      });
+    }
+
     // Fetch wallets and earnings when user is paid (for balance/earnings display)
     if (this.isPaid()) {
       this.dashboardService.getOverview().subscribe({
@@ -784,6 +831,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   navigateToPayment(): void {
     this.router.navigate(['/auth/activation']);
+  }
+
+  openRegistrationFundingDialog(): void {
+    const dialogRef = this.dialogService.open(RegistrationFundingComponent, {
+      header: 'Fund Registration Wallet',
+      width: '480px',
+      contentStyle: { 'max-height': '650px', overflow: 'auto' },
+      baseZIndex: 10000,
+      data: {
+        selectedPackage: this.currentUser()?.package ?? 'NICKEL',
+        returnAfterFundingUrl: '/dashboard'
+      }
+    });
+
+    dialogRef?.onClose.subscribe((funded: boolean) => {
+      if (funded) {
+        this.registrationService.getRegistrationWallet().subscribe({
+          next: (wallet) => {
+            this.registrationWallet.set(wallet);
+            this.cdr.markForCheck();
+          }
+        });
+      }
+    });
+  }
+
+  formatRegistrationAmount(amount: number): string {
+    const user = this.currentUser();
+    const currency = user?.currency ?? 'NGN';
+    const sym = currency === 'NGN' ? '₦' : '$';
+    return `${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   onPaymentSubmit(): void {
