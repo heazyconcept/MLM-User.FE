@@ -86,6 +86,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
+      // Skip modal for 403 "registration payment required" — this is expected for unpaid users
+      if (error.status === 403 && errorMessage.toLowerCase().includes('registration payment required')) {
+        return throwError(() => error);
+      }
+
       modalService.open('error', 'Error', errorMessage);
       return throwError(() => error);
     })
