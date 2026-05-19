@@ -37,6 +37,20 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
     return null;
   };
 
+  const sanitizeUserFacingError = (message: string): string => {
+    const normalized = message.trim().toLowerCase();
+
+    if (
+      normalized.includes('database operation failed') ||
+      normalized.includes('database error') ||
+      normalized.includes('internal server error')
+    ) {
+      return 'Unable to complete the request. Please try again.';
+    }
+
+    return message;
+  };
+
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       let errorMessage = 'An unknown error occurred!';
@@ -61,7 +75,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           return throwError(() => error);
         }
 
-        errorMessage = getBackendErrorMessage(error.error) ?? error.message ?? 'Request failed. Please try again.';
+        errorMessage = sanitizeUserFacingError(
+          getBackendErrorMessage(error.error) ?? error.message ?? 'Request failed. Please try again.'
+        );
 
         if (error.status === 400 && typeof ngDevMode !== 'undefined' && ngDevMode) {
           console.error('API 400:', error.error);
@@ -88,6 +104,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
       // Skip modal for 403 "registration payment required" — this is expected for unpaid users
       if (error.status === 403 && errorMessage.toLowerCase().includes('registration payment required')) {
+        return throwError(() => error);
+      }
+
+      // Notification flows handle their own fallbacks locally, so do not show the global modal for them.
+      if (req.url.includes('notifications')) {
         return throwError(() => error);
       }
 
