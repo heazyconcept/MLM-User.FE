@@ -56,10 +56,18 @@ export class DownlineListComponent implements OnInit {
     return this.members().filter(m => {
       const matchesSearch = !query || m.username.toLowerCase().includes(query) || m.fullName.toLowerCase().includes(query);
       const matchesLevel = level === 'all' || m.level === level;
-      const matchesStage = stage === 'all' || (m.stage ?? '').toLowerCase() === stage.toLowerCase();
+      const matchesStage = stage === 'all' || this.normalizeRank(m.rank) === stage.toLowerCase();
       return matchesSearch && matchesLevel && matchesStage;
     });
   });
+
+  private normalizeRank(rank: string | undefined | null): string {
+    if (!rank) return '';
+    const upper = rank.toUpperCase();
+    // STAKEHOLDER => "Entry Level" per the level commission table
+    if (upper === 'STAKEHOLDER') return 'entry level';
+    return rank.toLowerCase();
+  }
 
   /** Fixed levels 1 through 13 (the full MLM compensation tree). */
   levelOptions = computed(() => Array.from({ length: 13 }, (_, i) => i + 1));

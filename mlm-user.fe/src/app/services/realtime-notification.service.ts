@@ -15,6 +15,7 @@ import {
   notificationTypeToUiType,
   NOTIFICATION_TYPE_TO_CATEGORY,
 } from '../core/models/notifications';
+import { RankUpgradeInfo } from './modal.service';
 
 /** Max number of catch-up notifications to show as modals (rest go silently to list). */
 const MAX_CATCHUP_MODALS = 3;
@@ -40,6 +41,9 @@ export class RealTimeNotificationService {
     message: string;
     redirectTo?: string;
     actionLabel?: string;
+    amount?: number;
+    currency?: string;
+    rankInfo?: RankUpgradeInfo;
   }> = [];
   private isShowingModal = false;
   private initialized = false;
@@ -134,13 +138,33 @@ export class RealTimeNotificationService {
           toShow.forEach((notif) => {
             const uiType = notificationTypeToUiType(notif.type);
             const isEarnings = this.isEarningsNotification(notif.type);
-            const modalType = isEarnings ? 'celebration' : this.uiTypeToModalType(uiType);
+            const isRankUpgrade = notif.type === 'RANK_UPGRADED';
+            const isCpvMilestone = notif.type === 'CPV_MILESTONE_REACHED';
+            const modalType: ModalType = isRankUpgrade
+              ? 'rank-upgrade'
+              : isCpvMilestone
+                ? 'cpv-milestone'
+                : isEarnings
+                  ? 'celebration'
+                  : this.uiTypeToModalType(uiType);
+            const carriesAmount = (isEarnings && !isRankUpgrade) || isCpvMilestone;
             const title = notif.title ?? notif.type.replace(/_/g, ' ');
             const message = notif.message ?? notif.body ?? '';
-            const action = isEarnings
-              ? this.getEarningsAction(notif.actionUrl, notif.actionLabel)
+            const action = isRankUpgrade
+              ? this.getRankUpgradeAction(notif.actionUrl, notif.actionLabel)
+              : isCpvMilestone
+                ? this.getCpvMilestoneAction(notif.actionUrl, notif.actionLabel)
+                : isEarnings
+                  ? this.getEarningsAction(notif.actionUrl, notif.actionLabel)
+                  : undefined;
+            const amount = carriesAmount
+              ? notif.amount ?? this.getMetadataNumber(notif.metadata, 'amount')
               : undefined;
-            this.enqueueNotification(modalType, title, message, action);
+            const currency = carriesAmount
+              ? notif.currency ?? this.getMetadataString(notif.metadata, 'currency')
+              : undefined;
+            const rankInfo = isRankUpgrade ? this.extractRankInfo(notif.metadata) : undefined;
+            this.enqueueNotification(modalType, title, message, action, amount, currency, rankInfo);
           });
 
           // Mark all as read
@@ -269,15 +293,49 @@ export class RealTimeNotificationService {
 
   private handleLiveNotification(payload: NotificationWirePayload): void {
     // Determine modal type from the notification category/type
-    const modalType = this.categoryToModalType(payload.category);
-    const action = modalType === 'celebration'
-      ? this.getEarningsAction(
+    const isRankUpgrade = payload.type === 'RANK_UPGRADED';
+    const isCpvMilestone = payload.type === 'CPV_MILESTONE_REACHED';
+    const baseModalType = this.categoryToModalType(payload.category);
+    const modalType: ModalType = isRankUpgrade
+      ? 'rank-upgrade'
+      : isCpvMilestone
+        ? 'cpv-milestone'
+        : baseModalType;
+    const isCelebration = modalType === 'celebration';
+    const carriesAmount = isCelebration || isCpvMilestone;
+    const action = isRankUpgrade
+      ? this.getRankUpgradeAction(
           this.getMetadataString(payload.metadata, 'actionUrl'),
           this.getMetadataString(payload.metadata, 'actionLabel')
         )
+      : isCpvMilestone
+        ? this.getCpvMilestoneAction(
+            this.getMetadataString(payload.metadata, 'actionUrl'),
+            this.getMetadataString(payload.metadata, 'actionLabel')
+          )
+        : isCelebration
+          ? this.getEarningsAction(
+              this.getMetadataString(payload.metadata, 'actionUrl'),
+              this.getMetadataString(payload.metadata, 'actionLabel')
+            )
+          : undefined;
+    const amount = carriesAmount
+      ? payload.amount ?? this.getMetadataNumber(payload.metadata, 'amount')
       : undefined;
+    const currency = carriesAmount
+      ? payload.currency ?? this.getMetadataString(payload.metadata, 'currency')
+      : undefined;
+    const rankInfo = isRankUpgrade ? this.extractRankInfo(payload.metadata) : undefined;
 
-    this.enqueueNotification(modalType, payload.title, payload.message, action);
+    this.enqueueNotification(
+      modalType,
+      payload.title,
+      payload.message,
+      action,
+      amount,
+      currency,
+      rankInfo
+    );
 
     // Mark as read immediately (single notification)
     this.markNotificationsAsRead([payload.id]);
@@ -292,9 +350,12 @@ export class RealTimeNotificationService {
     type: ModalType,
     title: string,
     message: string,
-    action?: { redirectTo?: string; actionLabel?: string }
+    action?: { redirectTo?: string; actionLabel?: string },
+    amount?: number,
+    currency?: string,
+    rankInfo?: RankUpgradeInfo
   ): void {
-    this.notificationQueue.push({ type, title, message, ...action });
+    this.notificationQueue.push({ type, title, message, ...action, amount, currency, rankInfo });
     this.showNextIfIdle();
   }
 
@@ -316,7 +377,11 @@ export class RealTimeNotificationService {
         this.showNextIfIdle();
       },
       next.redirectTo,
-      next.actionLabel
+      next.actionLabel,
+      undefined,
+      next.amount,
+      next.currency,
+      next.rankInfo
     );
   }
 
@@ -351,6 +416,47 @@ export class RealTimeNotificationService {
     };
   }
 
+  private getRankUpgradeAction(actionUrl?: string, actionLabel?: string) {
+    return {
+      redirectTo: actionUrl ?? '/profile',
+      actionLabel: actionLabel ?? 'View Rank Details',
+    };
+  }
+
+  private getCpvMilestoneAction(actionUrl?: string, actionLabel?: string) {
+    return {
+      redirectTo: actionUrl ?? '/commissions',
+      actionLabel: actionLabel ?? 'View Earnings',
+    };
+  }
+
+  /** Pull rank-upgrade fields from notification metadata, accepting a few common key shapes. */
+  private extractRankInfo(metadata: Record<string, unknown> | undefined): RankUpgradeInfo {
+    return {
+      previousRank:
+        this.getMetadataString(metadata, 'previousRank') ??
+        this.getMetadataString(metadata, 'oldRank') ??
+        this.getMetadataString(metadata, 'fromRank'),
+      previousRankSubtitle:
+        this.getMetadataString(metadata, 'previousRankSubtitle') ??
+        this.getMetadataString(metadata, 'oldRankSubtitle') ??
+        this.getMetadataString(metadata, 'fromRankSubtitle'),
+      newRank:
+        this.getMetadataString(metadata, 'newRank') ??
+        this.getMetadataString(metadata, 'currentRank') ??
+        this.getMetadataString(metadata, 'toRank') ??
+        this.getMetadataString(metadata, 'rank'),
+      newRankSubtitle:
+        this.getMetadataString(metadata, 'newRankSubtitle') ??
+        this.getMetadataString(metadata, 'currentRankSubtitle') ??
+        this.getMetadataString(metadata, 'toRankSubtitle') ??
+        this.getMetadataString(metadata, 'rankSubtitle'),
+      unlockedLabel:
+        this.getMetadataString(metadata, 'unlockedLabel') ??
+        this.getMetadataString(metadata, 'unlocked'),
+    };
+  }
+
   private getMetadataString(
     metadata: Record<string, unknown> | undefined,
     key: string
@@ -358,6 +464,20 @@ export class RealTimeNotificationService {
     if (!metadata) return undefined;
     const value = metadata[key];
     return typeof value === 'string' && value.trim().length > 0 ? value : undefined;
+  }
+
+  private getMetadataNumber(
+    metadata: Record<string, unknown> | undefined,
+    key: string
+  ): number | undefined {
+    if (!metadata) return undefined;
+    const value = metadata[key];
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string' && value.trim().length > 0) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : undefined;
+    }
+    return undefined;
   }
 
   // ─── Cleanup ─────────────────────────────────────────────────────────

@@ -12,9 +12,9 @@
 
 <!-- Mobile Sidebar -->
 <aside
-  class="fixed inset-y-0 left-0 z-50 w-full max-w-xs transform transition-transform duration-300 ease-in-out lg:hidden h-screen bg-white border-r border-gray-200 flex flex-col"
-  [class.translate-x-0]="mobileMenuOpen()"
-  [class.-translate-x-full]="!mobileMenuOpen()"
+  class="fixed inset-y-0 left-0 z-50 w-full max-w-xs lg:hidden h-screen bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out"
+  style="transform: translateX(-100%);"
+  [style.transform]="mobileMenuOpen() ? 'translateX(0)' : 'translateX(-100%)'"
   role="navigation"
   [attr.aria-label]="'Main navigation'">
   
@@ -22,7 +22,7 @@
   <div class="p-4 border-b border-gray-100 flex items-center justify-between">
     <div class="flex items-center gap-3">
       <img src="assets/images/logo.png" alt="Logo" class="h-10 w-auto">
-      <span class="font-semibold text-lg text-mlm-text">Segulah</span>
+      <span class="font-semibold text-lg text-mlm-text">Segulah Global</span>
     </div>
     <button 
       (click)="closeMobileMenu()"

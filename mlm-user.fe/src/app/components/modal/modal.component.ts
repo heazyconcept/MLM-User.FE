@@ -53,7 +53,8 @@ export class ModalComponent {
   }
 
   onBackdropClick(): void {
-    if (this.modalService.modalState().type === 'celebration') {
+    const type = this.modalService.modalState().type;
+    if (type === 'celebration' || type === 'rank-upgrade' || type === 'cpv-milestone') {
       this.dismiss();
       return;
     }
@@ -71,6 +72,53 @@ export class ModalComponent {
 
   primaryActionLabel(): string {
     return this.modalService.modalState().actionLabel ?? 'Continue';
+  }
+
+  /**
+   * Format the celebration reward amount using the modal state's currency.
+   * Uses NGN/Naira symbol (₦) by default. Returns an empty string when no
+   * amount is supplied so the reward card can be hidden by the template.
+   */
+  formattedAmount(): string {
+    const state = this.modalService.modalState();
+    const amount = state.amount;
+    if (amount === undefined || amount === null || Number.isNaN(amount)) {
+      return '';
+    }
+
+    const currency = state.currency ?? 'NGN';
+    try {
+      // en-NG renders NGN as the ₦ symbol with grouping and 2 decimals.
+      return new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    } catch {
+      // Fallback if currency code is unsupported by Intl.
+      const symbol = currency === 'NGN' ? '₦' : `${currency} `;
+      return `${symbol}${amount.toFixed(2)}`;
+    }
+  }
+
+  // ── Rank-upgrade accessors ──────────────────────────────────────────
+  rankPrevious(): string {
+    return this.modalService.modalState().rankInfo?.previousRank ?? 'Stakeholder';
+  }
+  rankPreviousSubtitle(): string {
+    return this.modalService.modalState().rankInfo?.previousRankSubtitle ?? '(Entry Level)';
+  }
+  rankNew(): string {
+    return this.modalService.modalState().rankInfo?.newRank ?? 'Mentor';
+  }
+  rankNewSubtitle(): string {
+    return this.modalService.modalState().rankInfo?.newRankSubtitle ?? '(Stage 1, Level 1)';
+  }
+  rankUnlockedLabel(): string {
+    return (
+      this.modalService.modalState().rankInfo?.unlockedLabel ?? 'Stage 1 • Level 1 Unlocked'
+    );
   }
 
   private initCelebrationAnimation(): void {
