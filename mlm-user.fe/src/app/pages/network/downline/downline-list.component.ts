@@ -45,30 +45,35 @@ export class DownlineListComponent implements OnInit {
   members = this.networkService.downlineList;
   searchQuery = signal('');
   filterLevel = signal<number | 'all'>('all');
-  filterPackage = signal<string>('all');
-  filterStatus = signal<string>('all');
+  filterStage = signal<string>('all');
   isLoading = computed(() => this.networkService.isLoading());
   error = computed(() => this.networkService.error() ?? null);
 
   filteredMembers = computed(() => {
     const query = this.searchQuery().toLowerCase();
     const level = this.filterLevel();
-    const pkg = this.filterPackage();
-    const status = this.filterStatus();
+    const stage = this.filterStage();
     return this.members().filter(m => {
       const matchesSearch = !query || m.username.toLowerCase().includes(query) || m.fullName.toLowerCase().includes(query);
       const matchesLevel = level === 'all' || m.level === level;
-      const matchesPackage = pkg === 'all' || m.package.toLowerCase() === pkg.toLowerCase();
-      const matchesStatus = status === 'all' || m.status === status;
-      return matchesSearch && matchesLevel && matchesPackage && matchesStatus;
+      const matchesStage = stage === 'all' || (m.stage ?? '').toLowerCase() === stage.toLowerCase();
+      return matchesSearch && matchesLevel && matchesStage;
     });
   });
 
-  /** Distinct levels in data for filter dropdown (e.g. 1, 2, 3, 4, 5). */
-  levelOptions = computed(() => {
-    const levels = new Set(this.members().map(m => m.level));
-    return Array.from(levels).sort((a, b) => a - b);
-  });
+  /** Fixed levels 1 through 13 (the full MLM compensation tree). */
+  levelOptions = computed(() => Array.from({ length: 13 }, (_, i) => i + 1));
+
+  /** Full list of stages (ranks) — Entry Level first, then progression ranks. */
+  stageOptions = computed(() => [
+    'Entry Level',
+    'Mentor',
+    'Manager',
+    'Senior Manager',
+    'Director',
+    'Senior Director',
+    'Consultant'
+  ]);
 
   ngOnInit(): void {
     this.networkService.fetchNetworkData();
