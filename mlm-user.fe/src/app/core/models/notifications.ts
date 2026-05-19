@@ -51,6 +51,9 @@ export interface ApiNotificationItem {
   createdAt: string;
   actionUrl?: string;
   actionLabel?: string;
+  amount?: number;
+  currency?: string;
+  metadata?: Record<string, unknown>;
 }
 
 /** GET /notifications/unread-count response (number or { count: number }). */

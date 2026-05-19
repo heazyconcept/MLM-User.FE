@@ -1,6 +1,23 @@
 import { Injectable, signal } from '@angular/core';
 
-export type ModalType = 'success' | 'error' | 'info' | 'warning' | 'celebration';
+export type ModalType =
+  | 'success'
+  | 'error'
+  | 'info'
+  | 'warning'
+  | 'celebration'
+  | 'rank-upgrade'
+  | 'cpv-milestone';
+
+/** Information needed to render the rank-upgrade modal. */
+export interface RankUpgradeInfo {
+  previousRank?: string;
+  previousRankSubtitle?: string;
+  newRank?: string;
+  newRankSubtitle?: string;
+  /** Pill text e.g. "Stage 1 • Level 1 Unlocked" */
+  unlockedLabel?: string;
+}
 
 export interface ModalState {
   isOpen: boolean;
@@ -11,6 +28,14 @@ export interface ModalState {
   actionLabel?: string;
   lottiePath?: string;
   onClose?: () => void;
+  /** Earnings amount for celebration modals */
+  amount?: number;
+  /** Currency code (e.g. 'NGN') for celebration modals */
+  currency?: string;
+  /** Rank info for rank-upgrade modals */
+  rankInfo?: RankUpgradeInfo;
+  /** Extra metadata from the notification payload */
+  metadata?: Record<string, unknown>;
 }
 
 @Injectable({
@@ -30,7 +55,10 @@ export class ModalService {
     message: string,
     redirectTo?: string,
     actionLabel?: string,
-    lottiePath?: string
+    lottiePath?: string,
+    amount?: number,
+    currency?: string,
+    rankInfo?: RankUpgradeInfo
   ) {
     this.modalState.set({
       isOpen: true,
@@ -39,7 +67,10 @@ export class ModalService {
       message,
       redirectTo,
       actionLabel,
-      lottiePath
+      lottiePath,
+      amount,
+      currency,
+      rankInfo
     });
   }
 
@@ -53,7 +84,10 @@ export class ModalService {
     onClose: () => void,
     redirectTo?: string,
     actionLabel?: string,
-    lottiePath?: string
+    lottiePath?: string,
+    amount?: number,
+    currency?: string,
+    rankInfo?: RankUpgradeInfo
   ) {
     this.modalState.set({
       isOpen: true,
@@ -63,8 +97,32 @@ export class ModalService {
       onClose,
       redirectTo,
       actionLabel,
-      lottiePath
+      lottiePath,
+      amount,
+      currency,
+      rankInfo
     });
+  }
+
+  /** Convenience helper for opening a rank-upgrade modal. */
+  openRankUpgrade(
+    title: string,
+    message: string,
+    rankInfo: RankUpgradeInfo,
+    redirectTo?: string,
+    actionLabel?: string
+  ) {
+    this.open(
+      'rank-upgrade',
+      title,
+      message,
+      redirectTo,
+      actionLabel,
+      undefined,
+      undefined,
+      undefined,
+      rankInfo
+    );
   }
 
   close() {

@@ -116,7 +116,7 @@ export class SideMenuComponent {
                 requiresPayment: true,
               },
               {
-                label: 'Matrix',
+                label: 'Matrix Chart',
                 icon: 'pi pi-sitemap',
                 route: '/network/matrix',
                 requiresPayment: true,

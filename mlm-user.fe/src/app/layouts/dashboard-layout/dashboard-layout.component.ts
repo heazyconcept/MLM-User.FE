@@ -20,6 +20,10 @@ export class DashboardLayoutComponent implements OnInit, OnDestroy {
   private realtimeNotifications = inject(RealTimeNotificationService);
 
   ngOnInit(): void {
+    // Always start with the mobile drawer closed when entering the dashboard.
+    // The LayoutService is providedIn: 'root' so its state survives across
+    // navigations; this guarantees a fresh state after login.
+    this.layoutService.closeMobileMenu();
     this.realtimeNotifications.initialize();
   }
 
