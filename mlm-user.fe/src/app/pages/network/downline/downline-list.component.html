@@ -35,7 +35,7 @@
               class="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary/20 transition-all font-normal text-gray-900 placeholder:text-gray-400">
           </div>
 
-          <!-- Filters: Level, Package, Status -->
+          <!-- Filters: Level, Stage -->
           <div class="flex flex-wrap gap-4 items-center">
             <div class="flex items-center gap-2">
               <label for="filter-level" class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Level</label>
@@ -51,28 +51,16 @@
               </select>
             </div>
             <div class="flex items-center gap-2">
-              <label for="filter-package" class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Package</label>
+              <label for="filter-stage" class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Stage</label>
               <select 
-                id="filter-package"
-                [ngModel]="filterPackage()"
-                (ngModelChange)="filterPackage.set($event)"
+                id="filter-stage"
+                [ngModel]="filterStage()"
+                (ngModelChange)="filterStage.set($event)"
                 class="bg-gray-50 border border-gray-100 rounded-lg py-2 pl-3 pr-8 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
                 <option value="all">All</option>
-                <option value="Basic">Basic</option>
-                <option value="Premium">Premium</option>
-                <option value="VIP">VIP</option>
-              </select>
-            </div>
-            <div class="flex items-center gap-2">
-              <label for="filter-status" class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</label>
-              <select 
-                id="filter-status"
-                [ngModel]="filterStatus()"
-                (ngModelChange)="filterStatus.set($event)"
-                class="bg-gray-50 border border-gray-100 rounded-lg py-2 pl-3 pr-8 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20">
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                @for (s of stageOptions(); track s) {
+                  <option [value]="s">{{ s }}</option>
+                }
               </select>
             </div>
           </div>
@@ -97,7 +85,7 @@
           <app-ui-table
             #dt
             [value]="filteredMembers()"
-            [headers]="['Member', 'Level', 'Package', 'Joined', 'Stats', 'Status']"
+            [headers]="['Member', 'Level', 'Package', 'Stage', 'Joined', 'Stats', 'Status']"
             [loading]="isLoading()"
           >
             <ng-template #rowTemplate let-member>
@@ -110,7 +98,9 @@
                         <span class="text-[10px] font-bold uppercase tracking-wide text-mlm-primary bg-mlm-green-100 px-1.5 py-0.5 rounded">Direct Referral</span>
                       }
                     </div>
-                    <span class="text-xs text-gray-500">{{ member.fullName }}</span>
+                    @if (member.fullName && member.fullName !== member.username) {
+                      <span class="text-xs text-gray-500">{{ member.fullName }}</span>
+                    }
                   </div>
                 </td>
                 <td>
@@ -122,6 +112,9 @@
                   <span [class]="'text-xs font-medium uppercase tracking-wide px-3 py-1.5 rounded-lg ' + getPackageClass(member.package)">
                     {{ member.package }}
                   </span>
+                </td>
+                <td>
+                  <span class="text-sm font-normal text-gray-700">{{ member.stage || '—' }}</span>
                 </td>
                 <td>
                   <span class="text-sm font-normal text-gray-700">{{ member.joinDate | date:'mediumDate' }}</span>
@@ -146,7 +139,7 @@
 
             <ng-template #emptyTemplate>
               <tr>
-                <td [attr.colspan]="6" class="py-16 text-center text-gray-500">
+                <td [attr.colspan]="7" class="py-16 text-center text-gray-500">
                   <i class="pi pi-search text-3xl mb-3 block opacity-30"></i>
                   <p class="text-sm font-medium">No members found matching "{{ searchQuery() }}"</p>
                 </td>
