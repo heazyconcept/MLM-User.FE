@@ -7,10 +7,10 @@
         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
             <h1 class="text-xl font-medium text-mlm-text tracking-tight">
-              {{ currentLevelLabel() }} Downlines
+              Level {{ level() }} — Downlines
             </h1>
             <p class="mt-1 text-sm text-mlm-secondary">
-              View members placed on {{ currentLevelLabel() }} of your matrix.
+              View members placed on level {{ level() }} of your matrix.
             </p>
           </div>
 
@@ -24,8 +24,8 @@
                 (change)="onLevelChange($event)"
                 class="appearance-none h-9 pl-3 pr-8 text-sm font-medium text-mlm-text bg-white border border-mlm-secondary/20 rounded-lg focus:outline-none focus:ring-1 focus:ring-mlm-primary/20 focus:border-mlm-primary/40 cursor-pointer transition-colors"
               >
-                @for (option of levelOptions; track option.value) {
-                  <option [value]="option.value">{{ option.label }}</option>
+                @for (option of levelOptions; track option) {
+                  <option [value]="option">Level {{ option }}</option>
                 }
               </select>
               <i class="pi pi-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-mlm-secondary pointer-events-none"></i>
