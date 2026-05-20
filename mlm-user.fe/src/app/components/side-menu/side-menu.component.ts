@@ -6,6 +6,7 @@ import { filter } from 'rxjs/operators';
 import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { LayoutService } from '../../services/layout.service';
+import { LEVEL_COMMISSION_TABLE } from '../../core/constants/level-commission.constants';
 
 interface MenuItem {
   label: string;
@@ -59,6 +60,7 @@ export class SideMenuComponent {
   openMenus = signal<Set<string>>(new Set());
   collapsed = this.layoutService.isSidebarCollapsed;
   displayCurrency = this.userService.displayCurrency;
+  private readonly matrixLevelGroups = this.buildMatrixLevelGroups();
 
   menuSections = computed<MenuSection[]>(() => {
     const currency = this.displayCurrency();
@@ -122,17 +124,6 @@ export class SideMenuComponent {
                 requiresPayment: true,
               },
               {
-                label: 'Matrix Levels',
-                icon: 'pi pi-list',
-                requiresPayment: true,
-                children: Array.from({ length: 13 }, (_, i) => ({
-                  label: `Level ${i + 1}`,
-                  icon: 'pi pi-users',
-                  route: `/network/matrix/level/${i + 1}`,
-                  requiresPayment: true,
-                }))
-              },
-              {
                 label: 'Downline',
                 icon: 'pi pi-list',
                 route: '/network/downline',
@@ -145,6 +136,13 @@ export class SideMenuComponent {
                 requiresPayment: true,
               },
             ],
+          },
+          {
+            label: 'Matrix Levels',
+            icon: 'pi pi-list',
+            route: '/matrix-level',
+            requiresPayment: true,
+            children: this.matrixLevelGroups,
           },
         ],
       },
@@ -331,5 +329,28 @@ export class SideMenuComponent {
   isActiveRoute(route?: string): boolean {
     if (!route) return false;
     return this.activeRoute() === route || this.activeRoute().startsWith(route + '/');
+  }
+
+  private buildMatrixLevelGroups(): MenuItem[] {
+    const groups = new Map<string, MenuItem[]>();
+
+    for (const row of LEVEL_COMMISSION_TABLE) {
+      const groupLabel = row.level === 1 ? 'Entry Level' : row.rank;
+      const levels = groups.get(groupLabel) ?? [];
+      levels.push({
+        label: `Level ${row.level} - ${row.stageLabel}`,
+        icon: 'pi pi-users',
+        route: `/matrix-level/${row.level}`,
+        requiresPayment: true,
+      });
+      groups.set(groupLabel, levels);
+    }
+
+    return Array.from(groups.entries()).map(([label, children]) => ({
+      label,
+      icon: label === 'Entry Level' ? 'pi pi-home' : 'pi pi-star',
+      requiresPayment: true,
+      children,
+    }));
   }
 }
