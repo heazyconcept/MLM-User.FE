@@ -240,7 +240,9 @@ export const routes: Routes = [
       },
       {
         path: 'matrix/level/:level',
-        redirectTo: '/matrix-level/:level',
+        loadComponent: () =>
+          import('./pages/network/matrix-level/matrix-level.component').then((m) => m.MatrixLevelComponent),
+        data: { title: 'Matrix Level View' },
       },
       {
         path: 'downline',
@@ -257,24 +259,6 @@ export const routes: Routes = [
             (m) => m.PerformanceCpvComponent,
           ),
         data: { title: 'Performance Stats' },
-      },
-    ],
-  },
-  {
-    path: 'matrix-level',
-    loadComponent: () =>
-      import('./layouts/dashboard-layout/dashboard-layout.component').then(
-        (m) => m.DashboardLayoutComponent,
-      ),
-    children: [
-      { path: '', redirectTo: '1', pathMatch: 'full' },
-      {
-        path: ':level',
-        loadComponent: () =>
-          import('./pages/network/matrix-level/matrix-level.component').then(
-            (m) => m.MatrixLevelComponent,
-          ),
-        data: { title: 'Matrix Level View' },
       },
     ],
   },
