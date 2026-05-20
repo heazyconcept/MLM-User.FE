@@ -68,6 +68,7 @@ export class EarningsOverviewComponent implements OnInit {
   currencySymbol = computed(() => (this.displayCurrency() === 'NGN' ? '₦' : '$'));
   isLoading = this.earningsService.isLoading;
   error = this.earningsService.error;
+  userPackageLabel = computed(() => this.getPackageLabel(this.userService.currentUser()?.package));
 
   allCommissionEntries = this.commissionService.getAllCommissions();
   recentEntries = computed(() => this.allCommissionEntries().slice(0, 5));
@@ -200,6 +201,8 @@ export class EarningsOverviewComponent implements OnInit {
   historyRowsForSelectedCard = computed(() => this.historyRows());
 
   ngOnInit(): void {
+    this.userService.fetchProfile().subscribe();
+
     if (this.userService.isPaid()) {
       this.earningsService.fetchEarningsSectionData();
       this.loadHistoryCardsSummary();
@@ -236,6 +239,30 @@ export class EarningsOverviewComponent implements OnInit {
     if (status === 'POSTED') return 'text-emerald-700 bg-emerald-50 border-emerald-200';
     if (status === 'PENDING') return 'text-amber-700 bg-amber-50 border-amber-200';
     return 'text-red-700 bg-red-50 border-red-200';
+  }
+
+  getPackageLabel(packageCode: string | null | undefined): string {
+    if (!packageCode) return 'Not selected';
+    return packageCode
+      .toLowerCase()
+      .split(/[\s_-]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  getPackageColor(): string {
+    const pkg = this.userPackageLabel().toUpperCase();
+    const colors: Record<string, string> = {
+      GOLD: '#b8972a',
+      SILVER: '#6b7280',
+      DIAMOND: '#0ea5e9',
+      RUBY: '#e11d48',
+      PLATINUM: '#7c3aed',
+      NICKEL: '#78716c',
+      BRONZE: '#a16207',
+    };
+    return colors[pkg] ?? '#2d7a3a';
   }
 
   formatHistoryValue(row: EarningsCardHistoryItem): string {

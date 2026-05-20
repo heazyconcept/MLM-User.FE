@@ -138,12 +138,12 @@ export class SideMenuComponent {
                 route: '/network/downline',
                 requiresPayment: true,
               },
-              {
-                label: 'Performance',
-                icon: 'pi pi-chart-bar',
-                route: '/network/performance',
-                requiresPayment: true,
-              },
+                // {
+                //   label: 'Performance',
+                //   icon: 'pi pi-chart-bar',
+                //   route: '/network/performance',
+                //   requiresPayment: true,
+                // },
             ],
           },
         ],

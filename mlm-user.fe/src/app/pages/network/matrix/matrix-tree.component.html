@@ -201,10 +201,9 @@
             >
 
               <!-- ══════════════════════════════════════════
-                   MOBILE — dedicated swipeable tree view
-                   (replaces responsive org chart on mobile)
+                   Legacy mobile tree kept disabled so mobile uses the full chart below.
               ═══════════════════════════════════════════ -->
-              <div class="block md:hidden h-full animate-fade-in">
+              <div class="hidden">
                 <!-- Swipe hint -->
                 <div class="flex items-center justify-center gap-1.5 py-2 text-[10px] text-mlm-secondary/50">
                   <i class="pi pi-arrows-h text-[10px]"></i>
@@ -377,11 +376,12 @@
               </div>
 
               <!-- ───────────────────────────────────────
-                   DESKTOP — existing org chart
+                   Full matrix chart
               ─────────────────────────────────────── -->
               <div
                 #matrixViewport
-                class="hidden md:block absolute inset-0 overflow-auto p-10 cursor-grab active:cursor-grabbing"
+                class="absolute inset-0 overflow-auto p-4 sm:p-6 md:p-10 cursor-grab active:cursor-grabbing"
+                style="-webkit-overflow-scrolling: touch;"
               >
                 <div
                   [style.transform]="'scale(' + zoomLevel() + ')'"

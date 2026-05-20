@@ -118,6 +118,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   paymentStatus = this.userService.paymentStatus;
   displayCurrency = this.userService.displayCurrency;
   unreadCount = this.notificationService.unreadCount;
+  userPackageLabel = computed(() => this.getPackageLabel(this.currentUser()?.package));
 
   // Registration wallet state (for unpaid users)
   registrationWallet = signal<RegistrationWallet | null>(null);
@@ -588,6 +589,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.userService.fetchProfile().subscribe({
+      next: () => this.cdr.markForCheck(),
+      error: () => this.cdr.markForCheck(),
+    });
+
     // Redirect to activation choice when navigating to /dashboard/registration-payment
     if (this.router.url.includes('registration-payment') && this.paymentStatus() === 'UNPAID') {
       this.router.navigate(['/auth/activation']);
@@ -863,6 +869,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const sym = currency === 'NGN' ? '₦' : '$';
     return `${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
+
+  getPackageLabel(packageCode: string | null | undefined): string {
+    if (!packageCode) return 'Not selected';
+    return packageCode
+      .toLowerCase()
+      .split(/[\s_-]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  // Add this method to your dashboard component (.ts)
+// Maps each package tier to its accent color
+
+getPackageColor(): string {
+  const pkg = (this.userPackageLabel() ?? '').toUpperCase();
+  const colors: Record<string, string> = {
+    GOLD:      '#b8972a',
+    SILVER:    '#6b7280',
+    DIAMOND:   '#0ea5e9',
+    RUBY:      '#e11d48',
+    PLATINUM:  '#7c3aed',
+    NICKEL:    '#78716c',
+    BRONZE:    '#a16207',
+  };
+  return colors[pkg] ?? '#2d7a3a'; // fallback to brand green
+}
 
   onPaymentSubmit(): void {
     if (this.paymentForm.valid) {
