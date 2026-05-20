@@ -243,7 +243,25 @@
                 Showing {{ txTotalRecords() === 0 ? 0 : txShowingFrom() }}–{{ txShowingTo() }} of {{ txTotalRecords() }} transactions
               </span>
 
-              <div class="flex items-center gap-1.5">
+              <div class="flex items-center gap-3">
+                <label class="flex items-center gap-2 text-xs font-semibold text-mlm-warm-700 whitespace-nowrap">
+                  Rows
+                  <select
+                    class="h-8 rounded-lg border border-mlm-warm-200 bg-white px-2 text-xs font-semibold text-mlm-warm-700 focus:outline-none focus:ring-2 focus:ring-mlm-primary/30"
+                    [value]="txPageSize()"
+                    (change)="onTxPageSizeChange($event)"
+                    [disabled]="isLoading()"
+                    aria-label="Select transaction rows per page"
+                  >
+                    @for (size of txPageSizeOptions; track size) {
+                      <option [value]="size">{{ size }}</option>
+                    }
+                  </select>
+                </label>
+
+                <div class="h-6 w-px bg-mlm-warm-200"></div>
+
+                <div class="flex items-center gap-1.5">
                 <button
                   type="button"
                   (click)="txPreviousPage()"
@@ -267,6 +285,7 @@
                   Next
                   <i class="pi pi-chevron-right text-[10px]"></i>
                 </button>
+                </div>
               </div>
             </div>
 

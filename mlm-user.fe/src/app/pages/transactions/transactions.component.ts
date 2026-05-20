@@ -72,13 +72,14 @@ export class TransactionsComponent implements OnInit {
   // Pagination state for transactions table (client-side slice)
   txPage = signal(1);
   txPageSize = signal(10);
+  txPageSizeOptions = [10, 20, 50];
   displayedTransactions = computed(() => {
     const start = (this.txPage() - 1) * this.txPageSize();
     return this.transactions().slice(start, start + this.txPageSize());
   });
   txTotalPages = computed(() => Math.max(1, Math.ceil(this.transactions().length / this.txPageSize())));
   txCanGoPrevious = computed(() => this.txPage() > 1);
-  txCanGoNext = computed(() => this.txPage() < this.txTotalPages());
+  txCanGoNext = computed(() => this.txPage() < this.txTotalPages() || !!this.nextCursor());
 
   // Pagination state for commissions (breakdown)
   commPage = signal(1);
@@ -261,6 +262,16 @@ export class TransactionsComponent implements OnInit {
     this.commPage.set(1);
   }
 
+  onTxPageSizeChange(event: Event): void {
+    const size = Number((event.target as HTMLSelectElement).value);
+    if (!Number.isFinite(size) || size <= 0 || size === this.txPageSize()) {
+      return;
+    }
+    this.txPageSize.set(size);
+    this.txPage.set(1);
+    this.resetAndLoadTransactions();
+  }
+
   onClearFilters(): void {
     this.searchInput.set('');
     this.filters.set({
@@ -312,7 +323,7 @@ export class TransactionsComponent implements OnInit {
     }
 
     this.isLoading.set(true);
-    this.dashboardService.getTransactions(20, cursor, this.getTabQuery()).subscribe({
+    this.dashboardService.getTransactions(this.txPageSize(), cursor, this.getTabQuery()).subscribe({
       next: (res) => {
         const nextItems = res.items ?? [];
         this.allTransactions.update((items) => [...items, ...nextItems]);
@@ -330,7 +341,29 @@ export class TransactionsComponent implements OnInit {
     if (this.txPage() > 1) this.txPage.update((p) => p - 1);
   }
   txNextPage(): void {
-    if (this.txPage() < this.txTotalPages()) this.txPage.update((p) => p + 1);
+    if (this.txPage() < this.txTotalPages()) {
+      this.txPage.update((p) => p + 1);
+      return;
+    }
+
+    const cursor = this.nextCursor();
+    if (!cursor || this.isLoading()) {
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.dashboardService.getTransactions(this.txPageSize(), cursor, this.getTabQuery()).subscribe({
+      next: (res) => {
+        const nextItems = res.items ?? [];
+        this.allTransactions.update((items) => [...items, ...nextItems]);
+        this.nextCursor.set(res.nextCursor ?? null);
+        this.txPage.update((p) => p + 1);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.isLoading.set(false);
+      }
+    });
   }
   txShowingFrom(): number {
     const from = (this.txPage() - 1) * this.txPageSize() + 1;
@@ -450,7 +483,7 @@ export class TransactionsComponent implements OnInit {
       return;
     }
     this.isLoading.set(true);
-    this.dashboardService.getTransactions(20, undefined, this.getTabQuery()).subscribe({
+    this.dashboardService.getTransactions(this.txPageSize(), undefined, this.getTabQuery()).subscribe({
       next: (res) => {
         this.allTransactions.set(res.items ?? []);
         this.nextCursor.set(res.nextCursor ?? null);
