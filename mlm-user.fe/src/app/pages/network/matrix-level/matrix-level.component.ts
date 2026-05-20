@@ -7,6 +7,7 @@ import { MessageService } from 'primeng/api';
 import { SkeletonModule } from 'primeng/skeleton';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import { ReferralService, type DownlineItem, type MatrixLevelUser } from '../../../services/referral.service';
+import { LEVEL_COMMISSION_TABLE } from '../../../core/constants/level-commission.constants';
 import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -44,7 +45,10 @@ export class MatrixLevelComponent implements OnInit {
   searchQuery = signal<string>('');
   private downlineMap = signal<Map<string, DownlineItem>>(new Map());
 
-  readonly levelOptions = Array.from({ length: 13 }, (_, index) => index + 1);
+  readonly levelOptions = LEVEL_COMMISSION_TABLE.map((row) => ({
+    value: row.level,
+    label: `Level ${row.level} - ${row.stageLabel}`
+  }));
   readonly pageSizeOptions = [10, 20, 50];
   readonly skeletonRows: MatrixLevelUser[] = Array.from({ length: 6 }, (_, index) => ({
     id: `skeleton-${index}`,
@@ -63,6 +67,11 @@ export class MatrixLevelComponent implements OnInit {
   readonly showingTo = computed(() => Math.min(this.offset() + this.limit(), this.totalRecords()));
   readonly canGoPrevious = computed(() => this.offset() > 0);
   readonly canGoNext = computed(() => this.hasNext() || this.offset() + this.limit() < this.totalRecords());
+  readonly currentLevelLabel = computed(
+    () =>
+      this.levelOptions.find((option) => option.value === this.level())?.label ??
+      `Level ${this.level()}`
+  );
 
   ngOnInit(): void {
     this.loadDownlines();
@@ -86,7 +95,7 @@ export class MatrixLevelComponent implements OnInit {
       return;
     }
 
-    this.router.navigate(['/network/matrix/level', value]);
+    this.router.navigate(['/matrix-level', value]);
   }
 
   onSearchInput(event: Event): void {
@@ -238,7 +247,10 @@ export class MatrixLevelComponent implements OnInit {
   private clampLevel(levelParam: string | null): number {
     const parsed = Number(levelParam ?? 1);
     if (!Number.isFinite(parsed)) return 1;
-    return Math.min(13, Math.max(1, Math.trunc(parsed)));
+    const levels = this.levelOptions.map((option) => option.value);
+    const minLevel = Math.min(...levels);
+    const maxLevel = Math.max(...levels);
+    return Math.min(maxLevel, Math.max(minLevel, Math.trunc(parsed)));
   }
 
   private loadDownlines(): void {
