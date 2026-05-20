@@ -112,15 +112,14 @@ export class RealTimeNotificationService {
   syncUnreadNotifications(_token?: string): void {
     this.api
       .get<NotificationListResponse | ApiNotificationItem[]>('notifications', {
+        isRead: false,
         status: 'unread',
         limit: 50,
         offset: 0,
       })
       .subscribe({
         next: (raw) => {
-          const items: ApiNotificationItem[] = Array.isArray(raw)
-            ? raw
-            : raw?.notifications ?? [];
+          const items = this.getNotificationItems(raw);
 
           if (items.length === 0) return;
 
@@ -136,10 +135,10 @@ export class RealTimeNotificationService {
           this.displayedNotificationIds.push(...ids);
 
           toShow.forEach((notif) => {
-            const uiType = notificationTypeToUiType(notif.type);
-            const isEarnings = this.isEarningsNotification(notif.type);
-            const isRankUpgrade = notif.type === 'RANK_UPGRADED';
-            const isCpvMilestone = notif.type === 'CPV_MILESTONE_REACHED';
+            const uiType = this.getUiType(notif);
+            const isEarnings = this.isEarningsNotification(notif);
+            const isRankUpgrade = this.isRankUpgradeNotification(notif);
+            const isCpvMilestone = this.isCpvMilestoneNotification(notif);
             const modalType: ModalType = isRankUpgrade
               ? 'rank-upgrade'
               : isCpvMilestone
@@ -186,15 +185,14 @@ export class RealTimeNotificationService {
   refreshUnreadToasts(): void {
     this.api
       .get<NotificationListResponse | ApiNotificationItem[]>('notifications', {
+        isRead: false,
         status: 'unread',
         limit: 50,
         offset: 0,
       })
       .subscribe({
         next: (raw) => {
-          const items: ApiNotificationItem[] = Array.isArray(raw)
-            ? raw
-            : raw?.notifications ?? [];
+          const items = this.getNotificationItems(raw);
 
           const unseen = items.filter((notif) => !this.displayedNotificationIds.includes(notif.id));
           if (unseen.length === 0) {
@@ -204,7 +202,7 @@ export class RealTimeNotificationService {
 
           unseen.slice(0, MAX_CATCHUP_MODALS).forEach((notif) => {
             this.messageService.add({
-              severity: notificationTypeToUiType(notif.type),
+              severity: this.getUiType(notif),
               summary: notif.title ?? notif.type.replace(/_/g, ' '),
               detail: notif.message ?? notif.body ?? '',
             });
@@ -223,10 +221,10 @@ export class RealTimeNotificationService {
 
   private markNotificationsAsRead(ids: string[]): void {
     if (ids.length === 0) return;
-    this.api.put('notifications/mark-read', { notificationIds: ids }).subscribe({
-      next: (res: any) =>
-        console.log(`[RealTime] Marked ${res?.count ?? ids.length} notifications as read`),
-      error: (err) => console.error('[RealTime] Failed to mark as read:', err),
+    ids.forEach((id) => {
+      this.api.put(`notifications/${id}/read`, {}).subscribe({
+        error: (err) => console.error('[RealTime] Failed to mark as read:', err),
+      });
     });
   }
 
@@ -293,9 +291,9 @@ export class RealTimeNotificationService {
 
   private handleLiveNotification(payload: NotificationWirePayload): void {
     // Determine modal type from the notification category/type
-    const isRankUpgrade = payload.type === 'RANK_UPGRADED';
-    const isCpvMilestone = payload.type === 'CPV_MILESTONE_REACHED';
-    const baseModalType = this.categoryToModalType(payload.category);
+    const isRankUpgrade = this.isRankUpgradeNotification(payload);
+    const isCpvMilestone = this.isCpvMilestoneNotification(payload);
+    const baseModalType = this.categoryToModalType(payload.category, payload);
     const modalType: ModalType = isRankUpgrade
       ? 'rank-upgrade'
       : isCpvMilestone
@@ -387,7 +385,23 @@ export class RealTimeNotificationService {
 
   // ─── Type Mapping Helpers ────────────────────────────────────────────
 
-  private categoryToModalType(category: BackendNotificationCategory): ModalType {
+  private getNotificationItems(
+    raw: NotificationListResponse | ApiNotificationItem[] | { items?: ApiNotificationItem[]; notifications?: ApiNotificationItem[] } | null | undefined
+  ): ApiNotificationItem[] {
+    if (Array.isArray(raw)) return raw;
+    const response = raw as
+      | { notifications?: ApiNotificationItem[]; items?: ApiNotificationItem[] }
+      | null
+      | undefined;
+    return response?.notifications ?? response?.items ?? [];
+  }
+
+  private categoryToModalType(
+    category: BackendNotificationCategory | string | undefined,
+    notification?: Pick<ApiNotificationItem, 'type' | 'title' | 'message' | 'body'>
+  ): ModalType {
+    if (notification && this.isEarningsNotification(notification)) return 'celebration';
+
     const map: Record<BackendNotificationCategory, ModalType> = {
       EARNING: 'celebration',
       WALLET: 'info',
@@ -398,15 +412,64 @@ export class RealTimeNotificationService {
       ACCOUNT: 'warning',
       SYSTEM: 'warning',
     };
-    return map[category] ?? 'info';
+    return map[category as BackendNotificationCategory] ?? 'info';
   }
 
   private uiTypeToModalType(uiType: 'info' | 'success' | 'warning' | 'error'): ModalType {
     return uiType;
   }
 
-  private isEarningsNotification(type: NotificationType): boolean {
-    return NOTIFICATION_TYPE_TO_CATEGORY[type] === 'earnings';
+  private getUiType(
+    notification: Pick<ApiNotificationItem, 'type' | 'title' | 'message' | 'body'>
+  ): 'info' | 'success' | 'warning' | 'error' {
+    const type = notification.type as NotificationType;
+    if (this.isEarningsNotification(notification)) return 'success';
+    return notificationTypeToUiType(type);
+  }
+
+  private isEarningsNotification(
+    notification: Pick<ApiNotificationItem, 'type' | 'title' | 'message' | 'body'>
+  ): boolean {
+    const text = this.notificationSearchText(notification);
+    const type = String(notification.type ?? '').toUpperCase();
+    return (
+      NOTIFICATION_TYPE_TO_CATEGORY[type as NotificationType] === 'earnings' ||
+      text.includes('EARNING') ||
+      text.includes('BONUS') ||
+      text.includes('COMMISSION') ||
+      text.includes('RANK UPGRADED') ||
+      text.includes('RANK_UPGRADED') ||
+      text.includes('CPV')
+    );
+  }
+
+  private isRankUpgradeNotification(
+    notification: Pick<ApiNotificationItem, 'type' | 'title' | 'message' | 'body'>
+  ): boolean {
+    const text = this.notificationSearchText(notification);
+    return text.includes('RANK_UPGRADED') || text.includes('RANK UPGRADED');
+  }
+
+  private isCpvMilestoneNotification(
+    notification: Pick<ApiNotificationItem, 'type' | 'title' | 'message' | 'body'>
+  ): boolean {
+    const text = this.notificationSearchText(notification);
+    return text.includes('CPV_MILESTONE_REACHED') || text.includes('CPV MILESTONE');
+  }
+
+  private notificationSearchText(
+    notification: Pick<ApiNotificationItem, 'type' | 'title' | 'message' | 'body'>
+  ): string {
+    return [
+      notification.type,
+      notification.title,
+      notification.message,
+      notification.body,
+    ]
+      .filter((value): value is string => typeof value === 'string')
+      .join(' ')
+      .replace(/_/g, ' ')
+      .toUpperCase();
   }
 
   private getEarningsAction(actionUrl?: string, actionLabel?: string) {

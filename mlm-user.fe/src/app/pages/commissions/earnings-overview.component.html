@@ -37,11 +37,32 @@
             <h1 class="text-xl font-medium text-mlm-text tracking-tight">Earnings</h1>
             <p class="mt-1 text-sm text-mlm-secondary">Track your performance and commissions.</p>
           </div>
-          <button
-            class="self-start shrink-0 px-4 py-2 text-sm font-medium text-mlm-text border border-mlm-secondary/30 rounded-lg hover:bg-mlm-secondary/5 transition-colors"
-          >
-            Download report
-          </button>
+          <div class="flex flex-wrap items-center gap-2">
+            <div
+              class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5"
+              [style.borderColor]="getPackageColor() + '55'"
+              [style.background]="getPackageColor() + '0d'"
+            >
+              <span
+                class="w-2 h-2 rounded-full shrink-0"
+                [style.background]="getPackageColor()"
+              ></span>
+              <span class="text-sm font-semibold text-mlm-text">
+                {{ userPackageLabel() }}
+              </span>
+              <span
+                class="text-[11px] font-medium"
+                [style.color]="getPackageColor()"
+              >
+                Package
+              </span>
+            </div>
+            <button
+              class="self-start shrink-0 px-4 py-2 text-sm font-medium text-mlm-text border border-mlm-secondary/30 rounded-lg hover:bg-mlm-secondary/5 transition-colors"
+            >
+              Download report
+            </button>
+          </div>
         </div>
 
         <!-- ─── Tabs ────────────────────────────────── -->

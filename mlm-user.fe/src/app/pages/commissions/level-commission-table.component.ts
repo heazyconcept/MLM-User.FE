@@ -32,7 +32,7 @@ export class LevelCommissionTableComponent implements OnInit {
   private userService = inject(UserService);
 
   isLoading = signal(false);
-  dataSource = signal<string>('Hardcoded (level-table.md)');
+  dataSource = signal<string>('');
   packageColumns = ['Nickel', 'Silver', 'Gold', 'Platinum', 'Ruby', 'Diamond'];
 
   displayCurrency = this.userService.displayCurrency;
