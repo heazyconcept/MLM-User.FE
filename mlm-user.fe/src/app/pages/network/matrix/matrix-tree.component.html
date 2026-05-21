@@ -258,6 +258,12 @@
             {{ displayRoot().username }}@if (displayRoot().level === 0) { (You) }
           </span>
 
+          @if (displayRoot().stage) {
+            <span class="text-[9px] leading-none text-mlm-secondary">
+              {{ displayRoot().stage }}
+            </span>
+          }
+
 
         </div>
       </div>
@@ -307,6 +313,12 @@
                 </div>
 
                 <span class="mobile-node-name">{{ child.username }}</span>
+
+                @if (child.stage) {
+                  <span class="text-[9px] leading-none text-mlm-secondary">
+                    {{ child.stage }}
+                  </span>
+                }
               </div>
             }
 
@@ -352,6 +364,12 @@
                       </div>
 
                       <span class="mobile-node-name">{{ grandChild.username }}</span>
+
+                      @if (grandChild.stage) {
+                        <span class="text-[9px] leading-none text-mlm-secondary">
+                          {{ grandChild.stage }}
+                        </span>
+                      }
                     </div>
                   }
                 </div>

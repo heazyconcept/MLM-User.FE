@@ -123,7 +123,21 @@ export class RealTimeNotificationService {
 
           if (items.length === 0) return;
 
-          const unseen = items.filter((notif) => !this.displayedNotificationIds.includes(notif.id));
+          const suppressed = items.filter(
+            (notif) =>
+              !this.displayedNotificationIds.includes(notif.id) &&
+              this.shouldSuppressNotification(notif)
+          );
+          const unseen = items.filter(
+            (notif) =>
+              !this.displayedNotificationIds.includes(notif.id) &&
+              !this.shouldSuppressNotification(notif)
+          );
+          if (suppressed.length > 0) {
+            const suppressedIds = suppressed.map((notif) => notif.id);
+            this.displayedNotificationIds.push(...suppressedIds);
+            this.markNotificationsAsRead(suppressedIds);
+          }
           if (unseen.length === 0) {
             this.notificationService.loadUnreadCount().subscribe();
             return;
@@ -148,7 +162,7 @@ export class RealTimeNotificationService {
                   : this.uiTypeToModalType(uiType);
             const carriesAmount = (isEarnings && !isRankUpgrade) || isCpvMilestone;
             const title = notif.title ?? notif.type.replace(/_/g, ' ');
-            const message = notif.message ?? notif.body ?? '';
+            const message = this.getNotificationMessage(notif);
             const action = isRankUpgrade
               ? this.getRankUpgradeAction(notif.actionUrl, notif.actionLabel)
               : isCpvMilestone
@@ -194,7 +208,21 @@ export class RealTimeNotificationService {
         next: (raw) => {
           const items = this.getNotificationItems(raw);
 
-          const unseen = items.filter((notif) => !this.displayedNotificationIds.includes(notif.id));
+          const suppressed = items.filter(
+            (notif) =>
+              !this.displayedNotificationIds.includes(notif.id) &&
+              this.shouldSuppressNotification(notif)
+          );
+          const unseen = items.filter(
+            (notif) =>
+              !this.displayedNotificationIds.includes(notif.id) &&
+              !this.shouldSuppressNotification(notif)
+          );
+          if (suppressed.length > 0) {
+            const suppressedIds = suppressed.map((notif) => notif.id);
+            this.displayedNotificationIds.push(...suppressedIds);
+            this.markNotificationsAsRead(suppressedIds);
+          }
           if (unseen.length === 0) {
             this.notificationService.loadUnreadCount().subscribe();
             return;
@@ -204,7 +232,7 @@ export class RealTimeNotificationService {
             this.messageService.add({
               severity: this.getUiType(notif),
               summary: notif.title ?? notif.type.replace(/_/g, ' '),
-              detail: notif.message ?? notif.body ?? '',
+              detail: this.getNotificationMessage(notif),
             });
           });
 
@@ -290,6 +318,12 @@ export class RealTimeNotificationService {
   }
 
   private handleLiveNotification(payload: NotificationWirePayload): void {
+    if (this.shouldSuppressNotification(payload)) {
+      this.markNotificationsAsRead([payload.id]);
+      this.notificationService.loadUnreadCount().subscribe();
+      return;
+    }
+
     // Determine modal type from the notification category/type
     const isRankUpgrade = this.isRankUpgradeNotification(payload);
     const isCpvMilestone = this.isCpvMilestoneNotification(payload);
@@ -328,7 +362,7 @@ export class RealTimeNotificationService {
     this.enqueueNotification(
       modalType,
       payload.title,
-      payload.message,
+      this.getNotificationMessage(payload),
       action,
       amount,
       currency,
@@ -470,6 +504,21 @@ export class RealTimeNotificationService {
       .join(' ')
       .replace(/_/g, ' ')
       .toUpperCase();
+  }
+
+  private shouldSuppressNotification(
+    notification: Pick<ApiNotificationItem, 'type'>
+  ): boolean {
+    return notification.type === 'PAYMENT_INITIATED';
+  }
+
+  private getNotificationMessage(
+    notification: Pick<ApiNotificationItem, 'type' | 'message' | 'body'>
+  ): string {
+    if (notification.type === 'REGISTRATION_ACTIVATED') {
+      return 'Your account has been activated please proceed to your dashboard';
+    }
+    return notification.message ?? notification.body ?? '';
   }
 
   private getEarningsAction(actionUrl?: string, actionLabel?: string) {
