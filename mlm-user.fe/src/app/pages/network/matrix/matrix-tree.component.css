@@ -13,18 +13,42 @@
   display: flex;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  align-items: center;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  align-items: flex-start;
   justify-content: center;
-  padding: 18px 8px;
+  padding: 16px 12px;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Enable scrolling when zoomed in */
+.mobile-matrix-tree.mobile-scrolling {
+  overflow-x: auto;
+  overflow-y: auto;
+  justify-content: flex-start;
+  align-items: flex-start;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar styling for a premium look */
+.mobile-matrix-tree::-webkit-scrollbar {
+  height: 4px;
+}
+.mobile-matrix-tree::-webkit-scrollbar-track {
+  background: rgba(100, 116, 139, 0.05);
+  border-radius: 99px;
+}
+.mobile-matrix-tree::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.2);
+  border-radius: 99px;
 }
 
 .mobile-tree-canvas {
   position: relative;
-  width: 100%;
-  max-width: 390px;
-  height: 470px;
+  width: 510px;
+  height: 520px;
   margin: 0 auto;
+  flex-shrink: 0;
 }
 
 /* Root row */
@@ -40,10 +64,10 @@
 /* Main root connector */
 .mobile-root-connector {
   position: absolute;
-  top: 112px;
+  top: 116px;
   left: 50%;
   width: 1px;
-  height: 48px;
+  height: 44px;
   background: rgba(100, 116, 139, 0.35);
   transform: translateX(-50%);
 }
@@ -51,8 +75,8 @@
 .mobile-main-connector {
   position: absolute;
   top: 160px;
-  left: 12%;
-  right: 12%;
+  left: 16.67%;
+  right: 16.67%;
   height: 1px;
   background: rgba(100, 116, 139, 0.35);
 }
@@ -64,7 +88,7 @@
   left: 0;
   right: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
 }
 
@@ -84,7 +108,7 @@
 /* Connector under each level-one node */
 .mobile-sub-connector {
   position: relative;
-  width: 86%;
+  width: 144px;
   height: 32px;
 }
 
@@ -92,8 +116,8 @@
   content: '';
   position: absolute;
   top: 16px;
-  left: 12%;
-  right: 12%;
+  left: 16.67%;
+  right: 16.67%;
   height: 1px;
   background: rgba(100, 116, 139, 0.35);
 }
@@ -111,9 +135,9 @@
 
 /* Level two */
 .mobile-level-two-row {
-  width: 112px;
+  width: 144px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   justify-items: center;
   align-items: start;
   column-gap: 4px;
@@ -151,24 +175,27 @@
 
 /* Root should be obviously bigger */
 .mobile-node-root {
-  width: 104px;
-  height: 112px;
+  width: 108px;
+  height: 116px;
   padding: 10px 8px;
 }
 
 /* Next 3 nodes */
 .mobile-node-level-one {
-  width: 74px;
-  height: 82px;
-  padding: 7px 5px;
+  width: 82px;
+  height: 90px;
+  padding: 8px 6px;
 }
 
 /* Last 9 nodes */
 .mobile-node-level-two {
-  width: 36px;
-  height: 58px;
-  padding: 4px 2px;
-  border-radius: 10px;
+  width: 44px;
+  min-height: 74px;
+  height: auto;
+  padding: 6px 3px;
+  border-radius: 9px;
+  justify-content: flex-start;
+  gap: 2.5px;
 }
 
 /* Empty slot */
@@ -215,7 +242,7 @@
 .mobile-node-name {
   width: 100%;
   max-width: 100%;
-  font-size: 7px;
+  font-size: 8px;
   font-weight: 700;
   line-height: 1.05;
   color: #1f2937;
@@ -226,16 +253,40 @@
 }
 
 .mobile-node-root .mobile-node-name {
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .mobile-node-level-two .mobile-node-name {
-  font-size: 5px;
+  font-size: 8.5px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: #1f2937;
+  word-break: break-word;
+  margin-top: 1px;
+}
+
+.mobile-node-level-two .mobile-node-stage {
+  font-size: 7.5px;
+  line-height: 1.1;
+  color: #64748b;
+  margin-top: auto;
+}
+
+.mobile-node-level-two .mobile-node-info {
+  width: 10px;
+  height: 10px;
+  top: 2px;
+  right: 2px;
+  background: rgba(100, 116, 139, 0.08);
+}
+
+.mobile-node-level-two .mobile-node-info i {
+  font-size: 4.5px;
 }
 
 .mobile-node-rank {
   width: 100%;
-  font-size: 6px;
+  font-size: 7px;
   font-weight: 600;
   line-height: 1.05;
   color: #64748b;
@@ -246,15 +297,15 @@
 }
 
 .mobile-node-root .mobile-node-rank {
-  font-size: 7px;
+  font-size: 8px;
 }
 
 .mobile-node-level-two .mobile-node-rank {
-  font-size: 4.5px;
+  font-size: 6.5px;
 }
 
 .mobile-node-status {
-  font-size: 5px;
+  font-size: 6px;
   line-height: 1;
   font-weight: 800;
   text-transform: uppercase;
@@ -263,12 +314,12 @@
 }
 
 .mobile-node-root .mobile-node-status {
-  font-size: 6px;
+  font-size: 7px;
   padding: 3px 7px;
 }
 
 .mobile-node-level-two .mobile-node-status {
-  font-size: 4px;
+  font-size: 5px;
   padding: 1px 3px;
 }
 
@@ -313,71 +364,6 @@
   font-weight: 800;
   color: rgba(100, 116, 139, 0.45);
   text-transform: uppercase;
-}
-
-/* Slightly larger phones */
-@media (min-width: 390px) and (max-width: 767px) {
-  .mobile-tree-canvas {
-    max-width: 410px;
-    height: 500px;
-  }
-
-  .mobile-main-connector {
-    left: 10%;
-    right: 10%;
-  }
-
-  .mobile-node-root {
-    width: 112px;
-    height: 120px;
-  }
-
-  .mobile-node-level-one {
-    width: 80px;
-    height: 88px;
-  }
-
-  .mobile-level-two-row {
-    width: 122px;
-    column-gap: 5px;
-  }
-
-  .mobile-node-level-two {
-    width: 40px;
-    height: 62px;
-  }
-}
-
-/* Very small phones */
-@media (max-width: 360px) {
-  .tree-viewport {
-    min-height: 560px;
-  }
-
-  .mobile-tree-canvas {
-    max-width: 330px;
-    height: 430px;
-  }
-
-  .mobile-node-root {
-    width: 96px;
-    height: 104px;
-  }
-
-  .mobile-node-level-one {
-    width: 68px;
-    height: 76px;
-  }
-
-  .mobile-level-two-row {
-    width: 98px;
-    column-gap: 3px;
-  }
-
-  .mobile-node-level-two {
-    width: 32px;
-    height: 52px;
-  }
 }
 
 /* Desktop: return to PrimeNG chart */
