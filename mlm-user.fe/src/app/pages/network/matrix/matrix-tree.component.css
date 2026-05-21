@@ -64,17 +64,17 @@
 /* Main root connector */
 .mobile-root-connector {
   position: absolute;
-  top: 116px;
+  top: calc(116px * var(--mobile-zoom, 1));
   left: 50%;
   width: 1px;
-  height: 44px;
+  height: calc(44px * var(--mobile-zoom, 1));
   background: rgba(100, 116, 139, 0.35);
   transform: translateX(-50%);
 }
 
 .mobile-main-connector {
   position: absolute;
-  top: 160px;
+  top: calc(160px * var(--mobile-zoom, 1));
   left: 16.67%;
   right: 16.67%;
   height: 1px;
@@ -84,7 +84,7 @@
 /* Level one row */
 .mobile-level-one-row {
   position: absolute;
-  top: 160px;
+  top: calc(160px * var(--mobile-zoom, 1));
   left: 0;
   right: 0;
   display: grid;
@@ -101,14 +101,14 @@
 
 .mobile-branch-drop {
   width: 1px;
-  height: 44px;
+  height: calc(44px * var(--mobile-zoom, 1));
   background: rgba(100, 116, 139, 0.35);
 }
 
 /* Connector under each level-one node */
 .mobile-sub-connector {
   position: relative;
-  width: 144px;
+  width: calc(144px * var(--mobile-zoom, 1));
   height: 32px;
 }
 
@@ -135,12 +135,12 @@
 
 /* Level two */
 .mobile-level-two-row {
-  width: 144px;
+  width: calc(144px * var(--mobile-zoom, 1));
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   justify-items: center;
   align-items: start;
-  column-gap: 4px;
+  column-gap: calc(4px * var(--mobile-zoom, 1));
   margin-top: -16px;
 }
 
@@ -152,7 +152,7 @@
 
 .mobile-sub-drop {
   width: 1px;
-  height: 16px;
+  height: calc(16px * var(--mobile-zoom, 1));
   background: rgba(100, 116, 139, 0.35);
 }
 
@@ -162,12 +162,12 @@
   border-width: 1.5px;
   border-style: solid;
   background: #ecfdf3;
-  border-radius: 14px;
+  border-radius: calc(14px * var(--mobile-zoom, 1));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: calc(3px * var(--mobile-zoom, 1));
   text-align: center;
   color: #1f2937;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
@@ -175,27 +175,27 @@
 
 /* Root should be obviously bigger */
 .mobile-node-root {
-  width: 108px;
-  height: 116px;
-  padding: 10px 8px;
+  width: calc(108px * var(--mobile-zoom, 1));
+  height: calc(116px * var(--mobile-zoom, 1));
+  padding: calc(10px * var(--mobile-zoom, 1)) calc(8px * var(--mobile-zoom, 1));
 }
 
 /* Next 3 nodes */
 .mobile-node-level-one {
-  width: 82px;
-  height: 90px;
-  padding: 8px 6px;
+  width: calc(82px * var(--mobile-zoom, 1));
+  height: calc(90px * var(--mobile-zoom, 1));
+  padding: calc(8px * var(--mobile-zoom, 1)) calc(6px * var(--mobile-zoom, 1));
 }
 
-/* Last 9 nodes */
+/* Last 9 nodes — dimensions scale with --mobile-zoom custom property */
 .mobile-node-level-two {
-  width: 44px;
-  min-height: 74px;
+  width: calc(44px * var(--mobile-zoom, 1));
+  min-height: calc(74px * var(--mobile-zoom, 1));
   height: auto;
-  padding: 6px 3px;
-  border-radius: 9px;
+  padding: calc(6px * var(--mobile-zoom, 1)) calc(3px * var(--mobile-zoom, 1));
+  border-radius: calc(9px * var(--mobile-zoom, 1));
   justify-content: flex-start;
-  gap: 2.5px;
+  gap: calc(2.5px * var(--mobile-zoom, 1));
 }
 
 /* Empty slot */
@@ -207,8 +207,8 @@
 
 /* Avatar */
 .mobile-node-avatar {
-  width: 22px;
-  height: 22px;
+  width: calc(22px * var(--mobile-zoom, 1));
+  height: calc(22px * var(--mobile-zoom, 1));
   border-radius: 999px;
   display: flex;
   align-items: center;
@@ -217,32 +217,32 @@
 }
 
 .mobile-node-avatar i {
-  font-size: 10px;
+  font-size: calc(10px * var(--mobile-zoom, 1));
 }
 
 .mobile-node-avatar-root {
-  width: 32px;
-  height: 32px;
+  width: calc(32px * var(--mobile-zoom, 1));
+  height: calc(32px * var(--mobile-zoom, 1));
 }
 
 .mobile-node-avatar-root i {
-  font-size: 15px;
+  font-size: calc(15px * var(--mobile-zoom, 1));
 }
 
 .mobile-node-avatar-small {
-  width: 14px;
-  height: 14px;
+  width: calc(14px * var(--mobile-zoom, 1));
+  height: calc(14px * var(--mobile-zoom, 1));
 }
 
 .mobile-node-avatar-small i {
-  font-size: 6px;
+  font-size: calc(6px * var(--mobile-zoom, 1));
 }
 
 /* Text */
 .mobile-node-name {
   width: 100%;
   max-width: 100%;
-  font-size: 8px;
+  font-size: calc(8px * var(--mobile-zoom, 1));
   font-weight: 700;
   line-height: 1.05;
   color: #1f2937;
@@ -253,11 +253,11 @@
 }
 
 .mobile-node-root .mobile-node-name {
-  font-size: 10px;
+  font-size: calc(10px * var(--mobile-zoom, 1));
 }
 
 .mobile-node-level-two .mobile-node-name {
-  font-size: 8.5px;
+  font-size: calc(8.5px * var(--mobile-zoom, 1));
   line-height: 1.1;
   font-weight: 700;
   color: #1f2937;
@@ -266,27 +266,27 @@
 }
 
 .mobile-node-level-two .mobile-node-stage {
-  font-size: 7.5px;
+  font-size: calc(7.5px * var(--mobile-zoom, 1));
   line-height: 1.1;
   color: #64748b;
   margin-top: auto;
 }
 
 .mobile-node-level-two .mobile-node-info {
-  width: 10px;
-  height: 10px;
+  width: calc(10px * var(--mobile-zoom, 1));
+  height: calc(10px * var(--mobile-zoom, 1));
   top: 2px;
   right: 2px;
   background: rgba(100, 116, 139, 0.08);
 }
 
 .mobile-node-level-two .mobile-node-info i {
-  font-size: 4.5px;
+  font-size: calc(4.5px * var(--mobile-zoom, 1));
 }
 
 .mobile-node-rank {
   width: 100%;
-  font-size: 7px;
+  font-size: calc(7px * var(--mobile-zoom, 1));
   font-weight: 600;
   line-height: 1.05;
   color: #64748b;
@@ -297,39 +297,39 @@
 }
 
 .mobile-node-root .mobile-node-rank {
-  font-size: 8px;
+  font-size: calc(8px * var(--mobile-zoom, 1));
 }
 
 .mobile-node-level-two .mobile-node-rank {
-  font-size: 6.5px;
+  font-size: calc(6.5px * var(--mobile-zoom, 1));
 }
 
 .mobile-node-status {
-  font-size: 6px;
+  font-size: calc(6px * var(--mobile-zoom, 1));
   line-height: 1;
   font-weight: 800;
   text-transform: uppercase;
   border-radius: 999px;
-  padding: 2px 5px;
+  padding: calc(2px * var(--mobile-zoom, 1)) calc(5px * var(--mobile-zoom, 1));
 }
 
 .mobile-node-root .mobile-node-status {
-  font-size: 7px;
-  padding: 3px 7px;
+  font-size: calc(7px * var(--mobile-zoom, 1));
+  padding: calc(3px * var(--mobile-zoom, 1)) calc(7px * var(--mobile-zoom, 1));
 }
 
 .mobile-node-level-two .mobile-node-status {
-  font-size: 5px;
-  padding: 1px 3px;
+  font-size: calc(5px * var(--mobile-zoom, 1));
+  padding: calc(1px * var(--mobile-zoom, 1)) calc(3px * var(--mobile-zoom, 1));
 }
 
 /* Info button */
 .mobile-node-info {
   position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 12px;
-  height: 12px;
+  top: calc(3px * var(--mobile-zoom, 1));
+  right: calc(3px * var(--mobile-zoom, 1));
+  width: calc(12px * var(--mobile-zoom, 1));
+  height: calc(12px * var(--mobile-zoom, 1));
   border-radius: 999px;
   background: rgba(100, 116, 139, 0.1);
   color: #64748b;
@@ -339,13 +339,13 @@
 }
 
 .mobile-node-info i {
-  font-size: 5px;
+  font-size: calc(5px * var(--mobile-zoom, 1));
 }
 
 /* Empty node internals */
 .mobile-empty-icon {
-  width: 14px;
-  height: 14px;
+  width: calc(14px * var(--mobile-zoom, 1));
+  height: calc(14px * var(--mobile-zoom, 1));
   border-radius: 999px;
   background: rgba(100, 116, 139, 0.08);
   color: rgba(100, 116, 139, 0.45);
@@ -355,11 +355,11 @@
 }
 
 .mobile-empty-icon i {
-  font-size: 6px;
+  font-size: calc(6px * var(--mobile-zoom, 1));
 }
 
 .mobile-empty-text {
-  font-size: 4.5px;
+  font-size: calc(4.5px * var(--mobile-zoom, 1));
   line-height: 1;
   font-weight: 800;
   color: rgba(100, 116, 139, 0.45);
