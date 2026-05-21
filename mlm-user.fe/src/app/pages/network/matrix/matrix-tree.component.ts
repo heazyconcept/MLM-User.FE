@@ -69,6 +69,15 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
   nodeForModal = signal<MatrixNode | null>(null);
   showMatrixInfo = signal(false);
 
+  windowWidth = signal(typeof window !== 'undefined' ? window.innerWidth : 360);
+  mobileScale = computed(() => {
+    const width = this.windowWidth();
+    // 24px is total horizontal padding of mobile-matrix-tree (12px * 2)
+    const availableWidth = width - 24;
+    return Math.min(1, availableWidth / 510);
+  });
+  mobileZoom = signal(1.0);
+
   activeTab = signal<MatrixTabValue>('entry');
   stageMembers = signal<StageMember[]>([]);
   stageTotalMembers = signal(0);
@@ -198,6 +207,12 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
       this.userAdjustedZoom = false;
       this.requestAutoFit();
     });
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', () => {
+        this.windowWidth.set(window.innerWidth);
+      });
+    }
   }
 
   ngOnInit(): void {
@@ -262,11 +277,13 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
   zoomIn() {
     this.userAdjustedZoom = true;
     this.zoomLevel.update((z) => Math.min(z + 0.2, 2));
+    this.mobileZoom.update((z) => Math.min(z + 0.25, 2.5));
   }
 
   zoomOut() {
     this.userAdjustedZoom = true;
     this.zoomLevel.update((z) => Math.max(z - 0.2, 0.4));
+    this.mobileZoom.update((z) => Math.max(z - 0.25, 1.0));
   }
 
   onTabChange(tab: MatrixTabValue): void {
@@ -274,6 +291,7 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    this.mobileZoom.set(1.0);
     this.activeTab.set(tab);
     if (tab === 'entry') {
       this.loadEntryData();
@@ -387,6 +405,7 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    this.mobileZoom.set(1.0);
     this.loadMatrixRoot(node.username, true);
   }
 
@@ -740,6 +759,15 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
   formatLegs(count: number): string {
     const safeCount = Number.isFinite(count) ? count : 0;
     return `${safeCount} leg${safeCount === 1 ? '' : 's'}`;
+  }
+
+  getCompactStageLabel(stage?: string | null): string {
+    if (!stage) return '';
+    return stage
+      .replace(/stage/gi, 'St.')
+      .replace(/level/gi, 'Lvl')
+      .replace(/\s*,\s*/g, ', ')
+      .trim();
   }
 
   private getStageKey(node: MatrixNode): string | number {

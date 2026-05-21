@@ -219,8 +219,17 @@
        This is the sketch-style version.
        It does NOT use PrimeNG organization chart.
   ====================================================== -->
-  <div class="mobile-matrix-tree">
-    <div class="mobile-tree-canvas">
+  <div
+    class="mobile-matrix-tree"
+    [class.mobile-scrolling]="mobileZoom() > 1.0"
+  >
+    <div
+      class="mobile-tree-canvas"
+      [style.transform]="'scale(' + (mobileScale() * mobileZoom()) + ')'"
+      [style.transform-origin]="mobileZoom() > 1.0 ? 'top left' : 'top center'"
+      [style.height.px]="520 * mobileScale() * mobileZoom()"
+      [style.width.px]="510 * mobileZoom()"
+    >
 
       <!-- Root / Leader node -->
       <div class="mobile-tree-root-row">
@@ -365,9 +374,9 @@
 
                       <span class="mobile-node-name">{{ grandChild.username }}</span>
 
-                      @if (grandChild.stage) {
-                        <span class="text-[9px] leading-none text-mlm-secondary">
-                          {{ grandChild.stage }}
+                      @if (getCompactStageLabel(grandChild.stage); as compactStage) {
+                        <span class="mobile-node-stage text-[7.5px] leading-none text-mlm-secondary">
+                          {{ compactStage }}
                         </span>
                       }
                     </div>
