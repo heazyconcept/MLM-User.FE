@@ -62,6 +62,7 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
   originalRoot = computed(() => this.networkService.matrixTree());
 
   @ViewChild('matrixViewport', { static: true }) matrixViewport?: ElementRef<HTMLElement>;
+  @ViewChild('mobileMatrixTree') mobileMatrixTree?: ElementRef<HTMLElement>;
 
   // Navigation state
   currentRootNode = signal<MatrixNode>(this.networkService.matrixTree());
@@ -220,8 +221,54 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
     this.loadEntryData();
   }
 
+  // Pinch-to-zoom touch variables
+  private initialTouchDistance = 0;
+  private initialMobileZoom = 1.0;
+  private isPinching = false;
+
   ngAfterViewInit(): void {
     this.requestAutoFit();
+
+    const mobileEl = this.mobileMatrixTree?.nativeElement;
+    if (mobileEl) {
+      mobileEl.addEventListener('touchstart', (e) => this.onTouchStart(e), { passive: true });
+      mobileEl.addEventListener('touchmove', (e) => this.onTouchMove(e), { passive: false });
+      mobileEl.addEventListener('touchend', () => this.onTouchEnd(), { passive: true });
+      mobileEl.addEventListener('touchcancel', () => this.onTouchEnd(), { passive: true });
+    }
+  }
+
+  onTouchStart(event: TouchEvent): void {
+    if (event.touches.length === 2) {
+      this.isPinching = true;
+      const t1 = event.touches[0];
+      const t2 = event.touches[1];
+      this.initialTouchDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      this.initialMobileZoom = this.mobileZoom();
+    }
+  }
+
+  onTouchMove(event: TouchEvent): void {
+    if (this.isPinching && event.touches.length === 2) {
+      // Prevent browser default whole-page scale zoom, allowing us to zoom ONLY the nodes tree
+      event.preventDefault();
+
+      const t1 = event.touches[0];
+      const t2 = event.touches[1];
+      const currentDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+
+      if (this.initialTouchDistance > 0) {
+        const ratio = currentDistance / this.initialTouchDistance;
+        // Adjust the mobile zoom dynamically between 1.0 and 2.5
+        const newZoom = Math.max(1.0, Math.min(10.0, this.initialMobileZoom * ratio));
+        this.mobileZoom.set(newZoom);
+      }
+    }
+  }
+
+  onTouchEnd(): void {
+    this.isPinching = false;
+    this.initialTouchDistance = 0;
   }
 
   // Computed: check if viewing original root
@@ -277,7 +324,7 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
   zoomIn() {
     this.userAdjustedZoom = true;
     this.zoomLevel.update((z) => Math.min(z + 0.2, 2));
-    this.mobileZoom.update((z) => Math.min(z + 0.25, 2.5));
+    this.mobileZoom.update((z) => Math.min(z + 0.25, 10.0));
   }
 
   zoomOut() {

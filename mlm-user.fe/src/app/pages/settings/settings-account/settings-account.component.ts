@@ -21,7 +21,9 @@ export class SettingsAccountComponent implements OnInit {
   currentUser = this.userService.currentUser;
 
   username = computed(() => {
-    const email = this.currentUser()?.email ?? '';
+    const user = this.currentUser();
+    if (user?.username) return user.username;
+    const email = user?.email ?? '';
     return email ? email.split('@')[0] : '—';
   });
 
