@@ -1,24 +1,485 @@
+.tree-viewport {
+  height: calc(100vh - 14rem);
+  min-height: 620px;
+}
 
-/* matrix-tree.component.css */
+/* Hide desktop PrimeNG chart on mobile */
+.desktop-matrix-tree {
+  display: none;
+}
 
-/* ── Remove PrimeNG's default grey node border & shadow ── */
-::ng-deep .p-organizationchart-node-content {
-  border: none !important;
-  box-shadow: none !important;
+/* Show custom mobile sketch tree */
+.mobile-matrix-tree {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 8px;
+}
+
+.mobile-tree-canvas {
+  position: relative;
+  width: 100%;
+  max-width: 390px;
+  height: 470px;
+  margin: 0 auto;
+}
+
+/* Root row */
+.mobile-tree-root-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* Main root connector */
+.mobile-root-connector {
+  position: absolute;
+  top: 112px;
+  left: 50%;
+  width: 1px;
+  height: 48px;
+  background: rgba(100, 116, 139, 0.35);
+  transform: translateX(-50%);
+}
+
+.mobile-main-connector {
+  position: absolute;
+  top: 160px;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: rgba(100, 116, 139, 0.35);
+}
+
+/* Level one row */
+.mobile-level-one-row {
+  position: absolute;
+  top: 160px;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: start;
+}
+
+.mobile-level-one-branch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mobile-branch-drop {
+  width: 1px;
+  height: 44px;
+  background: rgba(100, 116, 139, 0.35);
+}
+
+/* Connector under each level-one node */
+.mobile-sub-connector {
+  position: relative;
+  width: 86%;
+  height: 32px;
+}
+
+.mobile-sub-connector::before {
+  content: '';
+  position: absolute;
+  top: 16px;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: rgba(100, 116, 139, 0.35);
+}
+
+.mobile-sub-connector::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 16px;
+  background: rgba(100, 116, 139, 0.35);
+  transform: translateX(-50%);
+}
+
+/* Level two */
+.mobile-level-two-row {
+  width: 112px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  justify-items: center;
+  align-items: start;
+  column-gap: 4px;
+  margin-top: -16px;
+}
+
+.mobile-level-two-branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mobile-sub-drop {
+  width: 1px;
+  height: 16px;
+  background: rgba(100, 116, 139, 0.35);
+}
+
+/* Node base */
+.mobile-node {
+  position: relative;
+  border-width: 1.5px;
+  border-style: solid;
+  background: #ecfdf3;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-align: center;
+  color: #1f2937;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+/* Root should be obviously bigger */
+.mobile-node-root {
+  width: 104px;
+  height: 112px;
+  padding: 10px 8px;
+}
+
+/* Next 3 nodes */
+.mobile-node-level-one {
+  width: 74px;
+  height: 82px;
+  padding: 7px 5px;
+}
+
+/* Last 9 nodes */
+.mobile-node-level-two {
+  width: 36px;
+  height: 58px;
+  padding: 4px 2px;
+  border-radius: 10px;
+}
+
+/* Empty slot */
+.mobile-empty-node {
+  background: #ffffff;
+  border-style: dashed;
+  border-color: rgba(100, 116, 139, 0.18);
+}
+
+/* Avatar */
+.mobile-node-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mobile-node-avatar i {
+  font-size: 10px;
+}
+
+.mobile-node-avatar-root {
+  width: 32px;
+  height: 32px;
+}
+
+.mobile-node-avatar-root i {
+  font-size: 15px;
+}
+
+.mobile-node-avatar-small {
+  width: 14px;
+  height: 14px;
+}
+
+.mobile-node-avatar-small i {
+  font-size: 6px;
+}
+
+/* Text */
+.mobile-node-name {
+  width: 100%;
+  max-width: 100%;
+  font-size: 7px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: #1f2937;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.mobile-node-root .mobile-node-name {
+  font-size: 9px;
+}
+
+.mobile-node-level-two .mobile-node-name {
+  font-size: 5px;
+}
+
+.mobile-node-rank {
+  width: 100%;
+  font-size: 6px;
+  font-weight: 600;
+  line-height: 1.05;
+  color: #64748b;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.mobile-node-root .mobile-node-rank {
+  font-size: 7px;
+}
+
+.mobile-node-level-two .mobile-node-rank {
+  font-size: 4.5px;
+}
+
+.mobile-node-status {
+  font-size: 5px;
+  line-height: 1;
+  font-weight: 800;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 2px 5px;
+}
+
+.mobile-node-root .mobile-node-status {
+  font-size: 6px;
+  padding: 3px 7px;
+}
+
+.mobile-node-level-two .mobile-node-status {
+  font-size: 4px;
+  padding: 1px 3px;
+}
+
+/* Info button */
+.mobile-node-info {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.1);
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-node-info i {
+  font-size: 5px;
+}
+
+/* Empty node internals */
+.mobile-empty-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.08);
+  color: rgba(100, 116, 139, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-empty-icon i {
+  font-size: 6px;
+}
+
+.mobile-empty-text {
+  font-size: 4.5px;
+  line-height: 1;
+  font-weight: 800;
+  color: rgba(100, 116, 139, 0.45);
+  text-transform: uppercase;
+}
+
+/* Slightly larger phones */
+@media (min-width: 390px) and (max-width: 767px) {
+  .mobile-tree-canvas {
+    max-width: 410px;
+    height: 500px;
+  }
+
+  .mobile-main-connector {
+    left: 10%;
+    right: 10%;
+  }
+
+  .mobile-node-root {
+    width: 112px;
+    height: 120px;
+  }
+
+  .mobile-node-level-one {
+    width: 80px;
+    height: 88px;
+  }
+
+  .mobile-level-two-row {
+    width: 122px;
+    column-gap: 5px;
+  }
+
+  .mobile-node-level-two {
+    width: 40px;
+    height: 62px;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  .tree-viewport {
+    min-height: 560px;
+  }
+
+  .mobile-tree-canvas {
+    max-width: 330px;
+    height: 430px;
+  }
+
+  .mobile-node-root {
+    width: 96px;
+    height: 104px;
+  }
+
+  .mobile-node-level-one {
+    width: 68px;
+    height: 76px;
+  }
+
+  .mobile-level-two-row {
+    width: 98px;
+    column-gap: 3px;
+  }
+
+  .mobile-node-level-two {
+    width: 32px;
+    height: 52px;
+  }
+}
+
+/* Desktop: return to PrimeNG chart */
+@media (min-width: 768px) {
+  .tree-viewport {
+    height: calc(100vh - 14rem);
+    min-height: 520px;
+  }
+
+  .mobile-matrix-tree {
+    display: none;
+  }
+
+  .desktop-matrix-tree {
+    display: flex;
+  }
+
+  .matrix-viewport {
+    touch-action: auto;
+  }
+
+  .matrix-node-card {
+    width: 176px;
+    min-height: 144px;
+  }
+
+  .matrix-empty-node {
+    width: 176px;
+    height: 144px;
+  }
+
+  .matrix-node-card .node-inner {
+    padding: 24px 16px 20px;
+    gap: 10px;
+  }
+
+  .matrix-node-card .node-avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .matrix-node-card .node-avatar i {
+    font-size: 24px;
+  }
+
+  .matrix-node-card .node-username {
+    font-size: 16px;
+    max-width: 100%;
+  }
+
+  .matrix-node-card .node-rank {
+    font-size: 14px;
+  }
+
+  .matrix-node-card .node-status {
+    font-size: 11px;
+    padding: 4px 14px;
+  }
+
+  .matrix-node-card .node-info-btn {
+    width: 20px;
+    height: 20px;
+    top: 6px;
+    right: 6px;
+  }
+
+  .matrix-node-card .node-info-btn i {
+    font-size: 9px;
+  }
+
+  .matrix-empty-node .empty-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .matrix-empty-node .empty-icon i {
+    font-size: 16px;
+  }
+
+  .matrix-empty-node .empty-label {
+    font-size: 11px;
+  }
+
+  :host ::ng-deep .p-organizationchart-table {
+    border-spacing: 12px 20px;
+  }
+}
+
+/* PrimeNG organization chart override */
+:host ::ng-deep .p-organizationchart {
+  transform-origin: center center;
+}
+
+:host ::ng-deep .p-organizationchart-node-content {
   padding: 0 !important;
-  background: transparent !important;
-}
-
-/* ── Remove the default connector line color if needed ── */
-::ng-deep .p-organizationchart-line-down,
-::ng-deep .p-organizationchart-line-left,
-::ng-deep .p-organizationchart-line-right,
-::ng-deep .p-organizationchart-line-top {
-  border-color: #d1d5db !important; /* keep connector lines but use a soft gray */
-}
-
-/* ── Remove selected node highlight ring PrimeNG adds ── */
-::ng-deep .p-organizationchart-node-content.p-highlight {
   border: none !important;
   background: transparent !important;
+}
+
+:host ::ng-deep .p-organizationchart-line-down,
+:host ::ng-deep .p-organizationchart-line-left,
+:host ::ng-deep .p-organizationchart-line-right,
+:host ::ng-deep .p-organizationchart-line-top {
+  border-color: rgba(100, 116, 139, 0.25) !important;
 }

@@ -1,7 +1,7 @@
 <div class="min-h-screen bg-mlm-background">
-  <main class="py-8">
-    <div class="px-4 sm:px-6 lg:px-8 mx-auto max-w-full">
-      <div class="space-y-6 flex flex-col h-full">
+  <main class="py-3 sm:py-8">
+    <div class="px-3 sm:px-6 lg:px-8 mx-auto max-w-full">
+      <div class="space-y-3 sm:space-y-6 flex flex-col h-full">
         <!-- ─── Header ──────────────────────────────── -->
         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div class="flex items-center gap-3">
@@ -14,6 +14,7 @@
                 Back
               </button>
             }
+
             <div>
               <h1 class="text-xl font-medium text-mlm-text tracking-tight">
                 @if (activeTab() === 'entry') {
@@ -26,7 +27,10 @@
                   Stage {{ activeStageNumber() }} matrix
                 }
               </h1>
-              <p class="mt-0.5 text-sm text-mlm-secondary">Visualise your binary tree structure.</p>
+
+              <p class="mt-0.5 text-sm text-mlm-secondary">
+                Visualise your binary tree structure.
+              </p>
             </div>
           </div>
 
@@ -37,12 +41,14 @@
             >
               <i class="pi pi-minus text-xs"></i>
             </button>
+
             <button
               (click)="zoomIn()"
               class="w-9 h-9 flex items-center justify-center border border-mlm-secondary/20 bg-white rounded-lg hover:border-mlm-secondary/40 text-mlm-secondary hover:text-mlm-text transition-colors"
             >
               <i class="pi pi-plus text-xs"></i>
             </button>
+
             <button
               (click)="openCreateReferralDialog()"
               class="h-9 px-4 text-sm font-medium text-white bg-mlm-primary rounded-lg hover:bg-mlm-primary/90 transition-colors flex items-center gap-2"
@@ -87,18 +93,21 @@
               [class.pi-chevron-up]="showMatrixInfo()"
             ></i>
           </button>
+
           @if (showMatrixInfo()) {
             <div
               class="border-t border-mlm-secondary/15 px-5 py-4 space-y-3 text-sm text-mlm-secondary animate-fade-in"
             >
               <p>
-                <span class="font-medium text-mlm-text">3×1 Forced Matrix</span> — each member
-                refers 3 people. Fills stage by stage across 6 stages.
+                <span class="font-medium text-mlm-text">3×1 Forced Matrix</span>
+                — each member refers 3 people. Fills stage by stage across 6 stages.
               </p>
+
               <p>
-                <span class="font-medium text-mlm-text">Spillover</span> — referrals beyond 3 spill
-                under your leftmost leg, filling left to right.
+                <span class="font-medium text-mlm-text">Spillover</span>
+                — referrals beyond 3 spill under your leftmost leg, filling left to right.
               </p>
+
               <div class="border border-mlm-secondary/15 rounded-lg overflow-hidden mt-3">
                 <table class="w-full text-xs">
                   <thead class="bg-mlm-background">
@@ -120,32 +129,38 @@
                       </th>
                     </tr>
                   </thead>
+
                   <tbody class="divide-y divide-mlm-secondary/10">
                     <tr>
                       <td class="px-4 py-2 text-mlm-secondary">1</td>
                       <td class="px-4 py-2 text-mlm-text font-medium">Stakeholder</td>
                       <td class="px-4 py-2 text-mlm-secondary">1–2</td>
                     </tr>
+
                     <tr>
                       <td class="px-4 py-2 text-mlm-secondary">2</td>
                       <td class="px-4 py-2 text-mlm-text font-medium">Mentor</td>
                       <td class="px-4 py-2 text-mlm-secondary">3–4</td>
                     </tr>
+
                     <tr>
                       <td class="px-4 py-2 text-mlm-secondary">3</td>
                       <td class="px-4 py-2 text-mlm-text font-medium">Manager</td>
                       <td class="px-4 py-2 text-mlm-secondary">5–7</td>
                     </tr>
+
                     <tr>
                       <td class="px-4 py-2 text-mlm-secondary">4</td>
                       <td class="px-4 py-2 text-mlm-text font-medium">Director</td>
                       <td class="px-4 py-2 text-mlm-secondary">8–9</td>
                     </tr>
+
                     <tr>
                       <td class="px-4 py-2 text-mlm-secondary">5</td>
                       <td class="px-4 py-2 text-mlm-text font-medium">Senior Director</td>
                       <td class="px-4 py-2 text-mlm-secondary">10–11</td>
                     </tr>
+
                     <tr>
                       <td class="px-4 py-2 text-mlm-secondary">6</td>
                       <td class="px-4 py-2 text-mlm-text font-medium">Consultant</td>
@@ -172,6 +187,7 @@
           >
             <div class="flex flex-col items-center gap-4">
               <p-skeleton width="180px" height="1rem"></p-skeleton>
+
               <div class="flex gap-6">
                 <p-skeleton width="9rem" height="7rem" borderRadius="12px"></p-skeleton>
                 <p-skeleton width="9rem" height="7rem" borderRadius="12px"></p-skeleton>
@@ -186,6 +202,7 @@
             >
               <div class="flex flex-col items-center gap-4">
                 <p-skeleton width="220px" height="1rem"></p-skeleton>
+
                 <div class="flex gap-6">
                   <p-skeleton width="11rem" height="8rem" borderRadius="16px"></p-skeleton>
                   <p-skeleton width="11rem" height="8rem" borderRadius="16px"></p-skeleton>
@@ -193,315 +210,284 @@
                 </div>
               </div>
             </div>
-          } @else {
-            <!-- ─── Tree viewport ──────────────────────── -->
-            <div
-              class="border border-mlm-secondary/15 rounded-xl bg-white overflow-hidden relative"
-              style="height: calc(100vh - 22rem); min-height: 480px"
-            >
+          } @else { 
+           <!-- ─── Tree viewport ──────────────────────── -->
+<div class="border border-mlm-secondary/15 rounded-xl bg-white overflow-hidden relative tree-viewport">
 
-              <!-- ══════════════════════════════════════════
-                   Legacy mobile tree kept disabled so mobile uses the full chart below.
-              ═══════════════════════════════════════════ -->
-              <div class="hidden">
-                <!-- Swipe hint -->
-                <div class="flex items-center justify-center gap-1.5 py-2 text-[10px] text-mlm-secondary/50">
-                  <i class="pi pi-arrows-h text-[10px]"></i>
-                  swipe to explore
+  <!-- =====================================================
+       MOBILE CUSTOM MATRIX TREE
+       This is the sketch-style version.
+       It does NOT use PrimeNG organization chart.
+  ====================================================== -->
+  <div class="mobile-matrix-tree">
+    <div class="mobile-tree-canvas">
+
+      <!-- Root / Leader node -->
+      <div class="mobile-tree-root-row">
+        <div
+          class="mobile-node mobile-node-root"
+          [class.opacity-50]="displayRoot().status === 'inactive'"
+          [class.border-mlm-primary]="displayRoot().status === 'active'"
+          [class.border-mlm-secondary/20]="displayRoot().status !== 'active'"
+          (click)="openNodeDetails(displayRoot())"
+        >
+          <button
+            type="button"
+            class="mobile-node-info"
+            (click)="$event.stopPropagation(); openNodeDetails(displayRoot())"
+            [pTooltip]="'Details'"
+            tooltipPosition="top"
+            aria-label="View details"
+          > 
+            <i class="pi pi-info"></i>
+          </button>
+
+          <div
+            class="mobile-node-avatar mobile-node-avatar-root"
+            [class.bg-mlm-primary/10]="displayRoot().status === 'active'"
+            [class.bg-mlm-secondary/10]="displayRoot().status !== 'active'"
+          >
+            <i
+              class="pi pi-user"
+              [class.text-mlm-primary]="displayRoot().status === 'active'"
+              [class.text-mlm-secondary]="displayRoot().status !== 'active'"
+            ></i>
+          </div>
+
+          <span class="mobile-node-name">
+            {{ displayRoot().username }}@if (displayRoot().level === 0) { (You) }
+          </span>
+
+
+        </div>
+      </div>
+
+      <!-- Root vertical connector -->
+      <div class="mobile-root-connector"></div>
+
+      <!-- Main horizontal connector -->
+      <div class="mobile-main-connector"></div>
+
+      <!-- Level 1: first 3 children -->
+      <div class="mobile-level-one-row">
+        @for (child of displayRoot().children ?? []; track child.id; let childIndex = $index) {
+          <div class="mobile-level-one-branch">
+            <div class="mobile-branch-drop"></div>
+
+            @if (child.status !== 'empty') {
+              <div
+                class="mobile-node mobile-node-level-one"
+                [class.opacity-50]="child.status === 'inactive'"
+                [class.border-mlm-primary]="child.status === 'active'"
+                [class.border-mlm-secondary/20]="child.status !== 'active'"
+                [class.cursor-pointer]="activeTab() === 'entry'"
+                (click)="handleNodeClick(child)"
+              >
+                <button
+                  type="button"
+                  class="mobile-node-info"
+                  (click)="$event.stopPropagation(); openNodeDetails(child)"
+                  [pTooltip]="'Details'"
+                  tooltipPosition="top"
+                  aria-label="View details"
+                >
+                  <i class="pi pi-info"></i>
+                </button>
+
+                <div
+                  class="mobile-node-avatar"
+                  [class.bg-mlm-primary/10]="child.status === 'active'"
+                  [class.bg-mlm-secondary/10]="child.status !== 'active'"
+                >
+                  <i
+                    class="pi pi-user"
+                    [class.text-mlm-primary]="child.status === 'active'"
+                    [class.text-mlm-secondary]="child.status !== 'active'"
+                  ></i>
                 </div>
 
-                <!-- Scrollable tree container -->
-                <div
-                  class="overflow-x-auto overflow-y-hidden pb-6 cursor-grab active:cursor-grabbing"
-                  style="-webkit-overflow-scrolling: touch;"
-                >
-                  <!-- Inner tree — rendered with divs -->
-                  <div class="inline-flex flex-col items-center px-6" style="min-width: max-content;">
-                    <!-- Root node -->
+                <span class="mobile-node-name">{{ child.username }}</span>
+              </div>
+            }
+
+            <!-- Level 2 connector under each level-one node -->
+            <div class="mobile-sub-connector"></div>
+
+            <!-- Level 2: each child has 3 children -->
+            <div class="mobile-level-two-row">
+              @for (grandChild of child.children ?? []; track grandChild.id) {
+                <div class="mobile-level-two-branch">
+                  <div class="mobile-sub-drop"></div>
+
+                  @if (grandChild.status !== 'empty') {
                     <div
-                      class="relative flex flex-col items-center w-28 rounded-2xl border-2 bg-emerald-50 transition-all"
-                      [class.border-mlm-primary]="displayRoot().status === 'active'"
-                      [class.border-mlm-secondary/20]="displayRoot().status !== 'active'"
+                      class="mobile-node mobile-node-level-two"
+                      [class.opacity-50]="grandChild.status === 'inactive'"
+                      [class.border-mlm-primary]="grandChild.status === 'active'"
+                      [class.border-mlm-secondary/20]="grandChild.status !== 'active'"
+                      [class.cursor-pointer]="activeTab() === 'entry'"
+                      (click)="handleNodeClick(grandChild)"
                     >
-                      <div class="w-full flex flex-col items-center px-3 pt-4 pb-3 gap-2">
-                        <div
-                          class="w-10 h-10 rounded-full flex items-center justify-center"
-                          [class.bg-mlm-primary/10]="displayRoot().status === 'active'"
-                          [class.bg-mlm-secondary/10]="displayRoot().status !== 'active'"
-                        >
-                          <i
-                            class="pi pi-user text-lg"
-                            [class.text-mlm-primary]="displayRoot().status === 'active'"
-                            [class.text-mlm-secondary]="displayRoot().status !== 'active'"
-                          ></i>
-                        </div>
-                        <span
-                          class="text-xs font-semibold text-mlm-text text-center leading-tight truncate max-w-full px-1"
-                        >
-                          {{ displayRoot().username }}
-                          @if (displayRoot().level === 0) {
-                            <span class="font-normal text-mlm-secondary">(You)</span>
-                          }
-                        </span>
-                        @if (displayRoot().rank || displayRoot().stage) {
-                          <span class="text-[9px] text-mlm-secondary text-center leading-snug">
-                            @if (displayRoot().rank) {
-                              {{ displayRoot().rank }}
-                            }
-                            @if (displayRoot().stage) {
-                              · {{ displayRoot().stage }}
-                            }
-                          </span>
-                        }
-                        <span
-                          class="text-[9px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full"
-                          [class.bg-mlm-primary/10]="displayRoot().status === 'active'"
-                          [class.text-mlm-primary]="displayRoot().status === 'active'"
-                          [class.bg-mlm-secondary/10]="displayRoot().status !== 'active'"
-                          [class.text-mlm-secondary]="displayRoot().status !== 'active'"
-                        >
-                          {{ displayRoot().status === 'active' ? 'Active' : 'Inactive' }}
-                        </span>
-                      </div>
                       <button
                         type="button"
-                        class="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-mlm-secondary/10 flex items-center justify-center text-mlm-secondary"
-                        (click)="openNodeDetails(displayRoot())"
+                        class="mobile-node-info"
+                        (click)="$event.stopPropagation(); openNodeDetails(grandChild)"
+                        [pTooltip]="'Details'"
+                        tooltipPosition="top"
                         aria-label="View details"
                       >
-                        <i class="pi pi-info" style="font-size: 8px;"></i>
+                        <i class="pi pi-info"></i>
                       </button>
+
+                      <div
+                        class="mobile-node-avatar mobile-node-avatar-small"
+                        [class.bg-mlm-primary/10]="grandChild.status === 'active'"
+                        [class.bg-mlm-secondary/10]="grandChild.status !== 'active'"
+                      >
+                        <i
+                          class="pi pi-user"
+                          [class.text-mlm-primary]="grandChild.status === 'active'"
+                          [class.text-mlm-secondary]="grandChild.status !== 'active'"
+                        ></i>
+                      </div>
+
+                      <span class="mobile-node-name">{{ grandChild.username }}</span>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================
+       DESKTOP PRIME NG MATRIX TREE
+       Keep your old desktop chart here.
+  ====================================================== -->
+  <div
+    #matrixViewport
+    class="desktop-matrix-tree absolute inset-0 overflow-auto matrix-viewport p-2 sm:p-6 md:p-10 justify-center items-start cursor-grab active:cursor-grabbing"
+    style="-webkit-overflow-scrolling: touch;"
+  >
+    <div
+      [style.width.px]="scaledWidth() || null"
+      [style.height.px]="scaledHeight() || null"
+      class="relative shrink-0"
+    >
+      <div
+        [style.transform]="'scale(' + zoomLevel() + ')'"
+        class="transition-transform duration-300 origin-top-left absolute top-0 left-0"
+      >
+        <p-organization-chart
+          [value]="matrixTree()"
+          (onNodeSelect)="onNodeSelect($event)"
+        >
+          <ng-template let-node pTemplate="default">
+            @if (node.data) {
+              @if (node.data.status === 'empty') {
+                <div
+                  class="matrix-empty-node flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-mlm-secondary/20 bg-white cursor-pointer hover:border-mlm-primary/40 hover:bg-mlm-primary/5 transition-all group"
+                  [pTooltip]="getTooltipText(node.data)"
+                  tooltipPosition="top"
+                  (click)="onOpenSlotClick(node.data)"
+                >
+                  <div
+                    class="empty-icon rounded-full bg-mlm-secondary/10 flex items-center justify-center mb-1 group-hover:bg-mlm-primary/10 transition-colors"
+                  >
+                    <i
+                      class="pi pi-plus text-mlm-secondary/50 group-hover:text-mlm-primary/70 transition-colors"
+                    ></i>
+                  </div>
+
+                  <span
+                    class="empty-label font-semibold text-mlm-secondary/50 uppercase tracking-widest group-hover:text-mlm-primary/70 transition-colors"
+                  >
+                    Open slot
+                  </span>
+                </div>
+              } @else {
+                <div
+                  class="matrix-node-card relative flex flex-col items-center rounded-xl border-2 bg-emerald-50 transition-all duration-200"
+                  [class.matrix-node-main]="node.data.level === 0"
+                  [class.matrix-node-level-one]="node.data.level === 1"
+                  [class.matrix-node-small]="node.data.level >= 2"
+                  [class.opacity-50]="node.data.status === 'inactive'"
+                  [class.hover:shadow-md]="activeTab() === 'entry' && !isCurrentRoot(node.data.id)"
+                  [class.cursor-pointer]="activeTab() === 'entry' && !isCurrentRoot(node.data.id)"
+                  [class.cursor-default]="activeTab() !== 'entry' || isCurrentRoot(node.data.id)"
+                  [class.border-mlm-primary]="node.data.status === 'active'"
+                  [class.border-mlm-secondary/20]="node.data.status !== 'active'"
+                  [class.ring-2]="isCurrentRoot(node.data.id)"
+                  [class.ring-mlm-primary]="isCurrentRoot(node.data.id)"
+                  [class.ring-offset-2]="isCurrentRoot(node.data.id)"
+                  [pTooltip]="getTooltipText(node.data)"
+                  tooltipPosition="top"
+                  (click)="handleNodeClick(node.data)"
+                >
+                  <div class="node-inner w-full flex flex-col items-center">
+                    <div
+                      class="node-avatar rounded-full flex items-center justify-center"
+                      [class.bg-mlm-primary/10]="node.data.status === 'active'"
+                      [class.bg-mlm-secondary/10]="node.data.status !== 'active'"
+                    >
+                      <i
+                        class="pi pi-user"
+                        [class.text-mlm-primary]="node.data.status === 'active'"
+                        [class.text-mlm-secondary]="node.data.status !== 'active'"
+                      ></i>
                     </div>
 
-                    <!-- Vertical connector -->
-                    <div class="w-px h-4 bg-mlm-secondary/25"></div>
+                    <span
+                      class="node-username font-semibold text-mlm-text truncate max-w-full text-center px-1 leading-snug"
+                    >
+                      {{ node.data.username }}@if (node.data.level === 0) { (You) }
+                    </span>
 
-                    <!-- Children row -->
-                    @if ((displayRoot().children ?? []).length > 0) {
-                      <div class="flex items-start gap-2 relative">
-                        <!-- Horizontal connector line spanning children -->
-                        <div
-                          class="absolute top-0 bg-mlm-secondary/25"
-                          style="height: 1px; left: 60px; right: 60px;"
-                        ></div>
-
-                        @for (child of displayRoot().children ?? []; track child.id) {
-                          <div class="flex flex-col items-center">
-                            <!-- Drop line to child -->
-                            <div class="w-px h-4 bg-mlm-secondary/25"></div>
-
-                            <!-- Empty slot -->
-                            @if (child.status === 'empty') {
-                              <div
-                                class="flex flex-col items-center justify-center w-24 rounded-2xl border-2 border-dashed border-mlm-secondary/20 bg-white cursor-pointer hover:border-mlm-primary/40 hover:bg-mlm-primary/5 transition-all group"
-                                style="height: 90px;"
-                                (click)="onOpenSlotClick(child)"
-                              >
-                                <div
-                                  class="w-8 h-8 rounded-full bg-mlm-secondary/10 flex items-center justify-center mb-1 group-hover:bg-mlm-primary/10 transition-colors"
-                                >
-                                  <i
-                                    class="pi pi-plus text-xs text-mlm-secondary/50 group-hover:text-mlm-primary/70 transition-colors"
-                                  ></i>
-                                </div>
-                                <span
-                                  class="text-[8px] font-semibold text-mlm-secondary/50 uppercase tracking-widest group-hover:text-mlm-primary/60 transition-colors"
-                                >
-                                  Open slot
-                                </span>
-                              </div>
-                            } @else {
-                              <!-- Member node -->
-                              <div
-                                class="relative flex flex-col items-center w-24 rounded-2xl border-2 bg-emerald-50 transition-all"
-                                [class.border-mlm-primary]="child.status === 'active'"
-                                [class.border-mlm-secondary/20]="child.status !== 'active'"
-                                [class.opacity-50]="child.status === 'inactive'"
-                                [class.cursor-pointer]="activeTab() === 'entry' && child.status === 'active'"
-                                (click)="handleNodeClick(child)"
-                              >
-                                <div class="w-full flex flex-col items-center px-2 pt-3 pb-2.5 gap-1.5">
-                                  <div
-                                    class="w-9 h-9 rounded-full flex items-center justify-center"
-                                    [class.bg-mlm-primary/10]="child.status === 'active'"
-                                    [class.bg-mlm-secondary/10]="child.status !== 'active'"
-                                  >
-                                    <i
-                                      class="pi pi-user text-base"
-                                      [class.text-mlm-primary]="child.status === 'active'"
-                                      [class.text-mlm-secondary]="child.status !== 'active'"
-                                    ></i>
-                                  </div>
-                                  <span
-                                    class="text-[10px] font-semibold text-mlm-text text-center leading-tight truncate max-w-full px-1"
-                                  >
-                                    {{ child.username }}
-                                  </span>
-                                  @if (child.rank || child.stage) {
-                                    <span class="text-[8px] text-mlm-secondary text-center leading-snug">
-                                      @if (child.rank) {
-                                        {{ child.rank }}
-                                      }
-                                      @if (child.stage) {
-                                        · {{ child.stage }}
-                                      }
-                                    </span>
-                                  }
-                                  <span
-                                    class="text-[8px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full"
-                                    [class.bg-mlm-primary/10]="child.status === 'active'"
-                                    [class.text-mlm-primary]="child.status === 'active'"
-                                    [class.bg-mlm-secondary/10]="child.status !== 'active'"
-                                    [class.text-mlm-secondary]="child.status !== 'active'"
-                                  >
-                                    {{ child.status === 'active' ? 'Active' : 'Inactive' }}
-                                  </span>
-                                </div>
-                                <button
-                                  type="button"
-                                  class="absolute top-1 right-1 w-4 h-4 rounded-full bg-mlm-secondary/10 flex items-center justify-center text-mlm-secondary transition-colors"
-                                  (click)="$event.stopPropagation(); openNodeDetails(child)"
-                                  aria-label="View details"
-                                >
-                                  <i class="pi pi-info" style="font-size: 8px;"></i>
-                                </button>
-                              </div>
-                            }
-                          </div>
-                        }
-                      </div>
-                    }
-                  </div>
-                </div>
-              </div>
-
-              <!-- ───────────────────────────────────────
-                   Full matrix chart
-              ─────────────────────────────────────── -->
-              <div
-                #matrixViewport
-                class="absolute inset-0 overflow-auto p-4 sm:p-6 md:p-10 cursor-grab active:cursor-grabbing"
-                style="-webkit-overflow-scrolling: touch;"
-              >
-                <div
-                  [style.transform]="'scale(' + zoomLevel() + ')'"
-                  class="transition-transform duration-300 origin-top"
-                >
-                  <p-organization-chart
-                    [value]="matrixTree()"
-                    (onNodeSelect)="onNodeSelect($event)"
-                  >
-                    <ng-template let-node pTemplate="default">
-                      @if (node.data) {
-                        <!-- ── Empty slot ── -->
-                        @if (node.data.status === 'empty') {
-                          <div
-                            class="flex flex-col items-center justify-center w-44 h-36 rounded-2xl border-2 border-dashed border-mlm-secondary/20 bg-white cursor-pointer hover:border-mlm-primary/40 hover:bg-mlm-primary/5 transition-all group"
-                            [pTooltip]="getTooltipText(node.data)"
-                            tooltipPosition="top"
-                            (click)="onOpenSlotClick(node.data)"
-                          >
-                            <div
-                              class="w-12 h-12 rounded-full bg-mlm-secondary/10 flex items-center justify-center mb-2 group-hover:bg-mlm-primary/10 transition-colors"
-                            >
-                              <i
-                                class="pi pi-plus text-base text-mlm-secondary/50 group-hover:text-mlm-primary/70 transition-colors"
-                              ></i>
-                            </div>
-                            <span
-                              class="text-[11px] font-semibold text-mlm-secondary/50 uppercase tracking-widest group-hover:text-mlm-primary/70 transition-colors"
-                            >
-                              Open slot
-                            </span>
-                          </div>
-
-                        <!-- ── Member node ── -->
+                    <span class="node-rank font-semibold text-mlm-secondary text-center">
+                      @if (node.data.rank) {
+                        {{ node.data.rank }}
                       } @else {
-                        <div
-                          class="relative flex flex-col items-center w-44 rounded-2xl border-2 bg-emerald-50 transition-all duration-200"
-                          [class.opacity-50]="node.data.status === 'inactive'"
-                          [class.hover:shadow-md]="
-                            activeTab() === 'entry' && !isCurrentRoot(node.data.id)
-                          "
-                          [class.cursor-pointer]="
-                            activeTab() === 'entry' && !isCurrentRoot(node.data.id)
-                          "
-                          [class.cursor-default]="
-                            activeTab() !== 'entry' || isCurrentRoot(node.data.id)
-                          "
-                          [class.border-mlm-primary]="node.data.status === 'active'"
-                          [class.border-mlm-secondary/20]="node.data.status !== 'active'"
-                          [class.ring-2]="isCurrentRoot(node.data.id)"
-                          [class.ring-mlm-primary]="isCurrentRoot(node.data.id)"
-                          [class.ring-offset-2]="isCurrentRoot(node.data.id)"
-                          [pTooltip]="getTooltipText(node.data)"
-                          tooltipPosition="top"
-                          (click)="handleNodeClick(node.data)"
-                        >
-                          <div class="w-full flex flex-col items-center px-4 pt-6 pb-5 gap-2.5">
-                            <!-- Person icon -->
-                            <div
-                              class="w-14 h-14 rounded-full flex items-center justify-center"
-                              [class.bg-mlm-primary/10]="node.data.status === 'active'"
-                              [class.bg-mlm-secondary/10]="node.data.status !== 'active'"
-                            >
-                              <i
-                                class="pi pi-user text-2xl"
-                                [class.text-mlm-primary]="node.data.status === 'active'"
-                                [class.text-mlm-secondary]="node.data.status !== 'active'"
-                              ></i>
-                            </div>
-
-                            <!-- Username -->
-                            <span
-                              class="text-base font-semibold text-mlm-text truncate max-w-full text-center px-1 leading-snug"
-                            >
-                              {{ node.data.username }}@if (node.data.level === 0) { (You) }
-                            </span>
-
-                            <!-- Rank / stage -->
-                            <span class="text-sm font-semibold text-mlm-secondary text-center">
-                              @if (node.data.rank) {
-                                {{ node.data.rank }}
-                              } @else {
-                                —
-                              }
-                              @if (node.data.stage) {
-                                · {{ node.data.stage }}
-                              }
-                            </span>
-
-                            <!-- Status badge -->
-                            <span
-                              class="text-[11px] font-bold uppercase tracking-wider px-3.5 py-1 rounded-full"
-                              [class.bg-mlm-primary/10]="node.data.status === 'active'"
-                              [class.text-mlm-primary]="node.data.status === 'active'"
-                              [class.bg-mlm-secondary/10]="node.data.status !== 'active'"
-                              [class.text-mlm-secondary]="node.data.status !== 'active'"
-                            >
-                              {{ node.data.status === 'active' ? 'Active' : 'Inactive' }}
-                            </span>
-                          </div>
-
-                          <!-- Info button -->
-                          <button
-                            type="button"
-                            class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-mlm-secondary/10 hover:bg-mlm-secondary/20 flex items-center justify-center text-mlm-secondary transition-colors z-10"
-                            (click)="$event.stopPropagation(); openNodeDetails(node.data)"
-                            [pTooltip]="'Details'"
-                            tooltipPosition="top"
-                            aria-label="View details"
-                          >
-                            <i class="pi pi-info text-[9px]"></i>
-                          </button>
-                        </div>
+                        —
                       }
-                    }
-                  </ng-template>
-                </p-organization-chart>
-              </div>
-              </div>
-            </div>
+
+                      @if (node.data.stage) {
+                        · {{ node.data.stage }}
+                      }
+                    </span>
+
+                    <span
+                      class="node-status font-bold uppercase tracking-wider rounded-full"
+                      [class.bg-mlm-primary/10]="node.data.status === 'active'"
+                      [class.text-mlm-primary]="node.data.status === 'active'"
+                      [class.bg-mlm-secondary/10]="node.data.status !== 'active'"
+                      [class.text-mlm-secondary]="node.data.status !== 'active'"
+                    >
+                      {{ node.data.status === 'active' ? 'Active' : 'Inactive' }}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="node-info-btn absolute rounded-full bg-mlm-secondary/10 hover:bg-mlm-secondary/20 flex items-center justify-center text-mlm-secondary transition-colors z-10"
+                    (click)="$event.stopPropagation(); openNodeDetails(node.data)"
+                    [pTooltip]="'Details'"
+                    tooltipPosition="top"
+                    aria-label="View details"
+                  >
+                    <i class="pi pi-info"></i>
+                  </button>
+                </div>
+              }
+            }
+          </ng-template>
+        </p-organization-chart>
+      </div>
+    </div>
+  </div>
+</div>
           }
         }
       </div>
@@ -526,26 +512,31 @@
           <span class="text-xs text-mlm-secondary">Username</span>
           <span class="text-sm font-medium text-mlm-text">{{ node.username }}</span>
         </div>
+
         <div class="flex items-center justify-between py-3">
           <span class="text-xs text-mlm-secondary">Package</span>
           <span class="text-sm font-medium text-mlm-text">{{ getPackageLabel(node.package) }}</span>
         </div>
+
         @if (node.rank) {
           <div class="flex items-center justify-between py-3">
             <span class="text-xs text-mlm-secondary">Rank</span>
             <span class="text-sm font-medium text-mlm-text">{{ node.rank }}</span>
           </div>
         }
+
         @if (node.stage) {
           <div class="flex items-center justify-between py-3">
             <span class="text-xs text-mlm-secondary">Stage</span>
             <span class="text-sm font-medium text-mlm-text">{{ node.stage }}</span>
           </div>
         }
+
         <div class="flex items-center justify-between py-3">
           <span class="text-xs text-mlm-secondary">Level</span>
           <span class="text-sm font-medium text-mlm-text tabular-nums">{{ node.level }}</span>
         </div>
+
         <div class="flex items-center justify-between py-3">
           <span class="text-xs text-mlm-secondary">Status</span>
           <span
@@ -558,18 +549,22 @@
             {{ node.status === 'active' ? 'Active' : 'Inactive' }}
           </span>
         </div>
+
         @if (node.directReferrals != null) {
           <div class="flex items-center justify-between py-3">
             <span class="text-xs text-mlm-secondary">Legs</span>
-            <span class="text-sm font-medium text-mlm-text tabular-nums">{{
-              node.directReferrals
-            }}</span>
+            <span class="text-sm font-medium text-mlm-text tabular-nums">
+              {{ node.directReferrals }}
+            </span>
           </div>
         }
+
         @if (node.teamSize != null) {
           <div class="flex items-center justify-between py-3">
             <span class="text-xs text-mlm-secondary">Team size</span>
-            <span class="text-sm font-medium text-mlm-text tabular-nums">{{ node.teamSize }}</span>
+            <span class="text-sm font-medium text-mlm-text tabular-nums">
+              {{ node.teamSize }}
+            </span>
           </div>
         }
       </div>

@@ -54,6 +54,7 @@ interface StageTab {
   ],
   providers: [DialogService],
   templateUrl: './matrix-tree.component.html',
+  styleUrl: './matrix-tree.component.css',
 })
 export class MatrixTreeComponent implements OnInit, AfterViewInit {
   private networkService = inject(NetworkService);
@@ -93,6 +94,18 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
     { label: 'Senior Director', value: 5 },
     { label: 'Consultant', value: 6 },
   ];
+
+ mobileFitScale(): number {
+  const width = window.innerWidth;
+
+  if (width <= 360) return 0.28;
+  if (width <= 380) return 0.3;
+  if (width <= 430) return 0.34;
+  if (width <= 480) return 0.38;
+  if (width <= 640) return 0.44;
+
+  return this.zoomLevel();
+}
 
   private readonly STAGE_COLORS: Record<
     string | number,
@@ -150,7 +163,12 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
   }
 
   /** Default zoom is overridden by auto-fit unless the user manually adjusts zoom. */
-  zoomLevel = signal(0.7);
+  zoomLevel = signal(typeof window !== 'undefined' && window.innerWidth < 640 ? 0.3 : 0.7);
+  /** Natural (unscaled) chart dimensions, captured after render so we can size the wrapper. */
+  chartNaturalWidth = signal(0);
+  chartNaturalHeight = signal(0);
+  scaledWidth = computed(() => Math.ceil(this.chartNaturalWidth() * this.zoomLevel()));
+  scaledHeight = computed(() => Math.ceil(this.chartNaturalHeight() * this.zoomLevel()));
   private userAdjustedZoom = false;
   private autoFitDone = false;
 
@@ -170,6 +188,14 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
         this.currentRootNode.set(root);
       }
 
+      this.requestAutoFit();
+    });
+
+    // Re-run auto-fit whenever the rendered tree changes (entry/stage swaps, data reload)
+    effect(() => {
+      this.displayRoot();
+      this.autoFitDone = false;
+      this.userAdjustedZoom = false;
       this.requestAutoFit();
     });
   }
@@ -603,7 +629,8 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
   private requestAutoFit(): void {
     if (this.userAdjustedZoom || this.autoFitDone) return;
     if (typeof window === 'undefined') return;
-    window.setTimeout(() => this.autoFitZoom(), 0);
+    // Give PrimeNG time to render the updated tree before measuring
+    window.setTimeout(() => this.autoFitZoom(), 50);
   }
 
   private autoFitZoom(): void {
@@ -625,30 +652,35 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
 
       if (!treeWidth || !treeHeight) return;
 
-      // padding buffer
-      const horizontalPadding = 120;
-      const verticalPadding = 80;
+      // Capture natural chart dimensions so we can size the scaled wrapper box.
+      this.chartNaturalWidth.set(treeWidth);
+      this.chartNaturalHeight.set(treeHeight);
+
+      // Padding buffer — none on mobile so the tree uses the full viewport.
+      const isMobileViewport = viewportRect.width < 640;
+      const horizontalPadding = isMobileViewport ? 8 : 120;
+      const verticalPadding = isMobileViewport ? 8 : 80;
 
       const scaleX = (viewportRect.width - horizontalPadding) / treeWidth;
-
       const scaleY = (viewportRect.height - verticalPadding) / treeHeight;
 
       const scale = Math.min(scaleX, scaleY, 1);
 
-      // prevent tiny unreadable tree
-      const finalScale = Math.max(scale, 0.35);
+      // On mobile we MUST fit fully — no minimum floor.
+      // On desktop keep a readable floor.
+      const finalScale = isMobileViewport ? scale : Math.max(scale, 0.35);
 
       this.zoomLevel.set(finalScale);
 
-      // center scroll position
-      setTimeout(() => {
-        const scaledWidth = treeWidth * finalScale;
-        const scaledHeight = treeHeight * finalScale;
-
-        viewport.scrollLeft = (scaledWidth - viewport.clientWidth) / 2;
-
-        viewport.scrollTop = (scaledHeight - viewport.clientHeight) / 2;
-      });
+      // Center scroll position (desktop only — mobile viewport has overflow:hidden).
+      if (!isMobileViewport) {
+        setTimeout(() => {
+          const scaledWidth = treeWidth * finalScale;
+          const scaledHeight = treeHeight * finalScale;
+          viewport.scrollLeft = (scaledWidth - viewport.clientWidth) / 2;
+          viewport.scrollTop = (scaledHeight - viewport.clientHeight) / 2;
+        });
+      }
 
       this.autoFitDone = true;
     });
@@ -808,6 +840,7 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
     }
 
     root.children = levelOneNodes;
+    this.fillStageEmptySlots(root, 2, stage);
     return root;
   }
 
@@ -840,6 +873,7 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
       position: this.getStagePositionByIndex(index),
       children: [],
     }));
+    this.fillStageEmptySlots(root, 2, 0);
     return root;
   }
 
@@ -891,7 +925,7 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
   }
 
   private buildEmptyStageRoot(stage: number): MatrixNode {
-    return {
+    const root: MatrixNode = {
       id: `stage-root-${stage}`,
       username: `Stage ${stage}`,
       package: null,
@@ -900,10 +934,12 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
       stage: `Stage ${stage}`,
       children: [],
     };
+    this.fillStageEmptySlots(root, 2, stage);
+    return root;
   }
 
   private buildEntryRoot(): MatrixNode {
-    return {
+    const root: MatrixNode = {
       id: 'entry-root',
       username: 'You',
       package: null,
@@ -912,6 +948,8 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
       stage: 'Entry',
       children: [],
     };
+    this.fillStageEmptySlots(root, 2, 0);
+    return root;
   }
 
   private getStagePositionByIndex(index: number): 'left' | 'center' | 'right' {
