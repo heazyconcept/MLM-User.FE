@@ -230,6 +230,13 @@ export class UserService {
     }
   }
 
+  changePassword(currentPassword: string, newPassword: string): Observable<unknown> {
+    return this.api.put('users/me/password', {
+      currentPassword,
+      newPassword,
+    });
+  }
+
   clearUser(): void {
     this.user.set(null);
     this.displayCurrencySignal.set('NGN');

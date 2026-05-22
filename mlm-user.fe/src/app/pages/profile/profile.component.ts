@@ -1,6 +1,6 @@
 import { Component, inject, ChangeDetectionStrategy, ChangeDetectorRef, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -39,6 +39,7 @@ export class ProfileComponent implements OnInit {
 
   isEditMode = signal<boolean>(false);
   isSaving = signal<boolean>(false);
+  isChangingPassword = signal<boolean>(false);
   currentUser = this.userService.currentUser;
   isDialogMode = signal<boolean>(false);
   private closeOnSave = true;
@@ -49,10 +50,19 @@ export class ProfileComponent implements OnInit {
     email: [{ value: '', disabled: true }],
     phoneNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{11}$/)]],
     address: [''],
-    bankName: [''],
-    accountNumber: [''],
-    accountName: ['']
+    bankName: [{ value: '', disabled: true }],
+    accountNumber: [{ value: '', disabled: true }],
+    accountName: [{ value: '', disabled: true }]
   });
+
+  passwordForm = this.fb.group(
+    {
+      currentPassword: ['', [Validators.required]],
+      newPassword: ['', [Validators.required, Validators.minLength(6)]],
+      confirmPassword: ['', [Validators.required]]
+    },
+    { validators: this.confirmMatchValidator() }
+  );
 
   ngOnInit(): void {
     const dialogData = this.dialogConfig?.data as
@@ -150,21 +160,7 @@ export class ProfileComponent implements OnInit {
 
       this.onboardingService.updateProfile(profilePayload).subscribe({
         next: () => {
-          const hasBankFields = formValue.bankName?.trim() || formValue.accountNumber?.trim() || formValue.accountName?.trim();
-          if (hasBankFields) {
-            const bankPayload = {
-              bankName: formValue.bankName?.trim() ?? '',
-              accountNumber: formValue.accountNumber?.trim() ?? '',
-              accountName: formValue.accountName?.trim() ?? '',
-              accountType: 'SAVINGS' as const
-            };
-            this.onboardingService.updateBankDetails(bankPayload).subscribe({
-              next: () => this.handleSaveSuccess(),
-              error: () => this.handleSaveSuccess()
-            });
-          } else {
-            this.handleSaveSuccess();
-          }
+          this.handleSaveSuccess();
         },
         error: () => {
           this.isSaving.set(false);
@@ -176,6 +172,33 @@ export class ProfileComponent implements OnInit {
       this.profileForm.markAllAsTouched();
       this.cdr.markForCheck();
     }
+  }
+
+  private confirmMatchValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const newP = control.get('newPassword')?.value;
+      const confirm = control.get('confirmPassword')?.value;
+      return newP === confirm ? null : { passwordMismatch: true };
+    };
+  }
+
+  changePassword(): void {
+    if (this.passwordForm.invalid || this.passwordForm.pristine) return;
+    this.isChangingPassword.set(true);
+    const { currentPassword, newPassword } = this.passwordForm.getRawValue();
+    this.userService.changePassword(currentPassword ?? '', newPassword ?? '').subscribe({
+      next: () => {
+        this.passwordForm.reset();
+        this.isChangingPassword.set(false);
+        this.cdr.markForCheck();
+        this.modalService.open('success', 'Password Updated', 'Your password has been updated successfully.');
+      },
+      error: () => {
+        this.isChangingPassword.set(false);
+        this.cdr.markForCheck();
+        this.modalService.open('error', 'Could not update password', 'Please try again.');
+      }
+    });
   }
 
   private handleSaveSuccess(): void {
