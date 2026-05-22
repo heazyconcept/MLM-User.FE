@@ -279,6 +279,78 @@
             </div>
           </div>
         </form>
+
+        <div class="mt-8 grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
+          <div class="px-4 sm:px-0">
+            <h2 class="text-base font-semibold text-mlm-text">Change Password</h2>
+            <p class="mt-1 text-sm text-mlm-secondary">Use a strong password you have not used before.</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm md:col-span-2">
+            <form [formGroup]="passwordForm" (ngSubmit)="changePassword()">
+              <div class="px-4 py-6 sm:p-8">
+                <div class="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                  <div class="sm:col-span-4">
+                    <label for="profile-current" class="block text-sm font-medium text-mlm-text mb-2">
+                      Current Password <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      pInputText
+                      id="profile-current"
+                      type="password"
+                      formControlName="currentPassword"
+                      class="w-full"
+                      [class.ng-invalid]="passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched" />
+                    @if (passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched) {
+                      <small class="text-red-500 text-sm mt-1 block">Current password is required.</small>
+                    }
+                  </div>
+
+                  <div class="sm:col-span-3">
+                    <label for="profile-new" class="block text-sm font-medium text-mlm-text mb-2">
+                      New Password <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      pInputText
+                      id="profile-new"
+                      type="password"
+                      formControlName="newPassword"
+                      class="w-full"
+                      [class.ng-invalid]="passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched" />
+                    @if (passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched) {
+                      <small class="text-red-500 text-sm mt-1 block">At least 6 characters required.</small>
+                    }
+                  </div>
+
+                  <div class="sm:col-span-3">
+                    <label for="profile-confirm" class="block text-sm font-medium text-mlm-text mb-2">
+                      Confirm Password <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      pInputText
+                      id="profile-confirm"
+                      type="password"
+                      formControlName="confirmPassword"
+                      class="w-full"
+                      [class.ng-invalid]="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched" />
+                    @if (passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched) {
+                      <small class="text-red-500 text-sm mt-1 block">Passwords do not match.</small>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-end gap-x-6 border-t border-gray-200 px-4 py-4 sm:px-8">
+                <p-button
+                  label="Update Password"
+                  type="submit"
+                  [loading]="isChangingPassword()"
+                  [disabled]="passwordForm.invalid || passwordForm.pristine || isChangingPassword()">
+                </p-button>
+              </div>
+            </form>
+          </div>
+        </div>
       }
     </div>
   </main>

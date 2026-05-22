@@ -1,6 +1,8 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import { UserService } from '../../../services/user.service';
+import { ModalService } from '../../../services/modal.service';
 
 @Component({
   selector: 'app-settings-security',
@@ -12,8 +14,11 @@ import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, Validati
 })
 export class SettingsSecurityComponent {
   private fb = inject(FormBuilder);
+  private userService = inject(UserService);
+  private cdr = inject(ChangeDetectorRef);
+  private modalService = inject(ModalService);
 
-  savedMessage = signal<string | null>(null);
+  isSaving = signal(false);
 
   passwordForm = this.fb.group(
     {
@@ -34,8 +39,20 @@ export class SettingsSecurityComponent {
 
   save(): void {
     if (this.passwordForm.invalid || this.passwordForm.pristine) return;
-    this.passwordForm.reset();
-    this.savedMessage.set('Password updated successfully.');
-    setTimeout(() => this.savedMessage.set(null), 3000);
+    this.isSaving.set(true);
+    const { currentPassword, newPassword } = this.passwordForm.getRawValue();
+    this.userService.changePassword(currentPassword ?? '', newPassword ?? '').subscribe({
+      next: () => {
+        this.passwordForm.reset();
+        this.isSaving.set(false);
+        this.cdr.markForCheck();
+        this.modalService.open('success', 'Password Updated', 'Your password has been updated successfully.');
+      },
+      error: () => {
+        this.isSaving.set(false);
+        this.cdr.markForCheck();
+        this.modalService.open('error', 'Could not update password', 'Please try again.');
+      }
+    });
   }
 }
