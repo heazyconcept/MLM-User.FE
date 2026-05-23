@@ -6,25 +6,23 @@
         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div class="flex items-center gap-3">
             @if (!isRootView() && activeTab() === 'entry') {
-              <button
-                (click)="navigateToTop()"
-                class="h-9 px-3 text-sm font-medium text-mlm-text border border-mlm-secondary/20 bg-white rounded-lg hover:border-mlm-secondary/40 transition-colors flex items-center gap-1.5"
-              >
-                <i class="pi pi-arrow-left text-[10px]"></i>
-                Back
-              </button>
+            <button (click)="navigateToTop()"
+              class="h-9 px-3 text-sm font-medium text-mlm-text border border-mlm-secondary/20 bg-white rounded-lg hover:border-mlm-secondary/40 transition-colors flex items-center gap-1.5">
+              <i class="pi pi-arrow-left text-[10px]"></i>
+              Back
+            </button>
             }
 
             <div>
               <h1 class="text-xl font-medium text-mlm-text tracking-tight">
                 @if (activeTab() === 'entry') {
-                  @if (isRootView()) {
-                    Matrix view
-                  } @else {
-                    {{ currentRootNode().username }}'s network
-                  }
+                @if (isRootView()) {
+                Matrix view
                 } @else {
-                  Stage {{ activeStageNumber() }} matrix
+                {{ currentRootNode().username }}'s network
+                }
+                } @else {
+                Stage {{ activeStageNumber() }} matrix
                 }
               </h1>
 
@@ -35,24 +33,18 @@
           </div>
 
           <div class="flex items-center gap-2 shrink-0">
-            <button
-              (click)="zoomOut()"
-              class="w-9 h-9 flex items-center justify-center border border-mlm-secondary/20 bg-white rounded-lg hover:border-mlm-secondary/40 text-mlm-secondary hover:text-mlm-text transition-colors"
-            >
+            <button (click)="zoomOut()"
+              class="w-9 h-9 flex items-center justify-center border border-mlm-secondary/20 bg-white rounded-lg hover:border-mlm-secondary/40 text-mlm-secondary hover:text-mlm-text transition-colors">
               <i class="pi pi-minus text-xs"></i>
             </button>
 
-            <button
-              (click)="zoomIn()"
-              class="w-9 h-9 flex items-center justify-center border border-mlm-secondary/20 bg-white rounded-lg hover:border-mlm-secondary/40 text-mlm-secondary hover:text-mlm-text transition-colors"
-            >
+            <button (click)="zoomIn()"
+              class="w-9 h-9 flex items-center justify-center border border-mlm-secondary/20 bg-white rounded-lg hover:border-mlm-secondary/40 text-mlm-secondary hover:text-mlm-text transition-colors">
               <i class="pi pi-plus text-xs"></i>
             </button>
 
-            <button
-              (click)="openCreateReferralDialog()"
-              class="h-9 px-4 text-sm font-medium text-white bg-mlm-primary rounded-lg hover:bg-mlm-primary/90 transition-colors flex items-center gap-2"
-            >
+            <button (click)="openCreateReferralDialog()"
+              class="h-9 px-4 text-sm font-medium text-white bg-mlm-primary rounded-lg hover:bg-mlm-primary/90 transition-colors flex items-center gap-2">
               <i class="pi pi-user-plus text-xs"></i>
               <span class="hidden sm:inline">Create referral</span>
             </button>
@@ -63,523 +55,433 @@
         <div class="border-b border-mlm-secondary/15 overflow-x-auto">
           <div class="flex items-end min-w-max">
             @for (tab of stageTabs; track tab.value) {
-              <button
-                type="button"
-                (click)="onTabChange(tab.value)"
-                class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
-                [class.border-mlm-primary]="activeTab() === tab.value"
-                [class.text-mlm-primary]="activeTab() === tab.value"
-                [class.border-transparent]="activeTab() !== tab.value"
-                [class.text-mlm-secondary]="activeTab() !== tab.value"
-                [class.hover:text-mlm-text]="activeTab() !== tab.value"
-              >
-                {{ tab.label }}
-              </button>
+            <button type="button" (click)="onTabChange(tab.value)"
+              class="px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap"
+              [class.border-mlm-primary]="activeTab() === tab.value"
+              [class.text-mlm-primary]="activeTab() === tab.value"
+              [class.border-transparent]="activeTab() !== tab.value"
+              [class.text-mlm-secondary]="activeTab() !== tab.value"
+              [class.hover:text-mlm-text]="activeTab() !== tab.value">
+              {{ tab.label }}
+            </button>
             }
           </div>
         </div>
 
         <!-- ─── How it works accordion ──────────────── -->
         <div class="border border-mlm-secondary/15 rounded-xl overflow-hidden bg-white">
-          <button
-            type="button"
+          <button type="button"
             class="w-full flex items-center justify-between px-5 py-3.5 text-sm text-mlm-text hover:bg-mlm-background transition-colors"
-            (click)="showMatrixInfo.set(!showMatrixInfo())"
-          >
+            (click)="showMatrixInfo.set(!showMatrixInfo())">
             <span class="font-medium">How the matrix works</span>
-            <i
-              class="pi text-[10px] text-mlm-secondary"
-              [class.pi-chevron-down]="!showMatrixInfo()"
-              [class.pi-chevron-up]="showMatrixInfo()"
-            ></i>
+            <i class="pi text-[10px] text-mlm-secondary" [class.pi-chevron-down]="!showMatrixInfo()"
+              [class.pi-chevron-up]="showMatrixInfo()"></i>
           </button>
 
           @if (showMatrixInfo()) {
-            <div
-              class="border-t border-mlm-secondary/15 px-5 py-4 space-y-3 text-sm text-mlm-secondary animate-fade-in"
-            >
-              <p>
-                <span class="font-medium text-mlm-text">3×1 Forced Matrix</span>
-                — each member refers 3 people. Fills stage by stage across 6 stages.
-              </p>
+          <div class="border-t border-mlm-secondary/15 px-5 py-4 space-y-3 text-sm text-mlm-secondary animate-fade-in">
+            <p>
+              <span class="font-medium text-mlm-text">3×1 Forced Matrix</span>
+              — each member refers 3 people. Fills stage by stage across 6 stages.
+            </p>
 
-              <p>
-                <span class="font-medium text-mlm-text">Spillover</span>
-                — referrals beyond 3 spill under your leftmost leg, filling left to right.
-              </p>
+            <p>
+              <span class="font-medium text-mlm-text">Spillover</span>
+              — referrals beyond 3 spill under your leftmost leg, filling left to right.
+            </p>
 
-              <div class="border border-mlm-secondary/15 rounded-lg overflow-hidden mt-3">
-                <table class="w-full text-xs">
-                  <thead class="bg-mlm-background">
-                    <tr>
-                      <th
-                        class="text-left px-4 py-2 text-[11px] uppercase tracking-widest text-mlm-secondary font-medium"
-                      >
-                        Stage
-                      </th>
-                      <th
-                        class="text-left px-4 py-2 text-[11px] uppercase tracking-widest text-mlm-secondary font-medium"
-                      >
-                        Rank
-                      </th>
-                      <th
-                        class="text-left px-4 py-2 text-[11px] uppercase tracking-widest text-mlm-secondary font-medium"
-                      >
-                        Levels
-                      </th>
-                    </tr>
-                  </thead>
+            <div class="border border-mlm-secondary/15 rounded-lg overflow-hidden mt-3">
+              <table class="w-full text-xs">
+                <thead class="bg-mlm-background">
+                  <tr>
+                    <th
+                      class="text-left px-4 py-2 text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">
+                      Stage
+                    </th>
+                    <th
+                      class="text-left px-4 py-2 text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">
+                      Rank
+                    </th>
+                    <th
+                      class="text-left px-4 py-2 text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">
+                      Levels
+                    </th>
+                  </tr>
+                </thead>
 
-                  <tbody class="divide-y divide-mlm-secondary/10">
-                    <tr>
-                      <td class="px-4 py-2 text-mlm-secondary">1</td>
-                      <td class="px-4 py-2 text-mlm-text font-medium">Stakeholder</td>
-                      <td class="px-4 py-2 text-mlm-secondary">1–2</td>
-                    </tr>
+                <tbody class="divide-y divide-mlm-secondary/10">
+                  <tr>
+                    <td class="px-4 py-2 text-mlm-secondary">1</td>
+                    <td class="px-4 py-2 text-mlm-text font-medium">Stakeholder</td>
+                    <td class="px-4 py-2 text-mlm-secondary">1–2</td>
+                  </tr>
 
-                    <tr>
-                      <td class="px-4 py-2 text-mlm-secondary">2</td>
-                      <td class="px-4 py-2 text-mlm-text font-medium">Mentor</td>
-                      <td class="px-4 py-2 text-mlm-secondary">3–4</td>
-                    </tr>
+                  <tr>
+                    <td class="px-4 py-2 text-mlm-secondary">2</td>
+                    <td class="px-4 py-2 text-mlm-text font-medium">Mentor</td>
+                    <td class="px-4 py-2 text-mlm-secondary">3–4</td>
+                  </tr>
 
-                    <tr>
-                      <td class="px-4 py-2 text-mlm-secondary">3</td>
-                      <td class="px-4 py-2 text-mlm-text font-medium">Manager</td>
-                      <td class="px-4 py-2 text-mlm-secondary">5–7</td>
-                    </tr>
+                  <tr>
+                    <td class="px-4 py-2 text-mlm-secondary">3</td>
+                    <td class="px-4 py-2 text-mlm-text font-medium">Manager</td>
+                    <td class="px-4 py-2 text-mlm-secondary">5–7</td>
+                  </tr>
 
-                    <tr>
-                      <td class="px-4 py-2 text-mlm-secondary">4</td>
-                      <td class="px-4 py-2 text-mlm-text font-medium">Director</td>
-                      <td class="px-4 py-2 text-mlm-secondary">8–9</td>
-                    </tr>
+                  <tr>
+                    <td class="px-4 py-2 text-mlm-secondary">4</td>
+                    <td class="px-4 py-2 text-mlm-text font-medium">Director</td>
+                    <td class="px-4 py-2 text-mlm-secondary">8–9</td>
+                  </tr>
 
-                    <tr>
-                      <td class="px-4 py-2 text-mlm-secondary">5</td>
-                      <td class="px-4 py-2 text-mlm-text font-medium">Senior Director</td>
-                      <td class="px-4 py-2 text-mlm-secondary">10–11</td>
-                    </tr>
+                  <tr>
+                    <td class="px-4 py-2 text-mlm-secondary">5</td>
+                    <td class="px-4 py-2 text-mlm-text font-medium">Senior Director</td>
+                    <td class="px-4 py-2 text-mlm-secondary">10–11</td>
+                  </tr>
 
-                    <tr>
-                      <td class="px-4 py-2 text-mlm-secondary">6</td>
-                      <td class="px-4 py-2 text-mlm-text font-medium">Consultant</td>
-                      <td class="px-4 py-2 text-mlm-secondary">12–13</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                  <tr>
+                    <td class="px-4 py-2 text-mlm-secondary">6</td>
+                    <td class="px-4 py-2 text-mlm-text font-medium">Consultant</td>
+                    <td class="px-4 py-2 text-mlm-secondary">12–13</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
+          </div>
           }
         </div>
 
         <!-- ─── Error ────────────────────────────────── -->
         @if (error() && activeTab() === 'entry') {
-          <div class="px-4 py-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm">
-            {{ error() }}
-          </div>
+        <div class="px-4 py-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm">
+          {{ error() }}
+        </div>
         }
 
         <!-- ─── Loading ──────────────────────────────── -->
         @if (isLoading() && activeTab() === 'entry') {
-          <div
-            class="border border-mlm-secondary/15 rounded-xl bg-white flex items-center justify-center h-96"
-          >
-            <div class="flex flex-col items-center gap-4">
-              <p-skeleton width="180px" height="1rem"></p-skeleton>
+        <div class="border border-mlm-secondary/15 rounded-xl bg-white flex items-center justify-center h-96">
+          <div class="flex flex-col items-center gap-4">
+            <p-skeleton width="180px" height="1rem"></p-skeleton>
 
-              <div class="flex gap-6">
-                <p-skeleton width="9rem" height="7rem" borderRadius="12px"></p-skeleton>
-                <p-skeleton width="9rem" height="7rem" borderRadius="12px"></p-skeleton>
-                <p-skeleton width="9rem" height="7rem" borderRadius="12px"></p-skeleton>
-              </div>
+            <div class="flex gap-6">
+              <p-skeleton width="9rem" height="7rem" borderRadius="12px"></p-skeleton>
+              <p-skeleton width="9rem" height="7rem" borderRadius="12px"></p-skeleton>
+              <p-skeleton width="9rem" height="7rem" borderRadius="12px"></p-skeleton>
             </div>
           </div>
-        } @else {
-          @if (stageLoading() && activeTab() !== 'entry') {
-            <div
-              class="border border-mlm-secondary/15 rounded-xl bg-white flex items-center justify-center h-96"
-            >
-              <div class="flex flex-col items-center gap-4">
-                <p-skeleton width="220px" height="1rem"></p-skeleton>
-
-                <div class="flex gap-6">
-                  <p-skeleton width="11rem" height="8rem" borderRadius="16px"></p-skeleton>
-                  <p-skeleton width="11rem" height="8rem" borderRadius="16px"></p-skeleton>
-                  <p-skeleton width="11rem" height="8rem" borderRadius="16px"></p-skeleton>
-                </div>
-              </div>
-            </div>
-          } @else { 
-           <!-- ─── Tree viewport ──────────────────────── -->
-<div class="border border-mlm-secondary/15 rounded-xl bg-white overflow-hidden relative tree-viewport">
-
-  <!-- =====================================================
-       MOBILE CUSTOM MATRIX TREE
-       This is the sketch-style version.
-       It does NOT use PrimeNG organization chart.
-  ====================================================== -->
-  <div
-    #mobileMatrixTree
-    class="mobile-matrix-tree"
-    [class.mobile-scrolling]="mobileZoom() > 1.0"
-  >
-    <div
-      class="mobile-tree-canvas"
-      [style.--mobile-zoom]="mobileZoom()"
-      [style.transform]="'scale(' + mobileScale() + ')'"
-      [style.transform-origin]="mobileZoom() > 1.0 ? 'top left' : 'top center'"
-      [style.height.px]="520 * mobileScale() * mobileZoom()"
-      [style.width.px]="510 * mobileZoom()"
-    >
-
-      <!-- Root / Leader node -->
-      <div class="mobile-tree-root-row">
-        <div
-          class="mobile-node mobile-node-root"
-          [class.opacity-50]="displayRoot().status === 'inactive'"
-          [class.border-mlm-primary]="displayRoot().status === 'active'"
-          [class.border-mlm-secondary/20]="displayRoot().status !== 'active'"
-          (click)="openNodeDetails(displayRoot())"
-        >
-          <button
-            type="button"
-            class="mobile-node-info"
-            (click)="$event.stopPropagation(); openNodeDetails(displayRoot())"
-            [pTooltip]="'Details'"
-            tooltipPosition="top"
-            aria-label="View details"
-          > 
-            <i class="pi pi-info"></i>
-          </button>
-
-          <div
-            class="mobile-node-avatar mobile-node-avatar-root"
-            [class.bg-mlm-primary/10]="displayRoot().status === 'active'"
-            [class.bg-mlm-secondary/10]="displayRoot().status !== 'active'"
-          >
-            <i
-              class="pi pi-user"
-              [class.text-mlm-primary]="displayRoot().status === 'active'"
-              [class.text-mlm-secondary]="displayRoot().status !== 'active'"
-            ></i>
-          </div>
-
-          <span class="mobile-node-name">
-            {{ displayRoot().username }}@if (displayRoot().level === 0) { (You) }
-          </span>
-
-          @if (displayRoot().stage) {
-            <span class="text-[9px] leading-none text-mlm-secondary">
-              {{ displayRoot().stage }}
-            </span>
-          }
-
-
         </div>
-      </div>
+        } @else {
+        @if (stageLoading() && activeTab() !== 'entry') {
+        <div class="border border-mlm-secondary/15 rounded-xl bg-white flex items-center justify-center h-96">
+          <div class="flex flex-col items-center gap-4">
+            <p-skeleton width="220px" height="1rem"></p-skeleton>
 
-      <!-- Root vertical connector -->
-      <div class="mobile-root-connector"></div>
+            <div class="flex gap-6">
+              <p-skeleton width="11rem" height="8rem" borderRadius="16px"></p-skeleton>
+              <p-skeleton width="11rem" height="8rem" borderRadius="16px"></p-skeleton>
+              <p-skeleton width="11rem" height="8rem" borderRadius="16px"></p-skeleton>
+            </div>
+          </div>
+        </div>
+        } @else {
+        @if (activeTab() !== 'entry' && stageTotalMembers() === 0) {
+        <!-- ─── Empty state for stage matrix ─── -->
+        <div
+          class="border border-mlm-secondary/15 rounded-xl bg-white p-8 sm:p-12 text-center flex flex-col items-center justify-center min-h-[420px] shadow-sm animate-fade-in">
+          <div class="w-16 h-16 rounded-full bg-mlm-primary/10 flex items-center justify-center mb-5 ">
+            <i class="pi pi-users text-2xl text-mlm-primary"></i>
+          </div>
+          <p class="text-sm text-mlm-secondary max-w-sm mb-6 leading-relaxed">
+            You haven't reached the <strong>{{ getStageName(activeTab()) }}</strong> stage yet.
+          </p>
+        </div>
+        } @else {
+        <!-- ─── Tree viewport ──────────────────────── -->
+        <div class="border border-mlm-secondary/15 rounded-xl bg-white overflow-hidden relative tree-viewport">
 
-      <!-- Main horizontal connector -->
-      <div class="mobile-main-connector"></div>
+          <!-- =====================================================
+                     MOBILE CUSTOM MATRIX TREE
+                     This is the sketch-style version.
+                     It does NOT use PrimeNG organization chart.
+                ====================================================== -->
+          <div #mobileMatrixTree class="mobile-matrix-tree" [class.mobile-scrolling]="mobileZoom() > 1.0">
+            <div class="mobile-tree-canvas" [style.--mobile-zoom]="mobileZoom()"
+              [style.transform]="'scale(' + mobileScale() + ')'"
+              [style.transform-origin]="mobileZoom() > 1.0 ? 'top left' : 'top center'"
+              [style.height.px]="520 * mobileScale() * mobileZoom()" [style.width.px]="510 * mobileZoom()">
 
-      <!-- Level 1: first 3 children -->
-      <div class="mobile-level-one-row">
-        @for (child of displayRoot().children ?? []; track child.id; let childIndex = $index) {
-          <div class="mobile-level-one-branch">
-            <div class="mobile-branch-drop"></div>
+              <!-- Root / Leader node -->
+              <div class="mobile-tree-root-row">
+                <div class="mobile-node mobile-node-root" [class.opacity-50]="displayRoot().status === 'inactive'"
+                  [class.border-mlm-primary]="displayRoot().status === 'active'"
+                  [class.border-mlm-secondary/20]="displayRoot().status !== 'active'"
+                  (click)="openNodeDetails(displayRoot())">
+                  <button type="button" class="mobile-node-info"
+                    (click)="$event.stopPropagation(); openNodeDetails(displayRoot())" [pTooltip]="'Details'"
+                    tooltipPosition="top" aria-label="View details">
+                    <i class="pi pi-info"></i>
+                  </button>
 
-            @if (child.status !== 'empty') {
-              <div
-                class="mobile-node mobile-node-level-one"
-                [class.opacity-50]="child.status === 'inactive'"
-                [class.border-mlm-primary]="child.status === 'active'"
-                [class.border-mlm-secondary/20]="child.status !== 'active'"
-                [class.cursor-pointer]="activeTab() === 'entry'"
-                (click)="handleNodeClick(child)"
-              >
-                <button
-                  type="button"
-                  class="mobile-node-info"
-                  (click)="$event.stopPropagation(); openNodeDetails(child)"
-                  [pTooltip]="'Details'"
-                  tooltipPosition="top"
-                  aria-label="View details"
-                >
-                  <i class="pi pi-info"></i>
-                </button>
+                  <div class="mobile-node-avatar mobile-node-avatar-root"
+                    [class.bg-mlm-primary/10]="displayRoot().status === 'active'"
+                    [class.bg-mlm-secondary/10]="displayRoot().status !== 'active'">
+                    <i class="pi pi-user" [class.text-mlm-primary]="displayRoot().status === 'active'"
+                      [class.text-mlm-secondary]="displayRoot().status !== 'active'"></i>
+                  </div>
 
-                <div
-                  class="mobile-node-avatar"
-                  [class.bg-mlm-primary/10]="child.status === 'active'"
-                  [class.bg-mlm-secondary/10]="child.status !== 'active'"
-                >
-                  <i
-                    class="pi pi-user"
-                    [class.text-mlm-primary]="child.status === 'active'"
-                    [class.text-mlm-secondary]="child.status !== 'active'"
-                  ></i>
-                </div>
-
-                <span class="mobile-node-name">{{ child.username }}</span>
-
-                @if (child.stage) {
-                  <span class="text-[9px] leading-none text-mlm-secondary">
-                    {{ child.stage }}
+                  <span class="mobile-node-name">
+                    {{ displayRoot().username }}@if (displayRoot().level === 0) { (You) }
                   </span>
-                }
+
+                  @if (displayRoot().stage) {
+                  <span class="text-[9px] leading-none text-mlm-secondary">
+                    {{ displayRoot().stage }}
+                  </span>
+                  }
+
+
+                </div>
               </div>
-            }
 
-            <!-- Level 2 connector under each level-one node -->
-            <div class="mobile-sub-connector"></div>
+              <!-- Root vertical connector -->
+              <div class="mobile-root-connector"></div>
 
-            <!-- Level 2: each child has 3 children -->
-            <div class="mobile-level-two-row">
-              @for (grandChild of child.children ?? []; track grandChild.id) {
-                <div class="mobile-level-two-branch">
-                  <div class="mobile-sub-drop"></div>
+              <!-- Main horizontal connector -->
+              <div class="mobile-main-connector"></div>
 
-                  @if (grandChild.status !== 'empty') {
-                    <div
-                      class="mobile-node mobile-node-level-two"
-                      [class.opacity-50]="grandChild.status === 'inactive'"
-                      [class.border-mlm-primary]="grandChild.status === 'active'"
-                      [class.border-mlm-secondary/20]="grandChild.status !== 'active'"
-                      [class.cursor-pointer]="activeTab() === 'entry'"
-                      (click)="handleNodeClick(grandChild)"
-                    >
-                      <button
-                        type="button"
-                        class="mobile-node-info"
-                        (click)="$event.stopPropagation(); openNodeDetails(grandChild)"
-                        [pTooltip]="'Details'"
-                        tooltipPosition="top"
-                        aria-label="View details"
-                      >
-                        <i class="pi pi-info"></i>
-                      </button>
+              <!-- Level 1: first 3 children -->
+              <div class="mobile-level-one-row">
+                @for (child of displayRoot().children ?? []; track child.id; let childIndex = $index) {
+                <div class="mobile-level-one-branch">
+                  <div class="mobile-branch-drop"></div>
 
-                      <div
-                        class="mobile-node-avatar mobile-node-avatar-small"
-                        [class.bg-mlm-primary/10]="grandChild.status === 'active'"
-                        [class.bg-mlm-secondary/10]="grandChild.status !== 'active'"
-                      >
-                        <i
-                          class="pi pi-user"
-                          [class.text-mlm-primary]="grandChild.status === 'active'"
-                          [class.text-mlm-secondary]="grandChild.status !== 'active'"
-                        ></i>
-                      </div>
+                  @if (child.status !== 'empty') {
+                  <div class="mobile-node mobile-node-level-one" [class.opacity-50]="child.status === 'inactive'"
+                    [class.border-mlm-primary]="child.status === 'active'"
+                    [class.border-mlm-secondary/20]="child.status !== 'active'"
+                    [class.cursor-pointer]="activeTab() === 'entry'" (click)="handleNodeClick(child)">
+                    <button type="button" class="mobile-node-info"
+                      (click)="$event.stopPropagation(); openNodeDetails(child)" [pTooltip]="'Details'"
+                      tooltipPosition="top" aria-label="View details">
+                      <i class="pi pi-info"></i>
+                    </button>
 
-                      <span class="mobile-node-name">{{ grandChild.username }}</span>
+                    <div class="mobile-node-avatar" [class.bg-mlm-primary/10]="child.status === 'active'"
+                      [class.bg-mlm-secondary/10]="child.status !== 'active'">
+                      <i class="pi pi-user" [class.text-mlm-primary]="child.status === 'active'"
+                        [class.text-mlm-secondary]="child.status !== 'active'"></i>
+                    </div>
 
-                      @if (mobileZoom() > 1.5 && grandChild.stage) {
+                    <span class="mobile-node-name">{{ child.username }}</span>
+
+                    @if (child.stage) {
+                    <span class="text-[9px] leading-none text-mlm-secondary">
+                      {{ child.stage }}
+                    </span>
+                    }
+                  </div>
+                  }
+
+                  <!-- Level 2 connector under each level-one node -->
+                  <div class="mobile-sub-connector"></div>
+
+                  <!-- Level 2: each child has 3 children -->
+                  <div class="mobile-level-two-row">
+                    @for (grandChild of child.children ?? []; track grandChild.id) {
+                    <div class="mobile-level-two-branch">
+                      <div class="mobile-sub-drop"></div>
+
+                      @if (grandChild.status !== 'empty') {
+                      <div class="mobile-node mobile-node-level-two"
+                        [class.opacity-50]="grandChild.status === 'inactive'"
+                        [class.border-mlm-primary]="grandChild.status === 'active'"
+                        [class.border-mlm-secondary/20]="grandChild.status !== 'active'"
+                        [class.cursor-pointer]="activeTab() === 'entry'" (click)="handleNodeClick(grandChild)">
+                        <button type="button" class="mobile-node-info"
+                          (click)="$event.stopPropagation(); openNodeDetails(grandChild)" [pTooltip]="'Details'"
+                          tooltipPosition="top" aria-label="View details">
+                          <i class="pi pi-info"></i>
+                        </button>
+
+                        <div class="mobile-node-avatar mobile-node-avatar-small"
+                          [class.bg-mlm-primary/10]="grandChild.status === 'active'"
+                          [class.bg-mlm-secondary/10]="grandChild.status !== 'active'">
+                          <i class="pi pi-user" [class.text-mlm-primary]="grandChild.status === 'active'"
+                            [class.text-mlm-secondary]="grandChild.status !== 'active'"></i>
+                        </div>
+
+                        <span class="mobile-node-name">{{ grandChild.username }}</span>
+
+                        @if (mobileZoom() > 1.5 && grandChild.stage) {
                         <span class="mobile-node-stage text-[7.5px] leading-none text-mlm-secondary">
                           {{ grandChild.stage }}
                         </span>
-                      } @else if (getCompactStageLabel(grandChild.stage); as compactStage) {
+                        } @else if (getCompactStageLabel(grandChild.stage); as compactStage) {
                         <span class="mobile-node-stage text-[7.5px] leading-none text-mlm-secondary">
                           {{ compactStage }}
                         </span>
+                        }
+                      </div>
                       }
                     </div>
-                  }
+                    }
+                  </div>
                 </div>
-              }
+                }
+              </div>
             </div>
           </div>
-        }
-      </div>
-    </div>
-  </div>
 
-  <!-- =====================================================
-       DESKTOP PRIME NG MATRIX TREE
-       Keep your old desktop chart here.
-  ====================================================== -->
-  <div
-    #matrixViewport
-    class="desktop-matrix-tree absolute inset-0 overflow-auto matrix-viewport p-2 sm:p-6 md:p-10 justify-center items-start cursor-grab active:cursor-grabbing"
-    style="-webkit-overflow-scrolling: touch;"
-  >
-    <div
-      [style.width.px]="scaledWidth() || null"
-      [style.height.px]="scaledHeight() || null"
-      class="relative shrink-0"
-    >
-      <div
-        [style.transform]="'scale(' + zoomLevel() + ')'"
-        class="transition-transform duration-300 origin-top-left absolute top-0 left-0"
-      >
-        <p-organization-chart
-          [value]="matrixTree()"
-          (onNodeSelect)="onNodeSelect($event)"
-        >
-          <ng-template let-node pTemplate="default">
-            @if (node.data) {
-              @if (node.data.status !== 'empty') {
-                <div
-                  class="matrix-node-card relative flex flex-col items-center rounded-xl border-2 bg-emerald-50 transition-all duration-200"
-                  [class.matrix-node-main]="node.data.level === 0"
-                  [class.matrix-node-level-one]="node.data.level === 1"
-                  [class.matrix-node-small]="node.data.level >= 2"
-                  [class.opacity-50]="node.data.status === 'inactive'"
-                  [class.hover:shadow-md]="activeTab() === 'entry' && !isCurrentRoot(node.data.id)"
-                  [class.cursor-pointer]="activeTab() === 'entry' && !isCurrentRoot(node.data.id)"
-                  [class.cursor-default]="activeTab() !== 'entry' || isCurrentRoot(node.data.id)"
-                  [class.border-mlm-primary]="node.data.status === 'active'"
-                  [class.border-mlm-secondary/20]="node.data.status !== 'active'"
-                  [class.ring-2]="isCurrentRoot(node.data.id)"
-                  [class.ring-mlm-primary]="isCurrentRoot(node.data.id)"
-                  [class.ring-offset-2]="isCurrentRoot(node.data.id)"
-                  [pTooltip]="getTooltipText(node.data)"
-                  tooltipPosition="top"
-                  (click)="handleNodeClick(node.data)"
-                >
-                  <div class="node-inner w-full flex flex-col items-center">
+          <!-- =====================================================
+                     DESKTOP PRIME NG MATRIX TREE
+                     Keep your old desktop chart here.
+                ====================================================== -->
+          <div #matrixViewport
+            class="desktop-matrix-tree absolute inset-0 overflow-auto matrix-viewport p-2 sm:p-6 md:p-10 justify-center items-start cursor-grab active:cursor-grabbing"
+            style="-webkit-overflow-scrolling: touch;">
+            <div [style.width.px]="scaledWidth() || null" [style.height.px]="scaledHeight() || null"
+              class="relative shrink-0">
+              <div [style.transform]="'scale(' + zoomLevel() + ')'"
+                class="transition-transform duration-300 origin-top-left absolute top-0 left-0">
+                <p-organization-chart [value]="matrixTree()" (onNodeSelect)="onNodeSelect($event)">
+                  <ng-template let-node pTemplate="default">
+                    @if (node.data) {
+                    @if (node.data.status !== 'empty') {
                     <div
-                      class="node-avatar rounded-full flex items-center justify-center"
-                      [class.bg-mlm-primary/10]="node.data.status === 'active'"
-                      [class.bg-mlm-secondary/10]="node.data.status !== 'active'"
-                    >
-                      <i
-                        class="pi pi-user"
-                        [class.text-mlm-primary]="node.data.status === 'active'"
-                        [class.text-mlm-secondary]="node.data.status !== 'active'"
-                      ></i>
+                      class="matrix-node-card relative flex flex-col items-center rounded-xl border-2 bg-emerald-50 transition-all duration-200"
+                      [class.matrix-node-main]="node.data.level === 0"
+                      [class.matrix-node-level-one]="node.data.level === 1"
+                      [class.matrix-node-small]="node.data.level >= 2"
+                      [class.opacity-50]="node.data.status === 'inactive'"
+                      [class.hover:shadow-md]="activeTab() === 'entry' && !isCurrentRoot(node.data.id)"
+                      [class.cursor-pointer]="activeTab() === 'entry' && !isCurrentRoot(node.data.id)"
+                      [class.cursor-default]="activeTab() !== 'entry' || isCurrentRoot(node.data.id)"
+                      [class.border-mlm-primary]="node.data.status === 'active'"
+                      [class.border-mlm-secondary/20]="node.data.status !== 'active'"
+                      [class.ring-2]="isCurrentRoot(node.data.id)"
+                      [class.ring-mlm-primary]="isCurrentRoot(node.data.id)"
+                      [class.ring-offset-2]="isCurrentRoot(node.data.id)" [pTooltip]="getTooltipText(node.data)"
+                      tooltipPosition="top" (click)="handleNodeClick(node.data)">
+                      <div class="node-inner w-full flex flex-col items-center">
+                        <div class="node-avatar rounded-full flex items-center justify-center"
+                          [class.bg-mlm-primary/10]="node.data.status === 'active'"
+                          [class.bg-mlm-secondary/10]="node.data.status !== 'active'">
+                          <i class="pi pi-user" [class.text-mlm-primary]="node.data.status === 'active'"
+                            [class.text-mlm-secondary]="node.data.status !== 'active'"></i>
+                        </div>
+
+                        <span
+                          class="node-username font-semibold text-mlm-text truncate max-w-full text-center px-1 leading-snug">
+                          {{ node.data.username }}@if (node.data.level === 0) { (You) }
+                        </span>
+
+                        <span class="node-rank font-semibold text-mlm-secondary text-center">
+                          @if (node.data.rank) {
+                          {{ node.data.rank }}
+                          } @else {
+                          —
+                          }
+
+                          @if (node.data.stage) {
+                          · {{ node.data.stage }}
+                          }
+                        </span>
+
+                        <span class="node-status font-bold uppercase tracking-wider rounded-full"
+                          [class.bg-mlm-primary/10]="node.data.status === 'active'"
+                          [class.text-mlm-primary]="node.data.status === 'active'"
+                          [class.bg-mlm-secondary/10]="node.data.status !== 'active'"
+                          [class.text-mlm-secondary]="node.data.status !== 'active'">
+                          {{ node.data.status === 'active' ? 'Active' : 'Inactive' }}
+                        </span>
+                      </div>
+
+                      <button type="button"
+                        class="node-info-btn absolute rounded-full bg-mlm-secondary/10 hover:bg-mlm-secondary/20 flex items-center justify-center text-mlm-secondary transition-colors z-10"
+                        (click)="$event.stopPropagation(); openNodeDetails(node.data)" [pTooltip]="'Details'"
+                        tooltipPosition="top" aria-label="View details">
+                        <i class="pi pi-info"></i>
+                      </button>
                     </div>
-
-                    <span
-                      class="node-username font-semibold text-mlm-text truncate max-w-full text-center px-1 leading-snug"
-                    >
-                      {{ node.data.username }}@if (node.data.level === 0) { (You) }
-                    </span>
-
-                    <span class="node-rank font-semibold text-mlm-secondary text-center">
-                      @if (node.data.rank) {
-                        {{ node.data.rank }}
-                      } @else {
-                        —
-                      }
-
-                      @if (node.data.stage) {
-                        · {{ node.data.stage }}
-                      }
-                    </span>
-
-                    <span
-                      class="node-status font-bold uppercase tracking-wider rounded-full"
-                      [class.bg-mlm-primary/10]="node.data.status === 'active'"
-                      [class.text-mlm-primary]="node.data.status === 'active'"
-                      [class.bg-mlm-secondary/10]="node.data.status !== 'active'"
-                      [class.text-mlm-secondary]="node.data.status !== 'active'"
-                    >
-                      {{ node.data.status === 'active' ? 'Active' : 'Inactive' }}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    class="node-info-btn absolute rounded-full bg-mlm-secondary/10 hover:bg-mlm-secondary/20 flex items-center justify-center text-mlm-secondary transition-colors z-10"
-                    (click)="$event.stopPropagation(); openNodeDetails(node.data)"
-                    [pTooltip]="'Details'"
-                    tooltipPosition="top"
-                    aria-label="View details"
-                  >
-                    <i class="pi pi-info"></i>
-                  </button>
-                </div>
-              }
-            }
-          </ng-template>
-        </p-organization-chart>
-      </div>
-    </div>
-  </div>
-</div>
-          }
+                    }
+                    }
+                  </ng-template>
+                </p-organization-chart>
+              </div>
+            </div>
+          </div>
+        </div>
+        }
+        }
         }
       </div>
     </div>
   </main>
 
   <!-- ─── Node detail modal ─────────────────────── -->
-  <p-dialog
-    [visible]="nodeForModal() !== null"
-    (visibleChange)="onDialogVisibleChange($event)"
-    [modal]="true"
-    [closable]="true"
-    [draggable]="false"
-    [resizable]="false"
-    header="Member details"
-    styleClass="w-full max-w-sm"
-    [contentStyle]="{ padding: '1.25rem' }"
-  >
+  <p-dialog [visible]="nodeForModal() !== null" (visibleChange)="onDialogVisibleChange($event)" [modal]="true"
+    [closable]="true" [draggable]="false" [resizable]="false" header="Member details" styleClass="w-full max-w-sm"
+    [contentStyle]="{ padding: '1.25rem' }">
     @if (nodeForModal(); as node) {
-      <div class="divide-y divide-mlm-secondary/15">
-        <div class="flex items-center justify-between py-3">
-          <span class="text-xs text-mlm-secondary">Username</span>
-          <span class="text-sm font-medium text-mlm-text">{{ node.username }}</span>
-        </div>
-
-        <div class="flex items-center justify-between py-3">
-          <span class="text-xs text-mlm-secondary">Package</span>
-          <span class="text-sm font-medium text-mlm-text">{{ getPackageLabel(node.package) }}</span>
-        </div>
-
-        @if (node.rank) {
-          <div class="flex items-center justify-between py-3">
-            <span class="text-xs text-mlm-secondary">Rank</span>
-            <span class="text-sm font-medium text-mlm-text">{{ node.rank }}</span>
-          </div>
-        }
-
-        @if (node.stage) {
-          <div class="flex items-center justify-between py-3">
-            <span class="text-xs text-mlm-secondary">Stage</span>
-            <span class="text-sm font-medium text-mlm-text">{{ node.stage }}</span>
-          </div>
-        }
-
-        <div class="flex items-center justify-between py-3">
-          <span class="text-xs text-mlm-secondary">Level</span>
-          <span class="text-sm font-medium text-mlm-text tabular-nums">{{ node.level }}</span>
-        </div>
-
-        <div class="flex items-center justify-between py-3">
-          <span class="text-xs text-mlm-secondary">Status</span>
-          <span
-            class="text-[11px] font-medium px-2.5 py-1 rounded-full"
-            [class.text-mlm-primary]="node.status === 'active'"
-            [class.bg-mlm-primary/10]="node.status === 'active'"
-            [class.text-mlm-secondary]="node.status !== 'active'"
-            [class.bg-mlm-secondary/10]="node.status !== 'active'"
-          >
-            {{ node.status === 'active' ? 'Active' : 'Inactive' }}
-          </span>
-        </div>
-
-        @if (node.directReferrals != null) {
-          <div class="flex items-center justify-between py-3">
-            <span class="text-xs text-mlm-secondary">Legs</span>
-            <span class="text-sm font-medium text-mlm-text tabular-nums">
-              {{ node.directReferrals }}
-            </span>
-          </div>
-        }
-
-        @if (node.teamSize != null) {
-          <div class="flex items-center justify-between py-3">
-            <span class="text-xs text-mlm-secondary">Team size</span>
-            <span class="text-sm font-medium text-mlm-text tabular-nums">
-              {{ node.teamSize }}
-            </span>
-          </div>
-        }
+    <div class="divide-y divide-mlm-secondary/15">
+      <div class="flex items-center justify-between py-3">
+        <span class="text-xs text-mlm-secondary">Username</span>
+        <span class="text-sm font-medium text-mlm-text">{{ node.username }}</span>
       </div>
+
+      <div class="flex items-center justify-between py-3">
+        <span class="text-xs text-mlm-secondary">Package</span>
+        <span class="text-sm font-medium text-mlm-text">{{ getPackageLabel(node.package) }}</span>
+      </div>
+
+      @if (node.rank) {
+      <div class="flex items-center justify-between py-3">
+        <span class="text-xs text-mlm-secondary">Rank</span>
+        <span class="text-sm font-medium text-mlm-text">{{ node.rank }}</span>
+      </div>
+      }
+
+      @if (node.stage) {
+      <div class="flex items-center justify-between py-3">
+        <span class="text-xs text-mlm-secondary">Stage</span>
+        <span class="text-sm font-medium text-mlm-text">{{ node.stage }}</span>
+      </div>
+      }
+
+      <div class="flex items-center justify-between py-3">
+        <span class="text-xs text-mlm-secondary">Level</span>
+        <span class="text-sm font-medium text-mlm-text tabular-nums">{{ node.level }}</span>
+      </div>
+
+      <div class="flex items-center justify-between py-3">
+        <span class="text-xs text-mlm-secondary">Status</span>
+        <span class="text-[11px] font-medium px-2.5 py-1 rounded-full"
+          [class.text-mlm-primary]="node.status === 'active'" [class.bg-mlm-primary/10]="node.status === 'active'"
+          [class.text-mlm-secondary]="node.status !== 'active'" [class.bg-mlm-secondary/10]="node.status !== 'active'">
+          {{ node.status === 'active' ? 'Active' : 'Inactive' }}
+        </span>
+      </div>
+
+      @if (node.directReferrals != null) {
+      <div class="flex items-center justify-between py-3">
+        <span class="text-xs text-mlm-secondary">Legs</span>
+        <span class="text-sm font-medium text-mlm-text tabular-nums">
+          {{ node.directReferrals }}
+        </span>
+      </div>
+      }
+
+      @if (node.teamSize != null) {
+      <div class="flex items-center justify-between py-3">
+        <span class="text-xs text-mlm-secondary">Team size</span>
+        <span class="text-sm font-medium text-mlm-text tabular-nums">
+          {{ node.teamSize }}
+        </span>
+      </div>
+      }
+    </div>
     }
   </p-dialog>
 </div>
