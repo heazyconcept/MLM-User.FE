@@ -476,6 +476,11 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
     }
   }
 
+  getStageName(value: MatrixTabValue): string {
+    const tab = this.stageTabs.find((t) => t.value === value);
+    return tab ? tab.label : '';
+  }
+
   private loadEntryData(): void {
     this.networkService.fetchMatrixFlow('entry').subscribe({
       next: (result) => {
