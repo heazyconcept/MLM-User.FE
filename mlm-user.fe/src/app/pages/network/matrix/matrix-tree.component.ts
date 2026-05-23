@@ -285,8 +285,11 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
       level: 0,
       username: root.username === 'You' ? 'You' : root.username,
     };
+    const desktopRoot = this.activeTab() === 'entry'
+      ? this.stripEmptyNodes(adjustedRoot)
+      : adjustedRoot;
     // Convert to TreeNode array (OrganizationChart expects an array)
-    return [this.convertToTreeNode(adjustedRoot)];
+    return [this.convertToTreeNode(desktopRoot)];
   });
 
   // Flattened list for mobile view
@@ -319,6 +322,13 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
         this.flattenTree(child, result);
       }
     }
+  }
+
+  private stripEmptyNodes(node: MatrixNode): MatrixNode {
+    const children = (node.children ?? [])
+      .filter((child) => child.status !== 'empty')
+      .map((child) => this.stripEmptyNodes(child));
+    return { ...node, children };
   }
 
   zoomIn() {
