@@ -10,7 +10,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NetworkService, MatrixNode, type StageMember } from '../../../services/network.service';
+import { NetworkService, MatrixNode, type StageMember, type FlowStageMember } from '../../../services/network.service';
 import { type MatrixFlowStage } from '../../../services/referral.service';
 import { OrganizationChartModule } from 'primeng/organizationchart';
 import { TreeNode } from 'primeng/api';
@@ -403,7 +403,7 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
           }));
         this.stageMembers.set(members);
         this.stageTotalMembers.set(result.totalMembers);
-        this.stageRoot.set(this.buildStageTree(stage, members, rootMember));
+        this.stageRoot.set(this.buildStageTreeFromUplines(stage, result.members));
         this.stageLoading.set(false);
       },
       error: () => {
@@ -413,6 +413,67 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
         this.stageLoading.set(false);
       },
     });
+  }
+
+  private buildStageTreeFromUplines(stage: number, members: FlowStageMember[]): MatrixNode {
+    if (!members.length) {
+      return this.buildEmptyStageRoot(stage);
+    }
+
+    const rootSource =
+      members.find((m) => m.isCurrentUser) ??
+      members.find((m) => !m.uplineUsername) ??
+      members[0];
+
+    const nodes = new Map<string, MatrixNode>();
+    for (const member of members) {
+      const username = member.username?.trim();
+      if (!username) continue;
+      const status = member.status === 'ACTIVE' ? 'active' : 'inactive';
+      nodes.set(username, {
+        id: member.id,
+        username,
+        package: null,
+        level: 0,
+        status,
+        rank: member.rank || undefined,
+        stage: member.stageLabel || `Stage ${stage}`,
+        children: [],
+      });
+    }
+
+    const root = nodes.get(rootSource.username) ?? {
+      id: rootSource.id,
+      username: rootSource.username,
+      package: null,
+      level: 0,
+      status: rootSource.status === 'ACTIVE' ? 'active' : 'inactive',
+      rank: rootSource.rank || undefined,
+      stage: rootSource.stageLabel || `Stage ${stage}`,
+      children: [],
+    };
+
+    for (const member of members) {
+      if (member.id === rootSource.id) continue;
+      const childNode = nodes.get(member.username);
+      if (!childNode) continue;
+      const parentUsername = member.uplineUsername?.trim();
+      const parentNode = parentUsername ? nodes.get(parentUsername) : undefined;
+      const targetParent = parentNode ?? root;
+      childNode.parentId = targetParent.id;
+      targetParent.children = targetParent.children ?? [];
+      targetParent.children.push(childNode);
+    }
+
+    this.assignStageLevels(root, 0);
+    return root;
+  }
+
+  private assignStageLevels(node: MatrixNode, level: number): void {
+    node.level = level;
+    for (const child of node.children ?? []) {
+      this.assignStageLevels(child, level + 1);
+    }
   }
 
   private loadEntryData(): void {

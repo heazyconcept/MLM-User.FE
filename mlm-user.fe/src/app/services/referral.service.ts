@@ -214,6 +214,7 @@ export interface MatrixFlowUser {
   stageLabel: string;
   rankingLevel: number;
   isCurrentUser: boolean;
+  uplineUsername?: string | null;
 }
 
 export interface MatrixFlowResponse {
@@ -554,7 +555,13 @@ export class ReferralService {
           if (!res) return this.emptyMatrixFlow(stage);
           const data = (res['data'] as Record<string, unknown> | undefined) ?? res;
           const usersSource = (data['users'] ?? data['items'] ?? []) as Record<string, unknown>[];
-          const users: MatrixFlowUser[] = usersSource.map((u) => ({
+          const users: MatrixFlowUser[] = usersSource.map((u) => {
+            const uplineRaw = (u['uplineUsername'] ?? u['upline_username']) as
+              | string
+              | null
+              | undefined;
+            const uplineUsername = typeof uplineRaw === 'string' ? uplineRaw.trim() : undefined;
+            return {
             id: String(u['id'] ?? u['userId'] ?? ''),
             username: String(u['username'] ?? ''),
             email: (u['email'] as string | null) ?? null,
@@ -565,7 +572,9 @@ export class ReferralService {
             stageLabel: String(u['stageLabel'] ?? ''),
             rankingLevel: this.readNumber(u['rankingLevel'] ?? 0, 0),
             isCurrentUser: (u['isCurrentUser'] ?? false) as boolean,
-          }));
+            uplineUsername: uplineUsername || null,
+          };
+          });
           return {
             status: 'success' as const,
             data: {
