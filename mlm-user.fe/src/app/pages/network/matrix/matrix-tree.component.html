@@ -420,28 +420,7 @@
         >
           <ng-template let-node pTemplate="default">
             @if (node.data) {
-              @if (node.data.status === 'empty') {
-                <div
-                  class="matrix-empty-node flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-mlm-secondary/20 bg-white cursor-pointer hover:border-mlm-primary/40 hover:bg-mlm-primary/5 transition-all group"
-                  [pTooltip]="getTooltipText(node.data)"
-                  tooltipPosition="top"
-                  (click)="onOpenSlotClick(node.data)"
-                >
-                  <div
-                    class="empty-icon rounded-full bg-mlm-secondary/10 flex items-center justify-center mb-1 group-hover:bg-mlm-primary/10 transition-colors"
-                  >
-                    <i
-                      class="pi pi-plus text-mlm-secondary/50 group-hover:text-mlm-primary/70 transition-colors"
-                    ></i>
-                  </div>
-
-                  <span
-                    class="empty-label font-semibold text-mlm-secondary/50 uppercase tracking-widest group-hover:text-mlm-primary/70 transition-colors"
-                  >
-                    Open slot
-                  </span>
-                </div>
-              } @else {
+              @if (node.data.status !== 'empty') {
                 <div
                   class="matrix-node-card relative flex flex-col items-center rounded-xl border-2 bg-emerald-50 transition-all duration-200"
                   [class.matrix-node-main]="node.data.level === 0"
