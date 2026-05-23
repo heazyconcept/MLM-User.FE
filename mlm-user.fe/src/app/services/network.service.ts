@@ -90,6 +90,7 @@ export interface FlowStageMember {
   stageLabel: string;
   rankingLevel: number;
   isCurrentUser: boolean;
+  uplineUsername?: string | null;
 }
 
 @Injectable({
@@ -296,6 +297,7 @@ export class NetworkService {
             stageLabel: user.stageLabel,
             rankingLevel: user.rankingLevel,
             isCurrentUser: user.isCurrentUser,
+            uplineUsername: user.uplineUsername ?? null,
           };
         });
         return {
