@@ -339,10 +339,10 @@
                      Keep your old desktop chart here.
                 ====================================================== -->
           <div #matrixViewport
-            class="desktop-matrix-tree absolute inset-0 overflow-auto matrix-viewport p-2 sm:p-6 md:p-10 justify-center items-start cursor-grab active:cursor-grabbing"
+            class="desktop-matrix-tree absolute inset-0 overflow-auto matrix-viewport p-2 sm:p-6 md:p-10 cursor-grab active:cursor-grabbing"
             style="-webkit-overflow-scrolling: touch;">
             <div [style.width.px]="scaledWidth() || null" [style.height.px]="scaledHeight() || null"
-              class="relative shrink-0">
+              class="relative shrink-0  mx-auto right-[246px]">
               <div [style.transform]="'scale(' + zoomLevel() + ')'"
                 class="transition-transform duration-300 origin-top-left absolute top-0 left-0">
                 <p-organization-chart [value]="matrixTree()" (onNodeSelect)="onNodeSelect($event)">
