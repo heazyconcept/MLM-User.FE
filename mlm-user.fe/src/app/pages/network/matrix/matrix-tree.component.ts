@@ -201,9 +201,10 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
       this.requestAutoFit();
     });
 
-    // Re-run auto-fit whenever the rendered tree changes (entry/stage swaps, data reload)
+    // Re-run auto-fit whenever the rendered tree changes (entry/stage swaps, data reload) or window resizes
     effect(() => {
       this.displayRoot();
+      this.windowWidth(); // Depend on windowWidth to trigger on window resize
       this.autoFitDone = false;
       this.userAdjustedZoom = false;
       this.requestAutoFit();
@@ -809,8 +810,8 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
       const scale = Math.min(scaleX, scaleY, 1);
 
       // On mobile we MUST fit fully — no minimum floor.
-      // On desktop keep a readable floor.
-      const finalScale = isMobileViewport ? scale : Math.max(scale, 0.35);
+      // On desktop keep a safe lower floor so it's not microscopic but fits large trees.
+      const finalScale = isMobileViewport ? scale : Math.max(scale, 0.15);
 
       this.zoomLevel.set(finalScale);
 
@@ -819,8 +820,18 @@ export class MatrixTreeComponent implements OnInit, AfterViewInit {
         setTimeout(() => {
           const scaledWidth = treeWidth * finalScale;
           const scaledHeight = treeHeight * finalScale;
-          viewport.scrollLeft = (scaledWidth - viewport.clientWidth) / 2;
-          viewport.scrollTop = (scaledHeight - viewport.clientHeight) / 2;
+
+          if (scaledWidth > viewport.clientWidth) {
+            viewport.scrollLeft = (scaledWidth - viewport.clientWidth) / 2;
+          } else {
+            viewport.scrollLeft = 0;
+          }
+
+          if (scaledHeight > viewport.clientHeight) {
+            viewport.scrollTop = (scaledHeight - viewport.clientHeight) / 2;
+          } else {
+            viewport.scrollTop = 0;
+          }
         });
       }
 
