@@ -469,12 +469,3 @@
 :host ::ng-deep .p-organizationchart-line-top {
   border-color: rgba(100, 116, 139, 0.25) !important;
 }
-
-@keyframes bounceSubtle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-.animate-bounce-subtle {
-  animation: bounceSubtle 2.5s ease-in-out infinite;
-}
