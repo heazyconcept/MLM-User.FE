@@ -37,10 +37,10 @@
         <!-- ── User already has a merchant profile ── -->
         <div class="bg-white rounded-lg border border-gray-100 shadow-sm">
 
-          @if (profile()?.status === 'PENDING' && !profile()?.merchantFeePaidAt) {
+          @if (!isFeePaid()) {
             <!--
-              PENDING + UNPAID: user applied under old flow or returned from cancelled Paystack.
-              Let them complete payment only — no re-application needed.
+              DRAFT or PENDING + UNPAID: user applied but hasn't paid yet.
+              Let them complete payment — no re-application needed.
             -->
             <div class="px-8 pt-8 pb-4 border-b border-gray-100">
               <div class="flex items-center gap-3 mb-2">
@@ -181,7 +181,7 @@
                 >
                   <h3 class="font-bold text-mlm-text mb-2">{{ getTypeLabel(cfg.merchantType) }}</h3>
                   <div class="text-2xl font-black text-mlm-primary mb-4">
-                    ₦{{ cfg.registrationFeeUsd | number: '1.2-2' }}
+                    {{ getRegistrationFee(cfg).symbol }}{{ getRegistrationFee(cfg).amount | number: '1.2-2' }}
                   </div>
                   <dl class="space-y-2 text-xs flex-1">
                     <div class="flex justify-between border-b border-gray-50 pb-1">

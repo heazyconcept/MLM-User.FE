@@ -6,7 +6,7 @@ import { ApiService } from './api.service';
 /* ── Enums ─────────────────────────────────────────────────────── */
 
 export type MerchantType = 'REGIONAL' | 'NATIONAL' | 'GLOBAL';
-export type MerchantStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED';
+export type MerchantStatus = 'DRAFT' | 'PENDING' | 'ACTIVE' | 'SUSPENDED';
 export type OrderStatus =
   | 'ASSIGNED_TO_MERCHANT'
   | 'READY_FOR_PICKUP'
@@ -52,6 +52,7 @@ export interface MerchantCategoryConfig {
   deliveryCommissionPct: number;
   productCommissionPct: number;
   registrationFeeUsd: number;
+  registrationFeeNGN?: number;
   onboardingItems: MerchantCategoryConfigItem[];
 }
 
