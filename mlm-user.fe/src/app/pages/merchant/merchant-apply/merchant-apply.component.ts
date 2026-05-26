@@ -1,14 +1,17 @@
-import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { switchMap, of } from 'rxjs';
+import { switchMap, of, EMPTY } from 'rxjs';
 import {
   MerchantService,
   type MerchantType,
   type MerchantFeePaymentSource,
   type MerchantProfile,
+  type MerchantCategoryConfig,
 } from '../../../services/merchant.service';
+import { UserService } from '../../../services/user.service';
+import { RealTimeNotificationService } from '../../../services/realtime-notification.service';
 import { ButtonModule } from 'primeng/button';
 
 @Component({
@@ -19,8 +22,12 @@ import { ButtonModule } from 'primeng/button';
 })
 export class MerchantApplyComponent implements OnInit {
   private merchantService = inject(MerchantService);
+  private userService = inject(UserService);
+  private realTimeNotifications = inject(RealTimeNotificationService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+
+  userCurrency = computed(() => this.userService.currentUser()?.currency ?? 'NGN');
 
   categoryConfig = this.merchantService.categoryConfig;
   profile = this.merchantService.profile;
@@ -28,6 +35,15 @@ export class MerchantApplyComponent implements OnInit {
   loading = this.merchantService.loading;
   actionLoading = this.merchantService.actionLoading;
   error = this.merchantService.error;
+
+  /**
+   * Robustly checks whether the merchant fee has actually been paid.
+   * Guards against empty strings, 'null' strings, and undefined.
+   */
+  isFeePaid = computed(() => {
+    const val = this.profile()?.merchantFeePaidAt;
+    return val != null && val !== '' && val !== 'null';
+  });
 
   selectedType = signal<MerchantType>('REGIONAL');
   serviceAreasInput = signal('');
@@ -98,6 +114,15 @@ export class MerchantApplyComponent implements OnInit {
     return this.getConfigForType(this.selectedType());
   }
 
+  /** Returns the fee amount and symbol based on the user's currency */
+  getRegistrationFee(cfg: MerchantCategoryConfig): { amount: number; symbol: string } {
+    const currency = this.userCurrency();
+    if (currency === 'NGN' && cfg.registrationFeeNGN != null) {
+      return { amount: cfg.registrationFeeNGN, symbol: '₦' };
+    }
+    return { amount: cfg.registrationFeeUsd, symbol: '$' };
+  }
+
   /**
    * Single atomic action: apply THEN immediately initiate payment.
    * Admin only sees a PENDING record once payment is in flight.
@@ -121,7 +146,7 @@ export class MerchantApplyComponent implements OnInit {
         switchMap((profile: MerchantProfile | null) => {
           if (!profile?.id) {
             // apply() failed — error already set in service, stop chain
-            return of(null);
+            return EMPTY;
           }
 
           const payload: any = { source, merchantId: profile.id };
@@ -132,14 +157,25 @@ export class MerchantApplyComponent implements OnInit {
           return this.merchantService.initiateMerchantFeePayment(payload);
         }),
       )
-      .subscribe((res) => {
-        if (!res) return;
-        if (res.gatewayUrl) {
-          // Redirect to Paystack — user will return via callback URL
-          window.location.href = res.gatewayUrl;
-        }
-        // For wallet payments, service already calls fetchProfile()
-        // so the UI will update automatically to show the paid/pending state
+      .subscribe({
+        next: (res) => {
+          if (!res) {
+            // Payment initiation failed — refetch profile so UI shows
+            // "Complete Payment" screen instead of "Application Submitted"
+            this.merchantService.fetchProfile();
+            return;
+          }
+          if (res.gatewayUrl) {
+            window.location.href = res.gatewayUrl;
+          } else {
+            // Wallet payment succeeded — pull the backend notification after a brief delay
+            setTimeout(() => this.realTimeNotifications.syncUnreadNotifications(), 2000);
+          }
+        },
+        error: () => {
+          // Ensure fresh profile so template shows correct state
+          this.merchantService.fetchProfile();
+        },
       });
   }
 
@@ -161,6 +197,9 @@ export class MerchantApplyComponent implements OnInit {
     this.merchantService.initiateMerchantFeePayment(payload).subscribe((res) => {
       if (res?.gatewayUrl) {
         window.location.href = res.gatewayUrl;
+      } else if (res) {
+        // Wallet payment succeeded — pull the backend notification after a brief delay
+        setTimeout(() => this.realTimeNotifications.syncUnreadNotifications(), 2000);
       }
     });
   }
