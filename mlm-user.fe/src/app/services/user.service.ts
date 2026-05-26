@@ -27,6 +27,7 @@ export interface User {
   package?: string;
   registrationPaid?: boolean;
   onboardingComplete?: boolean;
+  hasTransactionPin?: boolean;
   /** From matrix: direct referrals count */
   directReferrals?: number;
   /** From matrix: active legs count */
@@ -160,6 +161,7 @@ export class UserService {
         reg?.['package']) as string | undefined,
       registrationPaid,
       onboardingComplete: apiUser['onboardingComplete'] === true,
+      hasTransactionPin: apiUser['hasTransactionPin'] === true || apiUser['has_transaction_pin'] === true,
     };
   }
 
@@ -235,6 +237,40 @@ export class UserService {
       currentPassword,
       newPassword,
     });
+  }
+
+  setTransactionPin(pin: string, confirmPin: string): Observable<unknown> {
+    return this.api.post('users/transaction-pin/set', { pin, confirmPin }).pipe(
+      tap(() => {
+        const currentUser = this.user();
+        if (currentUser) {
+          const updatedUser = { ...currentUser, hasTransactionPin: true };
+          this.user.set(updatedUser);
+          this.persistUserData(updatedUser);
+        }
+      })
+    );
+  }
+
+  changeTransactionPin(oldPin: string, newPin: string, confirmNewPin: string): Observable<unknown> {
+    return this.api.put('users/transaction-pin/change', { oldPin, newPin, confirmNewPin });
+  }
+
+  requestTransactionPinReset(): Observable<unknown> {
+    return this.api.post('users/transaction-pin/reset-request', {});
+  }
+
+  resetTransactionPin(otp: string, newPin: string, confirmNewPin: string): Observable<unknown> {
+    return this.api.post('users/transaction-pin/reset', { otp, newPin, confirmNewPin }).pipe(
+      tap(() => {
+        const currentUser = this.user();
+        if (currentUser) {
+          const updatedUser = { ...currentUser, hasTransactionPin: true };
+          this.user.set(updatedUser);
+          this.persistUserData(updatedUser);
+        }
+      })
+    );
   }
 
   clearUser(): void {

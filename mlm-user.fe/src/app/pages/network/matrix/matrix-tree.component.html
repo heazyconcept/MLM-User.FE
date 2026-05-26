@@ -202,9 +202,7 @@
         <div class="border border-mlm-secondary/15 rounded-xl bg-white overflow-hidden relative tree-viewport">
 
           <!-- =====================================================
-                     MOBILE CUSTOM MATRIX TREE
-                     This is the sketch-style version.
-                     It does NOT use PrimeNG organization chart.
+                       MOBILE CUSTOM MATRIX TREE
                 ====================================================== -->
           <div #mobileMatrixTree class="mobile-matrix-tree" [class.mobile-scrolling]="mobileZoom() > 1.0">
             <div class="mobile-tree-canvas" [style.--mobile-zoom]="mobileZoom()"
@@ -336,7 +334,6 @@
 
           <!-- =====================================================
                      DESKTOP PRIME NG MATRIX TREE
-                     Keep your old desktop chart here.
                 ====================================================== -->
           <div #matrixViewport
             class="desktop-matrix-tree absolute inset-0 overflow-auto matrix-viewport p-2 sm:p-6 md:p-10 cursor-grab active:cursor-grabbing"

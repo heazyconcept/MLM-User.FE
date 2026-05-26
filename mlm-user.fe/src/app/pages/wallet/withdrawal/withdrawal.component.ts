@@ -51,6 +51,9 @@ export class WithdrawalComponent implements OnInit {
     const curr = this.currency();
     return curr ? this.walletService.getWallet(curr)() : null;
   });
+  hasPin = computed(() => this.userService.currentUser()?.hasTransactionPin ?? false);
+  formState = signal<'PIN_SETUP' | 'AMOUNT' | 'PIN_VERIFY'>('AMOUNT');
+  amountToConfirm = signal<number | null>(null);
 
   private bankDetailsFromApi = signal<{
     bankName?: string;
@@ -81,7 +84,9 @@ export class WithdrawalComponent implements OnInit {
 
   constructor() {
     this.withdrawalForm = this.fb.group({
-      amount: [null, [Validators.required, Validators.min(0.01)]]
+      amount: [null, [Validators.required, Validators.min(0.01)]],
+      pin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
+      confirmPin: ['']
     });
     const amountCtrl = this.withdrawalForm.get('amount')!;
     this.amountValue = toSignal(amountCtrl.valueChanges.pipe(startWith(amountCtrl.value)), {
@@ -93,33 +98,91 @@ export class WithdrawalComponent implements OnInit {
     const data = this.config.data;
     if (data && data.currency) {
       this.currency.set(data.currency);
-      const w = this.walletService.getWallet(data.currency as 'NGN' | 'USD')();
-      if (w) {
-        this.withdrawalForm.get('amount')?.addValidators(Validators.max(w.cashBalance));
-        this.withdrawalForm.get('amount')?.updateValueAndValidity();
-      }
+    }
+
+    if (!this.hasPin()) {
+      this.setFormState('PIN_SETUP');
+    } else {
+      this.setFormState('AMOUNT');
     }
 
     this.refreshBankDetails(true);
   }
 
-  onSubmit() {
-    if (this.withdrawalForm.valid && this.hasBankDetails()) {
-      const amount = this.withdrawalForm.value.amount as number;
-      const bank = this.bankDetails();
-      const formattedAmount = WithdrawalComponent.formatAmountWithCommas(amount);
+  setFormState(state: 'PIN_SETUP' | 'AMOUNT' | 'PIN_VERIFY') {
+    this.formState.set(state);
 
-      this.confirmationService.confirm({
-        message: `Confirm withdrawal of ${this.currency() === 'NGN' ? '₦' : '$'}${formattedAmount} to ${bank.bankName} (${bank.accountNumber})?`,
-        header: 'Confirm Withdrawal',
-        icon: 'pi pi-exclamation-triangle',
-        acceptButtonProps: { label: 'Confirm', severity: 'success' },
-        rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
-        accept: () => {
-          this.processWithdrawal();
+    const amountCtrl = this.withdrawalForm.get('amount')!;
+    const pinCtrl = this.withdrawalForm.get('pin')!;
+    const confirmPinCtrl = this.withdrawalForm.get('confirmPin')!;
+
+    // Clear all validators first
+    amountCtrl.clearValidators();
+    pinCtrl.clearValidators();
+    confirmPinCtrl.clearValidators();
+    this.withdrawalForm.clearValidators();
+
+    if (state === 'PIN_SETUP') {
+      pinCtrl.setValidators([Validators.required, Validators.pattern(/^\d{4}$/)]);
+      confirmPinCtrl.setValidators([Validators.required, Validators.pattern(/^\d{4}$/)]);
+      this.withdrawalForm.addValidators(this.pinMatchValidator);
+    } else if (state === 'AMOUNT') {
+      const maxVal = this.wallet()?.cashBalance ?? 0;
+      amountCtrl.setValidators([Validators.required, Validators.min(0.01), Validators.max(maxVal)]);
+    } else if (state === 'PIN_VERIFY') {
+      pinCtrl.setValidators([Validators.required, Validators.pattern(/^\d{4}$/)]);
+    }
+
+    amountCtrl.updateValueAndValidity();
+    pinCtrl.updateValueAndValidity();
+    confirmPinCtrl.updateValueAndValidity();
+    this.withdrawalForm.updateValueAndValidity();
+  }
+
+  private pinMatchValidator = (control: any) => {
+    const pin = control.get('pin')?.value;
+    const confirmPin = control.get('confirmPin')?.value;
+    if (pin && confirmPin && pin !== confirmPin) {
+      control.get('confirmPin')?.setErrors({ pinMismatch: true });
+      return { pinMismatch: true };
+    }
+    return null;
+  };
+
+  onSubmit() {
+    if (this.withdrawalForm.invalid) return;
+
+    const state = this.formState();
+
+    if (state === 'PIN_SETUP') {
+      this.isSubmitting.set(true);
+      const pin = this.withdrawalForm.value.pin;
+      const confirmPin = this.withdrawalForm.value.confirmPin;
+
+      this.userService.setTransactionPin(pin, confirmPin).subscribe({
+        next: () => {
+          this.isSubmitting.set(false);
+          this.withdrawalForm.patchValue({ pin: '', confirmPin: '' });
+          this.setFormState('AMOUNT');
+        },
+        error: () => {
+          this.isSubmitting.set(false);
         }
       });
+    } else if (state === 'AMOUNT') {
+      if (this.hasBankDetails()) {
+        this.amountToConfirm.set(this.withdrawalForm.value.amount);
+        this.withdrawalForm.patchValue({ pin: '' });
+        this.setFormState('PIN_VERIFY');
+      }
+    } else if (state === 'PIN_VERIFY') {
+      this.processWithdrawal();
     }
+  }
+
+  goBackToAmount() {
+    this.withdrawalForm.patchValue({ pin: '' });
+    this.setFormState('AMOUNT');
   }
 
   hasBankDetails(): boolean {
@@ -197,7 +260,8 @@ export class WithdrawalComponent implements OnInit {
 
   private processWithdrawal() {
     this.isSubmitting.set(true);
-    const amount = this.withdrawalForm.value.amount;
+    const amount = this.amountToConfirm()!;
+    const pin = this.withdrawalForm.value.pin;
     const curr = this.currency()!;
     const bank = this.bankDetails();
 
@@ -206,7 +270,8 @@ export class WithdrawalComponent implements OnInit {
       amount,
       bankName: bank.bankName!,
       accountNumber: bank.accountNumber!,
-      accountName: bank.accountName!
+      accountName: bank.accountName!,
+      pin
     }).subscribe({
       next: (created) => {
         this.walletService.fetchWallets().subscribe();
@@ -216,6 +281,7 @@ export class WithdrawalComponent implements OnInit {
       },
       error: () => {
         this.isSubmitting.set(false);
+        this.withdrawalForm.patchValue({ pin: '' });
       }
     });
   }
@@ -232,5 +298,3 @@ export class WithdrawalComponent implements OnInit {
     });
   }
 }
-
-

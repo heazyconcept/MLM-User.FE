@@ -292,22 +292,19 @@ export class MerchantService {
 
   /* ── Application & Discovery ─────────────────────────────────── */
 
-  /** POST /merchants/apply */
-  apply(type: MerchantType, serviceAreas: string[]): void {
+  /** POST /merchants/apply — returns observable so callers can chain payment */
+  apply(type: MerchantType, serviceAreas: string[]): Observable<MerchantProfile | null> {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
-    this.api
-      .post<MerchantProfile>('merchants/apply', { type, serviceAreas })
-      .pipe(
-        tap((profile) => this.profileSignal.set(profile)),
-        catchError((err) => {
-          console.error('[MerchantService] apply failed', err);
-          this.errorSignal.set(err?.error?.message || 'Failed to submit merchant application.');
-          return of(null);
-        }),
-        finalize(() => this.actionLoadingSignal.set(false)),
-      )
-      .subscribe();
+    return this.api.post<MerchantProfile>('merchants/apply', { type, serviceAreas }).pipe(
+      tap((profile) => this.profileSignal.set(profile)),
+      catchError((err) => {
+        console.error('[MerchantService] apply failed', err);
+        this.errorSignal.set(err?.error?.message || 'Failed to submit merchant application.');
+        return of(null);
+      }),
+      finalize(() => this.actionLoadingSignal.set(false)),
+    );
   }
 
   /** GET /merchants/category-config (public) */
