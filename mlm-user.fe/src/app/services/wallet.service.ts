@@ -107,29 +107,33 @@ export class WalletService {
   private withdrawalRequests = signal<WithdrawalRequest[]>([]);
   private autoshipStatusSignal = signal<AutoshipStatus | null>(null);
 
+  /**
+   * Backend now returns CASH `balance` as available balance (ledger − liens).
+   * No frontend deduction needed — pass through directly.
+   */
   readonly allWallets = computed(() => this.wallets());
   readonly allTransactions = computed(() => this.transactions());
   readonly allWithdrawals = computed(() => this.withdrawalRequests());
   readonly autoshipStatus = this.autoshipStatusSignal.asReadonly();
 
   readonly totalBalance = computed(() =>
-    this.wallets().reduce((sum, w) => sum + w.balance, 0)
+    this.allWallets().reduce((sum, w) => sum + w.balance, 0)
   );
   readonly totalCashBalance = computed(() =>
-    this.wallets().reduce((sum, w) => sum + w.cashBalance, 0)
+    this.allWallets().reduce((sum, w) => sum + w.cashBalance, 0)
   );
   readonly totalVoucherBalance = computed(() =>
-    this.wallets().reduce((sum, w) => sum + w.voucherBalance, 0)
+    this.allWallets().reduce((sum, w) => sum + w.voucherBalance, 0)
   );
   readonly totalAutoshipBalance = computed(() =>
-    this.wallets().reduce((sum, w) => sum + w.autoshipBalance, 0)
+    this.allWallets().reduce((sum, w) => sum + w.autoshipBalance, 0)
   );
   readonly totalRegistrationBalance = computed(() =>
-    this.wallets().reduce((sum, w) => sum + w.registrationBalance, 0)
+    this.allWallets().reduce((sum, w) => sum + w.registrationBalance, 0)
   );
 
   getWallet(currency: 'NGN' | 'USD') {
-    return computed(() => this.wallets().find(w => w.currency === currency));
+    return computed(() => this.allWallets().find(w => w.currency === currency));
   }
 
   /**
@@ -259,6 +263,7 @@ export class WalletService {
   }
 
   fetchWallets(): Observable<Wallet[]> {
+    this.fetchWithdrawals().subscribe({ error: () => {} });
     return this.api.get<unknown>('wallets').pipe(
       map(raw => this.mapApiWalletsToWallets(raw)),
       tap(wallets => this.wallets.set(wallets)),
@@ -286,10 +291,11 @@ export class WalletService {
     bankName: string;
     accountNumber: string;
     accountName: string;
+    pin: string;
   }): Observable<WithdrawalRequest> {
-    const { currency, amount } = params;
+    const { currency, amount, pin } = params;
 
-    return this.api.post<Record<string, unknown>>('withdrawals/request', { amount }).pipe(
+    return this.api.post<Record<string, unknown>>('withdrawals/request', { amount, pin }).pipe(
       map(raw => this.mapApiWithdrawalToWithdrawal(raw as Record<string, unknown>)),
       tap(mapped => {
         this.modalService.open(

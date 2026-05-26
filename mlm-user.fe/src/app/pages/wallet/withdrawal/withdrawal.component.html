@@ -1,113 +1,264 @@
 <div class="px-2 pb-2">
-  <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
-
   <div class="space-y-6">
-      <div class="grid grid-cols-2 gap-4">
-          <!-- Current Balance -->
-          <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-              <span class="text-[15px] text-mlm-secondary font-bold uppercase tracking-wider">Available Balance</span>
-              <div class="mt-1 flex items-baseline gap-1">
-                  <span class="text-2xl font-black text-mlm-text">
-                      {{ currency() === 'NGN' ? '₦' : '$' }}{{ (wallet()?.cashBalance ?? 0) | number:'1.2-2' }}
-                  </span>
-              </div>
-          </div>
-
-          <!-- Bank Details (Read-only) -->
-          <div class="bg-mlm-blue-50/30 rounded-2xl p-5 border border-mlm-blue-100/50">
-              <span class="text-[15px] text-mlm-secondary font-bold uppercase tracking-wider">Receiving Bank</span>
-              @if (hasBankDetails()) {
-                  <div class="mt-1">
-                      <div class="text-sm font-bold text-mlm-text truncate">{{ bankDetails().bankName }}</div>
-                      <div class="text-[10px] text-mlm-secondary font-medium">{{ bankDetails().accountNumber }}</div>
+      
+      <!-- State 1: Configure Transaction PIN -->
+      @if (formState() === 'PIN_SETUP') {
+          <form [formGroup]="withdrawalForm" (ngSubmit)="onSubmit()" class="space-y-6">
+              <div class="p-6 bg-amber-50/50 rounded-2xl border border-amber-100/50 space-y-4 shadow-sm">
+                  <div class="flex gap-3 items-start">
+                      <i class="pi pi-shield text-amber-600 mt-1 text-lg"></i>
+                      <div>
+                          <p class="text-sm font-bold text-amber-800 uppercase tracking-tight">Configure Transaction PIN</p>
+                          <p class="text-xs text-amber-600 leading-normal font-medium mt-1">To keep your payouts secure, please configure a 4-digit Transaction PIN. This PIN will be required to authorize all withdrawals and secure operations.</p>
+                      </div>
                   </div>
-              } @else {
-                  <div class="mt-2 flex items-center gap-1.5 text-mlm-error">
-                      <i class="pi pi-exclamation-circle text-xs"></i>
-                      <span class="text-[10px] font-bold">No bank details found</span>
+                  
+                  <div class="grid grid-cols-2 gap-4 pt-2">
+                      <!-- New PIN -->
+                      <div class="flex flex-col gap-2">
+                          <label for="pin" class="text-xs font-bold text-mlm-text uppercase tracking-wider">New 4-Digit PIN</label>
+                          <div class="relative">
+                              <input 
+                                  type="password" 
+                                  id="pin" 
+                                  formControlName="pin" 
+                                  maxLength="4" 
+                                  placeholder="••••" 
+                                  class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary text-center text-xl tracking-[1.2em] font-mono font-bold bg-white placeholder-gray-300 transition-all duration-200"
+                              />
+                          </div>
+                          @if (withdrawalForm.get('pin')?.invalid && (withdrawalForm.get('pin')?.dirty || withdrawalForm.get('pin')?.touched)) {
+                              <div class="mt-1">
+                                  @if (withdrawalForm.get('pin')?.errors?.['required']) {
+                                      <small class="text-mlm-error text-[10px] font-bold">PIN is required.</small>
+                                  }
+                                  @if (withdrawalForm.get('pin')?.errors?.['pattern']) {
+                                      <small class="text-mlm-error text-[10px] font-bold">Must be 4 digits.</small>
+                                  }
+                              </div>
+                          }
+                      </div>
+                      
+                      <!-- Confirm PIN -->
+                      <div class="flex flex-col gap-2">
+                          <label for="confirmPin" class="text-xs font-bold text-mlm-text uppercase tracking-wider">Confirm PIN</label>
+                          <div class="relative">
+                              <input 
+                                  type="password" 
+                                  id="confirmPin" 
+                                  formControlName="confirmPin" 
+                                  maxLength="4" 
+                                  placeholder="••••" 
+                                  class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary text-center text-xl tracking-[1.2em] font-mono font-bold bg-white placeholder-gray-300 transition-all duration-200"
+                              />
+                          </div>
+                          @if (withdrawalForm.get('confirmPin')?.invalid && (withdrawalForm.get('confirmPin')?.dirty || withdrawalForm.get('confirmPin')?.touched)) {
+                              <div class="mt-1">
+                                  @if (withdrawalForm.get('confirmPin')?.errors?.['required']) {
+                                      <small class="text-mlm-error text-[10px] font-bold">Confirm PIN is required.</small>
+                                  }
+                                  @if (withdrawalForm.get('confirmPin')?.errors?.['pattern']) {
+                                      <small class="text-mlm-error text-[10px] font-bold">Must be 4 digits.</small>
+                                  }
+                                  @if (withdrawalForm.get('confirmPin')?.errors?.['pinMismatch']) {
+                                      <small class="text-mlm-error text-[10px] font-bold">PINs do not match.</small>
+                                  }
+                              </div>
+                          }
+                      </div>
                   </div>
-              }
-          </div>
-      </div>
-
-      @if (!hasBankDetails()) {
-          <div class="p-3 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
-              <i class="pi pi-exclamation-triangle text-mlm-error mt-0.5"></i>
-              <div>
-                  <p class="text-[10px] font-bold text-red-800">Bank Details Required</p>
-                  <p class="text-[10px] text-red-600 leading-tight">Please update your bank details in your profile before requesting a withdrawal.</p>
               </div>
-          </div>
+
+              <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                  <p-button 
+                      type="button"
+                      label="Cancel"
+                      [outlined]="true"
+                      severity="secondary"
+                      (onClick)="cancel()"
+                      [disabled]="isSubmitting()">
+                  </p-button>
+                  <p-button 
+                      type="submit" 
+                      label="Confirm" 
+                      [disabled]="withdrawalForm.invalid || isSubmitting()"
+                      [loading]="isSubmitting()">
+                  </p-button>
+              </div>
+          </form>
       }
 
-      <form [formGroup]="withdrawalForm" (ngSubmit)="onSubmit()" class="space-y-6">
-          <div class="flex flex-col gap-2">
-              <label for="amount" class="text-xs font-bold text-mlm-text uppercase tracking-tight">Amount to Withdraw</label>
-              <div class="flex flex-col gap-1">
-              <p-inputNumber 
-                  formControlName="amount" 
-                  inputId="amount" 
-                  [mode]="'currency'" 
-                  [currency]="currency() === 'NGN' ? 'NGN' : 'USD'" 
-                  [currencyDisplay]="'symbol'"
-                  [min]="0.01"
-                  [max]="wallet()?.cashBalance ?? 0"
-                  fluid="true"
-                  placeholder="0.00">
-              </p-inputNumber>
-              @if (wallet()) {
-                <div class="flex justify-end text-[10px] leading-none">
-                  <button type="button" (click)="withdrawalForm.patchValue({amount: wallet()?.cashBalance})" class="text-mlm-primary font-bold hover:underline">MAX</button>
-                </div>
-              }
-              @if (amountInWords()) {
-                <p class="text-sm font-bold text-mlm-text leading-snug">{{ amountInWords() }}</p>
-              }
+      <!-- State 2: Enter Withdrawal Amount -->
+      @else if (formState() === 'AMOUNT') {
+          <div class="grid grid-cols-2 gap-4">
+              <!-- Current Balance -->
+              <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                  <span class="text-[15px] text-mlm-secondary font-bold uppercase tracking-wider">Available Balance</span>
+                  <div class="mt-1 flex items-baseline gap-1">
+                      <span class="text-2xl font-black text-mlm-text">
+                          {{ currency() === 'NGN' ? '₦' : '$' }}{{ (wallet()?.cashBalance ?? 0) | number:'1.2-2' }}
+                      </span>
+                  </div>
               </div>
 
-              @if (withdrawalForm.get('amount')?.invalid && (withdrawalForm.get('amount')?.dirty || withdrawalForm.get('amount')?.touched)) {
-                  <div class="mt-1">
-                      @if (withdrawalForm.get('amount')?.errors?.['required']) {
-                          <small class="text-mlm-error text-[10px] font-bold">Amount is required.</small>
+              <!-- Bank Details -->
+              <div class="bg-mlm-blue-50/30 rounded-2xl p-5 border border-mlm-blue-100/50">
+                  <span class="text-[15px] text-mlm-secondary font-bold uppercase tracking-wider">Receiving Bank</span>
+                  @if (hasBankDetails()) {
+                      <div class="mt-1">
+                          <div class="text-sm font-bold text-mlm-text truncate">{{ bankDetails().bankName }}</div>
+                          <div class="text-[10px] text-mlm-secondary font-medium">{{ bankDetails().accountNumber }}</div>
+                      </div>
+                  } @else {
+                      <div class="mt-2 flex items-center gap-1.5 text-mlm-error">
+                          <i class="pi pi-exclamation-circle text-xs"></i>
+                          <span class="text-[10px] font-bold">No bank details found</span>
+                      </div>
+                  }
+              </div>
+          </div>
+
+          @if (!hasBankDetails()) {
+              <div class="p-3 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3 mt-4">
+                  <i class="pi pi-exclamation-triangle text-mlm-error mt-0.5"></i>
+                  <div>
+                      <p class="text-[10px] font-bold text-red-800">Bank Details Required</p>
+                      <p class="text-[10px] text-red-600 leading-tight">Please update your bank details in your profile before requesting a withdrawal.</p>
+                  </div>
+              </div>
+          }
+
+          <form [formGroup]="withdrawalForm" (ngSubmit)="onSubmit()" class="space-y-6 mt-6">
+              <div class="flex flex-col gap-2">
+                  <label for="amount" class="text-xs font-bold text-mlm-text uppercase tracking-tight">Amount to Withdraw</label>
+                  <div class="flex flex-col gap-1">
+                      <p-inputNumber 
+                          formControlName="amount" 
+                          inputId="amount" 
+                          [mode]="'currency'" 
+                          [currency]="currency() === 'NGN' ? 'NGN' : 'USD'" 
+                          [currencyDisplay]="'symbol'"
+                          [min]="0.01"
+                          [max]="wallet()?.cashBalance ?? 0"
+                          fluid="true"
+                          placeholder="0.00">
+                      </p-inputNumber>
+                      @if (wallet()) {
+                          <div class="flex justify-end text-[10px] leading-none">
+                              <button type="button" (click)="withdrawalForm.patchValue({amount: wallet()?.cashBalance})" class="text-mlm-primary font-bold hover:underline">MAX</button>
+                          </div>
                       }
-                      @if (withdrawalForm.get('amount')?.errors?.['min']) {
-                          <small class="text-mlm-error text-[10px] font-bold">Minimum withdrawal amount is 0.01.</small>
-                      }
-                      @if (withdrawalForm.get('amount')?.errors?.['max']) {
-                          <small class="text-mlm-error text-[10px] font-bold">Amount exceeds available balance.</small>
+                      @if (amountInWords()) {
+                          <p class="text-sm font-bold text-mlm-text leading-snug">{{ amountInWords() }}</p>
                       }
                   </div>
-              }
-          </div>
 
-          <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <p-button 
-                type="button"
-                label="Cancel"
-                [outlined]="true"
-                severity="secondary"
-                (onClick)="cancel()"
-                [disabled]="isSubmitting()"
-                [style]="{ 'padding-left': '1.5rem', 'padding-right': '1.5rem' }">
-            </p-button>
-            <p-button 
-                type="submit" 
-                label="Confirm" 
-                [disabled]="withdrawalForm.invalid || isSubmitting() || !hasBankDetails()"
-                [loading]="isSubmitting()"
-                [style]="{ 'padding-left': '2rem', 'padding-right': '2rem' }">
-            </p-button>
-          </div>
+                  @if (withdrawalForm.get('amount')?.invalid && (withdrawalForm.get('amount')?.dirty || withdrawalForm.get('amount')?.touched)) {
+                      <div class="mt-1">
+                          @if (withdrawalForm.get('amount')?.errors?.['required']) {
+                              <small class="text-mlm-error text-[10px] font-bold">Amount is required.</small>
+                          }
+                          @if (withdrawalForm.get('amount')?.errors?.['min']) {
+                              <small class="text-mlm-error text-[10px] font-bold">Minimum withdrawal amount is 0.01.</small>
+                          }
+                          @if (withdrawalForm.get('amount')?.errors?.['max']) {
+                              <small class="text-mlm-error text-[10px] font-bold">Amount exceeds available balance.</small>
+                          }
+                      </div>
+                  }
+              </div>
 
-          <div class="flex items-start gap-3 p-3 bg-mlm-blue-50/50 rounded-xl border border-mlm-blue-100/50">
-              <i class="pi pi-info-circle text-mlm-blue-500 mt-0.5 text-xs"></i>
-              <p class="text-[15px] text-mlm-blue-800 leading-normal font-medium">
-                  Withdrawals take up to 48 hours to process. Ensure your bank details are correct in your profile.
-              </p>
-          </div>
-      </form>
+              <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                  <p-button 
+                      type="button"
+                      label="Cancel"
+                      [outlined]="true"
+                      severity="secondary"
+                      (onClick)="cancel()"
+                      [disabled]="isSubmitting()">
+                  </p-button>
+                  <p-button 
+                      type="submit" 
+                      label="Confirm" 
+                      [disabled]="withdrawalForm.invalid || isSubmitting() || !hasBankDetails()"
+                      [loading]="isSubmitting()">
+                  </p-button>
+              </div>
+
+              <div class="flex items-start gap-3 p-3 bg-mlm-blue-50/50 rounded-xl border border-mlm-blue-100/50">
+                  <i class="pi pi-info-circle text-mlm-blue-500 mt-0.5 text-xs"></i>
+                  <p class="text-[15px] text-mlm-blue-800 leading-normal font-medium">
+                      Withdrawals take up to 48 hours to process. Ensure your bank details are correct in your profile.
+                  </p>
+              </div>
+          </form>
+      }
+
+      <!-- State 3: Enter PIN to Complete Withdrawal (Prompt) -->
+      @else if (formState() === 'PIN_VERIFY') {
+          <form [formGroup]="withdrawalForm" (ngSubmit)="onSubmit()" class="space-y-6">
+              <div class="p-6 bg-mlm-blue-50/20 rounded-2xl border border-mlm-blue-100/30 space-y-5 text-center shadow-sm">
+                  <div class="w-12 h-12 bg-mlm-primary/10 rounded-full flex items-center justify-center mx-auto">
+                      <i class="pi pi-shield text-mlm-primary text-xl"></i>
+                  </div>
+                  
+                  <div class="space-y-2">
+                      <h3 class="text-base font-bold text-mlm-text">Authorize Payout</h3>
+                      <p class="text-xs text-mlm-secondary leading-normal max-w-sm mx-auto">
+                          Please enter your 4-digit Transaction PIN to confirm the withdrawal of 
+                          <strong class="text-mlm-text">{{ currency() === 'NGN' ? '₦' : '$' }}{{ amountToConfirm() | number:'1.2-2' }}</strong> 
+                          to <strong class="text-mlm-text">{{ bankDetails().bankName }}</strong> ({{ bankDetails().accountNumber }}).
+                      </p>
+                  </div>
+                  
+                  <div class="flex flex-col gap-2 max-w-xs mx-auto pt-2">
+                      <div class="relative">
+                          <input 
+                              type="password" 
+                              id="pin" 
+                              formControlName="pin" 
+                              maxLength="4" 
+                              placeholder="••••" 
+                              class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary text-center text-xl tracking-[1.2em] font-mono font-bold bg-white placeholder-gray-300 transition-all duration-200"
+                              autofocus
+                          />
+                          <div class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                              <i class="pi pi-lock text-sm"></i>
+                          </div>
+                      </div>
+                      @if (withdrawalForm.get('pin')?.invalid && (withdrawalForm.get('pin')?.dirty || withdrawalForm.get('pin')?.touched)) {
+                          <div class="mt-1">
+                              @if (withdrawalForm.get('pin')?.errors?.['required']) {
+                                  <small class="text-mlm-error text-[10px] font-bold">Transaction PIN is required.</small>
+                              }
+                              @if (withdrawalForm.get('pin')?.errors?.['pattern']) {
+                                  <small class="text-mlm-error text-[10px] font-bold">PIN must be exactly a 4-digit number.</small>
+                              }
+                          </div>
+                      }
+                  </div>
+              </div>
+
+              <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                  <p-button 
+                      type="button"
+                      label="Back"
+                      [outlined]="true"
+                      severity="secondary"
+                      (onClick)="goBackToAmount()"
+                      [disabled]="isSubmitting()">
+                  </p-button>
+                  <p-button 
+                      type="submit" 
+                      label="Confirm" 
+                      [disabled]="withdrawalForm.invalid || isSubmitting()"
+                      [loading]="isSubmitting()">
+                  </p-button>
+              </div>
+          </form>
+      }
+
   </div>
-
 </div>
 
 
