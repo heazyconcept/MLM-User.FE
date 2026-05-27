@@ -41,12 +41,23 @@ export class CpvMilestonesComponent implements OnInit {
 
   getSourceLabel(source?: string, pvType?: string): string {
     if (!source) return '—';
-    if (source === 'REGISTRATION') {
+    const normalized = source.toUpperCase().trim();
+    if (normalized === 'REGISTRATION') {
       if (pvType === 'INSTANT') return 'Registration (Instant PV)';
       if (pvType === 'COMMUNITY') return 'Registration (Community PV)';
       return 'Registration (Instant + Community PV)';
     }
-    return source.replace(/_/g, ' ');
+    const labels: Record<string, string> = {
+      PRODUCT_PURCHASE_PV: 'Personal product PV',
+      DIRECT_REFERRAL_PRODUCT_PV: 'Direct referral product PV',
+      COMMUNITY_PRODUCT_MATRIX: 'Community product CPV',
+      DIRECT_REFERRAL_REGISTRATION: 'Direct referral registration PV',
+      COMMUNITY_REGISTRATION_MATRIX: 'Community registration CPV',
+    };
+    if (labels[normalized]) {
+      return labels[normalized];
+    }
+    return normalized.replace(/_/g, ' ');
   }
 
   ngOnInit(): void {

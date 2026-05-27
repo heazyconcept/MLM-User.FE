@@ -73,16 +73,6 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     const q = this.quantity();
     return p ? p.price * q : 0;
   });
-  totalPV = computed(() => {
-    const p = this.product();
-    const q = this.quantity();
-    return p ? p.pv * q : 0;
-  });
-  totalCPV = computed(() => {
-    const p = this.product();
-    const q = this.quantity();
-    return p ? p.cpv * q : 0;
-  });
 
   walletOptions = [
     { type: 'cash' as WalletType, label: 'Cash', icon: 'pi-wallet' },

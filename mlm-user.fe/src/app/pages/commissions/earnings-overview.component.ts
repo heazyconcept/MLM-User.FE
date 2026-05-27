@@ -170,7 +170,9 @@ export class EarningsOverviewComponent implements OnInit {
 
     return history.reduce((sum, entry) => {
       const source = (entry.source ?? '').toUpperCase().trim();
-      return source === 'DIRECT_REFERRAL_REGISTRATION' ? sum + entry.totalCpv : sum;
+      return source === 'DIRECT_REFERRAL_REGISTRATION' || source === 'DIRECT_REFERRAL_PRODUCT_PV'
+        ? sum + entry.totalCpv
+        : sum;
     }, 0);
   });
 

@@ -37,9 +37,6 @@
               }}</span>
               <div class="flex items-center gap-2">
                 <app-badge [text]="p.pv + ' PV'" variant="pv"></app-badge>
-                <span class="px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                  {{ p.cpv }} CPV
-                </span>
               </div>
             </div>
 
@@ -101,10 +98,6 @@
                     >Total PV</span
                   >
                   <span class="text-xl font-bold text-mlm-secondary">{{ totalPV() }} PV</span>
-                  <span class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-1">
-                    Total CPV
-                  </span>
-                  <span class="text-xl font-bold text-mlm-secondary">{{ totalCPV() }} CPV</span>
                 </div>
               </div>
             </div>

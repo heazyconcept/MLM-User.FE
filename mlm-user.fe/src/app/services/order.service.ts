@@ -19,6 +19,9 @@ export interface OrderItem {
   name: string;
   quantity: number;
   price: number;
+  pv: number;
+  directReferralPv: number;
+  cpv: number;
 }
 
 export interface Order {
@@ -177,6 +180,9 @@ export class OrderService {
             name: i.productName,
             quantity: i.quantity,
             price: i.unitPrice,
+            pv: Number(i.pv ?? 0),
+            directReferralPv: Number(i.directReferralPv ?? 0),
+            cpv: Number(i.cpv ?? 0),
           }))
         : [],
       total: o.totalAmount || 0,
