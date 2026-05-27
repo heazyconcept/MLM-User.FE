@@ -63,6 +63,16 @@ export class RealTimeNotificationService {
         setTimeout(() => this.showNextIfIdle(), 100);
       }
     });
+
+    effect(() => {
+      if (this.authService.isAuthenticated()) {
+        this.initialize();
+        return;
+      }
+      if (this.initialized) {
+        this.disconnect();
+      }
+    });
   }
 
   /**
@@ -72,13 +82,13 @@ export class RealTimeNotificationService {
    */
   initialize(): void {
     if (this.initialized) return;
-    this.initialized = true;
 
     const token = this.authService.getAccessToken();
     if (!token) {
       console.warn('[RealTime] No auth token — skipping notification init');
       return;
     }
+    this.initialized = true;
 
     // Phase A: REST catch-up
     this.syncUnreadNotifications(token);
