@@ -235,7 +235,11 @@
                       id="bankName" 
                       type="text" 
                       formControlName="bankName"
-                      class="w-full" />
+                      class="w-full"
+                      [class.ng-invalid]="profileForm.get('bankName')?.invalid && profileForm.get('bankName')?.touched" />
+                    @if (profileForm.get('bankName')?.invalid && profileForm.get('bankName')?.touched) {
+                      <small class="text-red-500 text-sm mt-1 block">Bank Name is required.</small>
+                    }
                   </div>
 
                   <!-- Account Number -->
@@ -246,7 +250,15 @@
                       id="accountNumber" 
                       type="text" 
                       formControlName="accountNumber"
-                      class="w-full" />
+                      class="w-full"
+                      [class.ng-invalid]="profileForm.get('accountNumber')?.invalid && profileForm.get('accountNumber')?.touched" />
+                    @if (profileForm.get('accountNumber')?.invalid && profileForm.get('accountNumber')?.touched) {
+                      @if (profileForm.get('accountNumber')?.hasError('required')) {
+                        <small class="text-red-500 text-sm mt-1 block">Account Number is required.</small>
+                      } @else if (profileForm.get('accountNumber')?.hasError('pattern')) {
+                        <small class="text-red-500 text-sm mt-1 block">Account Number must be 8 to 11 digits.</small>
+                      }
+                    }
                   </div>
 
                   <!-- Account Name -->
@@ -257,7 +269,11 @@
                       id="accountName" 
                       type="text" 
                       formControlName="accountName"
-                      class="w-full" />
+                      class="w-full"
+                      [class.ng-invalid]="profileForm.get('accountName')?.invalid && profileForm.get('accountName')?.touched" />
+                    @if (profileForm.get('accountName')?.invalid && profileForm.get('accountName')?.touched) {
+                      <small class="text-red-500 text-sm mt-1 block">Account Name is required.</small>
+                    }
                   </div>
                 </div>
               </div>
