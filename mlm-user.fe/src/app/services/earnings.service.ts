@@ -363,7 +363,12 @@ export class EarningsService {
 
     // Map transactions as history (API returns transactions[])
     const rawTxns = (raw['transactions'] ?? raw['history'] ?? []) as Record<string, unknown>[];
-    const personalSources = new Set(['REGISTRATION', 'PRODUCT_PURCHASE', 'DIRECT_REFERRAL_REGISTRATION']);
+    const personalSources = new Set([
+      'REGISTRATION',
+      'DIRECT_REFERRAL_REGISTRATION',
+      'DIRECT_REFERRAL_PRODUCT_PV',
+      'PRODUCT_PURCHASE_PV'
+    ]);
     let personalCpv = 0;
 
     const history: CpvHistoryDto[] = rawTxns.map((t) => {
@@ -371,10 +376,13 @@ export class EarningsService {
       const source = String(t['source'] ?? '').toUpperCase().trim();
       const pvType = String(t['pvType'] ?? '').toUpperCase().trim();
       const isPersonal = pvType === 'PERSONAL' || personalSources.has(source);
+      const isProductPurchasePv = source === 'PRODUCT_PURCHASE_PV';
       const personalAmount = isPersonal ? amount : 0;
       const communityAmount = isPersonal ? 0 : amount;
 
-      personalCpv += personalAmount;
+      if (!isProductPurchasePv) {
+        personalCpv += personalAmount;
+      }
 
       return {
         date: String(t['createdAt'] ?? t['date'] ?? ''),
@@ -585,7 +593,10 @@ export class EarningsService {
     // Canonical LedgerEarningType enum matches
     switch (t) {
       case 'REGISTRATION': return 'Registration';
-      case 'DIRECT_REFERRAL_REGISTRATION': return 'Direct Referral PV';
+      case 'DIRECT_REFERRAL_REGISTRATION': return 'Direct Referral Registration PV';
+      case 'PRODUCT_PURCHASE_PV': return 'Personal Product PV';
+      case 'DIRECT_REFERRAL_PRODUCT_PV': return 'Direct Referral Product PV';
+      case 'COMMUNITY_PRODUCT_MATRIX': return 'Community Product CPV';
       case 'PRODUCT_PURCHASE': return 'Product Purchase';
       case 'PDPA': return 'PDPA';
       case 'CDPA': return 'CDPA';

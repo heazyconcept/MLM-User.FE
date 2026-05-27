@@ -187,7 +187,7 @@
                   @for (h of cpvHistory(); track $index) {
                     <tr>
                       <td class="px-5 py-4 text-sm text-mlm-secondary">{{ h.date | date:'MMM d, yyyy' }}</td>
-                      <td class="px-5 py-4 text-sm font-medium text-mlm-text tabular-nums text-right">{{ h.personalCpv | number }} PV</td>
+                      <td class="px-5 py-4 text-sm font-medium text-mlm-text tabular-nums text-right">{{ h.totalCpv | number }} PV</td>
                       <td class="px-5 py-4 text-sm text-mlm-secondary">{{ getSourceLabel(h.source, h.pvType) }}</td>
                     </tr>
                   }

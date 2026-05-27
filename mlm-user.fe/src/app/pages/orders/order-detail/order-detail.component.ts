@@ -92,6 +92,30 @@ export class OrderDetailComponent implements OnInit {
       : `$${amount.toLocaleString('en-US')}`;
   }
 
+  getItemTotalPv(item: Order['items'][number]): number {
+    return item.pv * item.quantity;
+  }
+
+  getItemTotalDirectReferralPv(item: Order['items'][number]): number {
+    return item.directReferralPv * item.quantity;
+  }
+
+  getItemTotalCpv(item: Order['items'][number]): number {
+    return item.cpv * item.quantity;
+  }
+
+  getOrderTotalPv(order: Order): number {
+    return order.items.reduce((sum, item) => sum + this.getItemTotalPv(item), 0);
+  }
+
+  getOrderTotalDirectReferralPv(order: Order): number {
+    return order.items.reduce((sum, item) => sum + this.getItemTotalDirectReferralPv(item), 0);
+  }
+
+  getOrderTotalCpv(order: Order): number {
+    return order.items.reduce((sum, item) => sum + this.getItemTotalCpv(item), 0);
+  }
+
   getFulfilmentLabel(method: Order['fulfilmentMethod']): string {
     return method === 'pickup' ? 'Pickup' : 'Home Delivery';
   }
