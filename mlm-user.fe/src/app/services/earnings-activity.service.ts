@@ -192,6 +192,19 @@ export class EarningsActivityService {
   }
 
   formatSource(source: string): string {
+    const normalized = source.toUpperCase().trim();
+    const labels: Record<string, string> = {
+      MERCHANT_PERSONAL_PRODUCT: 'Merchant product purchase commission',
+      MERCHANT_DIRECT_REFERRAL_PRODUCT: 'Merchant direct referral product commission',
+      MERCHANT_COMMUNITY_PRODUCT: 'Merchant community product commission',
+      MERCHANT_DELIVERY_BONUS: 'Merchant delivery commission',
+      PERSONAL_PRODUCT_PURCHASE: 'Personal product purchase commission',
+      DIRECT_REFERRAL_PRODUCT_PURCHASE: 'Direct referral product purchase commission',
+      COMMUNITY_PRODUCT_PURCHASE: 'Community product purchase commission',
+    };
+    if (labels[normalized]) {
+      return labels[normalized];
+    }
     return source
       .replace(/_/g, ' ')
       .replace(/\b\w/g, c => c.toUpperCase());
