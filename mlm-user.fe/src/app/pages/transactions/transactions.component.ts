@@ -439,6 +439,19 @@ export class TransactionsComponent implements OnInit {
 
   formatEarningType(type: string | undefined): string {
     if (!type) return '—';
+    const normalized = type.toUpperCase().trim();
+    const labels: Record<string, string> = {
+      MERCHANT_PERSONAL_PRODUCT: 'Merchant product purchase commission',
+      MERCHANT_DIRECT_REFERRAL_PRODUCT: 'Merchant direct referral product commission',
+      MERCHANT_COMMUNITY_PRODUCT: 'Merchant community product commission',
+      MERCHANT_DELIVERY_BONUS: 'Merchant delivery commission',
+      PERSONAL_PRODUCT_PURCHASE: 'Personal product purchase commission',
+      DIRECT_REFERRAL_PRODUCT_PURCHASE: 'Direct referral product purchase commission',
+      COMMUNITY_PRODUCT_PURCHASE: 'Community product purchase commission',
+    };
+    if (labels[normalized]) {
+      return labels[normalized];
+    }
     return type
       .toLowerCase()
       .split('_')

@@ -206,10 +206,14 @@ export class MerchantDashboardComponent implements OnInit {
 
   private formatTypeLabel(key: string): string {
     const labels: Record<string, string> = {
-      personalProduct: 'Personal Sales',
-      directReferralProduct: 'Referral Sales',
-      communityProduct: 'Community Sales',
-      deliveryBonus: 'Delivery Bonus',
+      personalProduct: 'Merchant product purchase commission',
+      directReferralProduct: 'Merchant direct referral product commission',
+      communityProduct: 'Merchant community product commission',
+      deliveryBonus: 'Merchant delivery commission',
+      MERCHANT_PERSONAL_PRODUCT: 'Merchant product purchase commission',
+      MERCHANT_DIRECT_REFERRAL_PRODUCT: 'Merchant direct referral product commission',
+      MERCHANT_COMMUNITY_PRODUCT: 'Merchant community product commission',
+      MERCHANT_DELIVERY_BONUS: 'Merchant delivery commission',
     };
     return labels[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
   }
