@@ -14,6 +14,7 @@ import { Router } from '@angular/router';
 import { WalletService } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
 import { OnboardingService } from '../../../services/onboarding.service';
+import { ModalService } from '../../../services/modal.service';
 import { formatWithdrawalAmountInWords } from '../../../core/utils/amount-in-words';
 import { ProfileComponent } from '../../profile/profile.component';
 
@@ -44,6 +45,7 @@ export class WithdrawalComponent implements OnInit {
   private confirmationService = inject(ConfirmationService);
   private router = inject(Router);
   private dialogService = inject(DialogService);
+  private modalService = inject(ModalService);
 
 
   currency = signal<'NGN' | 'USD' | null>(null);
@@ -149,6 +151,15 @@ export class WithdrawalComponent implements OnInit {
     return null;
   };
 
+  private isImpersonationBlocked(err: unknown): boolean {
+    const error = err as { status?: number; error?: { error?: string; code?: string } } | undefined;
+    return (
+      error?.status === 403 &&
+      (error?.error?.error === 'IMPERSONATION_ACTION_BLOCKED' ||
+        error?.error?.code === 'IMPERSONATION_ACTION_BLOCKED')
+    );
+  }
+
   onSubmit() {
     if (this.withdrawalForm.invalid) return;
 
@@ -165,8 +176,13 @@ export class WithdrawalComponent implements OnInit {
           this.withdrawalForm.patchValue({ pin: '', confirmPin: '' });
           this.setFormState('AMOUNT');
         },
-        error: () => {
+        error: (err) => {
           this.isSubmitting.set(false);
+          if (this.isImpersonationBlocked(err)) {
+            this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
+            return;
+          }
+          this.modalService.open('error', 'PIN Setup Failed', 'Could not set your PIN. Please try again.');
         }
       });
     } else if (state === 'AMOUNT') {

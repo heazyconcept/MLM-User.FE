@@ -1,14 +1,14 @@
 <div class="sticky top-0 z-40">
   @if (impersonation()) {
-    <div class="border-b border-amber-200 bg-amber-50">
-      <div class="mx-auto flex w-full max-w-screen-2xl items-center justify-between gap-3 px-4 py-2 text-xs sm:text-sm">
-        <p class="text-amber-900">
-          Viewing as <span class="font-semibold">@{{ impersonation()?.targetUsername }}</span>
+    <div class="border-b border-amber-300 bg-amber-100">
+      <div class="mx-auto flex w-full max-w-screen-2xl items-center justify-between gap-4 px-4 py-3 text-sm sm:text-base">
+        <p class="text-amber-950">
+          Viewing as <span class="font-bold">@{{ impersonation()?.targetUsername }}</span>
           (impersonated by admin).
         </p>
         <button
           type="button"
-          class="inline-flex items-center gap-2 rounded-md border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-900 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+          class="inline-flex items-center gap-2 rounded-md border border-amber-400 bg-white px-4 py-2 text-xs font-semibold text-amber-950 shadow-sm transition-colors hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm"
           (click)="exitImpersonation()"
           [disabled]="isExitingImpersonation()"
         >
