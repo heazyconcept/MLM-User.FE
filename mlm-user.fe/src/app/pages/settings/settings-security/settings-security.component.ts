@@ -64,6 +64,15 @@ export class SettingsSecurityComponent {
     };
   }
 
+  private isImpersonationBlocked(err: unknown): boolean {
+    const error = err as { status?: number; error?: { error?: string; code?: string } } | undefined;
+    return (
+      error?.status === 403 &&
+      (error?.error?.error === 'IMPERSONATION_ACTION_BLOCKED' ||
+        error?.error?.code === 'IMPERSONATION_ACTION_BLOCKED')
+    );
+  }
+
   // ── Password actions ──
   save(): void {
     if (this.passwordForm.invalid || this.passwordForm.pristine) return;
@@ -76,9 +85,13 @@ export class SettingsSecurityComponent {
         this.cdr.markForCheck();
         this.modalService.open('success', 'Password Updated', 'Your password has been updated successfully.');
       },
-      error: () => {
+      error: (err) => {
         this.isSaving.set(false);
         this.cdr.markForCheck();
+        if (this.isImpersonationBlocked(err)) {
+          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
+          return;
+        }
         this.modalService.open('error', 'Could not update password', 'Please try again.');
       }
     });
@@ -113,6 +126,10 @@ export class SettingsSecurityComponent {
       error: (err) => {
         this.isPinSaving.set(false);
         this.cdr.markForCheck();
+        if (this.isImpersonationBlocked(err)) {
+          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
+          return;
+        }
         const msg = err?.error?.message ?? 'Could not change PIN. Please check your current PIN and try again.';
         this.modalService.open('error', 'PIN Change Failed', msg);
       }
@@ -129,9 +146,13 @@ export class SettingsSecurityComponent {
         this.cdr.markForCheck();
         this.modalService.open('success', 'OTP Sent', 'A reset code has been sent to your registered email.');
       },
-      error: () => {
+      error: (err) => {
         this.isPinSaving.set(false);
         this.cdr.markForCheck();
+        if (this.isImpersonationBlocked(err)) {
+          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
+          return;
+        }
         this.modalService.open('error', 'Request Failed', 'Could not send reset OTP. Please try again.');
       }
     });
@@ -151,6 +172,10 @@ export class SettingsSecurityComponent {
       error: (err) => {
         this.isPinSaving.set(false);
         this.cdr.markForCheck();
+        if (this.isImpersonationBlocked(err)) {
+          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
+          return;
+        }
         const msg = err?.error?.message ?? 'Could not reset PIN. Please check your OTP and try again.';
         this.modalService.open('error', 'PIN Reset Failed', msg);
       }

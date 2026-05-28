@@ -308,10 +308,16 @@ export class WalletService {
         this.fetchWithdrawals().subscribe();
       }),
       catchError(err => {
-        const msg = err?.status === 403
-          ? "You're not yet eligible to withdraw."
-          : (err?.error?.message ?? (Array.isArray(err?.error?.message) ? err.error.message[0] : null)
-            ?? 'Could not submit withdrawal. Please try again or contact support.');
+        const isImpersonationBlocked =
+          err?.status === 403 &&
+          (err?.error?.error === 'IMPERSONATION_ACTION_BLOCKED' ||
+            err?.error?.code === 'IMPERSONATION_ACTION_BLOCKED');
+        const msg = isImpersonationBlocked
+          ? 'Action disabled during impersonation.'
+          : err?.status === 403
+            ? "You're not yet eligible to withdraw."
+            : (err?.error?.message ?? (Array.isArray(err?.error?.message) ? err.error.message[0] : null)
+              ?? 'Could not submit withdrawal. Please try again or contact support.');
         this.modalService.open('error', 'Withdrawal Failed', msg);
         throw err;
       })
