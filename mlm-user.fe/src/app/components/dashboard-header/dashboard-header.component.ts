@@ -44,11 +44,14 @@ export class DashboardHeaderComponent implements OnInit {
   currentUser = this.userService.currentUser;
   notifications = this.notificationService.drawerNotifications;
   unreadCount = this.notificationService.unreadCount;
+  impersonation = this.authService.impersonation;
 
   notificationsVisible = signal(false);
+  isExitingImpersonation = signal(false);
 
   ngOnInit(): void {
     this.notificationService.loadUnreadCount().subscribe();
+    this.authService.loadImpersonationState().subscribe();
   }
 
   openNotificationsDrawer(): void {
@@ -109,6 +112,30 @@ export class DashboardHeaderComponent implements OnInit {
         this.router.navigate(['/auth/login']);
       },
       error: () => this.router.navigate(['/auth/login']),
+    });
+  }
+
+  exitImpersonation(): void {
+    if (this.isExitingImpersonation()) return;
+
+    this.isExitingImpersonation.set(true);
+    this.authService.endImpersonation().subscribe({
+      next: (response) => {
+        this.isExitingImpersonation.set(false);
+        if (typeof window !== 'undefined' && response?.adminDashboardUrl) {
+          window.location.href = response.adminDashboardUrl;
+          if (window.opener) {
+            setTimeout(() => window.close(), 600);
+          }
+        } else {
+          this.router.navigate(['/auth/login']);
+        }
+      },
+      error: () => {
+        this.isExitingImpersonation.set(false);
+        this.authService.logoutLocal();
+        this.router.navigate(['/auth/login']);
+      },
     });
   }
 }
