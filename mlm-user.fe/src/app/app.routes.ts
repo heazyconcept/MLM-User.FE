@@ -11,6 +11,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'impersonate',
+    loadComponent: () =>
+      import('./auth/impersonate/impersonate.component').then(
+        (m) => m.ImpersonateComponent,
+      ),
+  },
+  {
     path: 'auth',
     children: [
       {

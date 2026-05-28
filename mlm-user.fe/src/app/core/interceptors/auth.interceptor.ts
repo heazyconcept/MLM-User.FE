@@ -8,7 +8,14 @@ import { AuthService } from '../../services/auth.service';
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
-const AUTH_URLS = ['auth/login', 'auth/register', 'auth/refresh', 'auth/forgot-password', 'auth/reset-password'];
+const AUTH_URLS = [
+  'auth/login',
+  'auth/register',
+  'auth/refresh',
+  'auth/forgot-password',
+  'auth/reset-password',
+  'auth/impersonate/exchange',
+];
 
 function isAuthUrl(url: string): boolean {
   return AUTH_URLS.some(authUrl => url.includes(authUrl));

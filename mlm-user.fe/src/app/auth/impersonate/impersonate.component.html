@@ -1,0 +1,20 @@
+<div class="min-h-screen bg-white flex items-center justify-center px-6 py-12">
+  <div class="w-full max-w-md text-center">
+    <img src="assets/images/logo.png" alt="Segulah" class="mx-auto mb-6 h-16 w-16" />
+
+    @if (isLoading()) {
+      <div class="flex flex-col items-center gap-3">
+        <i class="pi pi-spin pi-spinner text-xl text-mlm-primary"></i>
+        <p class="text-sm text-slate-600">Starting your session...</p>
+      </div>
+    } @else {
+      <div class="flex flex-col items-center gap-3">
+        <i class="pi pi-exclamation-triangle text-xl text-mlm-error"></i>
+        <p class="text-sm text-slate-700">{{ errorMessage() }}</p>
+        <a routerLink="/auth/login" class="text-sm font-semibold text-mlm-primary hover:underline">
+          Back to login
+        </a>
+      </div>
+    }
+  </div>
+</div>
