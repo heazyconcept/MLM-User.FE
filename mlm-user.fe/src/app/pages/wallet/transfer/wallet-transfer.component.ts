@@ -12,7 +12,7 @@ type TargetWallet = 'AUTOSHIP' | 'VOUCHER' | 'REGISTRATION';
 
 const TARGET_OPTIONS: { value: TargetWallet; label: string }[] = [
   { value: 'AUTOSHIP', label: 'Autoship Wallet' },
-  { value: 'VOUCHER', label: 'Voucher Wallet' },
+  { value: 'VOUCHER', label: 'Product Voucher Wallet' },
   { value: 'REGISTRATION', label: 'Registration Wallet' }
 ];
 
