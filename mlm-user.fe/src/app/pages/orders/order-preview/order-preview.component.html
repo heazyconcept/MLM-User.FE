@@ -76,13 +76,6 @@
       @if (fulfilmentOption() === 'delivery') {
         <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 space-y-5">
 
-          <!-- Note -->
-          <div class="flex items-start gap-3 p-4 bg-amber-50 rounded-lg border border-amber-100">
-            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0"></span>
-            <p class="text-xs font-medium text-amber-800 leading-relaxed">
-              Delivery cost will be added to your order total.
-            </p>
-          </div>
 
           <!-- Address Input -->
           <div>
@@ -99,11 +92,6 @@
               aria-label="Delivery address">
           </div>
 
-          <!-- Delivery Fee -->
-          <div class="flex justify-between items-center pt-1">
-            <span class="text-xs font-bold text-mlm-secondary uppercase tracking-widest">Delivery Fee</span>
-            <span class="text-sm font-extrabold text-mlm-text">₦{{ deliveryFee.toLocaleString('en-US') }}</span>
-          </div>
 
         </div>
       }
