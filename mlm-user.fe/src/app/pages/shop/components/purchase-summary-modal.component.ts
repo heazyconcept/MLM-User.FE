@@ -44,6 +44,10 @@ export class PurchaseSummaryModalComponent {
     }, 500);
   }
 
+  onClose(): void {
+    this.dialogRef.close();
+  }
+
   formatCurrency(amount: number): string {
     return `₦${amount.toLocaleString('en-US')}`;
   }

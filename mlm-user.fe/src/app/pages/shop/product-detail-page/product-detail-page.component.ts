@@ -139,7 +139,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
         selectedWallet: this.selectedWallet(),
         quantity: this.quantity(),
       },
-      header: 'Purchase Summary',
+      showHeader: false,
       width: '90vw',
       style: { maxWidth: '420px' },
       baseZIndex: 10000,

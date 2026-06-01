@@ -32,7 +32,6 @@ export class OrderPreviewComponent {
   fulfilmentOption = this.orderService.fulfilmentOption;
   selectedPickupId = signal<string | null>(null);
   deliveryAddress = signal<string>('');
-  deliveryFee = 1500;
 
   pickupLocations = signal<PickupLocation[]>([]);
   pickupLocationsLoading = signal(false);
