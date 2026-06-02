@@ -33,8 +33,7 @@ export class ProductDetailComponent {
 
   walletOptions = [
     { type: 'cash' as WalletType, label: 'Cash', icon: 'pi-wallet' },
-    { type: 'voucher' as WalletType, label: 'Voucher', icon: 'pi-ticket' },
-    { type: 'autoship' as WalletType, label: 'Autoship', icon: 'pi-sync' }
+    { type: 'voucher' as WalletType, label: 'Voucher', icon: 'pi-ticket' }
   ];
 
   selectImage(image: string): void {
