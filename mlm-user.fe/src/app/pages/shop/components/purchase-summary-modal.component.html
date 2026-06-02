@@ -12,7 +12,7 @@
     <div class="min-w-0">
       <h4 class="text-base font-semibold text-mlm-text truncate">{{ product.name }}</h4>
       <p class="text-sm text-mlm-secondary mt-1">Qty: {{ quantity }}</p>
-      <p class="text-sm text-mlm-secondary">Pay with: <span class="font-semibold capitalize">{{ selectedWallet }}</span></p>
+      <p class="text-sm text-mlm-secondary">Pay with: <span class="font-semibold capitalize">{{ selectedWallet === 'voucher' ? 'product voucher' : selectedWallet }}</span></p>
     </div>
   </div>
   <div class="bg-gray-50 rounded-xl p-4 mb-6">
