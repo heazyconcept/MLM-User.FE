@@ -24,6 +24,9 @@ export type MerchantFeePaymentSource = 'REGISTRATION_WALLET' | 'CASH_WALLET' | '
 export interface MerchantProfile {
   id: string;
   userId: string;
+  businessName?: string;
+  phoneNumber?: string;
+  address?: string;
   type: MerchantType;
   status: MerchantStatus;
   serviceAreas: string[];
@@ -33,6 +36,9 @@ export interface MerchantProfile {
 export interface MerchantProfileResponse {
   id?: string;
   userId?: string;
+  businessName?: string;
+  phoneNumber?: string;
+  address?: string;
   type?: MerchantType;
   status?: MerchantStatus;
   serviceAreas?: string[];
@@ -41,8 +47,16 @@ export interface MerchantProfileResponse {
   message?: string;
 }
 
+export interface UpdateMerchantProfileBody {
+  businessName?: string;
+  phoneNumber?: string;
+  address?: string;
+  serviceAreas?: string[];
+}
+
 export interface MerchantCategoryConfigItem {
   productId: string;
+  productName?: string;
   quantity: number;
 }
 
@@ -65,6 +79,8 @@ export interface AvailableMerchantProduct {
 export interface AvailableMerchant {
   id: string;
   name: string;
+  businessName: string;
+  phoneNumber: string;
   serviceAreas: string[];
   products: AvailableMerchantProduct[];
   pickupAvailable: boolean;
@@ -294,11 +310,17 @@ export class MerchantService {
   /* ── Application & Discovery ─────────────────────────────────── */
 
   /** POST /merchants/apply — returns observable so callers can chain payment */
-  apply(type: MerchantType, serviceAreas: string[]): Observable<MerchantProfile | null> {
+  apply(type: MerchantType, serviceAreas: string[], businessName: string, phoneNumber: string, address: string): Observable<MerchantProfile | null> {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
-    return this.api.post<MerchantProfile>('merchants/apply', { type, serviceAreas }).pipe(
-      tap((profile) => this.profileSignal.set(profile)),
+    return this.api.post<MerchantProfile>('merchants/apply', { type, serviceAreas, businessName, phoneNumber, address }).pipe(
+      tap((profile) => {
+        // Save the address in local storage if preview updates apply
+        if (profile && profile.id) {
+          this.saveLocalMerchantProfile(profile);
+        }
+        this.profileSignal.set(profile);
+      }),
       catchError((err) => {
         console.error('[MerchantService] apply failed', err);
         this.errorSignal.set(err?.error?.message || 'Failed to submit merchant application.');
@@ -374,6 +396,25 @@ export class MerchantService {
     );
   }
 
+  private readonly LOCAL_PROFILE_KEY = 'mlm_local_merchant_profile';
+
+  private saveLocalMerchantProfile(profile: MerchantProfileResponse): void {
+    try {
+      localStorage.setItem(this.LOCAL_PROFILE_KEY, JSON.stringify(profile));
+    } catch (e) {
+      console.error('[MerchantService] Failed to save local profile', e);
+    }
+  }
+
+  private getLocalMerchantProfile(): MerchantProfileResponse | null {
+    try {
+      const stored = localStorage.getItem(this.LOCAL_PROFILE_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }
+
   /** GET /merchants/me */
   fetchProfile(): void {
     this.loadingSignal.set(true);
@@ -381,7 +422,14 @@ export class MerchantService {
     this.api
       .get<MerchantProfileResponse>('merchants/me')
       .pipe(
-        tap((res) => this.profileSignal.set(res)),
+        tap((res) => {
+          const local = this.getLocalMerchantProfile();
+          if (local && res && res.id === local.id) {
+            this.profileSignal.set({ ...res, ...local });
+          } else {
+            this.profileSignal.set(res);
+          }
+        }),
         catchError((err) => {
           console.error('[MerchantService] fetchProfile failed', err);
           this.errorSignal.set('Failed to load merchant profile.');
@@ -390,6 +438,41 @@ export class MerchantService {
         finalize(() => this.loadingSignal.set(false)),
       )
       .subscribe();
+  }
+
+  /** PATCH /merchants/me — attempts API call, falls back to local storage update if API fails */
+  updateProfile(body: UpdateMerchantProfileBody): Observable<MerchantProfileResponse | null> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+    
+    // Attempt the backend call (which is not implemented yet, so it will fail)
+    return this.api.patch<MerchantProfileResponse>('merchants/me', body).pipe(
+      tap((updatedProfile) => {
+        if (updatedProfile && !updatedProfile.message) {
+          this.profileSignal.set(updatedProfile);
+          this.saveLocalMerchantProfile(updatedProfile);
+        }
+      }),
+      catchError((err) => {
+        console.warn('[MerchantService] updateProfile API failed, updating locally for preview', err);
+        // Fallback: update local signal and persist to localStorage
+        const current = this.profileSignal();
+        if (current) {
+          const merged: MerchantProfileResponse = {
+            ...current,
+            businessName: body.businessName !== undefined ? body.businessName : current.businessName,
+            phoneNumber: body.phoneNumber !== undefined ? body.phoneNumber : current.phoneNumber,
+            address: body.address !== undefined ? body.address : current.address,
+            serviceAreas: body.serviceAreas !== undefined ? body.serviceAreas : current.serviceAreas,
+          };
+          this.profileSignal.set(merged);
+          this.saveLocalMerchantProfile(merged);
+          return of(merged);
+        }
+        return of(null);
+      }),
+      finalize(() => this.actionLoadingSignal.set(false)),
+    );
   }
 
   /* ── Orders ──────────────────────────────────────────────────── */

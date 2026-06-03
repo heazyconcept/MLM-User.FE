@@ -1,0 +1,281 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      
+      <!-- Page Header -->
+      <div class="mb-10">
+        <a
+          routerLink="/merchant/dashboard"
+          class="text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80 inline-flex items-center gap-2 mb-4 transition-colors"
+        >
+          <span class="inline-block w-4 h-px bg-current"></span> Back to Dashboard
+        </a>
+        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Merchant Profile Settings</h1>
+        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
+        <p class="text-mlm-secondary text-sm">
+          Update your store details, physical pickup address, contact number, and service areas.
+        </p>
+      </div>
+
+      @if (loading()) {
+        <!-- Loading State -->
+        <div class="flex items-center justify-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
+          <div class="w-8 h-8 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"></div>
+        </div>
+      } @else if (profile()?.message) {
+        <!-- No Merchant Profile Found -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 flex flex-col items-center text-center gap-4">
+          <div class="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mb-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+          </div>
+          <h2 class="text-lg font-bold text-mlm-text">No Merchant Profile Found</h2>
+          <p class="text-mlm-secondary text-sm max-w-sm">
+            You must apply and be approved as a merchant before you can update your merchant profile.
+          </p>
+          <a
+            routerLink="/merchant/apply"
+            class="mt-2 inline-flex items-center gap-2 px-6 py-2.5 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-mlm-green-600 transition-colors"
+          >
+            Apply to Become a Merchant
+          </a>
+        </div>
+      } @else {
+        <!-- Profile Form Card -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-6">
+          
+          <!-- Mock Mode Notice -->
+          <div class="flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-100 px-4 py-3.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <h4 class="text-blue-800 text-xs font-bold uppercase tracking-wider mb-0.5">Frontend Preview Mode</h4>
+              <p class="text-blue-600 text-xs leading-relaxed">
+                The profile update endpoint is not currently implemented in the backend API. Profile modifications made below will update your current frontend session and local storage to simulate live operation.
+              </p>
+            </div>
+          </div>
+
+          <!-- Profile Info Row -->
+          <div class="grid grid-cols-2 gap-4 pb-4 border-b border-gray-50 text-xs">
+            <div>
+              <span class="text-mlm-secondary block mb-0.5">Merchant Type</span>
+              <span class="font-bold text-mlm-text capitalize bg-gray-50 px-2.5 py-1 rounded-md inline-block">{{ profile()?.type?.toLowerCase() }}</span>
+            </div>
+            <div>
+              <span class="text-mlm-secondary block mb-0.5">Account Status</span>
+              <span class="font-bold text-mlm-text capitalize bg-green-50 text-green-700 px-2.5 py-1 rounded-md inline-block">{{ profile()?.status?.toLowerCase() }}</span>
+            </div>
+          </div>
+
+          <form (ngSubmit)="onSubmit()" #profileForm="ngForm" class="space-y-6">
+            
+            <!-- Business Name -->
+            <div>
+              <label
+                for="business-name"
+                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
+              >Business Name</label>
+              <input
+                id="business-name"
+                type="text"
+                name="businessName"
+                placeholder="Enter business name"
+                required
+                [ngModel]="businessName()"
+                (ngModelChange)="businessName.set($event)"
+                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
+              />
+            </div>
+
+            <!-- Phone Number -->
+            <div>
+              <label
+                for="phone-number"
+                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
+              >Store Phone Number</label>
+              <input
+                id="phone-number"
+                type="tel"
+                name="phoneNumber"
+                placeholder="e.g. +2348012345678"
+                required
+                [ngModel]="phoneNumber()"
+                (ngModelChange)="phoneNumber.set($event)"
+                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
+              />
+            </div>
+
+            <!-- Store Address (NEW field) -->
+            <div>
+              <label
+                for="store-address"
+                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
+              >Physical Store / Pickup Address</label>
+              <input
+                id="store-address"
+                type="text"
+                name="address"
+                placeholder="e.g. 12 Main Street, Lagos, Nigeria"
+                required
+                [ngModel]="address()"
+                (ngModelChange)="address.set($event)"
+                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
+              />
+              <p class="text-xs text-mlm-secondary mt-1">
+                The primary location where customers can pick up orders or deliveries are dispatched.
+              </p>
+            </div>
+
+            <!-- Service Areas -->
+            <div class="relative">
+              <label
+                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
+              >Service Areas</label>
+              
+              <!-- Dropdown Trigger Button -->
+              <button
+                type="button"
+                (click)="statesDropdownOpen.set(!statesDropdownOpen())"
+                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text bg-white text-left focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary flex items-center justify-between transition-all"
+              >
+                <span class="truncate">
+                  @if (selectedStates().length === 0) {
+                    Select service areas...
+                  } @else if (selectedStates().length <= 3) {
+                    {{ selectedStates().join(', ') }}
+                  } @else {
+                    {{ selectedStates().length }} states selected
+                  }
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-mlm-secondary transition-transform duration-200" [class.rotate-180]="statesDropdownOpen()" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              <!-- Dropdown Panel -->
+              @if (statesDropdownOpen()) {
+                <div class="absolute left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col transition-all duration-300">
+                  <!-- Search Box inside Dropdown -->
+                  <div class="p-2 border-b border-gray-50 bg-gray-50 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-mlm-secondary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="Search states..."
+                      [ngModel]="statesSearchQuery()"
+                      (ngModelChange)="statesSearchQuery.set($event)"
+                      name="statesSearch"
+                      class="w-full bg-transparent border-none text-xs text-mlm-text focus:outline-none placeholder-gray-400"
+                      (click)="$event.stopPropagation()"
+                    />
+                  </div>
+
+                  <!-- State Items List -->
+                  <div class="max-h-48 overflow-y-auto py-1">
+                    @for (state of filteredStates(); track state) {
+                      <label
+                        class="flex items-center gap-3 px-4 py-2 hover:bg-mlm-primary/5 cursor-pointer transition-colors text-xs text-mlm-text font-medium"
+                        (click)="$event.stopPropagation()"
+                      >
+                        <input
+                          type="checkbox"
+                          [checked]="isStateSelected(state)"
+                          (change)="toggleStateSelection(state)"
+                          class="w-4 h-4 text-mlm-primary border-gray-300 rounded focus:ring-mlm-primary/20"
+                        />
+                        <span>{{ state }}</span>
+                      </label>
+                    } @empty {
+                      <div class="px-4 py-3 text-xs text-mlm-secondary text-center">No states found</div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Click outside overlay to close dropdown -->
+                <div class="fixed inset-0 z-40 cursor-default" (click)="statesDropdownOpen.set(false)"></div>
+              }
+
+              <!-- Selected States Badges (Chips) -->
+              @if (selectedStates().length > 0) {
+                <div class="flex flex-wrap gap-1.5 mt-2">
+                  @for (state of selectedStates(); track state) {
+                    <span class="inline-flex items-center gap-1 bg-mlm-primary/10 text-mlm-primary text-[11px] font-bold px-2.5 py-1 rounded-full">
+                      {{ state }}
+                      <button
+                        type="button"
+                        (click)="removeState(state)"
+                        class="hover:text-mlm-green-700 focus:outline-none inline-flex items-center justify-center w-3 h-3 rounded-full hover:bg-mlm-primary/20"
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  }
+                </div>
+              }
+              <p class="text-xs text-mlm-secondary mt-1">
+                Select one or more states in Nigeria you will serve as a merchant.
+              </p>
+            </div>
+
+            <!-- Messages -->
+            @if (successMessage()) {
+              <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-2.5 transition-all duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p class="text-green-700 text-xs font-bold">Success</p>
+                  <p class="text-green-600 text-xs">{{ successMessage() }}</p>
+                </div>
+              </div>
+            }
+
+            @if (error()) {
+              <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-2.5 transition-all duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p class="text-red-700 text-xs font-bold">Error</p>
+                  <p class="text-red-600 text-xs">{{ error() }}</p>
+                </div>
+              </div>
+            }
+
+            <!-- Form Actions -->
+            <div class="flex items-center gap-3 pt-4 border-t border-gray-50">
+              <button
+                type="submit"
+                class="px-8 py-3 rounded-xl bg-mlm-primary text-white text-sm font-semibold tracking-wide transition-all hover:bg-mlm-green-600 active:scale-[.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                [disabled]="!profileForm.valid || selectedStates().length === 0 || actionLoading()"
+              >
+                @if (actionLoading()) {
+                  <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  Saving...
+                } @else {
+                  Save Changes
+                }
+              </button>
+
+              <button
+                type="button"
+                (click)="onReset()"
+                class="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 active:scale-[.99] transition-all"
+                [disabled]="actionLoading()"
+              >
+                Cancel
+              </button>
+            </div>
+
+          </form>
+
+        </div>
+      }
+
+    </div>
+  </main>
+</div>

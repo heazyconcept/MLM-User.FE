@@ -477,6 +477,14 @@ export const routes: Routes = [
         data: { title: 'Become a Merchant' },
       },
       {
+        path: 'profile',
+        loadComponent: () =>
+          import('./pages/merchant/merchant-profile/merchant-profile.component').then(
+            (m) => m.MerchantProfileComponent,
+          ),
+        data: { title: 'Merchant Profile Settings' },
+      },
+      {
         path: 'dashboard',
         loadComponent: () =>
           import('./pages/merchant/merchant-dashboard/merchant-dashboard.component').then(

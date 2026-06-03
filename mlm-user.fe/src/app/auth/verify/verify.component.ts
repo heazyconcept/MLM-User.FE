@@ -1,4 +1,11 @@
-import { Component, inject, signal, OnDestroy, ChangeDetectionStrategy, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  OnDestroy,
+  ChangeDetectionStrategy,
+  OnInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
@@ -8,24 +15,19 @@ import { ModalService } from '../../services/modal.service';
 
 @Component({
   selector: 'app-verify',
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterModule,
-    ButtonModule
-  ],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, ButtonModule],
   templateUrl: './verify.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VerifyComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private modalService = inject(ModalService);
-  
+
   isLoading = signal<boolean>(false);
 
   otpForm = this.fb.group({
-    otp: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]]
+    otp: ['', [Validators.required, Validators.pattern(/^\d{6}$/)]],
   });
 
   countdown = signal<number>(30);
@@ -44,7 +46,7 @@ export class VerifyComponent implements OnInit, OnDestroy {
     if (this.timer) clearInterval(this.timer);
     this.timer = setInterval(() => {
       if (this.countdown() > 0) {
-        this.countdown.update(c => c - 1);
+        this.countdown.update((c) => c - 1);
       } else {
         clearInterval(this.timer);
       }
@@ -75,7 +77,7 @@ export class VerifyComponent implements OnInit, OnDestroy {
           'success',
           'Verification Successful',
           'Your account has been verified. You can finish your profile anytime from Profile.',
-          '/dashboard'
+          '/dashboard',
         );
         setTimeout(() => {
           this.router.navigate(['/dashboard']);

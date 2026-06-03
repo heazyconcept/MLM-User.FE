@@ -1,6 +1,12 @@
 import { Component, inject, ChangeDetectionStrategy, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import {
+  ReactiveFormsModule,
+  FormBuilder,
+  Validators,
+  AbstractControl,
+  ValidationErrors,
+} from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { AuthInputComponent } from '../components/auth-input/auth-input.component';
@@ -9,15 +15,9 @@ import { ModalService } from '../../services/modal.service';
 
 @Component({
   selector: 'app-reset-password',
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterModule,
-    ButtonModule,
-    AuthInputComponent
-  ],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, ButtonModule, AuthInputComponent],
   templateUrl: './reset-password.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ResetPasswordComponent implements OnInit {
   private fb = inject(FormBuilder);
@@ -29,13 +29,16 @@ export class ResetPasswordComponent implements OnInit {
   isLoading = signal<boolean>(false);
   private resetToken = '';
 
-  resetPasswordForm = this.fb.group({
-    password: ['', [Validators.required, Validators.minLength(8)]],
-    confirmPassword: ['', [Validators.required]]
-  }, { validators: this.passwordMatchValidator });
+  resetPasswordForm = this.fb.group(
+    {
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      confirmPassword: ['', [Validators.required]],
+    },
+    { validators: this.passwordMatchValidator },
+  );
 
   ngOnInit() {
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       this.resetToken = params['token'] ?? '';
     });
   }
@@ -49,7 +52,11 @@ export class ResetPasswordComponent implements OnInit {
   onSubmit() {
     if (this.resetPasswordForm.valid) {
       if (!this.resetToken) {
-        this.modalService.open('error', 'Invalid Link', 'The reset link is invalid or has expired. Please request a new one.');
+        this.modalService.open(
+          'error',
+          'Invalid Link',
+          'The reset link is invalid or has expired. Please request a new one.',
+        );
         return;
       }
 
@@ -63,7 +70,7 @@ export class ResetPasswordComponent implements OnInit {
             'success',
             'Password Reset',
             'Your password has been successfully reset. You can now log in with your new password.',
-            '/auth/login'
+            '/auth/login',
           );
           setTimeout(() => {
             this.router.navigate(['/auth/login']);
@@ -74,12 +81,15 @@ export class ResetPasswordComponent implements OnInit {
           if (typeof ngDevMode !== 'undefined' && ngDevMode) {
             console.error('Reset password failed', err);
           }
-          this.modalService.open('error', 'Reset Failed', 'Failed to reset password. The link may have expired.');
-        }
+          this.modalService.open(
+            'error',
+            'Reset Failed',
+            'Failed to reset password. The link may have expired.',
+          );
+        },
       });
     } else {
       this.resetPasswordForm.markAllAsTouched();
     }
   }
 }
-
