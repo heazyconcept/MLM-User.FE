@@ -36,15 +36,7 @@ export class MerchantApplyComponent implements OnInit {
   loading = this.merchantService.loading;
   actionLoading = this.merchantService.actionLoading;
   error = this.merchantService.error;
-
-  /**
-   * Robustly checks whether the merchant fee has actually been paid.
-   * Guards against empty strings, 'null' strings, and undefined.
-   */
-  isFeePaid = computed(() => {
-    const val = this.profile()?.merchantFeePaidAt;
-    return val != null && val !== '' && val !== 'null';
-  });
+  isFeePaid = this.merchantService.isFeePaid;
 
   selectedType = signal<MerchantType>('REGIONAL');
   businessNameInput = signal('');
@@ -195,21 +187,17 @@ export class MerchantApplyComponent implements OnInit {
       .subscribe({
         next: (res) => {
           if (!res) {
-            // Payment initiation failed — refetch profile so UI shows
-            // "Complete Payment" screen instead of "Application Submitted"
-            this.merchantService.fetchProfile();
+            this.handlePaymentFailure();
             return;
           }
           if (res.gatewayUrl) {
             window.location.href = res.gatewayUrl;
           } else {
-            // Wallet payment succeeded — pull the backend notification after a brief delay
-            setTimeout(() => this.realTimeNotifications.syncUnreadNotifications(), 2000);
+            this.handleWalletPaymentSuccess();
           }
         },
         error: () => {
-          // Ensure fresh profile so template shows correct state
-          this.merchantService.fetchProfile();
+          this.handlePaymentFailure();
         },
       });
   }
@@ -229,13 +217,36 @@ export class MerchantApplyComponent implements OnInit {
       payload.callbackUrl = window.location.origin + '/merchant/apply';
     }
 
-    this.merchantService.initiateMerchantFeePayment(payload).subscribe((res) => {
-      if (res?.gatewayUrl) {
-        window.location.href = res.gatewayUrl;
-      } else if (res) {
-        // Wallet payment succeeded — pull the backend notification after a brief delay
-        setTimeout(() => this.realTimeNotifications.syncUnreadNotifications(), 2000);
-      }
+    this.merchantService.initiateMerchantFeePayment(payload).subscribe({
+      next: (res) => {
+        if (!res) {
+          this.handlePaymentFailure();
+          return;
+        }
+        if (res.gatewayUrl) {
+          window.location.href = res.gatewayUrl;
+        } else {
+          this.handleWalletPaymentSuccess();
+        }
+      },
+      error: () => {
+        this.handlePaymentFailure();
+      },
     });
+  }
+
+  private handleWalletPaymentSuccess(): void {
+    setTimeout(() => this.realTimeNotifications.syncUnreadNotifications(), 2000);
+    this.router.navigate(['/merchant/dashboard']);
+  }
+
+  private handlePaymentFailure(): void {
+    const errMsg = this.merchantService.error();
+    if (this.merchantService.isFeeAlreadyPaidError(errMsg)) {
+      this.merchantService.clearError();
+      this.merchantService.fetchProfile();
+      return;
+    }
+    this.merchantService.fetchProfile();
   }
 }

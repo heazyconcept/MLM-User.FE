@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { TooltipModule } from 'primeng/tooltip';
@@ -6,6 +6,7 @@ import { filter } from 'rxjs/operators';
 import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { LayoutService } from '../../services/layout.service';
+import { MerchantService } from '../../services/merchant.service';
 
 interface MenuItem {
   label: string;
@@ -45,11 +46,12 @@ interface MenuSection {
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SideMenuComponent {
+export class SideMenuComponent implements OnInit {
   private router = inject(Router);
   private userService = inject(UserService);
   private authService = inject(AuthService);
   private layoutService = inject(LayoutService);
+  private merchantService = inject(MerchantService);
 
   isPaid = this.userService.isPaid;
   isMerchant = this.userService.isMerchant;
@@ -60,6 +62,31 @@ export class SideMenuComponent {
   collapsed = this.layoutService.isSidebarCollapsed;
   displayCurrency = this.userService.displayCurrency;
 
+  private merchantApplyMenuItems(): MenuItem[] {
+    if (this.merchantService.needsPayment()) {
+      return [
+        {
+          label: 'Complete Merchant Payment',
+          icon: 'pi pi-wallet',
+          route: '/merchant/apply',
+        },
+      ];
+    }
+    if (!this.merchantService.isMerchant()) {
+      return [{ label: 'Become a Merchant', icon: 'pi pi-shop', route: '/merchant/apply' }];
+    }
+    if (this.merchantService.isAwaitingAdminApproval()) {
+      return [
+        {
+          label: 'Merchant Application',
+          icon: 'pi pi-clock',
+          route: '/merchant/dashboard',
+        },
+      ];
+    }
+    return [];
+  }
+
   menuSections = computed<MenuSection[]>(() => {
     const currency = this.displayCurrency();
     return [
@@ -68,9 +95,7 @@ export class SideMenuComponent {
         items: [
           { label: 'Dashboard', icon: 'pi pi-th-large', route: '/dashboard' },
           { label: 'Profile', icon: 'pi pi-user', route: '/profile' },
-          ...(this.isMerchant()
-            ? []
-            : [{ label: 'Become a Merchant', icon: 'pi pi-shop', route: '/merchant/apply' }]),
+          ...this.merchantApplyMenuItems(),
           {
             label: 'Marketplace',
             icon: 'pi pi-shopping-cart',
@@ -229,6 +254,10 @@ export class SideMenuComponent {
 
     this.activeRoute.set(this.router.url);
     this.autoExpandActiveSubmenu();
+  }
+
+  ngOnInit(): void {
+    this.merchantService.fetchProfile();
   }
 
   private autoExpandActiveSubmenu(): void {

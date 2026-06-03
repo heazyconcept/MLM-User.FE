@@ -26,6 +26,8 @@ export class MerchantDashboardComponent implements OnInit {
   isMerchant = this.merchantService.isMerchant;
   merchantStatus = this.merchantService.merchantStatus;
   isActiveMerchant = this.merchantService.isActiveMerchant;
+  needsPayment = this.merchantService.needsPayment;
+  isAwaitingAdminApproval = this.merchantService.isAwaitingAdminApproval;
   earnings = this.merchantService.earnings;
   inventory = this.merchantService.inventory;
   inventorySummary = this.merchantService.inventorySummary;

@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { map, catchError, tap, finalize } from 'rxjs/operators';
+import { map, catchError, tap, finalize, switchMap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 
 /* ── Enums ─────────────────────────────────────────────────────── */
@@ -285,6 +285,19 @@ export class MerchantService {
 
   readonly isActiveMerchant = computed(() => this.merchantStatus() === 'ACTIVE');
 
+  readonly isFeePaid = computed(() => MerchantService.isFeePaidValue(this.profileSignal()?.merchantFeePaidAt));
+
+  readonly needsPayment = computed(() => {
+    if (!this.isMerchant()) return false;
+    if (this.isFeePaid()) return false;
+    const status = this.merchantStatus();
+    return status !== 'ACTIVE' && status !== 'SUSPENDED';
+  });
+
+  readonly isAwaitingAdminApproval = computed(
+    () => this.isMerchant() && this.isFeePaid() && this.merchantStatus() === 'PENDING',
+  );
+
   readonly totalMerchantSales = computed(() => {
     return this.ordersSignal().reduce((sum, o) => sum + o.totalAmount, 0);
   });
@@ -315,11 +328,13 @@ export class MerchantService {
     this.errorSignal.set(null);
     return this.api.post<MerchantProfile>('merchants/apply', { type, serviceAreas, businessName, phoneNumber, address }).pipe(
       tap((profile) => {
-        // Save the address in local storage if preview updates apply
         if (profile && profile.id) {
-          this.saveLocalMerchantProfile(profile);
+          const asResponse: MerchantProfileResponse = {
+            ...profile,
+            merchantFeePaidAt: null,
+          };
+          this.applyProfile(asResponse);
         }
-        this.profileSignal.set(profile);
       }),
       catchError((err) => {
         console.error('[MerchantService] apply failed', err);
@@ -356,7 +371,7 @@ export class MerchantService {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
     return this.api.post<InitiateMerchantFeeResponse>('merchants/merchant-fee/initiate', body).pipe(
-      tap(() => this.fetchProfile()),
+      switchMap((res) => this.refreshProfileFromApi().pipe(map(() => res))),
       catchError((err) => {
         console.error('[MerchantService] initiateMerchantFeePayment failed', err);
         this.errorSignal.set(err?.error?.message || 'Failed to initiate fee payment.');
@@ -373,7 +388,7 @@ export class MerchantService {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
     return this.api.post<VerifyMerchantFeeResponse>('merchants/merchant-fee/verify', body).pipe(
-      tap(() => this.fetchProfile()),
+      switchMap((res) => this.refreshProfileFromApi().pipe(map(() => res))),
       catchError((err) => {
         console.error('[MerchantService] verifyMerchantFeePayment failed', err);
         this.errorSignal.set(err?.error?.message || 'Failed to verify fee payment.');
@@ -415,21 +430,59 @@ export class MerchantService {
     }
   }
 
+  private static isFeePaidValue(val: string | null | undefined): boolean {
+    return val != null && val !== '' && val !== 'null';
+  }
+
+  /** Merge API profile with local preview fields; server fields always win. */
+  private mergeProfileWithLocal(
+    api: MerchantProfileResponse,
+    local: MerchantProfileResponse | null,
+  ): MerchantProfileResponse {
+    if (!local || !api.id || api.id !== local.id) {
+      return api;
+    }
+    return {
+      ...api,
+      businessName: api.businessName ?? local.businessName,
+      phoneNumber: api.phoneNumber ?? local.phoneNumber,
+      address: api.address ?? local.address,
+      serviceAreas:
+        api.serviceAreas && api.serviceAreas.length > 0 ? api.serviceAreas : local.serviceAreas,
+    };
+  }
+
+  private applyProfile(api: MerchantProfileResponse): void {
+    const local = this.getLocalMerchantProfile();
+    const merged = this.mergeProfileWithLocal(api, local);
+    this.profileSignal.set(merged);
+    this.saveLocalMerchantProfile(merged);
+  }
+
+  private refreshProfileFromApi(): Observable<MerchantProfileResponse | null> {
+    return this.api.get<MerchantProfileResponse>('merchants/me').pipe(
+      tap((res) => {
+        if (res && res.id && !res.message) {
+          this.applyProfile(res);
+        } else {
+          this.profileSignal.set(res);
+        }
+      }),
+    );
+  }
+
+  isFeeAlreadyPaidError(message: string | null | undefined): boolean {
+    if (!message) return false;
+    const m = message.toLowerCase();
+    return m.includes('already paid') || m.includes('fee already');
+  }
+
   /** GET /merchants/me */
   fetchProfile(): void {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
-    this.api
-      .get<MerchantProfileResponse>('merchants/me')
+    this.refreshProfileFromApi()
       .pipe(
-        tap((res) => {
-          const local = this.getLocalMerchantProfile();
-          if (local && res && res.id === local.id) {
-            this.profileSignal.set({ ...res, ...local });
-          } else {
-            this.profileSignal.set(res);
-          }
-        }),
         catchError((err) => {
           console.error('[MerchantService] fetchProfile failed', err);
           this.errorSignal.set('Failed to load merchant profile.');
@@ -449,8 +502,7 @@ export class MerchantService {
     return this.api.patch<MerchantProfileResponse>('merchants/me', body).pipe(
       tap((updatedProfile) => {
         if (updatedProfile && !updatedProfile.message) {
-          this.profileSignal.set(updatedProfile);
-          this.saveLocalMerchantProfile(updatedProfile);
+          this.applyProfile(updatedProfile);
         }
       }),
       catchError((err) => {
@@ -465,8 +517,7 @@ export class MerchantService {
             address: body.address !== undefined ? body.address : current.address,
             serviceAreas: body.serviceAreas !== undefined ? body.serviceAreas : current.serviceAreas,
           };
-          this.profileSignal.set(merged);
-          this.saveLocalMerchantProfile(merged);
+          this.applyProfile(merged);
           return of(merged);
         }
         return of(null);

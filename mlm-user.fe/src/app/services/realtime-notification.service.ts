@@ -129,7 +129,6 @@ export class RealTimeNotificationService {
     forkJoin({
       unread: this.api.get<NotificationListResponse | ApiNotificationItem[]>('notifications', {
         isRead: false,
-        status: 'unread',
         limit: 50,
         offset: 0,
       }),
@@ -252,7 +251,6 @@ export class RealTimeNotificationService {
     this.api
       .get<NotificationListResponse | ApiNotificationItem[]>('notifications', {
         isRead: false,
-        status: 'unread',
         limit: 50,
         offset: 0,
       })
@@ -379,12 +377,15 @@ export class RealTimeNotificationService {
     // Determine modal type from the notification category/type
     const isRankUpgrade = this.isRankUpgradeNotification(payload);
     const isCpvMilestone = this.isCpvMilestoneNotification(payload);
-    const baseModalType = this.categoryToModalType(payload.category, payload);
+    const isEarnings = this.isEarningsNotification(payload);
+    const uiType = this.getUiType(payload);
     const modalType: ModalType = isRankUpgrade
       ? 'rank-upgrade'
       : isCpvMilestone
         ? 'cpv-milestone'
-        : baseModalType;
+        : isEarnings
+          ? 'celebration'
+          : this.uiTypeToModalType(uiType);
     const isCelebration = modalType === 'celebration';
     const carriesAmount = isCelebration || isCpvMilestone;
     const action = isRankUpgrade
