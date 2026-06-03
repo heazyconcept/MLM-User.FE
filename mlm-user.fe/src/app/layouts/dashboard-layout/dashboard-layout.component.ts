@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { SideMenuComponent } from '../../components/side-menu/side-menu.component';
@@ -19,9 +19,9 @@ import { DashboardPopupService } from '../../services/dashboard-popup.service';
   ],
 
   templateUrl: './dashboard-layout.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DashboardLayoutComponent implements OnInit, OnDestroy {
+export class DashboardLayoutComponent implements OnInit {
   layoutService = inject(LayoutService);
   isSidebarCollapsed = this.layoutService.isSidebarCollapsed;
 
@@ -35,9 +35,5 @@ export class DashboardLayoutComponent implements OnInit, OnDestroy {
     this.layoutService.closeMobileMenu();
     this.realtimeNotifications.initialize();
     this.dashboardPopups.loadPopups().subscribe();
-  }
-
-  ngOnDestroy(): void {
-    this.realtimeNotifications.disconnect();
   }
 }

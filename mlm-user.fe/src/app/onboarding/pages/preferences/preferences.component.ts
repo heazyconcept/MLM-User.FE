@@ -1,4 +1,11 @@
-import { Component, inject, signal, ChangeDetectionStrategy, OnInit, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+  OnInit,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -11,16 +18,10 @@ import { UserService } from '../../../services/user.service';
 
 @Component({
   selector: 'app-preferences',
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterModule,
-    SelectModule,
-    CheckboxModule
-  ],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, SelectModule, CheckboxModule],
   templateUrl: './preferences.component.html',
   styleUrl: './preferences.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PreferencesComponent implements OnInit {
   private fb = inject(FormBuilder);
@@ -34,19 +35,19 @@ export class PreferencesComponent implements OnInit {
   languages = [
     { label: 'English', value: 'en' },
     { label: 'French', value: 'fr' },
-    { label: 'Spanish', value: 'es' }
+    { label: 'Spanish', value: 'es' },
   ];
 
   currencies = [
     { label: 'US Dollar ($)', value: 'USD' },
-    { label: 'Nigerian Naira (₦)', value: 'NGN' }
+    { label: 'Nigerian Naira (₦)', value: 'NGN' },
   ];
 
   prefForm = this.fb.group({
     language: ['en'],
     currency: ['USD' as 'NGN' | 'USD'],
     emailNotifications: [true],
-    smsNotifications: [false]
+    smsNotifications: [false],
   });
 
   ngOnInit(): void {
@@ -60,19 +61,24 @@ export class PreferencesComponent implements OnInit {
     this.loadingService.show();
     this.onboardingService.getPreferences().subscribe({
       next: (data) => {
-        const lang = (data['preferredLanguage'] ?? data['preferred_language']) as string | undefined;
-        const currency = (data['displayCurrency'] ?? data['display_currency']) as 'NGN' | 'USD' | undefined;
+        const lang = (data['preferredLanguage'] ?? data['preferred_language']) as
+          | string
+          | undefined;
+        const currency = (data['displayCurrency'] ?? data['display_currency']) as
+          | 'NGN'
+          | 'USD'
+          | undefined;
         if (lang || currency) {
           this.prefForm.patchValue({
             language: lang ?? 'en',
-            currency: currency ?? registrationCurrency ?? 'USD'
+            currency: currency ?? registrationCurrency ?? 'USD',
           });
         }
         this.loadingService.hide();
       },
       error: () => {
         this.loadingService.hide();
-      }
+      },
     });
   }
 
@@ -89,7 +95,7 @@ export class PreferencesComponent implements OnInit {
     const displayCurrency: 'NGN' | 'USD' = value.currency === 'NGN' ? 'NGN' : 'USD';
     const payload = {
       preferredLanguage: value.language ?? undefined,
-      displayCurrency
+      displayCurrency,
     };
 
     this.loadingService.show();
@@ -103,7 +109,7 @@ export class PreferencesComponent implements OnInit {
         this.modalService.open('success', 'Setup Complete!', message, redirectPath);
         this.userService.fetchProfile().subscribe({
           next: () => {},
-          error: () => {}
+          error: () => {},
         });
         setTimeout(() => {
           this.router.navigate([redirectPath]);
@@ -117,9 +123,9 @@ export class PreferencesComponent implements OnInit {
         this.modalService.open(
           'error',
           'Could not save',
-          'We couldn\'t save your preferences. Please try again.'
+          "We couldn't save your preferences. Please try again.",
         );
-      }
+      },
     });
   }
 }

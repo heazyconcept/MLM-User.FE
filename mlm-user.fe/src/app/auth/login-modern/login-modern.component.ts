@@ -26,7 +26,7 @@ import { PasswordModule } from 'primeng/password';
   ],
   templateUrl: './login-modern.component.html',
   styleUrl: './login-modern.component.css',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginModernComponent {
   private fb = inject(FormBuilder);
@@ -35,13 +35,13 @@ export class LoginModernComponent {
   private router = inject(Router);
   private modalService = inject(ModalService);
   private loadingService = inject(LoadingService);
-  
+
   isLoading = signal<boolean>(false);
 
   loginForm = this.fb.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
     password: ['', [Validators.required]],
-    rememberMe: [false]
+    rememberMe: [false],
   });
 
   onSubmit() {
@@ -56,15 +56,16 @@ export class LoginModernComponent {
             this.loadingService.hide();
             const redirectPath =
               result.paymentStatus === 'PAID' ? '/dashboard' : '/auth/activation';
-            
+
             this.modalService.open(
               'success',
               'Login Successful',
               'Welcome back! You have been successfully logged in.',
-              redirectPath
+              redirectPath,
             );
-            
+
             setTimeout(() => {
+              this.modalService.close();
               this.router.navigate([redirectPath]);
             }, 2000);
           },
@@ -74,8 +75,12 @@ export class LoginModernComponent {
             if (typeof ngDevMode !== 'undefined' && ngDevMode) {
               console.error('Login failed', err);
             }
-            this.modalService.open('error', 'Login Failed', 'Invalid username or password. Please try again.');
-          }
+            this.modalService.open(
+              'error',
+              'Login Failed',
+              'Invalid username or password. Please try again.',
+            );
+          },
         });
       }
     } else {

@@ -58,8 +58,8 @@ export class OrderPreviewComponent {
           .filter((m) => m.pickupAvailable)
           .map((m) => ({
             id: m.id,
-            name: m.name,
-            distance: m.serviceAreas?.length ? m.serviceAreas.join(', ') : undefined,
+            name: m.businessName || m.name,
+            distance: [m.phoneNumber, m.serviceAreas?.length ? m.serviceAreas.join(', ') : ''].filter(Boolean).join(' • '),
           }));
         this.pickupLocations.set(list);
         this.pickupLocationsLoading.set(false);

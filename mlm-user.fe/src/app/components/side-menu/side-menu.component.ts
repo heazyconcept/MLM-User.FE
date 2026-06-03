@@ -157,6 +157,7 @@ export class SideMenuComponent {
             route: '/merchant',
             children: [
               { label: 'Dashboard', icon: 'pi pi-th-large', route: '/merchant/dashboard' },
+              { label: 'Profile Settings', icon: 'pi pi-cog', route: '/merchant/profile' },
               { label: 'Orders', icon: 'pi pi-shopping-bag', route: '/merchant/orders' },
               { label: 'Inventory', icon: 'pi pi-box', route: '/merchant/inventory' },
               { label: 'Deliveries', icon: 'pi pi-truck', route: '/merchant/deliveries' },

@@ -22,10 +22,10 @@ import { AuthInputComponent } from '../components/auth-input/auth-input.componen
     CheckboxModule,
     RippleModule,
     MessageModule,
-    AuthInputComponent
+    AuthInputComponent,
   ],
   templateUrl: './login.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent {
   private fb = inject(FormBuilder);
@@ -34,13 +34,13 @@ export class LoginComponent {
   private userService = inject(UserService);
   private modalService = inject(ModalService);
   private loadingService = inject(LoadingService);
-  
+
   isLoading = signal<boolean>(false);
 
   loginForm = this.fb.group({
     username: ['', [Validators.required, Validators.minLength(3)]],
     password: ['', [Validators.required]],
-    rememberMe: [false]
+    rememberMe: [false],
   });
 
   onSubmit() {
@@ -53,24 +53,25 @@ export class LoginComponent {
           next: (result) => {
             this.isLoading.set(false);
             this.loadingService.hide();
-            
+
             // Registration Fee Status Check (On Every Login)
             // The payment status has been fetched from the server in AuthService.login()
             // This ensures we always have the latest status, even if it changed externally
             // (e.g., admin override, payment retry, failed payment)
             const paymentStatus = result.paymentStatus;
             const redirectPath = paymentStatus === 'PAID' ? '/dashboard' : '/auth/activation';
-            
+
             // Show success modal with automatic redirect
             this.modalService.open(
               'success',
               'Login Successful',
               'Welcome back! You have been successfully logged in.',
-              redirectPath
+              redirectPath,
             );
-            
+
             // PAID → dashboard; UNPAID → activation choice (dashboard remains available from there)
             setTimeout(() => {
+              this.modalService.close();
               this.router.navigate([redirectPath]);
             }, 2000);
           },
@@ -81,9 +82,9 @@ export class LoginComponent {
             this.modalService.open(
               'error',
               'Login Failed',
-              'Invalid username or password. Please try again.'
+              'Invalid username or password. Please try again.',
             );
-          }
+          },
         });
       }
     } else {

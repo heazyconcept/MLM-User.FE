@@ -6,6 +6,7 @@ import { ModalService, ModalType } from './modal.service';
 import { NotificationService } from './notification.service';
 import { MessageService } from 'primeng/api';
 import { ApiService } from './api.service';
+import { forkJoin } from 'rxjs';
 import {
   NotificationWirePayload,
   NotificationListResponse,
@@ -44,6 +45,8 @@ export class RealTimeNotificationService {
     amount?: number;
     currency?: string;
     rankInfo?: RankUpgradeInfo;
+    /** Server notification IDs to mark as read when this modal is dismissed. */
+    notificationIds: string[];
   }> = [];
   private isShowingModal = false;
   private initialized = false;
@@ -120,85 +123,124 @@ export class RealTimeNotificationService {
    * Safe to call after actions that should surface a new server-generated notification immediately.
    */
   syncUnreadNotifications(_token?: string): void {
-    this.api
-      .get<NotificationListResponse | ApiNotificationItem[]>('notifications', {
+    // Combine two API queries:
+    // 1. Fetch up to 50 unread notifications to guarantee we don't miss older unread notifications
+    // 2. Fetch the latest 50 notifications (both read and unread) to catch recently read ones
+    forkJoin({
+      unread: this.api.get<NotificationListResponse | ApiNotificationItem[]>('notifications', {
         isRead: false,
         status: 'unread',
         limit: 50,
         offset: 0,
-      })
-      .subscribe({
-        next: (raw) => {
-          const items = this.getNotificationItems(raw);
+      }),
+      recent: this.api.get<NotificationListResponse | ApiNotificationItem[]>('notifications', {
+        limit: 50,
+        offset: 0,
+      }),
+    }).subscribe({
+      next: ({ unread, recent }) => {
+        const unreadItems = this.getNotificationItems(unread);
+        const recentItems = this.getNotificationItems(recent);
 
-          if (items.length === 0) return;
+        // Merge lists avoiding duplicates
+        const itemsMap = new Map<string, ApiNotificationItem>();
+        unreadItems.forEach((item) => itemsMap.set(item.id, item));
+        recentItems.forEach((item) => itemsMap.set(item.id, item));
 
-          const suppressed = items.filter(
-            (notif) =>
-              !this.displayedNotificationIds.includes(notif.id) &&
-              this.shouldSuppressNotification(notif)
-          );
-          const unseen = items.filter(
-            (notif) =>
-              !this.displayedNotificationIds.includes(notif.id) &&
-              !this.shouldSuppressNotification(notif)
-          );
-          if (suppressed.length > 0) {
-            const suppressedIds = suppressed.map((notif) => notif.id);
-            this.displayedNotificationIds.push(...suppressedIds);
-            this.markNotificationsAsRead(suppressedIds);
+        // Sort items by createdAt descending (newest first)
+        const items = Array.from(itemsMap.values()).sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        if (items.length === 0) return;
+
+        const suppressed = items.filter(
+          (notif) =>
+            !this.displayedNotificationIds.includes(notif.id) &&
+            (this.shouldSuppressNotification(notif) || this.isNotificationDismissed(notif.id))
+        );
+        const unseen = items.filter(
+          (notif) =>
+            !this.displayedNotificationIds.includes(notif.id) &&
+            !this.isNotificationDismissed(notif.id) &&
+            !this.shouldSuppressNotification(notif)
+        );
+        if (suppressed.length > 0) {
+          const suppressedIds = suppressed.map((notif) => notif.id);
+          this.displayedNotificationIds.push(...suppressedIds);
+          const unreadSuppressedIds = suppressed
+            .filter((notif) => !notif.isRead)
+            .map((notif) => notif.id);
+          if (unreadSuppressedIds.length > 0) {
+            this.markNotificationsAsRead(unreadSuppressedIds);
           }
-          if (unseen.length === 0) {
-            this.notificationService.loadUnreadCount().subscribe();
-            return;
-          }
-
-          // Show up to MAX_CATCHUP_MODALS as modal popups
-          const toShow = unseen.slice(0, MAX_CATCHUP_MODALS);
-          const ids = unseen.map((n) => n.id);
-          this.displayedNotificationIds.push(...ids);
-
-          toShow.forEach((notif) => {
-            const uiType = this.getUiType(notif);
-            const isEarnings = this.isEarningsNotification(notif);
-            const isRankUpgrade = this.isRankUpgradeNotification(notif);
-            const isCpvMilestone = this.isCpvMilestoneNotification(notif);
-            const modalType: ModalType = isRankUpgrade
-              ? 'rank-upgrade'
-              : isCpvMilestone
-                ? 'cpv-milestone'
-                : isEarnings
-                  ? 'celebration'
-                  : this.uiTypeToModalType(uiType);
-            const carriesAmount = (isEarnings && !isRankUpgrade) || isCpvMilestone;
-            const title = notif.title ?? notif.type.replace(/_/g, ' ');
-            const message = this.getNotificationMessage(notif);
-            const action = isRankUpgrade
-              ? this.getRankUpgradeAction(notif.actionUrl, notif.actionLabel)
-              : isCpvMilestone
-                ? this.getCpvMilestoneAction(notif.actionUrl, notif.actionLabel)
-                : isEarnings
-                  ? this.getEarningsAction(notif.actionUrl, notif.actionLabel)
-                  : undefined;
-            const amount = carriesAmount
-              ? notif.amount ?? this.getMetadataNumber(notif.metadata, 'amount')
-              : undefined;
-            const currency = carriesAmount
-              ? notif.currency ?? this.getMetadataString(notif.metadata, 'currency')
-              : undefined;
-            const rankInfo = isRankUpgrade ? this.extractRankInfo(notif.metadata) : undefined;
-            this.enqueueNotification(modalType, title, message, action, amount, currency, rankInfo);
-          });
-
-          // Mark all as read
-          this.markNotificationsAsRead(ids);
-
-          // Refresh the unread count in the header badge
+        }
+        if (unseen.length === 0) {
           this.notificationService.loadUnreadCount().subscribe();
-        },
-        error: (err) => {
-          console.error('[RealTime] Failed to fetch unread notifications:', err);
-        },
+          return;
+        }
+
+        // Show up to MAX_CATCHUP_MODALS as modal popups
+        const toShow = unseen.slice(0, MAX_CATCHUP_MODALS);
+        const silentIds = unseen.slice(MAX_CATCHUP_MODALS).map((n) => n.id);
+        const ids = unseen.map((n) => n.id);
+        this.displayedNotificationIds.push(...ids);
+
+        console.log(`[RealTime] Enqueuing ${toShow.length} catch-up notification(s)`);
+        toShow.forEach((notif) => {
+          const uiType = this.getUiType(notif);
+          const isEarnings = this.isEarningsNotification(notif);
+          const isRankUpgrade = this.isRankUpgradeNotification(notif);
+          const isCpvMilestone = this.isCpvMilestoneNotification(notif);
+          const modalType: ModalType = isRankUpgrade
+            ? 'rank-upgrade'
+            : isCpvMilestone
+              ? 'cpv-milestone'
+              : isEarnings
+                ? 'celebration'
+                : this.uiTypeToModalType(uiType);
+          const carriesAmount = (isEarnings && !isRankUpgrade) || isCpvMilestone;
+          const title = notif.title ?? notif.type.replace(/_/g, ' ');
+          const message = this.getNotificationMessage(notif);
+          const action = isRankUpgrade
+            ? this.getRankUpgradeAction(notif.actionUrl, notif.actionLabel)
+            : isCpvMilestone
+              ? this.getCpvMilestoneAction(notif.actionUrl, notif.actionLabel)
+              : isEarnings
+                ? this.getEarningsAction(notif.actionUrl, notif.actionLabel)
+                : undefined;
+          const amount = carriesAmount
+            ? notif.amount ?? this.getMetadataNumber(notif.metadata, 'amount')
+            : undefined;
+          const currency = carriesAmount
+            ? notif.currency ?? this.getMetadataString(notif.metadata, 'currency')
+            : undefined;
+          const rankInfo = isRankUpgrade ? this.extractRankInfo(notif.metadata) : undefined;
+          this.enqueueNotification(modalType, title, message, [notif.id], action, amount, currency, rankInfo);
+        });
+
+        // Safety-net retry: if a blocking modal (e.g. login success) was still
+        // closing when the queue was populated, the initial showNextIfIdle() call
+        // would have bailed. Retry shortly after to pick up the queued items.
+        if (this.notificationQueue.length > 0) {
+          setTimeout(() => this.showNextIfIdle(), 1500);
+        }
+
+        // Mark only the ones exceeding MAX_CATCHUP_MODALS as read immediately if they are unread
+        const unreadSilentIds = unseen
+          .slice(MAX_CATCHUP_MODALS)
+          .filter((notif) => !notif.isRead)
+          .map((n) => n.id);
+        if (unreadSilentIds.length > 0) {
+          this.markNotificationsAsRead(unreadSilentIds);
+        }
+
+        // Refresh the unread count in the header badge
+        this.notificationService.loadUnreadCount().subscribe();
+      },
+      error: (err) => {
+        console.error('[RealTime] Failed to fetch catch-up notifications:', err);
+      },
       });
   }
 
@@ -373,14 +415,12 @@ export class RealTimeNotificationService {
       modalType,
       payload.title,
       this.getNotificationMessage(payload),
+      [payload.id],
       action,
       amount,
       currency,
       rankInfo
     );
-
-    // Mark as read immediately (single notification)
-    this.markNotificationsAsRead([payload.id]);
 
     // Refresh unread count + list for the header badge / drawer
     this.notificationService.loadUnreadCount().subscribe();
@@ -392,23 +432,42 @@ export class RealTimeNotificationService {
     type: ModalType,
     title: string,
     message: string,
+    notificationIds: string[],
     action?: { redirectTo?: string; actionLabel?: string },
     amount?: number,
     currency?: string,
     rankInfo?: RankUpgradeInfo
   ): void {
-    this.notificationQueue.push({ type, title, message, ...action, amount, currency, rankInfo });
+    this.notificationQueue.push({
+      type,
+      title,
+      message,
+      notificationIds,
+      ...action,
+      amount,
+      currency,
+      rankInfo,
+    });
     this.showNextIfIdle();
   }
 
   private showNextIfIdle(): void {
-    if (this.isShowingModal || this.notificationQueue.length === 0) return;
+    if (this.isShowingModal || this.notificationQueue.length === 0) {
+      if (this.notificationQueue.length > 0) {
+        console.log('[RealTime] showNextIfIdle: waiting (isShowingModal=true)');
+      }
+      return;
+    }
 
     // Wait if the global modal service is already displaying a modal
-    if (this.modalService.modalState().isOpen) return;
+    if (this.modalService.modalState().isOpen) {
+      console.log('[RealTime] showNextIfIdle: blocked by open modal, will retry when it closes');
+      return;
+    }
 
     const next = this.notificationQueue.shift()!;
     this.isShowingModal = true;
+    console.log(`[RealTime] Showing notification modal: "${next.title}" (queue remaining: ${this.notificationQueue.length})`);
 
     this.modalService.openWithCallback(
       next.type,
@@ -416,6 +475,11 @@ export class RealTimeNotificationService {
       next.message,
       () => {
         this.isShowingModal = false;
+        if (next.notificationIds && next.notificationIds.length > 0) {
+          console.log(`[RealTime] Modal dismissed, marking read for IDs:`, next.notificationIds);
+          this.markNotificationsAsRead(next.notificationIds);
+          next.notificationIds.forEach((id) => this.saveDismissedNotificationId(id));
+        }
         this.showNextIfIdle();
       },
       next.redirectTo,
@@ -600,6 +664,32 @@ export class RealTimeNotificationService {
       return Number.isFinite(parsed) ? parsed : undefined;
     }
     return undefined;
+  }
+
+  private isNotificationDismissed(id: string): boolean {
+    try {
+      const stored = localStorage.getItem('dismissed_notification_modals');
+      const dismissedIds: string[] = stored ? JSON.parse(stored) : [];
+      return dismissedIds.includes(id);
+    } catch {
+      return false;
+    }
+  }
+
+  private saveDismissedNotificationId(id: string): void {
+    try {
+      const stored = localStorage.getItem('dismissed_notification_modals');
+      const dismissedIds: string[] = stored ? JSON.parse(stored) : [];
+      if (!dismissedIds.includes(id)) {
+        dismissedIds.push(id);
+        if (dismissedIds.length > 200) {
+          dismissedIds.shift();
+        }
+        localStorage.setItem('dismissed_notification_modals', JSON.stringify(dismissedIds));
+      }
+    } catch (e) {
+      console.error('[RealTime] Failed to save dismissed notification ID:', e);
+    }
   }
 
   // ─── Cleanup ─────────────────────────────────────────────────────────

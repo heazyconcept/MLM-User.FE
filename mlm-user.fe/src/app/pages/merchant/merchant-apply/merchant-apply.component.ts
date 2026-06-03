@@ -13,6 +13,7 @@ import {
 import { UserService } from '../../../services/user.service';
 import { RealTimeNotificationService } from '../../../services/realtime-notification.service';
 import { ButtonModule } from 'primeng/button';
+import { NIGERIAN_STATES } from '../../../core/constants/states.constants';
 
 @Component({
   selector: 'app-merchant-apply',
@@ -46,7 +47,38 @@ export class MerchantApplyComponent implements OnInit {
   });
 
   selectedType = signal<MerchantType>('REGIONAL');
-  serviceAreasInput = signal('');
+  businessNameInput = signal('');
+  phoneNumberInput = signal('');
+  addressInput = signal('');
+  
+  // Custom multi-select state selector signals
+  selectedStates = signal<string[]>([]);
+  statesDropdownOpen = signal(false);
+  statesSearchQuery = signal('');
+  allStates = NIGERIAN_STATES;
+
+  filteredStates = computed(() => {
+    const query = this.statesSearchQuery().toLowerCase().trim();
+    if (!query) return this.allStates;
+    return this.allStates.filter((state) => state.toLowerCase().includes(query));
+  });
+
+  toggleStateSelection(state: string): void {
+    const current = this.selectedStates();
+    if (current.includes(state)) {
+      this.selectedStates.set(current.filter((s) => s !== state));
+    } else {
+      this.selectedStates.set([...current, state]);
+    }
+  }
+
+  isStateSelected(state: string): boolean {
+    return this.selectedStates().includes(state);
+  }
+
+  removeState(state: string): void {
+    this.selectedStates.set(this.selectedStates().filter((s) => s !== state));
+  }
 
   // Payment source is chosen on the same form as the application
   selectedPaymentSource = signal<MerchantFeePaymentSource>('REGISTRATION_WALLET');
@@ -131,17 +163,20 @@ export class MerchantApplyComponent implements OnInit {
     // Guard: don't re-apply if profile already exists
     if (this.isMerchant()) return;
 
-    const areas = this.serviceAreasInput()
-      .split(',')
-      .map((a) => a.trim())
-      .filter((a) => a.length > 0);
+    const areas = this.selectedStates();
 
     if (areas.length === 0) return;
+
+    const bName = this.businessNameInput().trim();
+    const pNumber = this.phoneNumberInput().trim();
+    const addr = this.addressInput().trim();
+
+    if (!bName || !pNumber || !addr) return;
 
     const source = this.selectedPaymentSource();
 
     this.merchantService
-      .apply(this.selectedType(), areas)
+      .apply(this.selectedType(), areas, bName, pNumber, addr)
       .pipe(
         switchMap((profile: MerchantProfile | null) => {
           if (!profile?.id) {
