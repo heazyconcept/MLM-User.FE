@@ -113,6 +113,15 @@ export class UserService {
     localStorage.setItem(DISPLAY_CURRENCY_KEY, currency);
   }
 
+  /** Sync when GET /merchants/me returns ACTIVE but users/me still lacks merchant role. */
+  markAsMerchant(): void {
+    const current = this.user();
+    if (!current || current.isMerchant) return;
+    const updated: User = { ...current, isMerchant: true };
+    this.user.set(updated);
+    this.persistUserData(updated);
+  }
+
   private mapApiUserToUser(apiUser: Record<string, unknown>): User {
     const reg = apiUser['registration'] as Record<string, unknown> | undefined;
     const registrationPaid =

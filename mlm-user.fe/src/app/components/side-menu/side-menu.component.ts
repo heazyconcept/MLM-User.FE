@@ -55,6 +55,10 @@ export class SideMenuComponent implements OnInit {
 
   isPaid = this.userService.isPaid;
   isMerchant = this.userService.isMerchant;
+  /** Merchant Center nav: user role or ACTIVE profile from GET /merchants/me */
+  showMerchantCenter = computed(
+    () => this.isMerchant() || this.merchantService.isActiveMerchant(),
+  );
   currentUser = this.userService.currentUser;
   mobileMenuOpen = this.layoutService.isMobileMenuOpen;
   activeRoute = signal('');
@@ -236,10 +240,10 @@ export class SideMenuComponent implements OnInit {
     ];
   });
 
-  /** Sections to display; MERCHANT only when user is a merchant */
+  /** Sections to display; MERCHANT when user has merchant role or ACTIVE merchant profile */
   visibleMenuSections = computed(() => {
     const sections = this.menuSections();
-    if (this.isMerchant()) return sections;
+    if (this.showMerchantCenter()) return sections;
     return sections.filter((s: MenuSection) => s.title !== 'MERCHANT');
   });
 

@@ -2,6 +2,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { map, catchError, tap, finalize, switchMap } from 'rxjs/operators';
 import { ApiService } from './api.service';
+import { UserService } from './user.service';
 
 /* ── Enums ─────────────────────────────────────────────────────── */
 
@@ -240,6 +241,7 @@ export interface DeliveriesResponse {
 @Injectable({ providedIn: 'root' })
 export class MerchantService {
   private api = inject(ApiService);
+  private userService = inject(UserService);
 
   /* ── Signals ─────────────────────────────────────────────────── */
   private profileSignal = signal<MerchantProfileResponse | null>(null);
@@ -457,6 +459,9 @@ export class MerchantService {
     const merged = this.mergeProfileWithLocal(api, local);
     this.profileSignal.set(merged);
     this.saveLocalMerchantProfile(merged);
+    if (merged.status === 'ACTIVE') {
+      this.userService.markAsMerchant();
+    }
   }
 
   private refreshProfileFromApi(): Observable<MerchantProfileResponse | null> {

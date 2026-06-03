@@ -15,6 +15,7 @@ import { BadgeModule } from 'primeng/badge';
 import { MenuItem } from 'primeng/api';
 import { DrawerModule } from 'primeng/drawer';
 import { UserService } from '../../services/user.service';
+import { MerchantService } from '../../services/merchant.service';
 import { AuthService } from '../../services/auth.service';
 import { LayoutService } from '../../services/layout.service';
 import { NotificationService } from '../../services/notification.service';
@@ -36,6 +37,7 @@ import { NotificationService } from '../../services/notification.service';
 })
 export class DashboardHeaderComponent implements OnInit {
   private userService = inject(UserService);
+  private merchantService = inject(MerchantService);
   private authService = inject(AuthService);
   private layoutService = inject(LayoutService);
   private notificationService = inject(NotificationService);
@@ -52,6 +54,7 @@ export class DashboardHeaderComponent implements OnInit {
   ngOnInit(): void {
     this.notificationService.loadUnreadCount().subscribe();
     this.authService.loadImpersonationState().subscribe();
+    this.merchantService.fetchProfile();
   }
 
   openNotificationsDrawer(): void {
@@ -68,7 +71,7 @@ export class DashboardHeaderComponent implements OnInit {
         icon: 'pi pi-user',
         command: () => this.router.navigate(['/profile']),
       },
-      ...(this.userService.isMerchant()
+      ...(this.userService.isMerchant() || this.merchantService.isActiveMerchant()
         ? []
         : [
             {
