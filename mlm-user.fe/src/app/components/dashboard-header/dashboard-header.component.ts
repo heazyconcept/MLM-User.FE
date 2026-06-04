@@ -19,6 +19,7 @@ import { MerchantService } from '../../services/merchant.service';
 import { AuthService } from '../../services/auth.service';
 import { LayoutService } from '../../services/layout.service';
 import { NotificationService } from '../../services/notification.service';
+import { WalletService } from '../../services/wallet.service';
 
 @Component({
   selector: 'app-dashboard-header',
@@ -33,6 +34,17 @@ import { NotificationService } from '../../services/notification.service';
     DrawerModule,
   ],
   templateUrl: './dashboard-header.component.html',
+  styles: [
+    `
+      .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+    `,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardHeaderComponent implements OnInit {
@@ -41,9 +53,13 @@ export class DashboardHeaderComponent implements OnInit {
   private authService = inject(AuthService);
   private layoutService = inject(LayoutService);
   private notificationService = inject(NotificationService);
+  private walletService = inject(WalletService);
   private router = inject(Router);
 
+  isPaid = this.userService.isPaid;
+  displayCurrency = this.userService.displayCurrency;
   currentUser = this.userService.currentUser;
+  walletsLoading = signal(false);
   notifications = this.notificationService.drawerNotifications;
   unreadCount = this.notificationService.unreadCount;
   impersonation = this.authService.impersonation;
@@ -51,10 +67,59 @@ export class DashboardHeaderComponent implements OnInit {
   notificationsVisible = signal(false);
   isExitingImpersonation = signal(false);
 
+  primaryWallet = computed(() => {
+    const wallets = this.walletService.allWallets();
+    const currency = this.displayCurrency();
+    return wallets.find((w) => w.currency === currency) ?? wallets[0] ?? null;
+  });
+
+  headerWalletItems = computed(() => {
+    const wallet = this.primaryWallet();
+    if (!wallet) return [];
+    const currency = wallet.currency;
+    return [
+      { key: 'cash', label: 'Cash', shortLabel: 'Cash', amount: wallet.cashBalance, icon: 'pi-wallet' },
+      {
+        key: 'voucher',
+        label: 'Product Voucher',
+        shortLabel: 'Voucher',
+        amount: wallet.voucherBalance,
+        icon: 'pi-ticket',
+      },
+      {
+        key: 'autoship',
+        label: 'Autoship',
+        shortLabel: 'Autoship',
+        amount: wallet.autoshipBalance,
+        icon: 'pi-sync',
+      },
+    ].map((item) => ({
+      ...item,
+      formatted: this.formatBalance(item.amount, currency),
+    }));
+  });
+
   ngOnInit(): void {
     this.notificationService.loadUnreadCount().subscribe();
     this.authService.loadImpersonationState().subscribe();
     this.merchantService.fetchProfile();
+    if (this.isPaid()) {
+      this.loadWallets();
+    }
+  }
+
+  private loadWallets(): void {
+    this.walletsLoading.set(true);
+    this.walletService.fetchWallets().subscribe({
+      next: () => this.walletsLoading.set(false),
+      error: () => this.walletsLoading.set(false),
+    });
+  }
+
+  formatBalance(amount: number, currency: 'NGN' | 'USD'): string {
+    if (amount == null || amount === 0) return '--';
+    const symbol = currency === 'NGN' ? '₦' : '$';
+    return `${symbol}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 
   openNotificationsDrawer(): void {

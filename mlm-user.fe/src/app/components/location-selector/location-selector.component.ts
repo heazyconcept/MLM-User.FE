@@ -4,7 +4,9 @@ import { CommonModule } from '@angular/common';
 export interface PickupLocation {
   id: string;
   name: string;
-  distance?: string;
+  address?: string;
+  phoneNumber?: string;
+  pickupAvailable: boolean;
 }
 
 @Component({
@@ -20,6 +22,9 @@ export class LocationSelectorComponent {
   locationSelect = output<string>();
 
   onSelect(id: string): void {
-    this.locationSelect.emit(id);
+    const loc = this.locations().find((l) => l.id === id);
+    if (loc?.pickupAvailable) {
+      this.locationSelect.emit(id);
+    }
   }
 }

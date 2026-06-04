@@ -76,6 +76,10 @@ export class SideMenuComponent implements OnInit {
         },
       ];
     }
+    // Merchant Center section already visible — avoid duplicate application links
+    if (this.showMerchantCenter()) {
+      return [];
+    }
     if (!this.merchantService.isMerchant()) {
       return [{ label: 'Become a Merchant', icon: 'pi pi-shop', route: '/merchant/apply' }];
     }
@@ -262,6 +266,9 @@ export class SideMenuComponent implements OnInit {
 
   ngOnInit(): void {
     this.merchantService.fetchProfile();
+    this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe(() => this.merchantService.fetchProfile());
   }
 
   private autoExpandActiveSubmenu(): void {

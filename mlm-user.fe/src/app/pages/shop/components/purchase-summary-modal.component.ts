@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
 import { Product } from '../../../services/product.service';
 
-type WalletType = 'cash' | 'voucher' | 'autoship';
+type WalletType = 'cash' | 'voucher';
 
 @Component({
   selector: 'app-purchase-summary-modal',

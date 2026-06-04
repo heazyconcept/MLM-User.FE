@@ -1,16 +1,54 @@
 <div class="border-t border-gray-200" role="group" aria-label="Pickup locations">
   @for (loc of locations(); track loc.id) {
-    <button
-      type="button"
-      (click)="onSelect(loc.id)"
-      [class]="selectedId() === loc.id
-        ? 'border-l-4 border-mlm-primary bg-mlm-primary/5'
-        : 'border-l-4 border-transparent hover:bg-gray-50/50'"
-      class="w-full flex items-center justify-between gap-4 py-3 px-4 border-b border-gray-100 text-left transition-all focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2 last:border-b-0">
-      <span class="font-semibold text-mlm-text">{{ loc.name }}</span>
-      @if (loc.distance) {
-        <span class="text-sm text-mlm-secondary">{{ loc.distance }}</span>
-      }
-    </button>
+    @if (loc.pickupAvailable) {
+      <button
+        type="button"
+        (click)="onSelect(loc.id)"
+        [class]="selectedId() === loc.id
+          ? 'border-l-4 border-mlm-primary bg-mlm-primary/5'
+          : 'border-l-4 border-transparent hover:bg-gray-50/50'"
+        class="w-full flex items-start gap-3 py-3 px-4 border-b border-gray-100 text-left transition-all focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2 last:border-b-0">
+        <span
+          class="mt-1.5 w-4 h-4 rounded-full border-2 shrink-0 transition-colors"
+          [class]="selectedId() === loc.id ? 'border-mlm-primary bg-mlm-primary' : 'border-gray-300'"
+          aria-hidden="true"
+        ></span>
+        <span class="min-w-0 flex-1">
+          <span class="block font-semibold text-mlm-text">{{ loc.name }}</span>
+          @if (loc.address) {
+            <span class="block text-xs text-mlm-secondary mt-0.5 leading-relaxed">{{ loc.address }}</span>
+          }
+          @if (loc.phoneNumber) {
+            <a
+              [href]="'tel:' + loc.phoneNumber"
+              class="inline-block text-xs font-medium text-mlm-primary mt-1 hover:underline"
+              (click)="$event.stopPropagation()"
+            >{{ loc.phoneNumber }}</a>
+          }
+        </span>
+      </button>
+    } @else {
+      <div
+        class="w-full flex items-start gap-3 py-3 px-4 border-b border-gray-100 border-l-4 border-l-gray-200 bg-gray-50/80 last:border-b-0 opacity-70"
+        aria-disabled="true"
+      >
+        <span
+          class="mt-1.5 w-4 h-4 rounded-full border-2 border-gray-200 bg-gray-100 shrink-0"
+          aria-hidden="true"
+        ></span>
+        <span class="min-w-0 flex-1">
+          <span class="block font-semibold text-mlm-secondary">{{ loc.name }}</span>
+          @if (loc.address) {
+            <span class="block text-xs text-mlm-secondary mt-0.5 leading-relaxed">{{ loc.address }}</span>
+          }
+          @if (loc.phoneNumber) {
+            <span class="block text-xs text-mlm-secondary mt-1">{{ loc.phoneNumber }}</span>
+          }
+          <span class="block text-xs text-amber-700 mt-1.5 font-medium">
+            Pickup contact details incomplete
+          </span>
+        </span>
+      </div>
+    }
   }
 </div>

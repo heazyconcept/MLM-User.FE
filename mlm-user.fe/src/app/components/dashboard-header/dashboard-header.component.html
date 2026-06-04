@@ -32,7 +32,57 @@
 
   <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
     <div class="flex-1"></div>
-    <div class="flex items-center gap-x-4 lg:gap-x-6">
+    <div class="flex items-center gap-x-3 lg:gap-x-6 min-w-0">
+      @if (isPaid()) {
+        <div
+          class="hidden md:flex items-center gap-1.5 lg:gap-2 min-w-0 overflow-x-auto hide-scrollbar max-w-[min(100%,42rem)]"
+          aria-label="Wallet balances"
+        >
+          @if (walletsLoading()) {
+            @for (placeholder of [1, 2, 3]; track placeholder) {
+              <div
+                class="h-9 w-24 lg:w-28 shrink-0 rounded-lg bg-gray-100 animate-pulse"
+                aria-hidden="true"
+              ></div>
+            }
+          } @else {
+            @for (item of headerWalletItems(); track item.key) {
+              <a
+                routerLink="/wallet"
+                class="group flex shrink-0 items-center gap-2  px-2.5 py-1.5 transition-colors"
+                [attr.title]="item.label + ': ' + item.formatted"
+              >
+                <span
+                  class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-mlm-primary"
+                >
+                 </span>
+                <span class="min-w-0 leading-tight">
+                  <span
+                    class="block text-[10px] font-semibold uppercase tracking-wide text-mlm-secondary truncate max-w-[5.5rem] lg:max-w-none"
+                  >
+                    <span class="lg:hidden">{{ item.shortLabel }}</span>
+                    <span class="hidden lg:inline">{{ item.label }}</span>
+                  </span>
+                  <span class="block text-xs font-bold tabular-nums text-mlm-text">{{
+                    item.formatted
+                  }}</span>
+                </span>
+              </a>
+            }
+          }
+        </div>
+
+        <a
+          routerLink="/wallet"
+          class="md:hidden flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-100 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-mlm-text hover:bg-gray-100"
+          aria-label="View wallet balances"
+        >
+           <span>Wallets</span>
+        </a>
+
+        <div class="hidden md:block h-6 w-px bg-gray-200 shrink-0" aria-hidden="true"></div>
+      }
+
       <!-- Notifications -->
       <button
         type="button"
