@@ -1,12 +1,11 @@
 import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { MerchantService } from '../../../services/merchant.service';
-import { UserService } from '../../../services/user.service';
 import { NIGERIAN_STATES } from '../../../core/constants/states.constants';
 
 @Component({
@@ -25,8 +24,6 @@ import { NIGERIAN_STATES } from '../../../core/constants/states.constants';
 })
 export class MerchantProfileComponent implements OnInit {
   private merchantService = inject(MerchantService);
-  private userService = inject(UserService);
-  private router = inject(Router);
 
   profile = this.merchantService.profile;
   loading = this.merchantService.loading;
@@ -45,7 +42,6 @@ export class MerchantProfileComponent implements OnInit {
   allStates = NIGERIAN_STATES;
 
   successMessage = signal('');
-  isMockMode = signal(false);
 
   filteredStates = computed(() => {
     const query = this.statesSearchQuery().toLowerCase().trim();
@@ -106,10 +102,8 @@ export class MerchantProfileComponent implements OnInit {
       serviceAreas: areas
     }).subscribe((res) => {
       if (res) {
-        this.successMessage.set('Merchant profile updated successfully!');
-        // Check if updating in local mock mode (since actual backend endpoint doesn't exist yet)
-        this.isMockMode.set(true);
-        // Auto-clear success message after 4s
+        this.merchantService.clearError();
+        this.successMessage.set('Merchant profile updated successfully.');
         setTimeout(() => this.successMessage.set(''), 4000);
       }
     });

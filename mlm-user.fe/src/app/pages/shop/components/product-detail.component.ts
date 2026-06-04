@@ -6,7 +6,7 @@ import { Product } from '../../../services/product.service';
 import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 
-type WalletType = 'cash' | 'voucher' | 'autoship';
+type WalletType = 'cash' | 'voucher';
 
 @Component({
   selector: 'app-product-detail',
@@ -25,38 +25,33 @@ export class ProductDetailComponent {
   private dialogRef = inject(DynamicDialogRef);
 
   product: Product = this.config.data.product;
-  
+
   selectedImage = signal(this.product.images[0]);
-  selectedWallet = signal<WalletType>('cash');
+  selectedWallet = signal<WalletType>(this.initialPayWallet());
   quantity = signal(1);
   isProcessing = signal(false);
 
-  walletOptions = [
-    { type: 'cash' as WalletType, label: 'Cash', icon: 'pi-wallet' },
-    { type: 'voucher' as WalletType, label: 'Product Voucher', icon: 'pi-ticket' }
+  readonly walletOptions = [
+    { type: 'cash' as WalletType, label: 'Cash Wallet' },
+    { type: 'voucher' as WalletType, label: 'Product Voucher' },
   ];
+
+  get eligibleWalletOptions() {
+    return this.walletOptions.filter((w) => this.product.eligibleWallets.includes(w.type));
+  }
+
+  private initialPayWallet(): WalletType {
+    return this.walletOptions.find((w) => this.product.eligibleWallets.includes(w.type))?.type ?? 'cash';
+  }
 
   selectImage(image: string): void {
     this.selectedImage.set(image);
   }
 
-  selectWallet(wallet: WalletType): void {
+  onWalletChange(wallet: WalletType): void {
     if (this.product.eligibleWallets.includes(wallet)) {
       this.selectedWallet.set(wallet);
     }
-  }
-
-  getWalletButtonClass(wallet: WalletType): string {
-    const isEligible = this.product.eligibleWallets.includes(wallet);
-    const isSelected = this.selectedWallet() === wallet;
-
-    if (!isEligible) {
-      return 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-100';
-    }
-    if (isSelected) {
-      return 'bg-mlm-primary text-white border-2 border-mlm-primary shadow-lg shadow-mlm-primary/20';
-    }
-    return 'bg-white text-mlm-text border border-gray-200 hover:border-gray-300 hover:bg-gray-50';
   }
 
   incrementQuantity(): void {

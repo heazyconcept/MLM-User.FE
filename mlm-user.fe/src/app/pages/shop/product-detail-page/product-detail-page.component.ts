@@ -9,6 +9,7 @@ import {
   effect,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService, Product } from '../../../services/product.service';
 import { OrderService } from '../../../services/order.service';
@@ -21,13 +22,14 @@ import { PurchaseSummaryModalComponent } from '../components/purchase-summary-mo
 import { DrawerModule } from 'primeng/drawer';
 import { OrderPreviewComponent } from '../../orders/order-preview/order-preview.component';
 
-type WalletType = 'cash' | 'voucher' | 'autoship';
+type WalletType = 'cash' | 'voucher';
 
 @Component({
   selector: 'app-product-detail-page',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterLink,
     ProductGalleryComponent,
     QuantitySelectorComponent,
@@ -79,10 +81,16 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     return p ? p.pv * q : 0;
   });
 
-  walletOptions = [
-    { type: 'cash' as WalletType, label: 'Cash', icon: 'pi-wallet' },
-    { type: 'voucher' as WalletType, label: 'Product Voucher', icon: 'pi-ticket' },
+  readonly walletOptions = [
+    { type: 'cash' as WalletType, label: 'Cash Wallet' },
+    { type: 'voucher' as WalletType, label: 'Product Voucher' },
   ];
+
+  eligibleWalletOptions = computed(() => {
+    const p = this.product();
+    if (!p) return [];
+    return this.walletOptions.filter((w) => p.eligibleWallets.includes(w.type));
+  });
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -97,32 +105,18 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
       }
       this.product.set(p);
       this.productService.selectProduct(p);
-      const eligible = p.eligibleWallets;
-      if (eligible.length && !eligible.includes(this.selectedWallet())) {
-        this.selectedWallet.set(eligible[0]);
+      const firstPayWallet = this.walletOptions.find((w) => p.eligibleWallets.includes(w.type))?.type;
+      if (firstPayWallet) {
+        this.selectedWallet.set(firstPayWallet);
       }
     });
   }
 
-  selectWallet(wallet: WalletType): void {
+  onWalletChange(wallet: WalletType): void {
     const p = this.product();
     if (p?.eligibleWallets.includes(wallet)) {
       this.selectedWallet.set(wallet);
     }
-  }
-
-  getWalletButtonClass(wallet: WalletType): string {
-    const p = this.product();
-    if (!p) return '';
-    const isEligible = p.eligibleWallets.includes(wallet);
-    const isSelected = this.selectedWallet() === wallet;
-    if (!isEligible) {
-      return 'bg-gray-50 text-gray-300 cursor-not-allowed border border-gray-100';
-    }
-    if (isSelected) {
-      return 'bg-mlm-primary text-white border-2 border-mlm-primary shadow-lg shadow-mlm-primary/20';
-    }
-    return 'bg-white text-mlm-text border border-gray-200 hover:border-gray-300 hover:bg-gray-50';
   }
 
   onQuantityChange(value: number): void {

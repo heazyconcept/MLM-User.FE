@@ -1,5 +1,5 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { map, catchError, tap, finalize, switchMap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { UserService } from './user.service';
@@ -82,9 +82,16 @@ export interface AvailableMerchant {
   name: string;
   businessName: string;
   phoneNumber: string;
+  address?: string;
   serviceAreas: string[];
   products: AvailableMerchantProduct[];
   pickupAvailable: boolean;
+}
+
+export interface FetchPickupMerchantsParams {
+  state: string;
+  productId?: string;
+  quantity?: number;
 }
 
 export interface MerchantOrderItem {
@@ -404,6 +411,41 @@ export class MerchantService {
   fetchAvailableMerchants(location?: string): Observable<AvailableMerchant[]> {
     const params: Record<string, string> = {};
     if (location) params['location'] = location;
+    return this.fetchAvailableMerchantsFromApi(params);
+  }
+
+  /**
+   * Pickup checkout: merchants in a state with address/phone for collection.
+   * See mlm-user.fe/PICKUP_MERCHANTS_BY_STATE_API.md
+   */
+  fetchAvailableMerchantsForPickup(
+    params: FetchPickupMerchantsParams,
+  ): Observable<AvailableMerchant[]> {
+    const qp: Record<string, string> = { state: params.state.trim() };
+    if (params.productId) {
+      qp['productId'] = params.productId;
+      qp['quantity'] = String(params.quantity ?? 1);
+    }
+    return this.api.get<{ merchants: AvailableMerchant[] }>('merchants/available', qp).pipe(
+      map((res) => res.merchants ?? []),
+      catchError((err) => {
+        console.error('[MerchantService] fetchAvailableMerchantsForPickup failed', err);
+        return throwError(() => err);
+      }),
+    );
+  }
+
+  static extractApiErrorMessage(err: unknown, fallback: string): string {
+    const body = (err as { error?: { message?: string | string[] } })?.error;
+    const msg = body?.message;
+    if (typeof msg === 'string' && msg.trim()) return msg;
+    if (Array.isArray(msg) && typeof msg[0] === 'string') return msg[0];
+    return fallback;
+  }
+
+  private fetchAvailableMerchantsFromApi(
+    params: Record<string, string>,
+  ): Observable<AvailableMerchant[]> {
     return this.api.get<{ merchants: AvailableMerchant[] }>('merchants/available', params).pipe(
       map((res) => res.merchants ?? []),
       catchError((err) => {
@@ -498,33 +540,26 @@ export class MerchantService {
       .subscribe();
   }
 
-  /** PATCH /merchants/me — attempts API call, falls back to local storage update if API fails */
+  /** PATCH /merchants/me — update merchant profile */
   updateProfile(body: UpdateMerchantProfileBody): Observable<MerchantProfileResponse | null> {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
-    
-    // Attempt the backend call (which is not implemented yet, so it will fail)
+
     return this.api.patch<MerchantProfileResponse>('merchants/me', body).pipe(
-      tap((updatedProfile) => {
-        if (updatedProfile && !updatedProfile.message) {
+      switchMap((updatedProfile) => {
+        if (updatedProfile?.id && !updatedProfile.message) {
           this.applyProfile(updatedProfile);
+          return of(updatedProfile);
         }
+        return this.refreshProfileFromApi();
       }),
       catchError((err) => {
-        console.warn('[MerchantService] updateProfile API failed, updating locally for preview', err);
-        // Fallback: update local signal and persist to localStorage
-        const current = this.profileSignal();
-        if (current) {
-          const merged: MerchantProfileResponse = {
-            ...current,
-            businessName: body.businessName !== undefined ? body.businessName : current.businessName,
-            phoneNumber: body.phoneNumber !== undefined ? body.phoneNumber : current.phoneNumber,
-            address: body.address !== undefined ? body.address : current.address,
-            serviceAreas: body.serviceAreas !== undefined ? body.serviceAreas : current.serviceAreas,
-          };
-          this.applyProfile(merged);
-          return of(merged);
-        }
+        console.error('[MerchantService] updateProfile failed', err);
+        const msg = err?.error?.message;
+        this.errorSignal.set(
+          (typeof msg === 'string' ? msg : Array.isArray(msg) ? msg[0] : null) ??
+            'Failed to update merchant profile.',
+        );
         return of(null);
       }),
       finalize(() => this.actionLoadingSignal.set(false)),

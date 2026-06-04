@@ -62,18 +62,23 @@
     
     <!-- Wallet Selection -->
     <div>
-      <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">Pay With</p>
-      <div class="grid grid-cols-3 gap-2">
-        @for (wallet of walletOptions; track wallet.type) {
-          <button
-            (click)="selectWallet(wallet.type)"
-            [disabled]="!product.eligibleWallets.includes(wallet.type) || isProcessing()"
-            class="py-3 px-3 rounded-xl text-center border-2 transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
-            [class]="getWalletButtonClass(wallet.type)">
-            <span class="text-sm font-semibold block">{{ wallet.label }}</span>
-          </button>
+      <label
+        for="pay-wallet-dialog"
+        class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-2"
+      >
+        Pay With
+      </label>
+      <select
+        id="pay-wallet-dialog"
+        class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        [ngModel]="selectedWallet()"
+        (ngModelChange)="onWalletChange($event)"
+        [disabled]="isProcessing() || eligibleWalletOptions.length === 0"
+      >
+        @for (wallet of eligibleWalletOptions; track wallet.type) {
+          <option [value]="wallet.type">{{ wallet.label }}</option>
         }
-      </div>
+      </select>
     </div>
     
     <!-- Quantity -->
