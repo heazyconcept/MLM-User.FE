@@ -49,7 +49,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
   private dialogService = inject(DialogService);
 
   product = signal<Product | null>(null);
-  selectedWallet = signal<WalletType>('cash');
+  selectedWallet = signal<WalletType>('voucher');
   quantity = signal(1);
   fulfilmentDrawerVisible = signal(false);
   pendingOrderData = signal<any>(null);
@@ -82,7 +82,6 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
   });
 
   readonly walletOptions = [
-    { type: 'cash' as WalletType, label: 'Cash Wallet' },
     { type: 'voucher' as WalletType, label: 'Product Voucher' },
   ];
 

@@ -32,7 +32,6 @@ export class ProductDetailComponent {
   isProcessing = signal(false);
 
   readonly walletOptions = [
-    { type: 'cash' as WalletType, label: 'Cash Wallet' },
     { type: 'voucher' as WalletType, label: 'Product Voucher' },
   ];
 
@@ -41,7 +40,7 @@ export class ProductDetailComponent {
   }
 
   private initialPayWallet(): WalletType {
-    return this.walletOptions.find((w) => this.product.eligibleWallets.includes(w.type))?.type ?? 'cash';
+    return 'voucher';
   }
 
   selectImage(image: string): void {

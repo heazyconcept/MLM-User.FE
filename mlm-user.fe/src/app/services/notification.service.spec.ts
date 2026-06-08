@@ -204,7 +204,7 @@ describe('NotificationService', () => {
       const req = httpMock.expectOne(
         (r) => r.url === `${baseUrl}/notifications/preferences` && r.method === 'PUT'
       );
-      expect(req.request.body).toEqual(jasmine.objectContaining({ typePreferences: jasmine.any(Object) }));
+      expect(req.request.body).toEqual(expect.objectContaining({ typePreferences: expect.any(Object) }));
       expect(Object.keys((req.request.body as { typePreferences: Record<string, boolean> }).typePreferences).length).toBeGreaterThan(0);
       req.flush(null);
     });

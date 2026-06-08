@@ -49,10 +49,6 @@
 
                 <!-- Actions -->
                 <div class="flex flex-row sm:flex-col items-start sm:items-end gap-2 shrink-0 flex-wrap">
-                  <button (click)="navigateToFunding()"
-                    class="px-4 sm:px-5 py-2.5 bg-white text-mlm-primary text-xs font-bold rounded-xl tracking-wide whitespace-nowrap">
-                    Fund Wallet
-                  </button>
                   <button (click)="navigateToWithdrawals()"
                     class="px-4 sm:px-5 py-2.5 bg-white/15 text-white text-xs font-bold rounded-xl tracking-wide whitespace-nowrap">
                     Withdrawal History
@@ -102,10 +98,10 @@
                           }
                         </p>
                         <div class="flex gap-2">
-                          <button (click)="openTransferDialog('REGISTRATION', wallet.currency)"
-                            [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
+                          <button (click)="openTransferDialog('REGISTRATION', 'VOUCHER', wallet.currency)"
+                            [disabled]="wallet.id === 'placeholder' || wallet.registrationBalance <= 0"
                             class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
-                            Pay from Cash
+                            Transfer
                           </button>
                           <button (click)="openRegistrationFundingDialog()"
                             class="px-3 sm:px-4 py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg">
@@ -136,9 +132,10 @@
                             class="px-3 sm:px-4 py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
                             Withdraw
                           </button>
-                          <button (click)="navigateToFunding()"
-                            class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg">
-                            Fund
+                          <button (click)="openTransferDialog('CASH', 'VOUCHER', wallet.currency)"
+                            [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
+                            class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
+                            Transfer
                           </button>
                         </div>
                       </div>
@@ -160,13 +157,17 @@
                           }
                         </p>
                         <div class="flex gap-2">
-                          <button (click)="openTransferDialog('VOUCHER', wallet.currency)"
+                          <button (click)="openTransferDialog('CASH', 'VOUCHER', wallet.currency)"
                             [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
                             class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
                             Top Up
                           </button>
-                          <button (click)="navigateToMarketplace()"
+                          <button (click)="navigateToVoucherFunding(wallet.currency)"
                             class="px-3 sm:px-4 py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg">
+                            Fund
+                          </button>
+                          <button (click)="navigateToMarketplace()"
+                            class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg">
                             Browse
                           </button>
                         </div>
@@ -188,13 +189,6 @@
                             {{ formatAmountOrPlaceholder(wallet.autoshipBalance, wallet.currency) }}
                           }
                         </p>
-                        <div class="flex gap-2">
-                          <button (click)="openTransferDialog('AUTOSHIP', wallet.currency)"
-                            [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
-                            class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
-                            Top Up
-                          </button>
-                        </div>
                       </div>
                     </div>
 

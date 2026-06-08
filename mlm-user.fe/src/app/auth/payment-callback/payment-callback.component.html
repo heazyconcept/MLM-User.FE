@@ -38,8 +38,8 @@
       <h1 class="text-xl font-semibold text-slate-900 mb-2">Verification failed</h1>
       <p class="text-slate-500 mb-6">{{ errorMessage() }}</p>
       @if (isWalletFunding()) {
-        <a routerLink="/payments/fund" class="text-mlm-primary font-semibold hover:underline">
-          Try funding again
+        <a routerLink="/wallet" class="text-mlm-primary font-semibold hover:underline">
+          Back to Wallet
         </a>
       } @else if (isRegistrationFunding()) {
         <a routerLink="/wallet" class="text-mlm-primary font-semibold hover:underline">

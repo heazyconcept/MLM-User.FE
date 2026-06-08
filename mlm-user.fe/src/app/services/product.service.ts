@@ -209,27 +209,7 @@ export class ProductService {
   }
 
   private resolveEligibleWallets(item: any): WalletType[] {
-    const candidates = [
-      item?.eligibleWallets,
-      item?.eligibleWalletTypes,
-      item?.availableWallets,
-      item?.allowedWallets,
-      item?.wallets,
-      item?.paymentWallets,
-      item?.currentPrice?.eligibleWallets,
-      item?.currentPrice?.eligibleWalletTypes,
-      item?.currentPrice?.availableWallets,
-      item?.currentPrice?.allowedWallets,
-      item?.currentPrice?.wallets,
-      item?.currentPrice?.paymentWallets,
-    ];
-
-    for (const candidate of candidates) {
-      const normalized = this.normalizeWallets(candidate);
-      if (normalized.length) return normalized;
-    }
-
-    return ['cash', 'voucher', 'autoship'];
+    return ['voucher'];
   }
 
   private normalizeWallets(value: unknown): WalletType[] {

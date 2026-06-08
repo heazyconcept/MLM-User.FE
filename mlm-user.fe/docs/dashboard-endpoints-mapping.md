@@ -1,30 +1,36 @@
-# Dashboard Endpoints and UI Mapping
+# Dashboard Endpoints and Frontend Integration
 
-This document defines the backend endpoints needed for the current dashboard UI and how each response field maps to the implemented cards and sections.
+This document describes the implemented dashboard backend endpoints and exactly how frontend should integrate them.
 
-## Recommended Endpoints
+## Implemented Endpoints
 
-1. `GET /dashboard/overview` (single source for hero + all dashboard cards)
-2. `GET /dashboard/transactions?limit=10&cursor=...` (recent transactions table)
+1. `GET /dashboard/overview`
+2. `GET /dashboard/transactions?limit=10&cursor=...`
 
-## Consolidation Goal
+Both endpoints are in `DashboardController` and are protected by:
 
-The frontend should not aggregate dashboard card values from multiple services.
+- JWT auth (`Authorization: Bearer <token>`)
+- Registration-paid guard (only fully activated users can access)
 
-Use `GET /dashboard/overview` as the direct source for:
+## Frontend Integration Strategy
 
-1. Hero balances
-2. All 6 stat cards
+- Use `GET /dashboard/overview` as the single source of truth for hero balances and all 6 stat cards.
+- Use `GET /dashboard/transactions` for the recent transactions table (cursor pagination).
+- Do not recompute any dashboard card values on frontend.
 
-This removes cross-endpoint mapping for dashboard cards.
+---
 
-## 1) GET /dashboard/overview
+## 1) Overview Endpoint
 
-Use this endpoint to return all hero metrics and stat card values in one response.
+### Request
 
-This endpoint is the single card payload the dashboard should bind to directly.
+- **Method:** `GET`
+- **Path:** `/dashboard/overview`
+- **Auth required:** Yes (Bearer token)
+- **Body:** None
+- **Query params:** None
 
-### Suggested response shape
+### Response shape
 
 ```json
 {
@@ -45,101 +51,63 @@ This endpoint is the single card payload the dashboard should bind to directly.
 }
 ```
 
-## 2) GET /dashboard/transactions?limit=10&cursor=...
+### UI mapping
 
-Use this endpoint for the Recent Transactions table rows.
+#### Hero section
 
-### Suggested response shape
+1. Total Wallet Balance -> `overview.hero.totalWalletBalance`
+2. Vouchers -> `overview.hero.voucherBalance`
+3. Autoship -> `overview.hero.autoshipBalance`
+
+#### Stat cards
+
+1. Cashout Balance -> `overview.stats.cashoutBalance`
+2. Total Earnings -> `overview.stats.totalEarnings`
+3. Total Payout -> `overview.stats.totalPayout`
+4. Product Voucher -> `overview.stats.productVoucher`
+5. Total Downlines -> `overview.stats.totalDownlines`
+6. Total CPVs -> `overview.stats.totalCpvs`
+
+### Frontend notes
+
+- Use top-level `currency` for money formatting across hero/stats.
+- Backend returns stable fields; values may be `0` when data is unavailable.
+
+---
+
+## 2) Transactions Endpoint
+
+### Request
+
+- **Method:** `GET`
+- **Path:** `/dashboard/transactions`
+- **Auth required:** Yes (Bearer token)
+- **Query params:**
+  - `limit` (optional, default `10`, min `1`, max `50`)
+  - `cursor` (optional, opaque string from previous `nextCursor`)
+
+### Response shape
 
 ```json
 {
   "items": [
     {
-      "id": "tx_001",
-      "date": "2026-04-19T11:45:00Z",
-      "description": "Wallet Funding via Bank Transfer",
+      "id": "ledger_id",
+      "date": "2026-04-19T11:45:00.000Z",
+      "description": "Wallet funding",
       "type": "Credit",
       "amount": 50000,
       "currency": "NGN",
-      "status": "Completed",
-      "category": "wallet",
-      "source": "wallet_funding",
-      "subType": "bank_transfer",
-      "reference": "PAY_12345",
-      "direction": "inflow",
-      "metadata": {
-        "channel": "bank_transfer"
-      }
+      "status": "Completed"
     }
   ],
   "nextCursor": "opaque_cursor_here"
 }
 ```
 
-### Suggested additive query params
+`nextCursor` is omitted when there is no next page.
 
-The endpoint should accept these optional params without breaking existing clients:
-
-1. `category` (`earnings` | `wallet` | `withdrawals` | `payments`) - enables tab-level filtering.
-2. `from` (ISO datetime) - lower date bound.
-3. `to` (ISO datetime) - upper date bound.
-4. `status` (`Completed` | `Pending` | `Failed`) - status filter.
-5. `type` (`Credit` | `Debit`) - direction filter.
-6. `search` (string) - server-side search against description/reference.
-
-If unsupported params are passed, backend may ignore them during rollout, but should preserve response shape.
-
-### Category mapping for tabbed Transactions page
-
-To support full visibility of earnings inflow sources (registration, product, voucher), backend should map ledger records consistently:
-
-1. `earnings`
-   - Registration commissions and bonuses
-   - Product commissions/bonuses
-   - Voucher/PV-related earnings credits
-2. `wallet`
-   - Wallet funding/top-up
-   - Wallet transfers and wallet adjustments
-3. `withdrawals`
-   - Withdrawal request, approval, payout lifecycle entries
-4. `payments`
-   - Payment processor charges, reversals, and payment-linked records
-
-`source` should carry finer-grained machine-friendly values (for example, `registration_bonus`, `product_commission`, `voucher_bonus`, `wallet_funding`, `withdrawal_payout`).
-
-### Compatibility note
-
-These fields are additive. Existing consumers that only use `id`, `date`, `description`, `type`, `amount`, `currency`, and `status` continue to work without change.
-
-## UI Mapping (Already Implemented)
-
-### Hero section
-
-1. Total Wallet Balance -> `overview.hero.totalWalletBalance`
-2. Vouchers -> `overview.hero.voucherBalance`
-3. Autoship -> `overview.hero.autoshipBalance`
-
-### Stat cards
-
-1. Cashout Balance -> `overview.stats.cashoutBalance`
-2. Total Earnings -> `overview.stats.totalEarnings`
-3. Total Payout (Total Withdrawal) -> `overview.stats.totalPayout`
-4. Product Voucher -> `overview.stats.productVoucher`
-5. Total Downlines -> `overview.stats.totalDownlines`
-6. Total CPVs -> `overview.stats.totalCpvs`
-
-No frontend recomputation is required for these card values.
-
-### Quick actions
-
-Frontend-owned (no backend mapping required):
-
-1. Create Successline -> `/network`
-2. Fund Wallet -> `/wallet`
-3. Withdraw Funds -> `/withdrawals`
-4. View Commissions -> `/commissions`
-
-### Recent Transactions table
+### UI mapping
 
 1. Date -> `transactions.items[].date`
 2. Description -> `transactions.items[].description`
@@ -147,11 +115,76 @@ Frontend-owned (no backend mapping required):
 4. Amount -> `transactions.items[].amount` + `transactions.items[].currency`
 5. Status -> `transactions.items[].status` (`Completed` | `Pending` | `Failed`)
 
-## Notes
+### Pagination flow (frontend)
 
-- Keep `currency` at the top-level of overview so frontend can format money values consistently.
-- Quick action labels/routes are handled fully by frontend and should not be returned by dashboard endpoints.
-- `totalPayout` should represent cumulative successful withdrawals only.
-- `totalDownlines` should include all downline members according to your business rule (direct only vs full tree) and remain consistent across dashboard and network pages.
-- `totalCpvs` should be aggregate CPV visible to the user (define if personal only or personal + team).
-- Suggested implementation rule: if backend cannot compute a metric yet, still return the field with `0` so response shape remains stable.
+1. First load: call `GET /dashboard/transactions?limit=10`
+2. Save `nextCursor` from response
+3. Load more: call `GET /dashboard/transactions?limit=10&cursor=<nextCursor>`
+4. Append new `items` to table
+5. Stop requesting when `nextCursor` is missing
+
+Do not parse or generate cursor value on frontend. Treat it as opaque.
+
+---
+
+## Error Handling
+
+Expected responses:
+
+- `401 Unauthorized` -> missing/invalid token
+- `403 Forbidden` -> user not registration-paid
+- `400 Bad Request` -> invalid cursor format
+
+Frontend behavior:
+
+- `401/403`: redirect to auth or show access state
+- `400` on paginated call: reset transaction list and reload first page
+
+---
+
+## Quick Actions (Frontend-owned)
+
+These are routing/UI actions and are not returned by dashboard endpoints:
+
+1. Create Successline -> `/network`
+2. Fund Wallet -> `/wallet`
+3. Withdraw Funds -> `/withdrawals`
+4. View Commissions -> `/commissions`
+
+---
+
+## Suggested FE Types
+
+```ts
+type DashboardOverview = {
+  currency: 'NGN' | 'USD';
+  hero: {
+    totalWalletBalance: number;
+    voucherBalance: number;
+    autoshipBalance: number;
+  };
+  stats: {
+    cashoutBalance: number;
+    totalEarnings: number;
+    totalPayout: number;
+    productVoucher: number;
+    totalDownlines: number;
+    totalCpvs: number;
+  };
+};
+
+type DashboardTransaction = {
+  id: string;
+  date: string;
+  description: string;
+  type: 'Credit' | 'Debit';
+  amount: number;
+  currency: 'NGN' | 'USD';
+  status: 'Completed' | 'Pending' | 'Failed';
+};
+
+type DashboardTransactionsResponse = {
+  items: DashboardTransaction[];
+  nextCursor?: string;
+};
+```
