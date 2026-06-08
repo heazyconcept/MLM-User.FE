@@ -72,9 +72,10 @@ export class PaymentService {
   initiateWalletFunding(
     amount: number,
     provider: 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT',
-    callbackUrl?: string
+    callbackUrl?: string,
+    walletType: 'CASH' | 'VOUCHER' = 'CASH'
   ): Observable<InitiateRegistrationPaymentResponse> {
-    const body: Record<string, unknown> = { amount, provider };
+    const body: Record<string, unknown> = { amount, provider, walletType };
     const isValidUrl = callbackUrl && /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(callbackUrl);
     if (isValidUrl) {
       body['callbackUrl'] = callbackUrl;

@@ -124,6 +124,12 @@ export class WalletComponent implements OnInit {
     this.router.navigate(['/payments/fund']);
   }
 
+  navigateToVoucherFunding(currency?: string) {
+    this.router.navigate(['/payments/fund'], {
+      queryParams: { walletType: 'VOUCHER', currency }
+    });
+  }
+
   navigateToMarketplace() {
     this.router.navigate(['/marketplace']);
   }
@@ -199,9 +205,10 @@ export class WalletComponent implements OnInit {
     return d ?? null;
   });
 
-  /** Open transfer dialog pre-selected to a target wallet and source currency */
+  /** Open transfer dialog pre-selected to source and target wallets and currency */
   openTransferDialog(
-    toWalletType?: 'AUTOSHIP' | 'VOUCHER' | 'REGISTRATION',
+    fromWalletType?: 'CASH' | 'REGISTRATION',
+    toWalletType?: 'VOUCHER' | 'REGISTRATION' | 'CASH',
     currency?: 'NGN' | 'USD'
   ): void {
     this.dialogService.open(WalletTransferComponent, {
@@ -210,7 +217,8 @@ export class WalletComponent implements OnInit {
       contentStyle: { 'max-height': '600px', overflow: 'auto' },
       baseZIndex: 10000,
       data: {
-        toWalletType: toWalletType ?? 'AUTOSHIP',
+        fromWalletType: fromWalletType ?? 'CASH',
+        toWalletType: toWalletType ?? 'VOUCHER',
         currency: currency ?? this.userService.currentUser()?.currency ?? 'NGN'
       }
     });

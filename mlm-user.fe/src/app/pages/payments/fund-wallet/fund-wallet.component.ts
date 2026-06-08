@@ -1,7 +1,7 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
@@ -39,9 +39,10 @@ const PROVIDER_OPTIONS_USD: { value: ProviderOption; label: string }[] = [
   templateUrl: './fund-wallet.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class FundWalletComponent {
+export class FundWalletComponent implements OnInit {
   private fb = inject(FormBuilder);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private paymentService = inject(PaymentService);
   private userService = inject(UserService);
   private modalService = inject(ModalService);
@@ -54,7 +55,8 @@ export class FundWalletComponent {
 
   fundForm = this.fb.group({
     amount: [null as number | null, [Validators.required, Validators.min(0.01)]],
-    provider: ['PAYSTACK' as ProviderOption, Validators.required]
+    provider: ['PAYSTACK' as ProviderOption, Validators.required],
+    walletType: ['CASH' as 'CASH' | 'VOUCHER', Validators.required]
   });
 
   isSubmitting = signal(false);
@@ -72,13 +74,22 @@ export class FundWalletComponent {
     });
   }
 
+  ngOnInit(): void {
+    this.route.queryParamMap.subscribe(params => {
+      const type = params.get('walletType');
+      if (type === 'VOUCHER' || type === 'CASH') {
+        this.fundForm.patchValue({ walletType: type });
+      }
+    });
+  }
+
   onSubmit(): void {
     if (this.fundForm.invalid) {
       this.fundForm.markAllAsTouched();
       return;
     }
 
-    const { amount, provider } = this.fundForm.value;
+    const { amount, provider, walletType } = this.fundForm.value;
     if (amount == null || amount < 0.01 || !provider) return;
 
     this.isSubmitting.set(true);
@@ -86,7 +97,7 @@ export class FundWalletComponent {
       ? `${window.location.origin}/auth/payment/callback`
       : undefined;
 
-    this.paymentService.initiateWalletFunding(amount, provider, callbackUrl).subscribe({
+    this.paymentService.initiateWalletFunding(amount, provider, callbackUrl, walletType ?? 'CASH').subscribe({
       next: (res) => {
         this.isSubmitting.set(false);
         const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;

@@ -1,4 +1,5 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, signal, computed, effect } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -8,13 +9,24 @@ import { DynamicDialogConfig, DynamicDialogRef, DynamicDialogModule } from 'prim
 import { WalletService, TransferRequest } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
 
-type TargetWallet = 'AUTOSHIP' | 'VOUCHER' | 'REGISTRATION';
+type SourceWallet = 'CASH' | 'REGISTRATION';
+type TargetWallet = 'VOUCHER' | 'REGISTRATION' | 'CASH';
 
-const TARGET_OPTIONS: { value: TargetWallet; label: string }[] = [
-  { value: 'AUTOSHIP', label: 'Autoship Wallet' },
-  { value: 'VOUCHER', label: 'Product Voucher Wallet' },
+const SOURCE_OPTIONS: { value: SourceWallet; label: string }[] = [
+  { value: 'CASH', label: 'Cash Wallet' },
   { value: 'REGISTRATION', label: 'Registration Wallet' }
 ];
+
+const TARGET_OPTIONS_MAP: Record<SourceWallet, { value: TargetWallet; label: string }[]> = {
+  CASH: [
+    { value: 'VOUCHER', label: 'Product Voucher Wallet' },
+    { value: 'REGISTRATION', label: 'Registration Wallet' }
+  ],
+  REGISTRATION: [
+    { value: 'VOUCHER', label: 'Product Voucher Wallet' },
+    { value: 'CASH', label: 'Cash Wallet' }
+  ]
+};
 
 @Component({
   selector: 'app-wallet-transfer',
@@ -32,12 +44,26 @@ const TARGET_OPTIONS: { value: TargetWallet; label: string }[] = [
 
       <!-- Source Wallet Info -->
       <div class="p-4 bg-green-50 rounded-xl border border-green-100">
-        <p class="text-xs font-semibold text-green-800 uppercase tracking-wide mb-1">From: Cash Wallet</p>
-        <p class="text-lg font-bold text-green-700">{{ currencySymbol() }}{{ cashBalance() | number:'1.2-2' }}</p>
+        <p class="text-xs font-semibold text-green-800 uppercase tracking-wide mb-1">From: {{ selectedSourceLabel() }}</p>
+        <p class="text-lg font-bold text-green-700">{{ currencySymbol() }}{{ sourceBalance() | number:'1.2-2' }}</p>
         <p class="text-[10px] text-green-600 mt-0.5">Available balance</p>
       </div>
 
       <form [formGroup]="transferForm" (ngSubmit)="onSubmit()" class="space-y-4">
+
+        <!-- Source Wallet Selection -->
+        <div class="flex flex-col gap-1.5">
+          <label for="source" class="text-sm font-semibold text-gray-700">Transfer from</label>
+          <p-select
+            formControlName="fromWalletType"
+            inputId="source"
+            [options]="sourceOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select source wallet"
+            styleClass="w-full">
+          </p-select>
+        </div>
 
         <!-- Target Wallet -->
         <div class="flex flex-col gap-1.5">
@@ -45,7 +71,7 @@ const TARGET_OPTIONS: { value: TargetWallet; label: string }[] = [
           <p-select
             formControlName="toWalletType"
             inputId="target"
-            [options]="targetOptions"
+            [options]="targetOptions()"
             optionLabel="label"
             optionValue="value"
             placeholder="Select target wallet"
@@ -63,7 +89,7 @@ const TARGET_OPTIONS: { value: TargetWallet; label: string }[] = [
             [currency]="currency()"
             [currencyDisplay]="'symbol'"
             [min]="1"
-            [max]="cashBalance()"
+            [max]="sourceBalance()"
             fluid="true"
             placeholder="0.00">
           </p-inputNumber>
@@ -76,7 +102,7 @@ const TARGET_OPTIONS: { value: TargetWallet; label: string }[] = [
                 Minimum amount is {{ currencySymbol() }}1.
               }
               @if (transferForm.get('amount')?.errors?.['max']) {
-                Cannot exceed your cash balance.
+                Cannot exceed selected wallet balance.
               }
             </small>
           }
@@ -91,7 +117,7 @@ const TARGET_OPTIONS: { value: TargetWallet; label: string }[] = [
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">From</span>
-              <span class="font-medium text-gray-700">Cash Wallet</span>
+              <span class="font-medium text-gray-700">{{ selectedSourceLabel() }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-gray-500">To</span>
@@ -134,47 +160,98 @@ export class WalletTransferComponent implements OnInit {
   currency = computed(() => this.transferCurrency());
   currencySymbol = computed(() => (this.transferCurrency() === 'NGN' ? '₦' : '$'));
 
-  cashBalance = computed(() => {
+  sourceOptions = SOURCE_OPTIONS;
+
+  transferForm = this.fb.group({
+    fromWalletType: ['CASH' as SourceWallet, Validators.required],
+    toWalletType: ['VOUCHER' as TargetWallet, Validators.required],
+    amount: [null as number | null, [Validators.required, Validators.min(1)]]
+  });
+
+  private fromWalletTypeValue = signal<SourceWallet>('CASH');
+  private toWalletTypeValue = signal<TargetWallet>('VOUCHER');
+
+  sourceBalance = computed(() => {
     const w = this.walletService.allWallets();
     const curr = this.transferCurrency();
     const wallet = w.find(ww => ww.currency === curr);
+    const source = this.fromWalletTypeValue();
+    if (source === 'REGISTRATION') {
+      return wallet?.registrationBalance ?? 0;
+    }
     return wallet?.cashBalance ?? 0;
   });
 
-  targetOptions = TARGET_OPTIONS;
+  targetOptions = computed(() => {
+    const source = this.fromWalletTypeValue();
+    return TARGET_OPTIONS_MAP[source] ?? [];
+  });
+
   isSubmitting = signal(false);
 
-  transferForm: FormGroup;
-
   selectedTargetLabel = computed(() => {
-    const val = this.transferForm?.get('toWalletType')?.value;
-    return TARGET_OPTIONS.find(o => o.value === val)?.label ?? '';
+    const val = this.toWalletTypeValue();
+    const source = this.fromWalletTypeValue();
+    const options = TARGET_OPTIONS_MAP[source] ?? [];
+    return options.find(o => o.value === val)?.label ?? '';
+  });
+
+  selectedSourceLabel = computed(() => {
+    const val = this.fromWalletTypeValue();
+    return SOURCE_OPTIONS.find(o => o.value === val)?.label ?? '';
   });
 
   constructor() {
-    this.transferForm = this.fb.group({
-      toWalletType: ['AUTOSHIP' as TargetWallet, Validators.required],
-      amount: [null as number | null, [Validators.required, Validators.min(1)]]
+    this.transferForm.get('fromWalletType')!.valueChanges.pipe(
+      takeUntilDestroyed()
+    ).subscribe(val => {
+      if (val) this.fromWalletTypeValue.set(val as SourceWallet);
+    });
+
+    this.transferForm.get('toWalletType')!.valueChanges.pipe(
+      takeUntilDestroyed()
+    ).subscribe(val => {
+      if (val) this.toWalletTypeValue.set(val as TargetWallet);
+    });
+
+    // Adjust target options if selected target is no longer valid for the selected source
+    effect(() => {
+      const source = this.fromWalletTypeValue();
+      const target = this.toWalletTypeValue();
+      
+      const validTargets = TARGET_OPTIONS_MAP[source] ?? [];
+      if (!validTargets.some(t => t.value === target)) {
+        this.transferForm.patchValue({ toWalletType: 'VOUCHER' as TargetWallet });
+      }
+    });
+
+    // Update validators on amount control dynamically when source balance changes
+    effect(() => {
+      const max = this.sourceBalance();
+      const amountCtrl = this.transferForm.get('amount');
+      if (amountCtrl) {
+        amountCtrl.clearValidators();
+        amountCtrl.setValidators([Validators.required, Validators.min(1), Validators.max(max)]);
+        amountCtrl.updateValueAndValidity();
+      }
     });
   }
 
   ngOnInit() {
     const data = this.config.data;
-    // Pre-select target if passed from button
+    // Pre-select source and target if passed from button
+    if (data?.fromWalletType) {
+      this.transferForm.patchValue({ fromWalletType: data.fromWalletType });
+      this.fromWalletTypeValue.set(data.fromWalletType);
+    }
     if (data?.toWalletType) {
       this.transferForm.patchValue({ toWalletType: data.toWalletType });
+      this.toWalletTypeValue.set(data.toWalletType);
     }
 
     const incomingCurrency = data?.currency;
     if (incomingCurrency === 'NGN' || incomingCurrency === 'USD') {
       this.transferCurrency.set(incomingCurrency);
-    }
-
-    // Set max validator based on cash balance
-    const max = this.cashBalance();
-    if (max > 0) {
-      this.transferForm.get('amount')?.addValidators(Validators.max(max));
-      this.transferForm.get('amount')?.updateValueAndValidity();
     }
   }
 
@@ -184,13 +261,13 @@ export class WalletTransferComponent implements OnInit {
       return;
     }
 
-    const { toWalletType, amount } = this.transferForm.value;
-    if (!toWalletType || !amount || amount <= 0) return;
+    const { fromWalletType, toWalletType, amount } = this.transferForm.value;
+    if (!fromWalletType || !toWalletType || !amount || amount <= 0) return;
 
     this.isSubmitting.set(true);
 
     const request: TransferRequest = {
-      fromWalletType: 'CASH',
+      fromWalletType,
       toWalletType,
       amount,
       currency: this.transferCurrency()

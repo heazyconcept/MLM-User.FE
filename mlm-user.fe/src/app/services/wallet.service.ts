@@ -17,8 +17,8 @@ export interface AutoshipStatus {
 }
 
 export interface TransferRequest {
-  fromWalletType: 'CASH';
-  toWalletType: 'REGISTRATION' | 'VOUCHER' | 'AUTOSHIP';
+  fromWalletType: 'CASH' | 'REGISTRATION';
+  toWalletType: 'REGISTRATION' | 'VOUCHER' | 'AUTOSHIP' | 'CASH';
   amount: number;
   currency: 'NGN' | 'USD';
 }
@@ -377,13 +377,15 @@ export class WalletService {
     return this.api.post<TransferResponse>('wallets/transfer', request).pipe(
       tap(() => {
         const sym = request.currency === 'NGN' ? '₦' : '$';
+        const sourceLabel = request.fromWalletType === 'CASH' ? 'Cash' : 'Registration';
         const targetLabel = request.toWalletType === 'AUTOSHIP' ? 'Autoship'
           : request.toWalletType === 'VOUCHER' ? 'Voucher'
-          : 'Registration';
+          : request.toWalletType === 'REGISTRATION' ? 'Registration'
+          : 'Cash';
         this.modalService.open(
           'success',
           'Transfer Successful',
-          `${sym}${request.amount.toLocaleString()} has been moved from your Cash wallet to your ${targetLabel} wallet.`,
+          `${sym}${request.amount.toLocaleString()} has been moved from your ${sourceLabel} wallet to your ${targetLabel} wallet.`,
           '/wallet'
         );
         // Refresh wallets to show updated balances
