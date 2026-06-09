@@ -49,7 +49,6 @@ export interface MerchantProfileResponse {
 }
 
 export interface UpdateMerchantProfileBody {
-  businessName?: string;
   phoneNumber?: string;
   address?: string;
   serviceAreas?: string[];
@@ -79,8 +78,9 @@ export interface AvailableMerchantProduct {
 
 export interface AvailableMerchant {
   id: string;
-  name: string;
-  businessName: string;
+  name?: string;
+  businessName?: string;
+  username?: string;
   phoneNumber: string;
   address?: string;
   serviceAreas: string[];

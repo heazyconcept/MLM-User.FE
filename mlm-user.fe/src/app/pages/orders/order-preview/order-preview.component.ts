@@ -99,7 +99,7 @@ export class OrderPreviewComponent {
         next: (merchants) => {
           const list: PickupLocation[] = merchants.map((m) => ({
             id: m.id,
-            name: m.businessName || m.name,
+            name: m.businessName || m.name || m.username || 'Unnamed Merchant',
             address: m.address || undefined,
             phoneNumber: m.phoneNumber || undefined,
             pickupAvailable: m.pickupAvailable,

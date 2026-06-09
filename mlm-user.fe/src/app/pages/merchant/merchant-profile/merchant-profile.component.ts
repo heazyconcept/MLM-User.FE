@@ -31,7 +31,6 @@ export class MerchantProfileComponent implements OnInit {
   error = this.merchantService.error;
 
   // Form Signals
-  businessName = signal('');
   phoneNumber = signal('');
   address = signal('');
   
@@ -54,7 +53,6 @@ export class MerchantProfileComponent implements OnInit {
     effect(() => {
       const p = this.profile();
       if (p && !p.message) {
-        this.businessName.set(p.businessName || '');
         this.phoneNumber.set(p.phoneNumber || '');
         this.address.set(p.address || '');
         this.selectedStates.set(p.serviceAreas || []);
@@ -86,17 +84,15 @@ export class MerchantProfileComponent implements OnInit {
   // Handle Form Submission
   onSubmit(): void {
     this.successMessage.set('');
-    const name = this.businessName().trim();
     const phone = this.phoneNumber().trim();
     const addr = this.address().trim();
     const areas = this.selectedStates();
 
-    if (!name || !phone || !addr || areas.length === 0) {
+    if (!phone || !addr || areas.length === 0) {
       return;
     }
 
     this.merchantService.updateProfile({
-      businessName: name,
       phoneNumber: phone,
       address: addr,
       serviceAreas: areas
@@ -113,7 +109,6 @@ export class MerchantProfileComponent implements OnInit {
   onReset(): void {
     const p = this.profile();
     if (p) {
-      this.businessName.set(p.businessName || '');
       this.phoneNumber.set(p.phoneNumber || '');
       this.address.set(p.address || '');
       this.selectedStates.set(p.serviceAreas || []);
