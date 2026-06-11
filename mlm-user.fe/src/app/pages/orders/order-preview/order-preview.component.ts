@@ -16,6 +16,7 @@ import {
   PickupLocation,
 } from '../../../components/location-selector/location-selector.component';
 import { NIGERIAN_STATES } from '../../../core/constants/states.constants';
+import { getDeliveryFee } from '../../../core/constants/delivery.constants';
 
 @Component({
   selector: 'app-order-preview',
@@ -35,6 +36,7 @@ export class OrderPreviewComponent {
   selectedPickupId = signal<string | null>(null);
   selectedState = signal<string>('');
   deliveryAddress = signal<string>('');
+  deliveryState = signal<string>('');
 
   readonly nigerianStates = NIGERIAN_STATES;
 
@@ -46,6 +48,12 @@ export class OrderPreviewComponent {
   hasSelectablePickup = computed(() =>
     this.pickupLocations().some((l) => l.pickupAvailable),
   );
+
+  deliveryFee = computed(() => {
+    const state = this.deliveryState();
+    if (!state || this.fulfilmentOption() !== 'delivery') return 0;
+    return getDeliveryFee(state);
+  });
 
   emptyPickupMessage = computed(() => {
     if (!this.selectedState() || this.pickupLocations().length > 0) return null;
@@ -66,6 +74,8 @@ export class OrderPreviewComponent {
       this.selectedPickupId.set(null);
       this.selectedState.set('');
       this.pickupLocations.set([]);
+    } else {
+      this.deliveryState.set('');
     }
   }
 
@@ -137,12 +147,20 @@ export class OrderPreviewComponent {
     this.deliveryAddress.set(value);
   }
 
+  onDeliveryStateChange(state: string): void {
+    this.deliveryState.set(state);
+  }
+
+  formatCurrency(amount: number): string {
+    return `₦${amount.toLocaleString('en-US')}`;
+  }
+
   canConfirm(): boolean {
     if (this.submitting()) return false;
     if (this.fulfilmentOption() === 'pickup') {
       return !!this.selectedState() && !!this.selectedPickupLocation()?.pickupAvailable;
     }
-    return this.deliveryAddress().trim().length > 0;
+    return this.deliveryAddress().trim().length > 0 && !!this.deliveryState();
   }
 
   confirmButtonLabel(): string {
@@ -156,6 +174,7 @@ export class OrderPreviewComponent {
       if (!this.selectedPickupId()) return 'Select a pickup merchant';
       return 'Confirm Order';
     }
+    if (!this.deliveryState()) return 'Select a state';
     if (!this.deliveryAddress().trim()) return 'Enter delivery address';
     return 'Confirm Order';
   }
@@ -166,6 +185,8 @@ export class OrderPreviewComponent {
       fulfilmentOption: this.fulfilmentOption(),
       selectedPickupId: this.selectedPickupId(),
       deliveryAddress: this.deliveryAddress(),
+      deliveryState: this.deliveryState(),
+      deliveryFee: this.deliveryFee(),
     });
   }
 }

@@ -171,6 +171,10 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
         fulfilmentDetails.fulfilmentOption === 'delivery'
           ? fulfilmentDetails.deliveryAddress
           : undefined,
+      deliveryFee:
+        fulfilmentDetails.fulfilmentOption === 'delivery'
+          ? fulfilmentDetails.deliveryFee
+          : undefined,
       deliveryDisclaimerAccepted: true,
     };
 

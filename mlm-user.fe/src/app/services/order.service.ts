@@ -191,6 +191,7 @@ export class OrderService {
       status: this.mapStatus(o.status),
       paymentMethod: o.paymentMethod || 'Cash',
       deliveryAddress: o.deliveryAddress || undefined,
+      deliveryFee: o.deliveryFee != null ? Number(o.deliveryFee) : undefined,
       pickupLocationName: o.selectedMerchantId ? 'Merchant Center' : undefined,
     };
   }
