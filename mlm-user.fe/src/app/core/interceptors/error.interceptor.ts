@@ -97,7 +97,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       // Skip modal for validation endpoints - errors there are expected and handled by components
-      const validationPaths = ['referrals/validate', 'referrals/validate-placement'];
+      const validationPaths = ['referrals/validate', 'referrals/validate-placement', 'auth/register'];
       if (validationPaths.some(path => req.url.includes(path))) {
         return throwError(() => error);
       }

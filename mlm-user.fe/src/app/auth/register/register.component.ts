@@ -318,7 +318,16 @@ export class RegisterComponent implements OnInit {
           if (typeof ngDevMode !== 'undefined' && ngDevMode) {
             console.error('Registration failed', err);
           }
-          this.modalService.open('error', 'Registration Failed', 'Registration failed. Please try again.');
+          const raw = err?.error?.message;
+          let msg = 'Registration failed. Please try again.';
+          if (Array.isArray(raw)) {
+            msg = raw.filter((item: unknown) => typeof item === 'string' && item.trim().length > 0).join(' ');
+          } else if (typeof raw === 'string' && raw.trim()) {
+            msg = raw;
+          } else if (err?.error?.error && typeof err.error.error === 'string') {
+            msg = err.error.error;
+          }
+          this.modalService.open('error', 'Registration Failed', msg);
         }
       });
     } else {
