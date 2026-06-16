@@ -81,10 +81,12 @@ export class ResetPasswordComponent implements OnInit {
           if (typeof ngDevMode !== 'undefined' && ngDevMode) {
             console.error('Reset password failed', err);
           }
+          const raw = err?.error?.message;
+          const msg = Array.isArray(raw) ? raw.join(' ') : (raw ?? 'Failed to reset password. The link may have expired.');
           this.modalService.open(
             'error',
             'Reset Failed',
-            'Failed to reset password. The link may have expired.',
+            msg,
           );
         },
       });

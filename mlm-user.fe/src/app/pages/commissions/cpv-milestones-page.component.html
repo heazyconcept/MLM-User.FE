@@ -1,0 +1,273 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 w-full max-w-7xl mx-auto">
+
+      <!-- ─── Header ──────────────────────────────── -->
+      <div class="mb-8">
+        <h1 class="text-xl font-medium text-mlm-text tracking-tight">CPV Milestones & Awards</h1>
+        <p class="mt-1 text-sm text-mlm-secondary">Track your Cumulative Point Values (CPV) and unlock cash and material awards.</p>
+      </div>
+
+      <!-- ─── Unpaid Gate ──────────────────────────── -->
+      @if (!userService.isPaid()) {
+        <div class="mt-8 border border-mlm-secondary/15 rounded-xl bg-white px-5 py-12 text-center shadow-sm max-w-md mx-auto">
+          <div class="inline-flex p-4 rounded-full bg-amber-50 border border-amber-100 text-amber-500 mb-4 shadow-sm pulse">
+            <i class="pi pi-lock text-3xl"></i>
+          </div>
+          <h2 class="text-sm font-semibold text-mlm-text mb-1">Track Milestones & Awards</h2>
+          <p class="text-xs text-mlm-secondary mb-5 max-w-xs mx-auto">Complete your registration payment to activate your account and start earning points.</p>
+          <a
+            routerLink="/dashboard/registration-payment"
+            class="inline-flex px-4 py-2 text-sm font-medium text-white bg-mlm-primary rounded-lg hover:bg-mlm-primary/90 transition-colors cursor-pointer"
+          >
+            Complete registration
+          </a>
+        </div>
+
+      } @else if (error()) {
+        <div class="mt-8 px-4 py-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm flex items-center gap-3">
+          <i class="pi pi-exclamation-circle text-lg shrink-0"></i>
+          <span>{{ error() }}</span>
+        </div>
+
+      } @else if (isLoading()) {
+        <div class="mt-8 space-y-6">
+          <p-skeleton width="100%" height="100px" borderRadius="12px"></p-skeleton>
+          <p-skeleton width="100%" height="80px" borderRadius="12px"></p-skeleton>
+          <p-skeleton width="100%" height="200px" borderRadius="12px"></p-skeleton>
+        </div>
+
+      } @else {
+      <div class="mt-8 space-y-8 animate-fade-in">
+
+        <!-- ─── Next Milestone Progress ────────────── -->
+        <div class="border border-mlm-secondary/15 rounded-xl bg-white px-5 py-5 shadow-sm">
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium block mb-1">Active Milestone Target</span>
+              <span class="text-sm font-semibold text-mlm-text">
+                {{ cpvSummary().nextMilestoneReward || '—' }}
+              </span>
+            </div>
+            <div class="text-right shrink-0 ml-4">
+              <span class="text-2xl font-semibold text-mlm-text tabular-nums leading-none">
+                {{ getMilestoneProgress() | number:'1.0-0' }}%
+              </span>
+              <p class="text-[11px] text-mlm-secondary mt-0.5">
+                {{ (cpvSummary().nextMilestoneCpv - cpvSummary().totalCpv) | number }} pts to go
+              </p>
+            </div>
+          </div>
+
+          <div class="h-[6px] w-full bg-mlm-secondary/10 rounded-full overflow-hidden mb-2">
+            <div
+              class="h-full bg-mlm-primary rounded-full transition-all duration-700 ease-out"
+              [style.width.%]="getMilestoneProgress()"
+            ></div>
+          </div>
+
+          <div class="flex justify-between text-[11px] text-mlm-secondary mt-2">
+            <span class="tabular-nums">Current: {{ cpvSummary().totalCpv | number }} CPV</span>
+            <span class="tabular-nums">Target: {{ cpvSummary().nextMilestoneCpv | number }} CPV</span>
+          </div>
+        </div>
+
+        <!-- ─── Milestones Table / Card List ─────────────────────── -->
+        <div class="border border-mlm-secondary/15 rounded-xl bg-white shadow-sm overflow-hidden">
+          <div class="px-5 py-4 bg-white border-b border-mlm-secondary/15 flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-semibold text-mlm-text uppercase tracking-wider">Milestone Rewards Config</h2>
+              <p class="text-xs text-mlm-secondary mt-0.5">View cash and material awards configured by the admin.</p>
+            </div>
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+              <i class="pi pi-check-circle text-[10px]"></i>
+              {{ getAchievedCount() }} / {{ milestones().length }} Unlocked
+            </span>
+          </div>
+
+          @if (milestones().length === 0) {
+            <div class="px-5 py-12 text-center bg-white">
+              <div class="inline-flex p-3 rounded-full bg-slate-50 border border-slate-100 text-slate-400 mb-3 shadow-inner">
+                <i class="pi pi-gift text-2xl"></i>
+              </div>
+              <p class="text-sm font-semibold text-mlm-text mb-1">No milestones configured</p>
+              <p class="text-xs text-mlm-secondary">Wait for the admin rules to load or complete your activity.</p>
+            </div>
+          } @else {
+            <!-- Desktop Table view -->
+            <div class="hidden md:block overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-mlm-background border-b border-mlm-secondary/15">
+                    <th class="px-6 py-3.5 text-xs font-semibold text-mlm-secondary uppercase tracking-wider w-16 text-center">S/N</th>
+                    <th class="px-6 py-3.5 text-xs font-semibold text-mlm-secondary uppercase tracking-wider">Milestone Target</th>
+                    <th class="px-6 py-3.5 text-xs font-semibold text-mlm-secondary uppercase tracking-wider">Cash Award</th>
+                    <th class="px-6 py-3.5 text-xs font-semibold text-mlm-secondary uppercase tracking-wider">Material Award</th>
+                    <th class="px-6 py-3.5 text-xs font-semibold text-mlm-secondary uppercase tracking-wider w-40 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-mlm-secondary/15">
+                  @for (m of milestones(); track m.id; let idx = $index) {
+                    <tr class="hover:bg-slate-50/50 transition-colors group"
+                        [class.bg-mlm-primary\/5]="isNextMilestone(m)"
+                        [class.opacity-50]="isMilestoneLocked(m)">
+                      
+                      <!-- S/N -->
+                      <td class="px-6 py-4.5 text-center text-xs font-medium text-mlm-secondary tabular-nums">
+                        {{ idx + 1 }}
+                      </td>
+                      
+                      <!-- Milestone Target -->
+                      <td class="px-6 py-4.5">
+                        <div class="flex flex-col">
+                          <span class="text-sm font-semibold text-mlm-text group-hover:text-black transition-colors">
+                            {{ m.name }}
+                          </span>
+                          <span class="text-xs text-mlm-secondary mt-0.5 tabular-nums">
+                            {{ m.cpvRequired | number }} CPV required
+                          </span>
+                        </div>
+                      </td>
+                      
+                      <!-- Cash Award -->
+                      <td class="px-6 py-4.5">
+                        <div class="flex items-center gap-2">
+                          <i class="pi pi-wallet text-emerald-500 text-xs"></i>
+                          <span class="text-sm font-bold text-emerald-600 tabular-nums">
+                            {{ getCashRewardLabel(m.rewardAmount) }}
+                          </span>
+                        </div>
+                      </td>
+                      
+                      <!-- Material Award -->
+                      <td class="px-6 py-4.5">
+                        <div class="flex items-center gap-2">
+                          <i class="pi pi-box text-blue-500 text-xs" [class.opacity-25]="!getMaterialRewardLabel(m.materialReward) || getMaterialRewardLabel(m.materialReward) === '—'"></i>
+                          <span class="text-sm font-medium text-mlm-secondary">
+                            {{ getMaterialRewardLabel(m.materialReward) }}
+                          </span>
+                        </div>
+                      </td>
+                      
+                      <!-- Status -->
+                      <td class="px-6 py-4.5 text-center">
+                        <div class="flex items-center justify-center">
+                          @if (m.achieved) {
+                            <div class="inline-flex flex-col items-center">
+                              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100/60 shadow-sm">
+                                <i class="pi pi-check text-[10px] font-bold"></i>
+                                Achieved
+                              </span>
+                              @if (m.achievedDate) {
+                                <span class="text-[10px] text-mlm-secondary mt-1 tabular-nums">
+                                  {{ m.achievedDate | date:'MMM d, yyyy' }}
+                                </span>
+                              }
+                            </div>
+                          } @else if (isNextMilestone(m)) {
+                            <div class="inline-flex flex-col items-center w-full">
+                              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-mlm-primary/10 text-mlm-primary border border-mlm-primary/20 shadow-sm relative overflow-hidden">
+                                <span class="w-1.5 h-1.5 rounded-full bg-mlm-primary pulse"></span>
+                                In Progress
+                              </span>
+                            </div>
+                          } @else {
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-400 border border-slate-200/40">
+                              <i class="pi pi-lock text-[10px]"></i>
+                              Locked
+                            </span>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Mobile Card View -->
+            <div class="md:hidden divide-y divide-mlm-secondary/15">
+              @for (m of milestones(); track m.id; let idx = $index) {
+                <div class="p-5 bg-white relative flex flex-col gap-4"
+                     [class.bg-mlm-primary\/5]="isNextMilestone(m)"
+                     [class.opacity-50]="isMilestoneLocked(m)">
+                  
+                  <!-- Card Header -->
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-bold text-mlm-secondary tabular-nums">#{{ idx + 1 }}</span>
+                      <h3 class="text-sm font-bold text-mlm-text">{{ m.name }}</h3>
+                    </div>
+                    
+                    <div>
+                      @if (m.achieved) {
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100/60 shadow-sm">
+                          <i class="pi pi-check text-[10px] font-bold"></i>
+                          Achieved
+                        </span>
+                      } @else if (isNextMilestone(m)) {
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-mlm-primary/10 text-mlm-primary border border-mlm-primary/20 shadow-sm">
+                          <span class="w-1.5 h-1.5 rounded-full bg-mlm-primary pulse"></span>
+                          In Progress
+                        </span>
+                      } @else {
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-400 border border-slate-200/40">
+                          <i class="pi pi-lock text-[10px]"></i>
+                          Locked
+                        </span>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Milestone Info Grid -->
+                  <div class="grid grid-cols-2 gap-4 bg-mlm-background border border-mlm-secondary/15 rounded-xl p-3 text-xs">
+                    <div>
+                      <span class="text-mlm-secondary block font-semibold">Cash Award</span>
+                      <span class="text-emerald-600 font-bold mt-1 block tabular-nums">
+                        {{ getCashRewardLabel(m.rewardAmount) }}
+                      </span>
+                    </div>
+                    <div>
+                      <span class="text-mlm-secondary block font-semibold">Material Award</span>
+                      <span class="text-mlm-text font-bold mt-1 block">
+                        {{ getMaterialRewardLabel(m.materialReward) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Progress Bar and Details -->
+                  @if (isNextMilestone(m)) {
+                    <div class="flex flex-col gap-1.5">
+                      <div class="flex justify-between text-[11px] font-bold text-mlm-secondary">
+                        <span>Segment Progress</span>
+                        <span class="tabular-nums text-mlm-primary">{{ getMilestoneProgress() | number:'1.0-0' }}%</span>
+                      </div>
+                      <div class="h-1.5 w-full bg-mlm-secondary/10 rounded-full overflow-hidden">
+                        <div class="h-full bg-mlm-primary rounded-full transition-all duration-500"
+                             [style.width.%]="getMilestoneProgress()"></div>
+                      </div>
+                      <span class="text-[10px] text-mlm-secondary text-center tabular-nums">
+                        {{ (m.cpvRequired - cpvSummary().totalCpv) | number }} CPV to go
+                      </span>
+                    </div>
+                  } @else if (m.achieved && m.achievedDate) {
+                    <span class="text-[10px] text-mlm-secondary self-end tabular-nums">
+                      Unlocked on {{ m.achievedDate | date:'MMM d, yyyy' }}
+                    </span>
+                  } @else {
+                    <span class="text-[10px] text-mlm-secondary tabular-nums">
+                      Requires {{ m.cpvRequired | number }} CPV to unlock.
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+      </div>
+      }
+
+    </div>
+  </main>
+</div>

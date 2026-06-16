@@ -367,6 +367,290 @@
             </form>
           </div>
         </div>
+
+        <!-- Transaction PIN Section -->
+        <div class="mt-8 grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
+          <div class="px-4 sm:px-0">
+            <div class="flex items-center gap-2">
+              <h2 class="text-base font-semibold text-mlm-text">Transaction PIN</h2>
+              @if (hasPin()) {
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-semibold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                  Configured
+                </span>
+              } @else {
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  Not Set
+                </span>
+              }
+            </div>
+            <p class="mt-1 text-sm text-mlm-secondary">Your 4-digit PIN is required to authorize withdrawals and other secure operations.</p>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm md:col-span-2 p-6 sm:p-8">
+            <!-- IDLE state -->
+            @if (pinFormState() === 'IDLE') {
+              @if (hasPin()) {
+                <div class="flex gap-3">
+                  <p-button
+                    label="Change PIN"
+                    type="button"
+                    (onClick)="showChangePin()">
+                  </p-button>
+                  <p-button
+                    label="Forgot PIN"
+                    type="button"
+                    [outlined]="true"
+                    (onClick)="showResetPin()">
+                  </p-button>
+                </div>
+              } @else {
+                <div class="space-y-4">
+                  <div class="flex items-start gap-3 p-4 bg-amber-50/50 rounded-xl border border-amber-100/50">
+                    <i class="pi pi-info-circle text-amber-500 mt-0.5"></i>
+                    <p class="text-xs text-amber-700 leading-relaxed">
+                      You haven't set a transaction PIN yet. Set one up to authorize withdrawals and other secure operations.
+                    </p>
+                  </div>
+                  <p-button
+                    label="Set Transaction PIN"
+                    type="button"
+                    (onClick)="showSetupPin()">
+                  </p-button>
+                </div>
+              }
+            }
+
+            <!-- CHANGE PIN form -->
+            @if (pinFormState() === 'CHANGE') {
+              <form [formGroup]="changePinForm" (ngSubmit)="submitChangePin()" class="space-y-4">
+                <div>
+                  <label for="profile-pin-old" class="block text-sm font-semibold text-mlm-text mb-2">Current PIN</label>
+                  <input
+                    id="profile-pin-old"
+                    type="password"
+                    pInputText
+                    formControlName="oldPin"
+                    maxlength="4"
+                    placeholder="••••"
+                    class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
+                    [class.ng-invalid]="changePinForm.get('oldPin')?.invalid && changePinForm.get('oldPin')?.touched">
+                  @if (changePinForm.get('oldPin')?.invalid && changePinForm.get('oldPin')?.touched) {
+                    <p class="text-xs font-medium text-red-500 mt-1">
+                      @if (changePinForm.get('oldPin')?.errors?.['required']) { Current PIN is required. }
+                      @else { Must be exactly 4 digits. }
+                    </p>
+                  }
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label for="profile-pin-new" class="block text-sm font-semibold text-mlm-text mb-2">New PIN</label>
+                    <input
+                      id="profile-pin-new"
+                      type="password"
+                      pInputText
+                      formControlName="newPin"
+                      maxlength="4"
+                      placeholder="••••"
+                      class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
+                      [class.ng-invalid]="changePinForm.get('newPin')?.invalid && changePinForm.get('newPin')?.touched">
+                    @if (changePinForm.get('newPin')?.invalid && changePinForm.get('newPin')?.touched) {
+                      <p class="text-xs font-medium text-red-500 mt-1">Must be 4 digits.</p>
+                    }
+                  </div>
+                  <div>
+                    <label for="profile-pin-confirm" class="block text-sm font-semibold text-mlm-text mb-2">Confirm New PIN</label>
+                    <input
+                      id="profile-pin-confirm"
+                      type="password"
+                      pInputText
+                      formControlName="confirmNewPin"
+                      maxlength="4"
+                      placeholder="••••"
+                      class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
+                      [class.ng-invalid]="changePinForm.hasError('pinMismatch') && changePinForm.get('confirmNewPin')?.touched">
+                    @if (changePinForm.hasError('pinMismatch') && changePinForm.get('confirmNewPin')?.touched) {
+                      <p class="text-xs font-medium text-red-500 mt-1">PINs do not match.</p>
+                    }
+                  </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                  <p-button
+                    label="Update PIN"
+                    type="submit"
+                    [loading]="isPinSaving()"
+                    [disabled]="changePinForm.invalid || isPinSaving()">
+                  </p-button>
+                  <p-button
+                    label="Cancel"
+                    type="button"
+                    [outlined]="true"
+                    (onClick)="cancelPinAction()"
+                    [disabled]="isPinSaving()">
+                  </p-button>
+                </div>
+              </form>
+            }
+
+            <!-- RESET REQUEST (send OTP) -->
+            @if (pinFormState() === 'RESET_REQUEST') {
+              <div class="space-y-4">
+                <div class="flex items-start gap-3 p-4 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                  <i class="pi pi-envelope text-blue-500 mt-0.5"></i>
+                  <div>
+                    <p class="text-sm font-semibold text-mlm-text mb-1">Reset via Email OTP</p>
+                    <p class="text-xs text-mlm-secondary leading-relaxed">
+                      We'll send a one-time verification code to your registered email. Use it to set a new transaction PIN.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex gap-3">
+                  <p-button
+                    label="Send Reset Code"
+                    type="button"
+                    (onClick)="requestPinResetOtp()"
+                    [loading]="isPinSaving()"
+                    [disabled]="isPinSaving()">
+                  </p-button>
+                  <p-button
+                    label="Cancel"
+                    type="button"
+                    [outlined]="true"
+                    (onClick)="cancelPinAction()"
+                    [disabled]="isPinSaving()">
+                  </p-button>
+                </div>
+              </div>
+            }
+
+            <!-- RESET form (OTP + new PIN) -->
+            @if (pinFormState() === 'RESET') {
+              <form [formGroup]="resetPinForm" (ngSubmit)="submitResetPin()" class="space-y-4">
+                <div>
+                  <label for="profile-reset-otp" class="block text-sm font-semibold text-mlm-text mb-2">Verification Code (OTP)</label>
+                  <input
+                    id="profile-reset-otp"
+                    type="text"
+                    pInputText
+                    formControlName="otp"
+                    placeholder="Enter code from email"
+                    class="w-full"
+                    [class.ng-invalid]="resetPinForm.get('otp')?.invalid && resetPinForm.get('otp')?.touched">
+                  @if (resetPinForm.get('otp')?.invalid && resetPinForm.get('otp')?.touched) {
+                    <p class="text-xs font-medium text-red-500 mt-1">Verification code is required.</p>
+                  }
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label for="profile-reset-new-pin" class="block text-sm font-semibold text-mlm-text mb-2">New PIN</label>
+                    <input
+                      id="profile-reset-new-pin"
+                      type="password"
+                      pInputText
+                      formControlName="newPin"
+                      maxlength="4"
+                      placeholder="••••"
+                      class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
+                      [class.ng-invalid]="resetPinForm.get('newPin')?.invalid && resetPinForm.get('newPin')?.touched">
+                    @if (resetPinForm.get('newPin')?.invalid && resetPinForm.get('newPin')?.touched) {
+                      <p class="text-xs font-medium text-red-500 mt-1">Must be 4 digits.</p>
+                    }
+                  </div>
+                  <div>
+                    <label for="profile-reset-confirm-pin" class="block text-sm font-semibold text-mlm-text mb-2">Confirm PIN</label>
+                    <input
+                      id="profile-reset-confirm-pin"
+                      type="password"
+                      pInputText
+                      formControlName="confirmNewPin"
+                      maxlength="4"
+                      placeholder="••••"
+                      class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
+                      [class.ng-invalid]="resetPinForm.hasError('pinMismatch') && resetPinForm.get('confirmNewPin')?.touched">
+                    @if (resetPinForm.hasError('pinMismatch') && resetPinForm.get('confirmNewPin')?.touched) {
+                      <p class="text-xs font-medium text-red-500 mt-1">PINs do not match.</p>
+                    }
+                  </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                  <p-button
+                    label="Reset PIN"
+                    type="submit"
+                    [loading]="isPinSaving()"
+                    [disabled]="resetPinForm.invalid || isPinSaving()">
+                  </p-button>
+                  <p-button
+                    label="Cancel"
+                    type="button"
+                    [outlined]="true"
+                    (onClick)="cancelPinAction()"
+                    [disabled]="isPinSaving()">
+                  </p-button>
+                </div>
+              </form>
+            }
+
+            <!-- SETUP PIN form -->
+            @if (pinFormState() === 'SETUP') {
+              <form [formGroup]="setupPinForm" (ngSubmit)="submitSetupPin()" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label for="profile-setup-pin" class="block text-sm font-semibold text-mlm-text mb-2">New PIN</label>
+                    <input
+                      id="profile-setup-pin"
+                      type="password"
+                      pInputText
+                      formControlName="pin"
+                      maxlength="4"
+                      placeholder="••••"
+                      class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
+                      [class.ng-invalid]="setupPinForm.get('pin')?.invalid && setupPinForm.get('pin')?.touched">
+                    @if (setupPinForm.get('pin')?.invalid && setupPinForm.get('pin')?.touched) {
+                      <p class="text-xs font-medium text-red-500 mt-1">Must be exactly 4 digits.</p>
+                    }
+                  </div>
+                  <div>
+                    <label for="profile-setup-confirm-pin" class="block text-sm font-semibold text-mlm-text mb-2">Confirm PIN</label>
+                    <input
+                      id="profile-setup-confirm-pin"
+                      type="password"
+                      pInputText
+                      formControlName="confirmPin"
+                      maxlength="4"
+                      placeholder="••••"
+                      class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
+                      [class.ng-invalid]="setupPinForm.hasError('pinMismatch') && setupPinForm.get('confirmPin')?.touched">
+                    @if (setupPinForm.hasError('pinMismatch') && setupPinForm.get('confirmPin')?.touched) {
+                      <p class="text-xs font-medium text-red-500 mt-1">PINs do not match.</p>
+                    }
+                  </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                  <p-button
+                    label="Set PIN"
+                    type="submit"
+                    [loading]="isPinSaving()"
+                    [disabled]="setupPinForm.invalid || isPinSaving()">
+                  </p-button>
+                  <p-button
+                    label="Cancel"
+                    type="button"
+                    [outlined]="true"
+                    (onClick)="cancelPinAction()"
+                    [disabled]="isPinSaving()">
+                  </p-button>
+                </div>
+              </form>
+            }
+          </div>
+        </div>
       }
     </div>
   </main>

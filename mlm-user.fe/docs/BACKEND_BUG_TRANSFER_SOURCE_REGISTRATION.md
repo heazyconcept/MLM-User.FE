@@ -14,9 +14,7 @@ To support the requirement where users can transfer funds from their registratio
 ```json
 {
   "statusCode": 400,
-  "message": [
-    "Transfers can only be made from CASH (withdrawal) wallet"
-  ],
+  "message": ["Transfers can only be made from CASH (withdrawal) wallet"],
   "error": "Bad Request",
   "timestamp": "2026-06-08T08:56:51.183Z",
   "path": "/wallets/transfer"
@@ -36,8 +34,8 @@ To support the requirement where users can transfer funds from their registratio
 
 ## API Request Context
 
-* **Endpoint**: `POST https://api.segulah.ng/wallets/transfer`
-* **Request Payload Example**:
+- **Endpoint**: `POST https://api.segulah.ng/wallets/transfer`
+- **Request Payload Example**:
   ```json
   {
     "fromWalletType": "REGISTRATION",
@@ -54,7 +52,7 @@ The frontend has been fully integrated to allow dynamic selection of both source
 ## Backend Changes Requested
 
 1. Update the transfer validation logic in the backend `wallets/transfer` service to allow `fromWalletType` to be either `CASH` or `REGISTRATION`.
-2. Ensure that transferring *from* `REGISTRATION` correctly debits the registration wallet balance and credits the specified destination wallet balance (`VOUCHER` or `CASH`).
+2. Ensure that transferring _from_ `REGISTRATION` correctly debits the registration wallet balance and credits the specified destination wallet balance (`VOUCHER` or `CASH`).
 3. Ensure transfer ledger logs are recorded accurately for the registration-sourced transfer transactions.
 
 ## Expected Behavior

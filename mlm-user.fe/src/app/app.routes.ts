@@ -301,6 +301,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'cpv-milestones',
+        loadComponent: () =>
+          import('./pages/commissions/cpv-milestones-page.component').then(
+            (m) => m.CpvMilestonesPageComponent,
+          ),
+      },
+      {
         path: 'level-table',
         loadComponent: () =>
           import('./pages/commissions/level-commission-table.component').then(

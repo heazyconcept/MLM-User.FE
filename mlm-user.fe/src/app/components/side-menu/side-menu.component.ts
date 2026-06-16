@@ -218,6 +218,12 @@ export class SideMenuComponent implements OnInit {
             ],
           },
           {
+            label: 'CPV Milestones',
+            icon: 'pi pi-flag',
+            route: '/commissions/cpv-milestones',
+            requiresPayment: true,
+          },
+          {
             label: 'Transactions',
             icon: 'pi pi-arrow-right-arrow-left',
             route: '/transactions',
