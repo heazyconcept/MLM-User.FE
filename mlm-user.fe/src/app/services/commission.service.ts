@@ -1,5 +1,6 @@
 import { Injectable, inject, computed } from '@angular/core';
 import { EarningsService, StageBonusDto } from './earnings.service';
+import { SettingsService } from './settings.service';
 
 export type CommissionStatus = 'Pending' | 'Approved' | 'Locked';
 export type CommissionType =
@@ -90,6 +91,7 @@ export interface CpvSummary {
 })
 export class CommissionService {
   private earningsService = inject(EarningsService);
+  private settingsService = inject(SettingsService);
 
   private mapToCommissionEntry = (e: { id: string; date: string; type: string; source: string; sourceDescription?: string; earningType?: string; amount: number; currency: 'NGN' | 'USD'; status: string }): CommissionEntry => ({
     id: e.id,
@@ -306,9 +308,10 @@ export class CommissionService {
   getCpvSummary() {
     return computed<CpvSummary>(() => {
       const cpv = this.earningsService.cpvSummary();
-      const totalCpv = cpv.personalCpv + cpv.teamCpv;
+      const milestonesList = this.getMilestones()();
+      const totalCpv = cpv.totalCpv;
       // Find the next unachieved milestone
-      const nextMilestone = cpv.milestones.find((m) => !m.achieved);
+      const nextMilestone = milestonesList.find((m) => !m.achieved);
       return {
         totalCpv,
         personalCpv: cpv.personalCpv,
@@ -316,7 +319,7 @@ export class CommissionService {
         currentStage: cpv.currentStage,
         totalStages: cpv.totalStages,
         cpvCashBonus: cpv.cpvCashBonus,
-        nextMilestoneCpv: nextMilestone?.cpvRequired ?? (cpv.requiredCpv || 1),
+        nextMilestoneCpv: nextMilestone?.cpvRequired ?? (cpv.requiredCpv || 40),
         nextMilestoneReward: nextMilestone
           ? `${nextMilestone.name} — ${nextMilestone.reward}`
           : (cpv.nextMilestoneName || (cpv.requiredCpv ? `Next milestone at ${cpv.requiredCpv} CPV` : '—'))
@@ -327,6 +330,52 @@ export class CommissionService {
   getMilestones() {
     return computed<MilestoneInfo[]>(() => {
       const cpv = this.earningsService.cpvSummary();
+      const rules = this.settingsService.cpvMilestoneRules();
+      
+      const activeRules = rules.filter(r => r.isActive !== false).sort((a, b) => a.threshold - b.threshold);
+      
+      if (activeRules.length > 0) {
+        return activeRules.map((rule, i) => {
+          const userM = cpv.milestones.find((m) => m.cpvRequired === rule.threshold || m.name === rule.name);
+          const achieved = userM ? userM.achieved : (cpv.totalCpv >= rule.threshold);
+          const achievedDate = userM?.achievedDate;
+          
+          let progressPercent = 0;
+          if (achieved) {
+            progressPercent = 100;
+          } else {
+            const prevThreshold = i > 0 ? activeRules[i - 1].threshold : 0;
+            if (cpv.totalCpv > prevThreshold) {
+              const segmentTotal = rule.threshold - prevThreshold;
+              const segmentUser = cpv.totalCpv - prevThreshold;
+              progressPercent = Math.min(100, Math.max(0, (segmentUser / segmentTotal) * 100));
+            } else {
+              progressPercent = 0;
+            }
+          }
+
+          const name = rule.name || `${rule.threshold} CPVs`;
+          const rewardAmount = rule.rewardAmount;
+          const materialReward = rule.materialDescription;
+          const reward = rule.reward || (rewardAmount ? `$${rewardAmount}` : '—');
+          
+          return {
+            id: rule.id || `m-${i}`,
+            name,
+            description: achieved
+              ? `Achieved — ${reward}`
+              : `Reach ${rule.threshold} CPV to unlock ${reward}`,
+            cpvRequired: rule.threshold,
+            reward,
+            rewardAmount,
+            materialReward,
+            achieved,
+            achievedDate,
+            progressPercent
+          };
+        });
+      }
+      
       if (cpv.milestones.length > 0) {
         return cpv.milestones.map((m, i) => ({
           id: `m-${i}`,
@@ -343,7 +392,6 @@ export class CommissionService {
           progressPercent: m.progressPercent
         }));
       }
-      // Fallback: no milestones from API yet
       return [];
     });
   }

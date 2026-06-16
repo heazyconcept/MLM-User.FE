@@ -1,4 +1,4 @@
-import { Component, inject, ChangeDetectionStrategy, ChangeDetectorRef, signal, OnInit } from '@angular/core';
+import { Component, inject, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -41,6 +41,9 @@ export class ProfileComponent implements OnInit {
   isEditMode = signal<boolean>(false);
   isSaving = signal<boolean>(false);
   isChangingPassword = signal<boolean>(false);
+  hasPin = computed(() => this.userService.currentUser()?.hasTransactionPin ?? false);
+  pinFormState = signal<'IDLE' | 'CHANGE' | 'RESET_REQUEST' | 'RESET' | 'SETUP'>('IDLE');
+  isPinSaving = signal(false);
   currentUser = this.userService.currentUser;
   isDialogMode = signal<boolean>(false);
   private closeOnSave = true;
@@ -64,6 +67,32 @@ export class ProfileComponent implements OnInit {
       confirmPassword: ['', [Validators.required]]
     },
     { validators: this.confirmMatchValidator() }
+  );
+
+  changePinForm = this.fb.group(
+    {
+      oldPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
+      newPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
+      confirmNewPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]]
+    },
+    { validators: this.confirmPinMatchValidator('newPin', 'confirmNewPin') }
+  );
+
+  resetPinForm = this.fb.group(
+    {
+      otp: ['', [Validators.required, Validators.minLength(4)]],
+      newPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
+      confirmNewPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]]
+    },
+    { validators: this.confirmPinMatchValidator('newPin', 'confirmNewPin') }
+  );
+
+  setupPinForm = this.fb.group(
+    {
+      pin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
+      confirmPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]]
+    },
+    { validators: this.confirmPinMatchValidator('pin', 'confirmPin') }
   );
 
   ngOnInit(): void {
@@ -210,9 +239,11 @@ export class ProfileComponent implements OnInit {
         next: () => {
           this.handleSaveSuccess();
         },
-        error: () => {
+        error: (err) => {
           this.isSaving.set(false);
-          this.modalService.open('error', 'Could not save', 'We couldn\'t save your profile and bank details. Please try again.');
+          const raw = err?.error?.message;
+          const msg = Array.isArray(raw) ? raw.join(' ') : (raw ?? 'We couldn\'t save your profile and bank details. Please try again.');
+          this.modalService.open('error', 'Save Failed', msg);
           this.cdr.markForCheck();
         }
       });
@@ -230,6 +261,14 @@ export class ProfileComponent implements OnInit {
     };
   }
 
+  private confirmPinMatchValidator(field1: string, field2: string): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const v1 = control.get(field1)?.value;
+      const v2 = control.get(field2)?.value;
+      return v1 === v2 ? null : { pinMismatch: true };
+    };
+  }
+
   changePassword(): void {
     if (this.passwordForm.invalid || this.passwordForm.pristine) return;
     this.isChangingPassword.set(true);
@@ -241,10 +280,136 @@ export class ProfileComponent implements OnInit {
         this.cdr.markForCheck();
         this.modalService.open('success', 'Password Updated', 'Your password has been updated successfully.');
       },
-      error: () => {
+      error: (err) => {
         this.isChangingPassword.set(false);
         this.cdr.markForCheck();
-        this.modalService.open('error', 'Could not update password', 'Please try again.');
+        const raw = err?.error?.message;
+        const msg = Array.isArray(raw) ? raw.join(' ') : (raw ?? 'Please try again.');
+        this.modalService.open('error', 'Password Update Failed', msg);
+      }
+    });
+  }
+
+  private isImpersonationBlocked(err: unknown): boolean {
+    const error = err as { status?: number; error?: { error?: string; code?: string } } | undefined;
+    return (
+      error?.status === 403 &&
+      (error?.error?.error === 'IMPERSONATION_ACTION_BLOCKED' ||
+        error?.error?.code === 'IMPERSONATION_ACTION_BLOCKED')
+    );
+  }
+
+  showChangePin(): void {
+    this.changePinForm.reset();
+    this.pinFormState.set('CHANGE');
+  }
+
+  showResetPin(): void {
+    this.resetPinForm.reset();
+    this.pinFormState.set('RESET_REQUEST');
+  }
+
+  showSetupPin(): void {
+    this.setupPinForm.reset();
+    this.pinFormState.set('SETUP');
+  }
+
+  cancelPinAction(): void {
+    this.pinFormState.set('IDLE');
+  }
+
+  submitSetupPin(): void {
+    if (this.setupPinForm.invalid) return;
+    this.isPinSaving.set(true);
+    const { pin, confirmPin } = this.setupPinForm.getRawValue();
+    this.userService.setTransactionPin(pin ?? '', confirmPin ?? '').subscribe({
+      next: () => {
+        this.isPinSaving.set(false);
+        this.pinFormState.set('IDLE');
+        this.cdr.markForCheck();
+        this.modalService.open('success', 'PIN Set', 'Your transaction PIN has been set successfully.');
+      },
+      error: (err) => {
+        this.isPinSaving.set(false);
+        this.cdr.markForCheck();
+        if (this.isImpersonationBlocked(err)) {
+          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
+          return;
+        }
+        const msg = err?.error?.message ?? 'Could not set transaction PIN. Please try again.';
+        this.modalService.open('error', 'PIN Setup Failed', msg);
+      }
+    });
+  }
+
+  submitChangePin(): void {
+    if (this.changePinForm.invalid) return;
+    this.isPinSaving.set(true);
+    const { oldPin, newPin, confirmNewPin } = this.changePinForm.getRawValue();
+    this.userService.changeTransactionPin(oldPin ?? '', newPin ?? '', confirmNewPin ?? '').subscribe({
+      next: () => {
+        this.isPinSaving.set(false);
+        this.pinFormState.set('IDLE');
+        this.cdr.markForCheck();
+        this.modalService.open('success', 'PIN Changed', 'Your transaction PIN has been updated successfully.');
+      },
+      error: (err) => {
+        this.isPinSaving.set(false);
+        this.cdr.markForCheck();
+        if (this.isImpersonationBlocked(err)) {
+          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
+          return;
+        }
+        const msg = err?.error?.message ?? 'Could not change PIN. Please check your current PIN and try again.';
+        this.modalService.open('error', 'PIN Change Failed', msg);
+      }
+    });
+  }
+
+  requestPinResetOtp(): void {
+    this.isPinSaving.set(true);
+    this.userService.requestTransactionPinReset().subscribe({
+      next: () => {
+        this.isPinSaving.set(false);
+        this.resetPinForm.reset();
+        this.pinFormState.set('RESET');
+        this.cdr.markForCheck();
+        this.modalService.open('success', 'OTP Sent', 'A reset code has been sent to your registered email.');
+      },
+      error: (err) => {
+        this.isPinSaving.set(false);
+        this.cdr.markForCheck();
+        if (this.isImpersonationBlocked(err)) {
+          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
+          return;
+        }
+        const raw = err?.error?.message;
+        const msg = Array.isArray(raw) ? raw.join(' ') : (raw ?? 'Could not send reset OTP. Please try again.');
+        this.modalService.open('error', 'Request Failed', msg);
+      }
+    });
+  }
+
+  submitResetPin(): void {
+    if (this.resetPinForm.invalid) return;
+    this.isPinSaving.set(true);
+    const { otp, newPin, confirmNewPin } = this.resetPinForm.getRawValue();
+    this.userService.resetTransactionPin(otp ?? '', newPin ?? '', confirmNewPin ?? '').subscribe({
+      next: () => {
+        this.isPinSaving.set(false);
+        this.pinFormState.set('IDLE');
+        this.cdr.markForCheck();
+        this.modalService.open('success', 'PIN Reset', 'Your transaction PIN has been reset successfully.');
+      },
+      error: (err) => {
+        this.isPinSaving.set(false);
+        this.cdr.markForCheck();
+        if (this.isImpersonationBlocked(err)) {
+          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
+          return;
+        }
+        const msg = err?.error?.message ?? 'Could not reset PIN. Please check your OTP and try again.';
+        this.modalService.open('error', 'PIN Reset Failed', msg);
       }
     });
   }

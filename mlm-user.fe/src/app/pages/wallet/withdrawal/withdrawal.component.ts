@@ -182,7 +182,9 @@ export class WithdrawalComponent implements OnInit {
             this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
             return;
           }
-          this.modalService.open('error', 'PIN Setup Failed', 'Could not set your PIN. Please try again.');
+          const raw = err?.error?.message;
+          const msg = Array.isArray(raw) ? raw.join(' ') : (raw ?? 'Could not set your PIN. Please try again.');
+          this.modalService.open('error', 'PIN Setup Failed', msg);
         }
       });
     } else if (state === 'AMOUNT') {
