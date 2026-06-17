@@ -1,7 +1,6 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Product } from '../../../services/product.service';
-import { BadgeComponent } from '../../../components/badge/badge.component';
 
 @Component({
   selector: 'app-product-card',
@@ -30,16 +29,16 @@ import { BadgeComponent } from '../../../components/badge/badge.component';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProductCardComponent {
-  @Input({ required: true }) product!: Product;
-  @Output() productClick = new EventEmitter<Product>();
+  product = input.required<Product>();
+  productClick = output<Product>();
 
   onProductClick(): void {
-    this.productClick.emit(this.product);
+    this.productClick.emit(this.product());
   }
 
   onBuyClick(event: Event): void {
     event.stopPropagation();
-    this.productClick.emit(this.product);
+    this.productClick.emit(this.product());
   }
 
   getCategoryLabel(): string {
@@ -49,23 +48,33 @@ export class ProductCardComponent {
       'electronics': 'Tech',
       'subscriptions': 'Subscribe'
     };
-    return labels[this.product.category] || this.product.category;
+    return labels[this.product().category] || this.product().category;
   }
 
   getRating(): string {
     // Generate a consistent "rating" based on product id for demo
     const ratings = ['4.8', '4.9', '5.0', '4.7', '4.9'];
-    const index = parseInt(this.product.id) % ratings.length;
+    const index = parseInt(this.product().id) % ratings.length;
     return ratings[index];
   }
 
   getShortDescription(): string {
     // Return first sentence or truncate to ~60 chars
-    const firstSentence = this.product.description.split('.')[0];
+    const firstSentence = this.product().description.split('.')[0];
     return firstSentence.length > 80 ? firstSentence.substring(0, 77) + '...' : firstSentence + '.';
   }
 
   formatCurrency(amount: number): string {
     return `₦${amount.toLocaleString('en-US')}`;
+  }
+
+  formatAvailableDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (e) {
+      return '';
+    }
   }
 }

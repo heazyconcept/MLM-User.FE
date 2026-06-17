@@ -206,10 +206,15 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.orderSubmitting.set(false);
         console.error('Order creation failed', err);
+        const errMsg = err?.error?.message ?? '';
+        const friendlyMsg = errMsg.toLowerCase().includes('no active price') || errMsg.toLowerCase().includes('no effective price')
+          ? 'This product is not available for purchase yet.'
+          : (err?.error?.message ?? 'Could not create order. Please try again.');
+
         this.messageService.add({
           severity: 'error',
           summary: 'Order failed',
-          detail: err?.error?.message ?? 'Could not create order. Please try again.',
+          detail: friendlyMsg,
         });
       },
     });
@@ -217,6 +222,16 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
 
   formatCurrency(amount: number): string {
     return `₦${amount.toLocaleString('en-US')}`;
+  }
+
+  formatAvailableDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (e) {
+      return '';
+    }
   }
 
   closeFulfilmentDrawer(): void {

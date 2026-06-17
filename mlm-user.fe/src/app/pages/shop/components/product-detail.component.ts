@@ -96,4 +96,14 @@ export class ProductDetailComponent {
   formatCurrency(amount: number): string {
     return `₦${amount.toLocaleString('en-US')}`;
   }
+
+  formatAvailableDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (e) {
+      return '';
+    }
+  }
 }
