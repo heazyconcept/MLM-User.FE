@@ -5,24 +5,38 @@
   <!-- Image — square, compact -->
   <div class="relative w-full aspect-square overflow-hidden bg-mlm-warm-50">
     <img 
-      [src]="product.images[0]" 
-      [alt]="product.name"
+      [src]="product().images[0]" 
+      [alt]="product().name"
       class="w-full h-full object-cover"
       loading="lazy">
 
-    <!-- Out of Stock -->
-    @if (!product.inStock) {
-      <div class="absolute inset-0 bg-white/75 backdrop-blur-sm flex items-center justify-center">
-        <span class="px-3 py-1.5 bg-mlm-text/80 text-white text-xs font-semibold rounded-full tracking-wide">
-          Out of Stock
-        </span>
+    <!-- Out of Stock / Available Soon Overlay -->
+    @if (!product().inStock) {
+      <div class="absolute inset-0 bg-white/45 backdrop-blur-[2px] flex items-center justify-center p-2 text-center">
+        <div class="flex flex-col items-center gap-1">
+          <span class="px-3 py-1.5 bg-mlm-text/80 text-white text-xs font-semibold rounded-full tracking-wide">
+            @if (product().priceStatus === 'unpriced') {
+              Unavailable
+            } @else {
+              Out of Stock
+            }
+          </span>
+          <!-- Scheduled date is hidden as per user request -->
+          <!--
+          @if (product().priceStatus === 'scheduled' && product().availableFrom) {
+            <span class="text-[10px] font-bold text-mlm-secondary">
+              {{ formatAvailableDate(product().availableFrom) }}
+            </span>
+          }
+          -->
+        </div>
       </div>
     }
 
     <!-- PV pill — bottom-right of image -->
     <div class="absolute bottom-3 right-3 flex items-center gap-1.5">
       <span class="px-2.5 py-1 bg-white/90 text-mlm-primary text-xs font-bold rounded-lg border border-mlm-primary/20">
-        {{ product.pv }} PV
+        {{ product().pv }} PV
       </span>
     </div>
   </div>
@@ -43,7 +57,7 @@
 
     <!-- Name -->
     <h3 class="text-sm font-bold text-mlm-text leading-snug line-clamp-2">
-      {{ product.name }}
+      {{ product().name }}
     </h3>
 
     <!-- Divider -->
@@ -52,12 +66,12 @@
     <!-- Price + Buy -->
     <div class="flex items-center justify-between gap-2">
       <span class="text-base font-extrabold text-mlm-text">
-        {{ formatCurrency(product.memberPriceNGN) }}
+        {{ formatCurrency(product().memberPriceNGN) }}
       </span>
       <button
         type="button"
         (click)="onBuyClick($event)"
-        [disabled]="!product.inStock"
+        [disabled]="!product().inStock"
         class="px-4 py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed tracking-wide">
         Buy Now
       </button>

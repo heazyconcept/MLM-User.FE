@@ -18,6 +18,9 @@ export interface Product {
   images: string[];
   inStock: boolean;
   eligibleWallets: ('cash' | 'voucher' | 'autoship')[];
+  purchasable: boolean;
+  availableFrom: string | null;
+  priceStatus: 'active' | 'scheduled' | 'unpriced';
 }
 
 export interface Category {
@@ -186,6 +189,13 @@ export class ProductService {
     const memberPriceNGN = Number(item.currentPrice?.memberPriceNGN ?? item.currentPrice?.basePrice ?? 0);
     const nonMemberPriceNGN = Number(item.currentPrice?.nonMemberPriceNGN ?? item.currentPrice?.basePrice ?? 0);
 
+    const priceStatus = item.priceStatus ?? (item.currentPrice ? 'active' : 'unpriced');
+    const purchasable = item.purchasable ?? (priceStatus === 'active' && item.status === 'ACTIVE');
+    const availableFrom = item.availableFrom ?? null;
+
+    // A product is in stock only if it is active and purchasable (has an effective price)
+    const inStock = item.status === 'ACTIVE' && purchasable;
+
     return {
       id: item.id,
       name: item.name,
@@ -203,8 +213,11 @@ export class ProductService {
         item.images && item.images.length > 0
           ? item.images.map((img: any) => img.url)
           : ['/assets/images/placeholder.png'],
-      inStock: item.status === 'ACTIVE',
+      inStock,
       eligibleWallets: this.resolveEligibleWallets(item),
+      purchasable,
+      availableFrom,
+      priceStatus,
     };
   }
 

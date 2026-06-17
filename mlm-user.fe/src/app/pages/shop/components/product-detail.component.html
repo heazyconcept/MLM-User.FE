@@ -32,7 +32,12 @@
     <div class="flex items-center gap-3">
       <span class="text-xs font-bold text-mlm-secondary uppercase tracking-widest">{{ product.category }}</span>
       <span class="w-1 h-1 rounded-full bg-gray-300"></span>
-      @if (product.inStock) {
+      @if (product.priceStatus === 'scheduled') {
+        <span class="text-xs font-semibold text-mlm-error">Out of Stock</span>
+        <!-- ({{ formatAvailableDate(product.availableFrom) }}) -->
+      } @else if (product.priceStatus === 'unpriced') {
+        <span class="text-xs font-semibold text-mlm-error">Unavailable</span>
+      } @else if (product.inStock) {
         <span class="text-xs font-semibold text-mlm-primary">In Stock</span>
       } @else {
         <span class="text-xs font-semibold text-mlm-error">Out of Stock</span>
@@ -116,6 +121,10 @@
           <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
           Processing…
         </span>
+      } @else if (product.priceStatus === 'scheduled') {
+        Out of Stock
+      } @else if (product.priceStatus === 'unpriced') {
+        Unavailable
       } @else {
         Buy Now
       }

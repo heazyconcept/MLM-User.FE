@@ -332,10 +332,10 @@ export class MerchantService {
   /* ── Application & Discovery ─────────────────────────────────── */
 
   /** POST /merchants/apply — returns observable so callers can chain payment */
-  apply(type: MerchantType, serviceAreas: string[], businessName: string, phoneNumber: string, address: string): Observable<MerchantProfile | null> {
+  apply(type: MerchantType, serviceAreas: string[], phoneNumber: string, address: string): Observable<MerchantProfile | null> {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
-    return this.api.post<MerchantProfile>('merchants/apply', { type, serviceAreas, businessName, phoneNumber, address }).pipe(
+    return this.api.post<MerchantProfile>('merchants/apply', { type, serviceAreas, phoneNumber, address }).pipe(
       tap((profile) => {
         if (profile && profile.id) {
           const asResponse: MerchantProfileResponse = {

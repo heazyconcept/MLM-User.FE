@@ -39,7 +39,6 @@ export class MerchantApplyComponent implements OnInit {
   isFeePaid = this.merchantService.isFeePaid;
 
   selectedType = signal<MerchantType>('REGIONAL');
-  businessNameInput = signal('');
   phoneNumberInput = signal('');
   addressInput = signal('');
   
@@ -159,16 +158,15 @@ export class MerchantApplyComponent implements OnInit {
 
     if (areas.length === 0) return;
 
-    const bName = this.businessNameInput().trim();
     const pNumber = this.phoneNumberInput().trim();
     const addr = this.addressInput().trim();
 
-    if (!bName || !pNumber || !addr) return;
+    if (!pNumber || !addr) return;
 
     const source = this.selectedPaymentSource();
 
     this.merchantService
-      .apply(this.selectedType(), areas, bName, pNumber, addr)
+      .apply(this.selectedType(), areas, pNumber, addr)
       .pipe(
         switchMap((profile: MerchantProfile | null) => {
           if (!profile?.id) {
