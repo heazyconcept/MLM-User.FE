@@ -185,6 +185,19 @@ export class MatrixLevelComponent implements OnInit {
     return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   }
 
+  getPackageClass(pkg: string): string {
+    if (!pkg) return 'bg-gray-100 text-gray-600';
+    switch (pkg.toUpperCase()) {
+      case 'DIAMOND': return 'bg-sky-50 text-sky-600';
+      case 'RUBY': return 'bg-rose-50 text-rose-600';
+      case 'PLATINUM': return 'bg-violet-50 text-violet-600';
+      case 'GOLD': return 'bg-amber-50 text-amber-600';
+      case 'SILVER': return 'bg-slate-100 text-slate-600';
+      case 'NICKEL': return 'bg-stone-100 text-stone-500';
+      default: return 'bg-gray-100 text-gray-600';
+    }
+  }
+
   getTreeLevel(user: MatrixLevelUser): number | null {
     const downline = this.downlineMap().get(user.id);
     if (downline?.level != null) {

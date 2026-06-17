@@ -65,7 +65,7 @@ export interface DownlineItem {
   fullName: string;
   email?: string;
   joinDate: Date;
-  status: 'active' | 'inactive';
+  status: string;
   level: number;
   package: string;
   totalDirects: number;
@@ -122,6 +122,8 @@ export interface MatrixLevelUser {
   profilePhotoUrl?: string | null;
   level?: number | null;
   stage?: string | number | null;
+  registrationPackage?: string;
+  package?: string;
 }
 
 export interface MatrixTreeUser {
@@ -668,15 +670,17 @@ export class ReferralService {
       return isNaN(d.getTime()) ? new Date() : d;
     })();
     const isActive = raw['isActive'] ?? raw['is_active'] ?? raw['status'] !== 'inactive';
+    const status = String(raw['status'] ?? (isActive ? 'ACTIVE' : 'REGISTERED'));
+
     return {
       id: String(raw['id'] ?? raw['userId'] ?? raw['user_id'] ?? ''),
       username: String(raw['username'] ?? raw['email'] ?? '—'),
       email: (raw['email'] as string | undefined) ?? undefined,
       fullName,
       joinDate,
-      status: (isActive ? 'active' : 'inactive') as 'active' | 'inactive',
+      status,
       level: Number(raw['level'] ?? raw['depth'] ?? 1),
-      package: String(raw['package'] ?? '—'),
+      package: String(raw['registrationPackage'] ?? raw['package'] ?? '—'),
       totalDirects: Number(
         raw['directReferrals'] ?? raw['direct_referrals'] ?? raw['directReferralsCount'] ?? 0,
       ),
@@ -822,7 +826,7 @@ export class ReferralService {
           new Date().toISOString(),
       ),
       status: String(
-        raw['status'] ?? ((raw['isActive'] ?? raw['is_active']) ? 'ACTIVE' : 'UNPAID'),
+        raw['status'] ?? ((raw['isActive'] ?? raw['is_active']) ? 'ACTIVE' : 'REGISTERED'),
       ),
       isDirectReferral: (raw['isDirectReferral'] ?? raw['is_direct_referral'] ?? false) as boolean,
       profilePhotoUrl:
@@ -840,6 +844,8 @@ export class ReferralService {
                 ? Number(raw['depth'])
                 : null,
       stage: (raw['stageName'] ?? raw['stage'] ?? raw['stage_name']) as string | number | null,
+      registrationPackage: String(raw['registrationPackage'] ?? raw['package'] ?? '—'),
+      package: String(raw['registrationPackage'] ?? raw['package'] ?? '—'),
     };
   }
 
@@ -850,11 +856,13 @@ export class ReferralService {
       email: item.email ?? null,
       phone: null,
       joinDate: item.joinDate.toISOString(),
-      status: item.status === 'active' ? 'ACTIVE' : 'UNPAID',
+      status: item.status,
       isDirectReferral: item.isDirectReferral,
       profilePhotoUrl: null,
       level: item.level,
       stage: item.stage ?? null,
+      registrationPackage: item.package,
+      package: item.package,
     };
   }
 

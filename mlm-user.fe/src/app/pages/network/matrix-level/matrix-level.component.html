@@ -72,6 +72,7 @@
                   <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Joined</th>
                   <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Stage</th>
                   <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Level</th>
+                  <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Package</th>
                   <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Status</th>
                 </tr>
               </thead>
@@ -97,6 +98,7 @@
                       <td class="px-5 py-4"><p-skeleton width="6rem" height="0.875rem"></p-skeleton></td>
                       <td class="px-5 py-4"><p-skeleton width="4rem" height="0.875rem"></p-skeleton></td>
                       <td class="px-5 py-4"><p-skeleton width="3rem" height="0.875rem"></p-skeleton></td>
+                      <td class="px-5 py-4"><p-skeleton width="4.5rem" height="1.25rem" borderRadius="999px"></p-skeleton></td>
                       <td class="px-5 py-4"><p-skeleton width="4.5rem" height="1.25rem" borderRadius="999px"></p-skeleton></td>
                     </tr>
                   }
@@ -130,14 +132,23 @@
                         </p>
                       </td>
                       <td class="px-5 py-4">
-                        <app-status-badge [status]="formatStatus(user.status)" size="sm"></app-status-badge>
+                        @if (user.registrationPackage || user.package) {
+                          <span [class]="'text-xs font-medium uppercase tracking-wide px-3 py-1.5 rounded-lg ' + getPackageClass(user.registrationPackage || user.package || '')">
+                            {{ user.registrationPackage || user.package }}
+                          </span>
+                        } @else {
+                          <span class="text-sm text-mlm-warm-900">—</span>
+                        }
+                      </td>
+                      <td class="px-5 py-4">
+                        <app-status-badge [status]="user.status" size="sm"></app-status-badge>
                       </td>
                     </tr>
                   }
 
                   @if (users().length === 0) {
                     <tr>
-                      <td colspan="6" class="px-5 py-16 text-center">
+                      <td colspan="7" class="px-5 py-16 text-center">
                         <p class="text-sm font-semibold text-mlm-warm-900 mb-1">No members on this level</p>
                         <p class="text-xs text-mlm-warm-500">Try selecting a different level or clearing the search.</p>
                       </td>
