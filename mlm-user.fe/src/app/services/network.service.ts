@@ -61,7 +61,7 @@ export interface DownlineMember {
   username: string;
   fullName: string;
   joinDate: Date;
-  status: 'active' | 'inactive';
+  status: string;
   level: number;
   package: string;
   totalDirects: number;
@@ -332,7 +332,7 @@ export class NetworkService {
           username: d2.username,
           package: d2.package ?? null,
           level: 2,
-          status: d2.status,
+          status: d2.status.toLowerCase().includes('active') ? 'active' : 'inactive',
           parentId: d.id,
           position: positions[j],
           rank: d2.rank,
@@ -360,7 +360,7 @@ export class NetworkService {
         username: d.username,
         package: d.package ?? null,
         level: 1,
-        status: d.status,
+        status: d.status.toLowerCase().includes('active') ? 'active' : 'inactive',
         parentId: 'root',
         position: pos,
         rank: d.rank,
@@ -591,7 +591,7 @@ export class NetworkService {
       id: item.id,
       username: item.username,
       legs: item.totalDirects,
-      status: item.status === 'active' ? 'active' : 'inactive',
+      status: item.status.toLowerCase().includes('active') ? 'active' : 'inactive',
       stage,
       rank: item.rank,
     };

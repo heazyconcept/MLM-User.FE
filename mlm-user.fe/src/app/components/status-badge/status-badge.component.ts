@@ -65,10 +65,12 @@ export class StatusBadgeComponent {
     let colorClasses = '';
     
     // Network/Member statuses
-    if (s === 'active') {
+    if (s === 'active' || s === 'activated') {
       colorClasses = 'bg-green-50 text-green-600';
-    } else if (s === 'inactive') {
+    } else if (s === 'inactive' || s === 'suspended') {
       colorClasses = 'bg-red-50 text-red-600';
+    } else if (s === 'registered') {
+      colorClasses = 'bg-gray-100 text-gray-600';
     } else if (s === 'empty') {
       colorClasses = 'bg-blue-50 text-blue-600';
     }
