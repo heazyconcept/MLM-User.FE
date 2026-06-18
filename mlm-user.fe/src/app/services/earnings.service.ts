@@ -156,6 +156,16 @@ export interface EarningsCardHistoryItem {
   value: number;
   runningBalance?: number;
   description?: string;
+  metadata?: {
+    date?: string;
+    package?: string;
+    cdpaPercent?: number;
+    cdpaAmountDisplay?: number;
+    pdpaAmountDisplay?: number;
+    downlinePackage?: string;
+    triggeredByUserId?: string;
+    [key: string]: any;
+  };
 }
 
 export interface EarningsCardHistoryResponse {
@@ -463,7 +473,8 @@ export class EarningsService {
         value: Number(item['value'] ?? 0),
         runningBalance:
           item['runningBalance'] != null ? Number(item['runningBalance']) : undefined,
-        description: item['description'] ? String(item['description']) : undefined
+        description: item['description'] ? String(item['description']) : undefined,
+        metadata: item['metadata'] ? (item['metadata'] as Record<string, any>) : undefined
       };
     });
 

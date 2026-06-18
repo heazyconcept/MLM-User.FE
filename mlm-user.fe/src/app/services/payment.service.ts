@@ -127,12 +127,12 @@ export class PaymentService {
   fetchUpgradeOptions(): Observable<UpgradeOption[]> {
     return this.api.get<Record<string, unknown>>('users/me/upgrade-options').pipe(
       map((res) => {
-        const options = (res['options'] ?? res['packages'] ?? res) as Record<string, unknown>[];
+        const options = (res['eligibleUpgrades'] ?? res['options'] ?? res['packages'] ?? res) as Record<string, unknown>[];
         if (!Array.isArray(options)) return [];
         return options.map((opt) => ({
           package: String(opt['package'] ?? opt['name'] ?? ''),
-          price: Number(opt['price'] ?? opt['amount'] ?? 0),
-          currency: String(opt['currency'] ?? 'NGN'),
+          price: Number(opt['upgradeAmount'] ?? opt['price'] ?? opt['amount'] ?? 0),
+          currency: String(opt['currency'] ?? res['currency'] ?? 'NGN'),
           currentPackage: Boolean(opt['currentPackage'] ?? opt['current'] ?? false),
           benefits: Array.isArray(opt['benefits']) ? (opt['benefits'] as string[]) : undefined
         }));
