@@ -238,15 +238,33 @@
                 } @else {
                   @for (row of historyRowsForSelectedCard(); track row.id) {
                     <tr>
-                      <td class="px-5 py-4 text-sm text-mlm-secondary whitespace-nowrap">{{ row.date | date:'MMM d, yyyy' }}</td>
+                      <td class="px-5 py-4 text-sm font-bold text-mlm-text whitespace-nowrap">{{ row.date | date:'MMM d, yyyy' }}</td>
                       <td class="px-5 py-4">
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold border"
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold border"
                               [class]="getHistoryStatusClass(row.status)">
                           {{ row.status }}
                         </span>
                       </td>
-                      <td class="px-5 py-4 text-sm text-mlm-secondary">{{ row.source }}</td>
-                      <td class="px-5 py-4 text-sm font-medium text-mlm-text tabular-nums text-right whitespace-nowrap">
+                      <td class="px-5 py-4 text-sm font-bold text-mlm-text">
+                        <div>{{ row.source }}</div>
+                        @if (row.description) {
+                          <div class="text-xs text-mlm-text mt-0.5 font-bold">
+                            {{ row.description }}
+                          </div>
+                        }
+                        @if (selectedHistoryCardKey() === 'CDPA' && row.metadata) {
+                          <div class="text-[10px] text-mlm-text/90 mt-0.5 font-bold">
+                            @if (row.metadata.downlinePackage) {
+                              My Package: {{ getPackageLabel(row.metadata.package) }} &middot; Downline: {{ getPackageLabel(row.metadata.downlinePackage) }}
+                            } @else if (row.metadata.pdpaAmountDisplay != null) {
+                              {{ getPackageLabel(row.metadata.package) }} &middot; {{ row.metadata.cdpaPercent }}% CDPA (Base PDPA: {{ currencySymbol() }}{{ row.metadata.pdpaAmountDisplay | number:'1.2-2' }})
+                            } @else {
+                              Package: {{ getPackageLabel(row.metadata.package) }}
+                            }
+                          </div>
+                        }
+                      </td>
+                      <td class="px-5 py-4 text-sm font-bold text-mlm-text tabular-nums text-right whitespace-nowrap">
                         {{ formatHistoryValue(row) }}
                       </td>
                     </tr>
@@ -352,7 +370,7 @@
                   <p class="text-[10px] font-medium text-mlm-secondary uppercase tracking-wide mb-1">L{{ lvl.level }}</p>
                   <p class="text-xs font-medium tabular-nums"
                      [class]="lvl.amount > 0 ? 'text-mlm-text' : 'text-mlm-secondary/30'">
-                    {{ currencySymbol() }}{{ lvl.amount | number:'1.2-2' }}
+                     {{ currencySymbol() }}{{ lvl.amount | number:'1.2-2' }}
                   </p>
                 </div>
               }

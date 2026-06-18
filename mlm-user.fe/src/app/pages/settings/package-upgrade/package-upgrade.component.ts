@@ -7,6 +7,7 @@ import { UserService } from '../../../services/user.service';
 import { PaymentService, UpgradeOption } from '../../../services/payment.service';
 import { LoadingService } from '../../../services/loading.service';
 import { ModalService } from '../../../services/modal.service';
+import { getRequiredAmount } from '../../../core/constants/registration.constants';
 
 interface PackageCard {
   name: string;
@@ -90,7 +91,7 @@ export class PackageUpgradeComponent implements OnInit {
           const details = STATIC_DETAILS[name] ?? STATIC_DETAILS['SILVER'];
           return {
             name,
-            price: currency === 'NGN' ? details.priceNgn : details.priceUsd,
+            price: getRequiredAmount(name, currency),
             currency,
             isCurrent: name === currentPkg,
             isDowngrade: idx <= currentIdx && name !== currentPkg,
@@ -108,36 +109,35 @@ export class PackageUpgradeComponent implements OnInit {
   }
 
   private buildPackageCards(options: UpgradeOption[], currentPkg: string, currentIdx: number): PackageCard[] {
-    // If API returned options, map them — use prices from API directly
-    if (options.length > 0) {
-      return options.map((opt) => {
-        const name = opt.package.toUpperCase();
-        const idx = PACKAGE_ORDER.indexOf(name);
-        const details = STATIC_DETAILS[name] ?? STATIC_DETAILS['SILVER'];
-        return {
-          name,
-          price: opt.price,
-          currency: opt.currency,
-          isCurrent: opt.currentPackage || name === currentPkg,
-          isDowngrade: idx <= currentIdx && name !== currentPkg,
-          benefits: opt.benefits ?? details.benefits,
-          color: details.color,
-          icon: details.icon
-        };
-      });
-    }
-
-    // No options from API — use static list with user's display currency
     const currency = this.displayCurrency();
+    
     return PACKAGE_ORDER.map((name, idx) => {
       const details = STATIC_DETAILS[name] ?? STATIC_DETAILS['SILVER'];
+      const isCurrent = name === currentPkg;
+      const isDowngrade = idx <= currentIdx && !isCurrent;
+      
+      // Find matching live upgrade option
+      const liveOpt = options.find(opt => opt.package.toUpperCase() === name);
+      
+      let price = getRequiredAmount(name, currency);
+      let benefits = details.benefits;
+      let optCurrency: string = currency;
+      
+      if (liveOpt) {
+        price = liveOpt.price;
+        optCurrency = liveOpt.currency;
+        if (liveOpt.benefits && Array.isArray(liveOpt.benefits)) {
+          benefits = liveOpt.benefits;
+        }
+      }
+      
       return {
         name,
-        price: currency === 'NGN' ? details.priceNgn : details.priceUsd,
-        currency,
-        isCurrent: name === currentPkg,
-        isDowngrade: idx <= currentIdx && name !== currentPkg,
-        benefits: details.benefits,
+        price,
+        currency: optCurrency,
+        isCurrent,
+        isDowngrade,
+        benefits,
         color: details.color,
         icon: details.icon
       };
