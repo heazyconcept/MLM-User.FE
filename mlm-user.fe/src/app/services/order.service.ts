@@ -38,6 +38,7 @@ export interface Order {
   deliveryFee?: number;
   pickupLocationName?: string;
   pickupLocationDistance?: string;
+  paymentId?: string;
 }
 
 const ORDER_STATUSES: OrderStatus[] = [
@@ -193,6 +194,7 @@ export class OrderService {
       deliveryAddress: o.deliveryAddress || undefined,
       deliveryFee: o.deliveryFee != null ? Number(o.deliveryFee) : undefined,
       pickupLocationName: o.selectedMerchantId ? 'Merchant Center' : undefined,
+      paymentId: o.paymentId ? String(o.paymentId) : undefined,
     };
   }
 

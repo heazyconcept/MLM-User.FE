@@ -2,12 +2,14 @@ import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@ang
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OrderService, Order } from '../../../services/order.service';
+import { InvoiceService } from '../../../services/invoice.service';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
+import { InvoiceModalComponent } from '../../../components/invoice-modal/invoice-modal.component';
 import { OrderTimelineComponent } from '../../../components/order-timeline/order-timeline.component';
 
 @Component({
   selector: 'app-order-detail',
-  imports: [CommonModule, RouterLink, StatusBadgeComponent, OrderTimelineComponent],
+  imports: [CommonModule, RouterLink, StatusBadgeComponent, InvoiceModalComponent, OrderTimelineComponent],
   templateUrl: './order-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -15,6 +17,7 @@ export class OrderDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private orderService = inject(OrderService);
+  invoiceService = inject(InvoiceService);
 
   order = signal<Order | null>(null);
   isProcessing = signal(false);
@@ -118,5 +121,12 @@ export class OrderDetailComponent implements OnInit {
 
   getFulfilmentLabel(method: Order['fulfilmentMethod']): string {
     return method === 'pickup' ? 'Pickup' : 'Home Delivery';
+  }
+
+  /** Open the invoice modal using the order's linked payment ID. */
+  onViewReceipt(): void {
+    const o = this.order();
+    if (!o?.paymentId) return;
+    this.invoiceService.openInvoice(o.paymentId);
   }
 }

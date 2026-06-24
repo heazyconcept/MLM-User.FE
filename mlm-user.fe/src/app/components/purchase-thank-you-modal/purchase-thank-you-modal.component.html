@@ -1,0 +1,145 @@
+@if (visible()) {
+  <div
+    class="fixed inset-0 z-[9998]"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="purchase-thank-you-title"
+  >
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+
+    <div class="relative h-full overflow-y-auto overscroll-contain">
+      <div class="flex min-h-full items-center justify-center px-4 py-10 sm:px-6 sm:py-12">
+        <div
+          class="relative w-full max-w-md max-h-[calc(100vh-5rem)] bg-white rounded-2xl shadow-2xl overflow-y-auto"
+          style="border: 0.5px solid rgba(0,0,0,0.1);"
+          (click)="onCardClick($event)"
+        >
+      @if (summary(); as s) {
+        <div class="px-6 pt-7 pb-6 text-center">
+          <!-- Header -->
+          <div class="mb-5">
+            <h2 id="purchase-thank-you-title" class="text-lg font-semibold text-gray-900">
+              Segulah Global
+            </h2>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400 mt-1">
+              Transaction Receipt
+            </p>
+          </div>
+
+          <div class="h-px bg-gray-100 mb-6"></div>
+
+          <!-- Status -->
+          <div class="mb-6">
+            <div
+              class="w-14 h-14 mx-auto mb-3 rounded-full bg-mlm-green-50 flex items-center justify-center"
+            >
+              <i class="pi pi-check text-xl text-mlm-primary"></i>
+            </div>
+            <p class="text-sm font-medium text-gray-600 mb-2">Product Purchase</p>
+            <span
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-mlm-green-50 text-mlm-green-700 border border-mlm-green-200"
+            >
+              <i class="pi pi-check-circle text-[11px]"></i>
+              Successful
+            </span>
+          </div>
+
+          <!-- Summary card -->
+          <div
+            class="rounded-xl text-left mb-6 overflow-hidden"
+            style="border: 0.5px solid rgba(0,0,0,0.1);"
+          >
+            <dl class="divide-y divide-gray-100">
+              <div class="flex justify-between gap-4 px-4 py-3 text-sm">
+                <dt class="text-gray-400 shrink-0">Product</dt>
+                <dd class="font-medium text-gray-900 text-right">{{ s.productName }}</dd>
+              </div>
+              <div class="flex justify-between gap-4 px-4 py-3 text-sm">
+                <dt class="text-gray-400 shrink-0">Quantity</dt>
+                <dd class="font-medium text-gray-900">{{ s.quantity }}</dd>
+              </div>
+              <div class="flex justify-between gap-4 px-4 py-3 text-sm">
+                <dt class="text-gray-400 shrink-0">Payment</dt>
+                <dd class="font-medium text-gray-900">{{ s.paymentMethod }}</dd>
+              </div>
+              <div class="flex justify-between gap-4 px-4 py-3 text-sm">
+                <dt class="text-gray-400 shrink-0">Amount</dt>
+                <dd class="font-semibold text-mlm-primary tabular-nums">
+                  {{ formatCurrency(s.amount, s.currency) }}
+                </dd>
+              </div>
+              <div class="flex justify-between gap-4 px-4 py-3 text-sm">
+                <dt class="text-gray-400 shrink-0">Fulfilment</dt>
+                <dd class="font-medium text-gray-900">{{ s.fulfilmentLabel }}</dd>
+              </div>
+              <div class="flex justify-between gap-4 px-4 py-3 text-sm">
+                <dt class="text-gray-400 shrink-0">PV Earned</dt>
+                <dd class="font-medium text-gray-900">{{ s.totalPv }} PV</dd>
+              </div>
+              <div class="flex justify-between items-center gap-4 px-4 py-3 text-sm">
+                <dt class="text-gray-400 shrink-0">Reference</dt>
+                <dd class="flex items-center gap-2 min-w-0">
+                  <span class="font-mono text-[11px] text-gray-600 truncate">{{ s.orderReference }}</span>
+                  <button
+                    type="button"
+                    (click)="onCopyReference(s.orderReference)"
+                    class="shrink-0 text-gray-400 hover:text-mlm-primary transition-colors"
+                    [title]="referenceCopied() ? 'Copied' : 'Copy reference'"
+                    aria-label="Copy order reference"
+                  >
+                    <i class="pi text-xs" [class.pi-check]="referenceCopied()" [class.pi-copy]="!referenceCopied()"></i>
+                  </button>
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          @if (!hasReceipt()) {
+            <p class="text-xs text-gray-400 mb-4">
+              Receipt will be available from your order shortly.
+            </p>
+          }
+
+          <!-- Footer -->
+          <div class="mb-6">
+            <p class="text-sm text-gray-500">Thank you for your purchase!</p>
+            <p class="text-xs text-gray-400 mt-1">Keep this receipt for your records.</p>
+          </div>
+
+          <!-- Actions -->
+          <div class="space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                (click)="onViewReceipt()"
+                [disabled]="!hasReceipt()"
+                class="py-2.5 px-3 text-xs font-semibold text-mlm-primary bg-white rounded-lg hover:bg-mlm-primary/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                style="border: 0.5px solid rgba(73, 163, 33, 0.35);"
+              >
+                View receipt
+              </button>
+              <button
+                type="button"
+                (click)="onDownloadReceipt()"
+                [disabled]="!hasReceipt()"
+                class="py-2.5 px-3 text-xs font-semibold text-mlm-primary bg-white rounded-lg hover:bg-mlm-primary/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                style="border: 0.5px solid rgba(73, 163, 33, 0.35);"
+              >
+                Download
+              </button>
+            </div>
+            <button
+              type="button"
+              (click)="onDone()"
+              class="w-full py-3 text-sm font-bold text-white bg-mlm-primary rounded-xl hover:bg-brand-green-dark transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      }
+        </div>
+      </div>
+    </div>
+  </div>
+}

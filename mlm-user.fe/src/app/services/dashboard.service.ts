@@ -34,6 +34,7 @@ export type DashboardTransaction = {
   subType?: string;
   reference?: string;
   direction?: 'inflow' | 'outflow';
+  paymentId?: string;
   metadata?: Record<string, string | number | boolean | null>;
 };
 
