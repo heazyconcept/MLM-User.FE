@@ -6,7 +6,9 @@ import { DashboardService, DashboardTransaction } from '../../services/dashboard
 import { CommissionService } from '../../services/commission.service';
 import { EarningsService } from '../../services/earnings.service';
 import { UserService } from '../../services/user.service';
+import { InvoiceService } from '../../services/invoice.service';
 import { StatusBadgeComponent } from '../../components/status-badge/status-badge.component';
+import { InvoiceModalComponent } from '../../components/invoice-modal/invoice-modal.component';
 import { SkeletonModule } from 'primeng/skeleton';
 
 type DateRangePreset = 'all' | 'today' | 'last7days' | 'last30days' | 'thisMonth';
@@ -39,6 +41,7 @@ type TabSummary = {
     ButtonModule,
     DatePipe,
     StatusBadgeComponent,
+    InvoiceModalComponent,
     SkeletonModule
   ],
   templateUrl: './transactions.component.html',
@@ -50,6 +53,7 @@ export class TransactionsComponent implements OnInit {
   private commissionService = inject(CommissionService);
   private earningsService = inject(EarningsService);
   userService = inject(UserService);
+  invoiceService = inject(InvoiceService);
 
   allCommissions = this.commissionService.getAllCommissions();
   earningsIsLoading = this.earningsService.isLoading;
@@ -483,6 +487,20 @@ export class TransactionsComponent implements OnInit {
       maximumFractionDigits: 2,
     }).format(tx.amount);
     return `${sign}${sym}${n}`;
+  }
+
+  /**
+   * Whether a transaction row should show the receipt/invoice button.
+   * Only rows with a linked payment ID have receipts.
+   */
+  hasReceipt(tx: DashboardTransaction): boolean {
+    return !!tx.paymentId;
+  }
+
+  /** Open the invoice modal for a transaction. */
+  onViewReceipt(tx: DashboardTransaction): void {
+    if (!tx.paymentId) return;
+    this.invoiceService.openInvoice(tx.paymentId);
   }
 
   getTransactionStatusClass(status: TransactionStatus): string {

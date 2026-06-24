@@ -1,0 +1,322 @@
+<!-- Backdrop overlay -->
+@if (visible()) {
+  <div
+    class="invoice-modal-backdrop fixed inset-0 z-[9999] animate-fade-in"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="invoice-title"
+  >
+    <div class="invoice-modal-overlay absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+
+    <div class="relative h-full overflow-y-auto overscroll-contain" (click)="onClose()">
+      <div class="flex min-h-full items-center justify-center px-4 py-10 sm:px-6 sm:py-12">
+        <!-- Modal card -->
+        <div
+          class="invoice-modal-card relative w-full max-w-[600px] max-h-[calc(100vh-5rem)] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          style="border: 0.5px solid rgba(0,0,0,0.1);"
+          (click)="onCardClick($event)"
+        >
+
+          <!-- ── Action Bar ──────────────────────────────────── -->
+          <div
+            class="flex items-center justify-between px-3 sm:px-4 py-2.5 bg-mlm-background border-b border-gray-100 shrink-0 print:hidden"
+            style="border-bottom: 0.5px solid rgba(0,0,0,0.08);"
+          >
+            <div class="flex items-center gap-1.5 sm:gap-2">
+              <button
+                type="button"
+                (click)="onPrint()"
+                class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-gray-600 bg-white rounded-md hover:bg-gray-50 transition-colors"
+                style="border: 0.5px solid rgba(0,0,0,0.12);"
+              >
+                <i class="pi pi-print text-[11px]"></i>
+                Print
+              </button>
+              <button
+                type="button"
+                (click)="onDownload()"
+                class="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-gray-600 bg-white rounded-md hover:bg-gray-50 transition-colors"
+                style="border: 0.5px solid rgba(0,0,0,0.12);"
+              >
+                <i class="pi pi-download text-[11px]"></i>
+                Download
+              </button>
+            </div>
+            <button
+              type="button"
+              (click)="onClose()"
+              class="h-7 w-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              aria-label="Close invoice"
+            >
+              <i class="pi pi-times text-xs"></i>
+            </button>
+          </div>
+
+          <!-- ── Scrollable Invoice Content ─────────────────── -->
+          <div class="overflow-y-auto flex-1 min-h-0">
+
+            <!-- Loading skeleton -->
+            @if (loading()) {
+              <div class="p-6 sm:p-8 space-y-5 animate-pulse">
+                <div class="flex flex-col sm:flex-row sm:justify-between items-start gap-4">
+                  <div class="space-y-2">
+                    <div class="h-4 w-36 bg-gray-100 rounded"></div>
+                    <div class="h-3 w-28 bg-gray-100 rounded"></div>
+                  </div>
+                  <div class="space-y-2 sm:text-right">
+                    <div class="h-3 w-14 bg-gray-100 rounded"></div>
+                    <div class="h-4 w-32 bg-gray-100 rounded sm:ml-auto"></div>
+                    <div class="h-5 w-16 bg-gray-100 rounded-full sm:ml-auto"></div>
+                  </div>
+                </div>
+                <div class="h-px bg-gray-100"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  @for (i of [1, 2]; track i) {
+                    <div class="space-y-2">
+                      <div class="h-3 w-16 bg-gray-100 rounded"></div>
+                      <div class="h-4 w-32 bg-gray-100 rounded"></div>
+                      <div class="h-3 w-40 bg-gray-100 rounded"></div>
+                      <div class="h-3 w-28 bg-gray-100 rounded"></div>
+                    </div>
+                  }
+                </div>
+                <div class="rounded-xl overflow-hidden" style="border: 0.5px solid rgba(0,0,0,0.08);">
+                  <div class="h-9 bg-gray-50"></div>
+                  @for (i of [1]; track i) {
+                    <div class="h-12 bg-white border-t border-gray-50"></div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Error state -->
+            @else if (error()) {
+              <div class="p-8 sm:p-10 text-center">
+                <div class="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <i class="pi pi-exclamation-triangle text-xl text-red-400"></i>
+                </div>
+                <h3 class="text-sm font-semibold text-gray-900 mb-1">Unable to load receipt</h3>
+                <p class="text-xs text-gray-400 mb-5">{{ error() }}</p>
+                <button
+                  type="button"
+                  (click)="onRetry()"
+                  [disabled]="loading()"
+                  class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-mlm-primary rounded-lg hover:bg-mlm-primary/90 disabled:opacity-50 transition-colors"
+                >
+                  <i class="pi pi-refresh text-[11px]"></i>
+                  Try again
+                </button>
+              </div>
+            }
+
+            @else if (receipt(); as r) {
+              <div id="receipt-print-root" class="px-4 sm:px-7 pt-5 sm:pt-7 pb-5 sm:pb-6">
+
+                <!-- ── Header: Company + Invoice Meta ─────────── -->
+                <div class="flex flex-col sm:flex-row sm:justify-between items-start gap-4 mb-5 sm:mb-6">
+
+                  <!-- Company identity -->
+                  <div class="min-w-0">
+                    <p class="text-[15px] font-semibold text-gray-900 leading-snug">{{ r.company.name }}</p>
+                    @if (r.company.address) {
+                      <p class="text-[12px] text-gray-400 leading-snug">{{ r.company.address }}</p>
+                    }
+                    @if (r.company.email) {
+                      <p class="text-[12px] text-gray-400 leading-snug break-all">{{ r.company.email }}</p>
+                    }
+                  </div>
+
+                  <!-- Invoice identity -->
+                  <div class="w-full sm:w-auto sm:text-right shrink-0">
+                    <p class="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">Invoice</p>
+                    <p class="text-[12px] font-mono text-gray-500 mb-2 break-all sm:max-w-[180px] sm:truncate sm:ml-auto">
+                      {{ r.invoice.invoiceNumber }}
+                    </p>
+                    <p class="text-[11px] text-gray-400 mb-2">{{ r.invoice.date | date: 'MMMM d, yyyy' }}</p>
+                    <span
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+                      [class]="getStatusBadgeClass(r.invoice.status)"
+                    >
+                      <i class="pi text-[10px]" [class]="getStatusIcon(r.invoice.status)"></i>
+                      {{ r.invoice.status }}
+                    </span>
+                  </div>
+
+                </div>
+
+                <!-- ── Divider ──────────────────────────────── -->
+                <div class="h-px bg-gray-100 mb-5 sm:mb-6"></div>
+
+                <!-- ── Billed To / Payment Details ─────────── -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6 sm:mb-7">
+
+                  <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2.5">Billed to</p>
+                    <p class="text-[14px] font-semibold text-gray-900 mb-0.5">{{ r.payer.name }}</p>
+                    <p class="text-[12px] text-gray-500 break-all">{{ r.payer.email }}</p>
+                    @if (r.payer.phone) {
+                      <p class="text-[12px] text-gray-500">{{ r.payer.phone }}</p>
+                    }
+                    @if (r.payer.username) {
+                      <p class="text-[12px] text-gray-400">&#64;{{ r.payer.username }}</p>
+                    }
+                  </div>
+
+                  <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-2.5">Payment details</p>
+                    <dl class="space-y-1.5">
+                      <div class="flex justify-between items-center gap-3 text-[12px]">
+                        <dt class="text-gray-400 shrink-0">Method</dt>
+                        <dd class="font-medium text-gray-700 text-right">{{ r.payment.method }}</dd>
+                      </div>
+                      <div class="flex justify-between items-start gap-3 text-[12px]">
+                        <dt class="text-gray-400 shrink-0">Reference</dt>
+                        <dd class="font-mono text-[11px] text-gray-600 text-right break-all">{{ r.payment.reference }}</dd>
+                      </div>
+                      <div class="flex justify-between items-center gap-3 text-[12px]">
+                        <dt class="text-gray-400 shrink-0">Provider</dt>
+                        <dd class="font-medium text-gray-700 text-right">{{ r.payment.provider }}</dd>
+                      </div>
+                      @if (r.payment.paidAt) {
+                        <div class="flex justify-between items-center gap-3 text-[12px]">
+                          <dt class="text-gray-400 shrink-0">Paid at</dt>
+                          <dd class="font-medium text-gray-700 text-right">{{ r.payment.paidAt | date: 'MMM d · h:mm a' }}</dd>
+                        </div>
+                      }
+                    </dl>
+                  </div>
+
+                </div>
+
+                <!-- ── Line Items (mobile cards) ─────────────── -->
+                <div
+                  class="sm:hidden print:hidden rounded-xl overflow-hidden mb-5"
+                  style="border: 0.5px solid rgba(0,0,0,0.1);"
+                >
+                  <div class="px-3 py-2 bg-gray-50 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+                    Items
+                  </div>
+                  <div class="divide-y divide-gray-100">
+                    @for (item of r.items; track item.description + $index) {
+                      <div class="px-3 py-3">
+                        <div class="flex justify-between items-start gap-3 mb-2">
+                          <span class="text-[13px] font-medium text-gray-900 min-w-0">{{ item.description }}</span>
+                          <span class="text-[13px] font-semibold font-mono text-gray-900 tabular-nums shrink-0">
+                            {{ formatCurrency(item.totalPrice, r.totals.currency) }}
+                          </span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500">
+                          <span
+                            class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide"
+                            [class]="getItemTypeBadgeClass(item.type)"
+                          >
+                            {{ getItemTypeLabel(item.type) }}
+                          </span>
+                          <span>Qty {{ item.quantity }}</span>
+                          <span class="font-mono tabular-nums">
+                            {{ formatCurrency(item.unitPrice, r.totals.currency) }} each
+                          </span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- ── Line Items Table (desktop + print) ────────────── -->
+                <div
+                  class="hidden sm:block print:block rounded-xl overflow-x-auto mb-5"
+                  style="border: 0.5px solid rgba(0,0,0,0.1);"
+                >
+                  <table class="w-full min-w-[480px] text-left border-collapse">
+                    <thead>
+                      <tr class="bg-gray-50">
+                        <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Item</th>
+                        <th class="px-3 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Type</th>
+                        <th class="px-3 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-widest text-center">Qty</th>
+                        <th class="px-3 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-widest text-right">Unit</th>
+                        <th class="px-4 py-2.5 text-[10px] font-semibold text-gray-400 uppercase tracking-widest text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (item of r.items; track item.description + $index) {
+                        <tr style="border-top: 0.5px solid rgba(0,0,0,0.07);">
+                          <td class="px-4 py-3 text-[13px] font-medium text-gray-900">
+                            {{ item.description }}
+                          </td>
+                          <td class="px-3 py-3">
+                            <span
+                              class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap"
+                              [class]="getItemTypeBadgeClass(item.type)"
+                            >
+                              {{ getItemTypeLabel(item.type) }}
+                            </span>
+                          </td>
+                          <td class="px-3 py-3 text-[13px] text-gray-500 text-center tabular-nums">
+                            {{ item.quantity }}
+                          </td>
+                          <td class="px-3 py-3 text-[12px] font-mono text-gray-500 text-right tabular-nums whitespace-nowrap">
+                            {{ formatCurrency(item.unitPrice, r.totals.currency) }}
+                          </td>
+                          <td class="px-4 py-3 text-[13px] font-semibold font-mono text-gray-900 text-right tabular-nums whitespace-nowrap">
+                            {{ formatCurrency(item.totalPrice, r.totals.currency) }}
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- ── Totals ──────────────────────────────── -->
+                <div class="flex justify-end mb-6 sm:mb-7">
+                  <div class="w-full sm:w-56 space-y-1.5">
+                    <div class="flex justify-between text-[12px] text-gray-500">
+                      <span>Subtotal</span>
+                      <span class="font-mono tabular-nums">{{ formatCurrency(r.totals.subtotal, r.totals.currency) }}</span>
+                    </div>
+                    @if (r.totals.tax != null) {
+                      <div class="flex justify-between text-[12px] text-gray-500">
+                        <span>Tax</span>
+                        <span class="font-mono tabular-nums">{{ formatCurrency(r.totals.tax, r.totals.currency) }}</span>
+                      </div>
+                    }
+                    @if (r.totals.deliveryFee != null) {
+                      <div class="flex justify-between text-[12px] text-gray-500">
+                        <span>Delivery</span>
+                        <span class="font-mono tabular-nums">{{ formatCurrency(r.totals.deliveryFee, r.totals.currency) }}</span>
+                      </div>
+                    }
+                    @if (r.totals.discount != null) {
+                      <div class="flex justify-between text-[12px] text-gray-500">
+                        <span>Discount</span>
+                        <span class="font-mono tabular-nums text-emerald-600">-{{ formatCurrency(r.totals.discount, r.totals.currency) }}</span>
+                      </div>
+                    }
+                    <div class="pt-2.5 mt-1" style="border-top: 1.5px solid var(--color-gray-900, #111);">
+                      <div class="flex justify-between items-baseline gap-3">
+                        <span class="text-[14px] font-semibold text-gray-900">Total</span>
+                        <span class="text-[18px] font-bold font-mono tabular-nums text-gray-900">
+                          {{ formatCurrency(r.totals.total, r.totals.currency) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ── Footer ──────────────────────────────── -->
+                <div class="text-center pt-5" style="border-top: 0.5px solid rgba(0,0,0,0.07);">
+                  <p class="text-[13px] text-gray-500 mb-1">Thank you for your purchase!</p>
+                  @if (r.company.email) {
+                    <p class="text-[11px] text-gray-400 mt-1 break-all">
+                      Questions? Contact {{ r.company.email }}
+                    </p>
+                  }
+                </div>
+
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

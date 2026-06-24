@@ -12,15 +12,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService, Product } from '../../../services/product.service';
-import { OrderService } from '../../../services/order.service';
+import { OrderService, Order } from '../../../services/order.service';
 import { MessageService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
+import { PurchaseThankYouService, PurchaseThankYouSummary } from '../../../services/purchase-thank-you.service';
 import { ProductGalleryComponent } from '../../../components/product-gallery/product-gallery.component';
 import { QuantitySelectorComponent } from '../../../components/quantity-selector/quantity-selector.component';
 import { BadgeComponent } from '../../../components/badge/badge.component';
 import { PurchaseSummaryModalComponent } from '../components/purchase-summary-modal.component';
 import { DrawerModule } from 'primeng/drawer';
 import { OrderPreviewComponent } from '../../orders/order-preview/order-preview.component';
+import { PurchaseThankYouModalComponent } from '../../../components/purchase-thank-you-modal/purchase-thank-you-modal.component';
+import { InvoiceModalComponent } from '../../../components/invoice-modal/invoice-modal.component';
 
 type WalletType = 'cash' | 'voucher';
 
@@ -36,6 +39,8 @@ type WalletType = 'cash' | 'voucher';
     BadgeComponent,
     DrawerModule,
     OrderPreviewComponent,
+    PurchaseThankYouModalComponent,
+    InvoiceModalComponent,
   ],
   templateUrl: './product-detail-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,6 +52,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
   private orderService = inject(OrderService);
   private messageService = inject(MessageService);
   private dialogService = inject(DialogService);
+  private thankYouService = inject(PurchaseThankYouService);
 
   product = signal<Product | null>(null);
   selectedWallet = signal<WalletType>('voucher');
@@ -54,7 +60,6 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
   fulfilmentDrawerVisible = signal(false);
   pendingOrderData = signal<any>(null);
   orderSubmitting = signal(false);
-  pendingOrdersRedirect = signal(false);
 
   private bodyOverflowPrevious = '';
 
@@ -184,13 +189,9 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
         this.orderService.payOrderWithWallet(order.id, orderData.wallet).subscribe({
           next: () => {
             this.orderSubmitting.set(false);
-            this.pendingOrderData.set(null);
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Order placed',
-              detail: 'Order created successfully. Redirecting to your orders.',
-            });
-            this.closeDrawerAndRedirectToOrders();
+            this.fulfilmentDrawerVisible.set(false);
+            this.cleanupLingeringDrawerMask();
+            this.openPurchaseThankYou(order.id, orderData, fulfilmentDetails);
           },
           error: (err) => {
             this.orderSubmitting.set(false);
@@ -240,26 +241,54 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
 
   onDrawerVisibleChange(visible: boolean): void {
     this.fulfilmentDrawerVisible.set(visible);
-    if (!visible && this.pendingOrdersRedirect()) {
-      this.pendingOrdersRedirect.set(false);
+    if (!visible) {
       this.cleanupLingeringDrawerMask();
-      this.router.navigate(['/orders']);
     }
   }
 
-  private closeDrawerAndRedirectToOrders(): void {
-    this.pendingOrdersRedirect.set(true);
-    this.fulfilmentDrawerVisible.set(false);
+  private openPurchaseThankYou(
+    orderId: string,
+    orderData: { product: Product; quantity: number; wallet: WalletType },
+    fulfilmentDetails: { fulfilmentOption: string },
+  ): void {
+    const buildSummary = (order: Order | undefined): PurchaseThankYouSummary => ({
+      orderId,
+      orderReference: order?.reference ?? orderId,
+      paymentId: order?.paymentId,
+      productName: orderData.product.name,
+      quantity: orderData.quantity,
+      paymentMethod: this.formatWalletLabel(orderData.wallet),
+      amount: order?.total ?? orderData.product.price * orderData.quantity,
+      currency: order?.currency ?? 'NGN',
+      fulfilmentLabel:
+        fulfilmentDetails.fulfilmentOption === 'pickup' ? 'Pickup' : 'Home Delivery',
+      totalPv: orderData.product.pv * orderData.quantity,
+    });
 
-    // Fallback redirect in case visibleChange is not emitted during programmatic close.
-    window.setTimeout(() => {
-      if (!this.pendingOrdersRedirect()) {
+    const showModal = (order: Order | undefined): void => {
+      this.pendingOrderData.set(null);
+      this.thankYouService.open(buildSummary(order), () => {
+        void this.router.navigate(['/orders']);
+      });
+    };
+
+    this.orderService.getOrderById(orderId, true).subscribe((order) => {
+      if (order?.paymentId) {
+        showModal(order);
         return;
       }
-      this.pendingOrdersRedirect.set(false);
-      this.cleanupLingeringDrawerMask();
-      this.router.navigate(['/orders']);
-    }, 250);
+
+      window.setTimeout(() => {
+        this.orderService.getOrderById(orderId, true).subscribe((retried) => {
+          showModal(retried ?? order);
+        });
+      }, 500);
+    });
+  }
+
+  private formatWalletLabel(wallet: WalletType): string {
+    if (wallet === 'voucher') return 'Product Voucher';
+    return 'Cash Wallet';
   }
 
   private cleanupLingeringDrawerMask(): void {

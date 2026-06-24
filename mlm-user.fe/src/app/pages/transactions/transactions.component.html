@@ -188,6 +188,7 @@
                     <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Type</th>
                     <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Amount</th>
                     <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Status</th>
+                    <th class="px-4 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-mlm-warm-200">
@@ -224,11 +225,22 @@
                           {{ tx.status }}
                         </span>
                       </td>
+                      <td class="px-4 py-3 text-center">
+                        @if (hasReceipt(tx)) {
+                          <button
+                            type="button"
+                            (click)="onViewReceipt(tx)"
+                            class="text-xs font-semibold text-mlm-primary hover:text-mlm-primary/80 hover:underline transition-colors"
+                          >
+                            View receipt
+                          </button>
+                        }
+                      </td>
                     </tr>
                   }
                   @if (transactions().length === 0) {
                     <tr>
-                      <td colspan="6" class="px-4 py-8 text-center text-sm text-mlm-warm-500">
+                      <td colspan="7" class="px-4 py-8 text-center text-sm text-mlm-warm-500">
                         {{ emptyStateMessage() }}
                       </td>
                     </tr>
@@ -297,3 +309,5 @@
   </main>
 </div>
 
+<!-- Invoice Modal -->
+<app-invoice-modal></app-invoice-modal>

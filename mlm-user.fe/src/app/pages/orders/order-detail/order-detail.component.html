@@ -113,6 +113,16 @@
               Order Actions
             </h2>
             <div class="flex flex-wrap gap-4">
+              @if (o.paymentId) {
+                <button
+                  (click)="onViewReceipt()"
+                  [disabled]="invoiceService.loading()"
+                  class="px-5 py-2 bg-white text-mlm-primary font-bold rounded-lg border-2 border-mlm-primary hover:bg-mlm-primary/5 disabled:opacity-50 transition-colors inline-flex items-center gap-2"
+                >
+                  <i class="pi pi-file text-sm"></i>
+                  View Receipt
+                </button>
+              }
               @if (o.status === 'Ready for Pickup' || o.status === 'Out for Delivery') {
                 <button
                   (click)="onConfirmReceived()"
@@ -136,3 +146,6 @@
     </div>
   </main>
 </div>
+
+<!-- Invoice Modal -->
+<app-invoice-modal></app-invoice-modal>
