@@ -1,7 +1,9 @@
 import { Component, inject, OnInit, ViewChild, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { ProductService, Product, SortOption } from '../../services/product.service';
+import { CartService } from '../../services/cart.service';
 import { ProductCardComponent } from './components/product-card.component';
 import { FilterBarComponent } from '../../components/filter-bar/filter-bar.component';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -20,6 +22,8 @@ import { SkeletonModule } from 'primeng/skeleton';
 })
 export class ShopComponent implements OnInit {
   private productService = inject(ProductService);
+  private cartService = inject(CartService);
+  private messageService = inject(MessageService);
   private router = inject(Router);
 
   @ViewChild(FilterBarComponent) filterBarRef?: FilterBarComponent;
@@ -71,6 +75,25 @@ export class ShopComponent implements OnInit {
 
   onProductClick(product: Product): void {
     this.router.navigate(['/marketplace', 'product', product.id]);
+  }
+
+  onAddToCart(product: Product): void {
+    const result = this.cartService.addItem(product, 1);
+    if (result.success) {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Added to cart',
+        detail: `${product.name} was added to your cart.`,
+        life: 3000,
+      });
+    } else {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Could not add to cart',
+        detail: result.message ?? 'This product is unavailable.',
+        life: 4000,
+      });
+    }
   }
 
   onExploreCategories(): void {

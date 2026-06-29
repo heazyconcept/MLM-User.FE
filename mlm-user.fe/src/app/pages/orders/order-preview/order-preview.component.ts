@@ -17,6 +17,7 @@ import {
 } from '../../../components/location-selector/location-selector.component';
 import { NIGERIAN_STATES } from '../../../core/constants/states.constants';
 import { getDeliveryFee } from '../../../core/constants/delivery.constants';
+import { PendingCheckoutData } from '../../../services/cart-checkout.service';
 
 @Component({
   selector: 'app-order-preview',
@@ -44,6 +45,7 @@ export class OrderPreviewComponent {
   pickupLocationsLoading = signal(false);
   pickupLocationsError = signal<string | null>(null);
   lastLoadHadProductId = signal(false);
+  isMultiItemCart = signal(false);
 
   hasSelectablePickup = computed(() =>
     this.pickupLocations().some((l) => l.pickupAvailable),
@@ -59,6 +61,9 @@ export class OrderPreviewComponent {
     if (!this.selectedState() || this.pickupLocations().length > 0) return null;
     const state = this.selectedState();
     if (this.lastLoadHadProductId()) {
+      if (this.isMultiItemCart()) {
+        return `No merchants in ${state} with enough stock for all items in your cart.`;
+      }
       return `No merchants in ${state} with enough stock for this product.`;
     }
     return `No active merchants in ${state}.`;
@@ -91,43 +96,76 @@ export class OrderPreviewComponent {
   }
 
   private loadMerchantsForState(state: string): void {
-    const orderData = this.pendingOrderData();
-    const productId = orderData?.product?.id as string | undefined;
-    const quantity = Number(orderData?.quantity ?? 1);
+    const orderData = this.pendingOrderData() as PendingCheckoutData | null;
+    const cartLines = this.resolveCartLines(orderData);
 
     this.pickupLocationsLoading.set(true);
     this.pickupLocationsError.set(null);
-    this.lastLoadHadProductId.set(!!productId);
+    this.lastLoadHadProductId.set(cartLines.length > 0);
+    this.isMultiItemCart.set(cartLines.length > 1);
 
-    this.merchantService
-      .fetchAvailableMerchantsForPickup({
-        state,
-        productId,
-        quantity: quantity > 0 ? quantity : 1,
-      })
-      .subscribe({
-        next: (merchants) => {
-          const list: PickupLocation[] = merchants.map((m) => ({
-            id: m.id,
-            name: m.businessName || m.name || m.username || 'Unnamed Merchant',
-            address: m.address || undefined,
-            phoneNumber: m.phoneNumber || undefined,
-            pickupAvailable: m.pickupAvailable,
-          }));
-          this.pickupLocations.set(list);
-          this.pickupLocationsLoading.set(false);
+    const request$ =
+      cartLines.length > 0
+        ? this.merchantService.fetchPickupMerchantsForCart(state, cartLines)
+        : this.merchantService.fetchAvailableMerchantsForPickup({ state });
+
+    request$.subscribe({
+      next: (merchants) => {
+        const list: PickupLocation[] = merchants.map((m) => ({
+          id: m.id,
+          name: m.businessName || m.name || m.username || 'Unnamed Merchant',
+          address: m.address || undefined,
+          phoneNumber: m.phoneNumber || undefined,
+          pickupAvailable: m.pickupAvailable,
+        }));
+        this.pickupLocations.set(list);
+        this.pickupLocationsLoading.set(false);
+      },
+      error: (err) => {
+        this.pickupLocationsError.set(
+          MerchantService.extractApiErrorMessage(
+            err,
+            'Could not load pickup merchants for this state. Try again or choose delivery.',
+          ),
+        );
+        this.pickupLocations.set([]);
+        this.pickupLocationsLoading.set(false);
+      },
+    });
+  }
+
+  private resolveCartLines(
+    orderData: PendingCheckoutData | null,
+  ): { productId: string; quantity: number }[] {
+    if (!orderData) return [];
+
+    if (orderData.mode === 'cart') {
+      return orderData.items.map((line) => ({
+        productId: line.productId,
+        quantity: line.quantity,
+      }));
+    }
+
+    if (orderData.mode === 'single' && orderData.product) {
+      return [
+        {
+          productId: orderData.product.id,
+          quantity: orderData.quantity > 0 ? orderData.quantity : 1,
         },
-        error: (err) => {
-          this.pickupLocationsError.set(
-            MerchantService.extractApiErrorMessage(
-              err,
-              'Could not load pickup merchants for this state. Try again or choose delivery.',
-            ),
-          );
-          this.pickupLocations.set([]);
-          this.pickupLocationsLoading.set(false);
+      ];
+    }
+
+    const legacy = orderData as { product?: { id: string }; quantity?: number };
+    if (legacy.product?.id) {
+      return [
+        {
+          productId: legacy.product.id,
+          quantity: Number(legacy.quantity ?? 1) > 0 ? Number(legacy.quantity ?? 1) : 1,
         },
-      });
+      ];
+    }
+
+    return [];
   }
 
   onLocationSelect(id: string): void {

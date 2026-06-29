@@ -31,6 +31,7 @@ import { Product } from '../../../services/product.service';
 export class ProductCardComponent {
   product = input.required<Product>();
   productClick = output<Product>();
+  addToCart = output<Product>();
 
   onProductClick(): void {
     this.productClick.emit(this.product());
@@ -39,6 +40,11 @@ export class ProductCardComponent {
   onBuyClick(event: Event): void {
     event.stopPropagation();
     this.productClick.emit(this.product());
+  }
+
+  onAddToCartClick(event: Event): void {
+    event.stopPropagation();
+    this.addToCart.emit(this.product());
   }
 
   getCategoryLabel(): string {

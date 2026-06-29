@@ -5,16 +5,43 @@
       <i class="pi pi-times text-xl"></i>
     </button>
   </div>
-  <div class="flex gap-4 mb-6">
-    <div class="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-      <img [src]="product.images[0]" [alt]="product.name" class="w-full h-full object-cover">
+
+  @if (mode === 'cart') {
+    <div class="space-y-3 mb-6 max-h-48 overflow-y-auto">
+      @for (line of cartItems; track line.productId) {
+        <div class="flex gap-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0">
+          <div class="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+            <img [src]="line.product.images[0]" [alt]="line.product.name" class="w-full h-full object-cover">
+          </div>
+          <div class="min-w-0 flex-1">
+            <h4 class="text-sm font-semibold text-mlm-text truncate">{{ line.product.name }}</h4>
+            <p class="text-xs text-mlm-secondary mt-0.5">Qty: {{ line.quantity }}</p>
+            <p class="text-xs font-semibold text-mlm-text mt-0.5">
+              {{ formatCurrency(line.product.price * line.quantity) }}
+            </p>
+          </div>
+        </div>
+      }
     </div>
-    <div class="min-w-0">
-      <h4 class="text-base font-semibold text-mlm-text truncate">{{ product.name }}</h4>
-      <p class="text-sm text-mlm-secondary mt-1">Qty: {{ quantity }}</p>
-      <p class="text-sm text-mlm-secondary">Pay with: <span class="font-semibold capitalize">{{ selectedWallet === 'voucher' ? 'product voucher' : selectedWallet }}</span></p>
+    <p class="text-sm text-mlm-secondary mb-4">
+      {{ lineCount }} product{{ lineCount === 1 ? '' : 's' }} · {{ itemCount }} item{{ itemCount === 1 ? '' : 's' }}
+    </p>
+  } @else if (product) {
+    <div class="flex gap-4 mb-6">
+      <div class="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+        <img [src]="product.images[0]" [alt]="product.name" class="w-full h-full object-cover">
+      </div>
+      <div class="min-w-0">
+        <h4 class="text-base font-semibold text-mlm-text truncate">{{ product.name }}</h4>
+        <p class="text-sm text-mlm-secondary mt-1">Qty: {{ quantity }}</p>
+      </div>
     </div>
-  </div>
+  }
+
+  <p class="text-sm text-mlm-secondary mb-4">
+    Pay with: <span class="font-semibold capitalize">{{ walletLabel() }}</span>
+  </p>
+
   <div class="bg-gray-50 rounded-xl p-4 mb-6">
     <div class="flex justify-between text-sm">
       <span class="text-mlm-secondary">Total</span>
@@ -25,6 +52,7 @@
       <span class="font-bold text-mlm-secondary">{{ totalPV }} PV</span>
     </div>
   </div>
+
   <button
     type="button"
     (click)="onConfirm()"

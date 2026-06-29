@@ -123,6 +123,67 @@ body {
   font-family: 'Montserrat', sans-serif;
 }
 
+/* PrimeNG toast — responsive width and placement (esp. mobile) */
+.mlm-app-toast.p-toast {
+  z-index: 10000;
+  width: min(24rem, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+}
+
+.mlm-app-toast.p-toast-top-center {
+  top: max(4.5rem, calc(env(safe-area-inset-top, 0px) + 3.5rem)) !important;
+}
+
+.mlm-app-toast .p-toast-message {
+  width: 100%;
+  max-width: 100%;
+}
+
+.mlm-app-toast .p-toast-detail {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 639px) {
+  .mlm-app-toast.p-toast {
+    width: calc(100vw - 1.5rem) !important;
+    max-width: calc(100vw - 1.5rem) !important;
+    top: auto !important;
+    bottom: max(1rem, env(safe-area-inset-bottom, 0px)) !important;
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    transform: none !important;
+  }
+
+  .mlm-app-toast.p-toast-top-center,
+  .mlm-app-toast.p-toast-bottom-center {
+    transform: none !important;
+  }
+
+  .mlm-app-toast .p-toast-message-content {
+    align-items: flex-start;
+    padding: 0.75rem 0.875rem;
+    gap: 0.625rem;
+  }
+
+  .mlm-app-toast .p-toast-summary {
+    font-size: 0.875rem;
+    line-height: 1.25;
+  }
+
+  .mlm-app-toast .p-toast-detail {
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
+
+  .mlm-app-toast .p-toast-close-button {
+    margin: 0;
+    right: 0;
+    flex-shrink: 0;
+    align-self: flex-start;
+  }
+}
+
 .pill-btn {
   transition: all 0.2s ease;
   cursor: pointer;

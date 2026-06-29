@@ -98,12 +98,20 @@
               </div>
             </div>
 
-            <div class="pt-3">
+            <div class="pt-3 flex flex-col sm:flex-row gap-3">
+              <button
+                type="button"
+                (click)="onAddToCart()"
+                [disabled]="!p.inStock"
+                class="flex-1 py-4 border-2 border-mlm-primary text-mlm-primary text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-mlm-primary/5 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                Add to Cart
+              </button>
               <button
                 type="button"
                 (click)="onBuyNow()"
                 [disabled]="!p.inStock"
-                class="w-full py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-brand-green-dark shadow-lg shadow-mlm-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+                class="flex-1 py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-brand-green-dark shadow-lg shadow-mlm-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all"
               >
                 @if (p.priceStatus === 'scheduled') {
                   Out of Stock

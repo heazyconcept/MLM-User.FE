@@ -63,18 +63,27 @@
     <!-- Divider -->
     <div class="h-px bg-gray-100"></div>
 
-    <!-- Price + Buy -->
-    <div class="flex items-center justify-between gap-2">
+    <!-- Price + Actions -->
+    <div class="flex flex-col gap-2">
       <span class="text-base font-extrabold text-mlm-text">
         {{ formatCurrency(product().memberPriceNGN) }}
       </span>
-      <button
-        type="button"
-        (click)="onBuyClick($event)"
-        [disabled]="!product().inStock"
-        class="px-4 py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed tracking-wide">
-        Buy Now
-      </button>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          (click)="onAddToCartClick($event)"
+          [disabled]="!product().inStock"
+          class="flex-1 px-3 py-2 border border-mlm-primary text-mlm-primary text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed tracking-wide hover:bg-mlm-primary/5 transition-colors">
+          Add to Cart
+        </button>
+        <button
+          type="button"
+          (click)="onBuyClick($event)"
+          [disabled]="!product().inStock"
+          class="flex-1 px-3 py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed tracking-wide">
+          Buy Now
+        </button>
+      </div>
     </div>
   </div>
 </div>
