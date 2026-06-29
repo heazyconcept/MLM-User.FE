@@ -61,12 +61,13 @@ export interface MerchantCategoryConfigItem {
 }
 
 export interface MerchantCategoryConfig {
-  id: string;
+  id?: string;
   merchantType: MerchantType;
   deliveryCommissionPct: number;
   productCommissionPct: number;
   registrationFeeUsd: number;
   registrationFeeNGN?: number;
+  registrationPV: number;
   onboardingItems: MerchantCategoryConfigItem[];
 }
 
@@ -358,10 +359,15 @@ export class MerchantService {
   fetchCategoryConfig(): void {
     this.loadingSignal.set(true);
     this.api
-      .get<{ configs: MerchantCategoryConfig[] }>('merchants/category-config')
+      .get<{ configs?: Record<string, unknown>[] }>('merchants/category-config')
       .pipe(
         tap((res) => {
-          this.categoryConfigSignal.set(res.configs ?? []);
+          const rawConfigs = res.configs ?? [];
+          this.categoryConfigSignal.set(
+            rawConfigs
+              .map((config) => this.mapCategoryConfig(config))
+              .filter((config) => config.merchantType),
+          );
         }),
         catchError((err) => {
           console.error('[MerchantService] fetchCategoryConfig failed', err);
@@ -855,6 +861,41 @@ export class MerchantService {
   }
 
   /* ── Helpers ─────────────────────────────────────────────────── */
+
+  private mapCategoryConfig(raw: Record<string, unknown>): MerchantCategoryConfig {
+    const merchantType = String(raw['merchantType'] ?? '') as MerchantType;
+    const rawItems = (raw['onboardingItems'] ?? []) as Record<string, unknown>[];
+
+    let onboardingItems: MerchantCategoryConfigItem[] = rawItems
+      .filter((item) => item['productId'])
+      .map((item) => ({
+        productId: String(item['productId']),
+        productName: item['productName'] ? String(item['productName']).trim() : undefined,
+        quantity: Number(item['quantity'] ?? 0),
+      }));
+
+    const legacyProductId = raw['onboardingProductId'];
+    if (onboardingItems.length === 0 && legacyProductId) {
+      onboardingItems = [
+        {
+          productId: String(legacyProductId),
+          quantity: Number(raw['onboardingQuantity'] ?? 1),
+        },
+      ];
+    }
+
+    return {
+      id: raw['id'] ? String(raw['id']) : undefined,
+      merchantType,
+      deliveryCommissionPct: Number(raw['deliveryCommissionPct'] ?? 0),
+      productCommissionPct: Number(raw['productCommissionPct'] ?? 0),
+      registrationFeeUsd: Number(raw['registrationFeeUsd'] ?? 0),
+      registrationFeeNGN:
+        raw['registrationFeeNGN'] != null ? Number(raw['registrationFeeNGN']) : undefined,
+      registrationPV: Number(raw['registrationPV'] ?? 0),
+      onboardingItems,
+    };
+  }
 
   clearError(): void {
     this.errorSignal.set(null);
