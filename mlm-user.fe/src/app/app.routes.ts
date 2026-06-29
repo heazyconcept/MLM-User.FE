@@ -173,6 +173,12 @@ export const routes: Routes = [
           ),
         data: { title: 'Product' },
       },
+      {
+        path: 'cart',
+        loadComponent: () =>
+          import('./pages/shop/cart-page/cart-page.component').then((m) => m.CartPageComponent),
+        data: { title: 'Cart' },
+      },
     ],
   },
   {

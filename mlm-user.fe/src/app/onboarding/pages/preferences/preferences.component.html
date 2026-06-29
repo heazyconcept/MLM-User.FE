@@ -39,18 +39,13 @@
                 </div>
             </div>
             <div style="margin-top: 14px;">
-                <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">Display Currency</label>
-                <div class="relative">
-                    <p-select
-                        [options]="currencies"
-                        formControlName="currency"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Select Currency"
-                        styleClass="w-full preferences-select"
-                        [style]="{'height': '48px', 'border': '1.5px solid #ddd0c2', 'border-radius': '12px', 'background': '#fff'}">
-                    </p-select>
-                </div>
+                <label class="block text-[13px] font-semibold text-slate-800 mb-[7px]">Account Currency</label>
+                <p class="w-full rounded-xl border-[1.5px] border-[#ddd0c2] bg-[#f9f8f6] px-3 py-3 text-[13px] text-slate-700">
+                    {{ accountCurrencyLabel() }}
+                </p>
+                <p class="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+                    Based on your registration currency and cannot be changed here.
+                </p>
             </div>
         </div>
 

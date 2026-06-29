@@ -25,7 +25,6 @@ export class SettingsPreferencesComponent implements OnInit {
 
   language = signal<string>('en');
   darkMode = signal<boolean>(false);
-  displayCurrency = signal<'NGN' | 'USD'>('NGN');
   savedMessage = signal<string | null>(null);
   isSaving = signal(false);
 
@@ -34,19 +33,17 @@ export class SettingsPreferencesComponent implements OnInit {
     { label: 'Français', value: 'fr' }
   ];
 
-  currencyOptions = [
-    { label: 'Nigerian Naira (₦)', value: 'NGN' },
-    { label: 'US Dollar ($)', value: 'USD' }
-  ];
+  accountCurrency = this.userService.displayCurrency;
+  accountCurrencyLabel = computed(() =>
+    this.accountCurrency() === 'NGN' ? 'Nigerian Naira (₦)' : 'US Dollar ($)',
+  );
 
   private lastSavedLanguage = signal<string>('en');
   private lastSavedDarkMode = signal<boolean>(false);
-  private lastSavedDisplayCurrency = signal<'NGN' | 'USD'>('NGN');
 
   hasChanges = computed(() =>
     this.language() !== this.lastSavedLanguage() ||
-    this.darkMode() !== this.lastSavedDarkMode() ||
-    this.displayCurrency() !== this.lastSavedDisplayCurrency()
+    this.darkMode() !== this.lastSavedDarkMode()
   );
 
   ngOnInit(): void {
@@ -56,9 +53,6 @@ export class SettingsPreferencesComponent implements OnInit {
     this.darkMode.set(theme);
     this.lastSavedLanguage.set(lang);
     this.lastSavedDarkMode.set(theme);
-
-    this.displayCurrency.set(this.userService.displayCurrency());
-    this.lastSavedDisplayCurrency.set(this.displayCurrency());
   }
 
   save(): void {
@@ -67,7 +61,7 @@ export class SettingsPreferencesComponent implements OnInit {
 
     const lang = this.language();
     const theme = this.darkMode();
-    const currency = this.displayCurrency();
+    const accountCurrency = this.accountCurrency();
 
     localStorage.setItem('mlm_settings_language', lang);
     localStorage.setItem('mlm_settings_darkMode', String(theme));
@@ -76,11 +70,10 @@ export class SettingsPreferencesComponent implements OnInit {
 
     this.onboardingService.updatePreferences({
       preferredLanguage: lang,
-      displayCurrency: currency
+      displayCurrency: accountCurrency,
     }).subscribe({
       next: () => {
-        this.userService.setDisplayCurrency(currency);
-        this.lastSavedDisplayCurrency.set(currency);
+        this.userService.setDisplayCurrency(accountCurrency);
         this.isSaving.set(false);
         this.savedMessage.set('Preferences saved.');
         setTimeout(() => this.savedMessage.set(null), 3000);

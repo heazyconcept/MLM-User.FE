@@ -62,12 +62,13 @@ export class UserService {
   onboardingComplete = computed(() => this.user()?.onboardingComplete ?? false);
   currentUser = computed(() => this.user());
 
-  /** Display currency from preferences; falls back to registration currency when not set */
-  displayCurrency = computed(() => {
-    const pref = this.displayCurrencySignal();
-    const reg = this.user()?.currency;
-    return pref ?? reg ?? 'NGN';
-  });
+  /** Account currency — fixed at registration; not overridable via preferences */
+  displayCurrency = computed(() => (this.user()?.currency ?? 'NGN') as 'NGN' | 'USD');
+
+  private resolveAccountCurrency(): 'NGN' | 'USD' {
+    const currency = this.user()?.currency;
+    return currency === 'USD' ? 'USD' : 'NGN';
+  }
 
   fetchProfile(): Observable<User> {
     return this.api.get<Record<string, unknown>>('users/me').pipe(
@@ -89,28 +90,29 @@ export class UserService {
 
   fetchPreferences(): Observable<'NGN' | 'USD'> {
     return this.api.get<Record<string, unknown>>('users/me/preferences').pipe(
-      map((data) => {
-        const curr = (data['displayCurrency'] ?? data['display_currency']) as
-          | 'NGN'
-          | 'USD'
-          | undefined;
-        const fallback = this.user()?.currency ?? 'NGN';
-        const value = (curr === 'NGN' || curr === 'USD' ? curr : fallback) as 'NGN' | 'USD';
-        this.displayCurrencySignal.set(value);
-        localStorage.setItem(DISPLAY_CURRENCY_KEY, value);
+      map(() => {
+        const value = this.syncDisplayCurrencyToAccount();
         return value;
       }),
       catchError(() => {
-        const fallback = this.user()?.currency ?? 'NGN';
-        this.displayCurrencySignal.set(fallback);
-        return of(fallback);
+        const value = this.syncDisplayCurrencyToAccount();
+        return of(value);
       }),
     );
   }
 
   setDisplayCurrency(currency: 'NGN' | 'USD'): void {
-    this.displayCurrencySignal.set(currency);
-    localStorage.setItem(DISPLAY_CURRENCY_KEY, currency);
+    const accountCurrency = this.resolveAccountCurrency();
+    const value = currency === accountCurrency ? currency : accountCurrency;
+    this.displayCurrencySignal.set(value);
+    localStorage.setItem(DISPLAY_CURRENCY_KEY, value);
+  }
+
+  private syncDisplayCurrencyToAccount(): 'NGN' | 'USD' {
+    const value = this.resolveAccountCurrency();
+    this.displayCurrencySignal.set(value);
+    localStorage.setItem(DISPLAY_CURRENCY_KEY, value);
+    return value;
   }
 
   /** Sync when GET /merchants/me returns ACTIVE but users/me still lacks merchant role. */

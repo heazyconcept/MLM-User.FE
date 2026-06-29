@@ -12,10 +12,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService, Product } from '../../../services/product.service';
-import { OrderService, Order } from '../../../services/order.service';
 import { MessageService } from 'primeng/api';
 import { DialogService } from 'primeng/dynamicdialog';
-import { PurchaseThankYouService, PurchaseThankYouSummary } from '../../../services/purchase-thank-you.service';
+import { CartService } from '../../../services/cart.service';
+import {
+  CartCheckoutService,
+  CheckoutWalletType,
+  PendingCheckoutData,
+} from '../../../services/cart-checkout.service';
 import { ProductGalleryComponent } from '../../../components/product-gallery/product-gallery.component';
 import { QuantitySelectorComponent } from '../../../components/quantity-selector/quantity-selector.component';
 import { BadgeComponent } from '../../../components/badge/badge.component';
@@ -24,8 +28,6 @@ import { DrawerModule } from 'primeng/drawer';
 import { OrderPreviewComponent } from '../../orders/order-preview/order-preview.component';
 import { PurchaseThankYouModalComponent } from '../../../components/purchase-thank-you-modal/purchase-thank-you-modal.component';
 import { InvoiceModalComponent } from '../../../components/invoice-modal/invoice-modal.component';
-
-type WalletType = 'cash' | 'voucher';
 
 @Component({
   selector: 'app-product-detail-page',
@@ -49,16 +51,16 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private productService = inject(ProductService);
-  private orderService = inject(OrderService);
+  private cartService = inject(CartService);
+  private checkoutService = inject(CartCheckoutService);
   private messageService = inject(MessageService);
   private dialogService = inject(DialogService);
-  private thankYouService = inject(PurchaseThankYouService);
 
   product = signal<Product | null>(null);
-  selectedWallet = signal<WalletType>('voucher');
+  selectedWallet = signal<CheckoutWalletType>('voucher');
   quantity = signal(1);
   fulfilmentDrawerVisible = signal(false);
-  pendingOrderData = signal<any>(null);
+  pendingOrderData = signal<PendingCheckoutData | null>(null);
   orderSubmitting = signal(false);
 
   private bodyOverflowPrevious = '';
@@ -86,9 +88,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     return p ? p.pv * q : 0;
   });
 
-  readonly walletOptions = [
-    { type: 'voucher' as WalletType, label: 'Product Voucher' },
-  ];
+  readonly walletOptions = [{ type: 'voucher' as CheckoutWalletType, label: 'Product Voucher' }];
 
   eligibleWalletOptions = computed(() => {
     const p = this.product();
@@ -109,14 +109,16 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
       }
       this.product.set(p);
       this.productService.selectProduct(p);
-      const firstPayWallet = this.walletOptions.find((w) => p.eligibleWallets.includes(w.type))?.type;
+      const firstPayWallet = this.walletOptions.find((w) =>
+        p.eligibleWallets.includes(w.type),
+      )?.type;
       if (firstPayWallet) {
         this.selectedWallet.set(firstPayWallet);
       }
     });
   }
 
-  onWalletChange(wallet: WalletType): void {
+  onWalletChange(wallet: CheckoutWalletType): void {
     const p = this.product();
     if (p?.eligibleWallets.includes(wallet)) {
       this.selectedWallet.set(wallet);
@@ -127,11 +129,33 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     this.quantity.set(value);
   }
 
+  onAddToCart(): void {
+    const p = this.product();
+    if (!p || !p.inStock) return;
+    const result = this.cartService.addItem(p, this.quantity());
+    if (result.success) {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Added to cart',
+        detail: `${p.name} was added to your cart.`,
+        life: 3000,
+      });
+    } else {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Could not add to cart',
+        detail: result.message ?? 'This product is unavailable.',
+        life: 4000,
+      });
+    }
+  }
+
   onBuyNow(): void {
     const p = this.product();
     if (!p || !p.inStock) return;
     const ref = this.dialogService.open(PurchaseSummaryModalComponent, {
       data: {
+        mode: 'single',
         product: p,
         selectedWallet: this.selectedWallet(),
         quantity: this.quantity(),
@@ -142,7 +166,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
       baseZIndex: 10000,
     });
     if (ref) {
-      ref.onClose.subscribe((result: { action?: string; orderData?: any } | undefined) => {
+      ref.onClose.subscribe((result: { action?: string; orderData?: PendingCheckoutData } | undefined) => {
         if (result?.action === 'choose-fulfilment' && result.orderData) {
           this.pendingOrderData.set(result.orderData);
           this.fulfilmentDrawerVisible.set(true);
@@ -151,7 +175,13 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  submitOrder(fulfilmentDetails: any): void {
+  submitOrder(fulfilmentDetails: {
+    fulfilmentOption: 'pickup' | 'delivery';
+    selectedPickupId?: string | null;
+    deliveryAddress?: string;
+    deliveryState?: string;
+    deliveryFee?: number;
+  }): void {
     const orderData = this.pendingOrderData();
     if (!orderData) return;
 
@@ -167,50 +197,23 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const payload = {
-      items: [{ productId: orderData.product.id, quantity: orderData.quantity }],
-      paymentMethod: 'WALLET',
-      fulfilmentMode: isPickup ? 'PICKUP' : 'OFFLINE_DELIVERY',
-      selectedMerchantId: isPickup ? selectedMerchantId : undefined,
-      deliveryAddress:
-        fulfilmentDetails.fulfilmentOption === 'delivery'
-          ? fulfilmentDetails.deliveryAddress
-          : undefined,
-      deliveryFee:
-        fulfilmentDetails.fulfilmentOption === 'delivery'
-          ? fulfilmentDetails.deliveryFee
-          : undefined,
-      deliveryDisclaimerAccepted: true,
-    };
-
     this.orderSubmitting.set(true);
-    this.orderService.createOrder(payload).subscribe({
-      next: (order) => {
-        this.orderService.payOrderWithWallet(order.id, orderData.wallet).subscribe({
-          next: () => {
-            this.orderSubmitting.set(false);
-            this.fulfilmentDrawerVisible.set(false);
-            this.cleanupLingeringDrawerMask();
-            this.openPurchaseThankYou(order.id, orderData, fulfilmentDetails);
-          },
-          error: (err) => {
-            this.orderSubmitting.set(false);
-            console.error('Payment failed', err);
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Payment failed',
-              detail: err?.error?.message ?? 'Could not complete payment. Please try again.',
-            });
-          },
-        });
+    this.checkoutService.submitOrder(orderData, fulfilmentDetails).subscribe({
+      next: () => {
+        this.orderSubmitting.set(false);
+        this.fulfilmentDrawerVisible.set(false);
+        this.pendingOrderData.set(null);
+        this.cleanupLingeringDrawerMask();
       },
       error: (err) => {
         this.orderSubmitting.set(false);
-        console.error('Order creation failed', err);
+        console.error('Order failed', err);
         const errMsg = err?.error?.message ?? '';
-        const friendlyMsg = errMsg.toLowerCase().includes('no active price') || errMsg.toLowerCase().includes('no effective price')
-          ? 'This product is not available for purchase yet.'
-          : (err?.error?.message ?? 'Could not create order. Please try again.');
+        const friendlyMsg =
+          errMsg.toLowerCase().includes('no active price') ||
+          errMsg.toLowerCase().includes('no effective price')
+            ? 'This product is not available for purchase yet.'
+            : (err?.error?.message ?? 'Could not complete order. Please try again.');
 
         this.messageService.add({
           severity: 'error',
@@ -230,7 +233,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     try {
       const date = new Date(dateStr);
       return date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
-    } catch (e) {
+    } catch {
       return '';
     }
   }
@@ -244,51 +247,6 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     if (!visible) {
       this.cleanupLingeringDrawerMask();
     }
-  }
-
-  private openPurchaseThankYou(
-    orderId: string,
-    orderData: { product: Product; quantity: number; wallet: WalletType },
-    fulfilmentDetails: { fulfilmentOption: string },
-  ): void {
-    const buildSummary = (order: Order | undefined): PurchaseThankYouSummary => ({
-      orderId,
-      orderReference: order?.reference ?? orderId,
-      paymentId: order?.paymentId,
-      productName: orderData.product.name,
-      quantity: orderData.quantity,
-      paymentMethod: this.formatWalletLabel(orderData.wallet),
-      amount: order?.total ?? orderData.product.price * orderData.quantity,
-      currency: order?.currency ?? 'NGN',
-      fulfilmentLabel:
-        fulfilmentDetails.fulfilmentOption === 'pickup' ? 'Pickup' : 'Home Delivery',
-      totalPv: orderData.product.pv * orderData.quantity,
-    });
-
-    const showModal = (order: Order | undefined): void => {
-      this.pendingOrderData.set(null);
-      this.thankYouService.open(buildSummary(order), () => {
-        void this.router.navigate(['/orders']);
-      });
-    };
-
-    this.orderService.getOrderById(orderId, true).subscribe((order) => {
-      if (order?.paymentId) {
-        showModal(order);
-        return;
-      }
-
-      window.setTimeout(() => {
-        this.orderService.getOrderById(orderId, true).subscribe((retried) => {
-          showModal(retried ?? order);
-        });
-      }, 500);
-    });
-  }
-
-  private formatWalletLabel(wallet: WalletType): string {
-    if (wallet === 'voucher') return 'Product Voucher';
-    return 'Cash Wallet';
   }
 
   private cleanupLingeringDrawerMask(): void {

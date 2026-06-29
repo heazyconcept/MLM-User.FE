@@ -1,5 +1,5 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, of, throwError, forkJoin } from 'rxjs';
 import { map, catchError, tap, finalize, switchMap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { UserService } from './user.service';
@@ -433,6 +433,47 @@ export class MerchantService {
         return throwError(() => err);
       }),
     );
+  }
+
+  /** Multi-item cart: merchants that can fulfil every line (intersection by id). */
+  fetchPickupMerchantsForCart(
+    state: string,
+    cartItems: { productId: string; quantity: number }[],
+  ): Observable<AvailableMerchant[]> {
+    if (cartItems.length === 0) {
+      return this.fetchAvailableMerchantsForPickup({ state });
+    }
+    if (cartItems.length === 1) {
+      const line = cartItems[0];
+      return this.fetchAvailableMerchantsForPickup({
+        state,
+        productId: line.productId,
+        quantity: line.quantity,
+      });
+    }
+
+    return forkJoin(
+      cartItems.map((line) =>
+        this.fetchAvailableMerchantsForPickup({
+          state,
+          productId: line.productId,
+          quantity: line.quantity,
+        }),
+      ),
+    ).pipe(map((lists) => this.intersectMerchantsById(lists)));
+  }
+
+  private intersectMerchantsById(lists: AvailableMerchant[][]): AvailableMerchant[] {
+    if (lists.length === 0) return [];
+    const [first, ...rest] = lists;
+    const idsInAll = new Set(first.map((m) => m.id));
+    for (const list of rest) {
+      const ids = new Set(list.map((m) => m.id));
+      for (const id of idsInAll) {
+        if (!ids.has(id)) idsInAll.delete(id);
+      }
+    }
+    return first.filter((m) => idsInAll.has(m.id));
   }
 
   static extractApiErrorMessage(err: unknown, fallback: string): string {

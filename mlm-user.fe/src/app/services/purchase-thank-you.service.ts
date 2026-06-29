@@ -1,12 +1,19 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { InvoiceService } from './invoice.service';
 
+export interface PurchaseThankYouLineItem {
+  name: string;
+  quantity: number;
+}
+
 export interface PurchaseThankYouSummary {
   orderId: string;
   orderReference: string;
   paymentId?: string;
   productName: string;
   quantity: number;
+  items?: PurchaseThankYouLineItem[];
+  itemCount?: number;
   paymentMethod: string;
   amount: number;
   currency: 'NGN' | 'USD';

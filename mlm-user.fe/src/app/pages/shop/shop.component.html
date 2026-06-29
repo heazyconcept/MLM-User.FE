@@ -83,7 +83,8 @@
           @for (product of products(); track product.id) {
             <app-product-card
               [product]="product"
-              (productClick)="onProductClick($event)">
+              (productClick)="onProductClick($event)"
+              (addToCart)="onAddToCart($event)">
             </app-product-card>
           }
         </div>

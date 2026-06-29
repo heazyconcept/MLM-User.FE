@@ -1,7 +1,7 @@
 import {
   Component,
   inject,
-  signal,
+  computed,
   ChangeDetectionStrategy,
   OnInit,
   ChangeDetectorRef,
@@ -38,41 +38,26 @@ export class PreferencesComponent implements OnInit {
     { label: 'Spanish', value: 'es' },
   ];
 
-  currencies = [
-    { label: 'US Dollar ($)', value: 'USD' },
-    { label: 'Nigerian Naira (₦)', value: 'NGN' },
-  ];
+  accountCurrency = computed(() => this.userService.displayCurrency());
+  accountCurrencyLabel = computed(() =>
+    this.accountCurrency() === 'NGN' ? 'Nigerian Naira (₦)' : 'US Dollar ($)',
+  );
 
   prefForm = this.fb.group({
     language: ['en'],
-    currency: ['USD' as 'NGN' | 'USD'],
     emailNotifications: [true],
     smsNotifications: [false],
   });
 
   ngOnInit(): void {
-    // Use the registration currency from user profile as the initial default
-    const registrationCurrency = this.userService.currentUser()?.currency;
-    if (registrationCurrency === 'NGN' || registrationCurrency === 'USD') {
-      this.prefForm.patchValue({ currency: registrationCurrency });
-    }
-
-    // Then try to load saved preferences (overrides the above if they exist)
     this.loadingService.show();
     this.onboardingService.getPreferences().subscribe({
       next: (data) => {
         const lang = (data['preferredLanguage'] ?? data['preferred_language']) as
           | string
           | undefined;
-        const currency = (data['displayCurrency'] ?? data['display_currency']) as
-          | 'NGN'
-          | 'USD'
-          | undefined;
-        if (lang || currency) {
-          this.prefForm.patchValue({
-            language: lang ?? 'en',
-            currency: currency ?? registrationCurrency ?? 'USD',
-          });
+        if (lang) {
+          this.prefForm.patchValue({ language: lang });
         }
         this.loadingService.hide();
       },
@@ -92,10 +77,9 @@ export class PreferencesComponent implements OnInit {
 
   onSubmit(): void {
     const value = this.prefForm.getRawValue();
-    const displayCurrency: 'NGN' | 'USD' = value.currency === 'NGN' ? 'NGN' : 'USD';
     const payload = {
       preferredLanguage: value.language ?? undefined,
-      displayCurrency,
+      displayCurrency: this.accountCurrency(),
     };
 
     this.loadingService.show();

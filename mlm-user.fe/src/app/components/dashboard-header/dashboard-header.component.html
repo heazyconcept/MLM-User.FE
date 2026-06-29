@@ -83,6 +83,58 @@
         <div class="hidden md:block h-6 w-px bg-gray-200 shrink-0" aria-hidden="true"></div>
       }
 
+      @if (isPaid()) {
+        <div class="relative">
+          <a
+            routerLink="/marketplace/cart"
+            (click)="onCartClick()"
+            class="relative -m-2.5 p-2.5 text-gray-500 hover:text-mlm-primary hover:bg-gray-50 rounded-lg transition-colors inline-flex"
+            [class.cart-icon-hint-active]="cartCheckoutHintVisible()"
+            [class.text-mlm-primary]="cartCheckoutHintVisible()"
+            [class.bg-mlm-primary/5]="cartCheckoutHintVisible()"
+            aria-label="View cart"
+          >
+            <i class="pi pi-shopping-cart text-xl" aria-hidden="true"></i>
+            @if (cartItemCount() > 0) {
+              <span
+                class="absolute top-1 right-1 min-w-5 h-5 px-1.5 flex items-center justify-center text-[10px] font-bold text-white bg-mlm-primary rounded-full border-2 border-white"
+                >{{ cartItemCount() }}</span
+              >
+            }
+          </a>
+
+          @if (cartCheckoutHintVisible()) {
+            <div
+              class="cart-checkout-hint absolute top-full right-0 mt-2 z-50 w-56 rounded-xl border border-mlm-primary/20 bg-white px-3 py-2.5 shadow-lg shadow-black/10"
+              role="tooltip"
+              aria-live="polite"
+            >
+              <span
+                class="absolute -top-1.5 right-4 h-3 w-3 rotate-45 border-l border-t border-mlm-primary/20 bg-white"
+                aria-hidden="true"
+              ></span>
+              <div class="flex items-start gap-2">
+                <i class="pi pi-check-circle text-mlm-primary text-sm mt-0.5 shrink-0" aria-hidden="true"></i>
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-bold text-mlm-text leading-snug">Added to cart</p>
+                  <p class="text-[11px] text-mlm-secondary mt-0.5 leading-snug">
+                    Tap here to review your items and checkout.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  (click)="dismissCartCheckoutHint($event)"
+                  class="shrink-0 text-gray-400 hover:text-gray-600 -mr-0.5 -mt-0.5"
+                  aria-label="Dismiss hint"
+                >
+                  <i class="pi pi-times text-[10px]"></i>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
       <!-- Notifications -->
       <button
         type="button"

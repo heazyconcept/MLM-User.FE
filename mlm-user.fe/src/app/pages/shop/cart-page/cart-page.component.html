@@ -1,0 +1,143 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 mx-auto max-w-4xl">
+      <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-bold text-mlm-text">Your Cart</h1>
+          <p class="text-mlm-secondary text-sm mt-0.5">Review items before checkout</p>
+        </div>
+        <a
+          routerLink="/marketplace"
+          class="text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80 inline-flex items-center gap-1"
+        >
+          <i class="pi pi-arrow-left"></i>
+          Continue shopping
+        </a>
+      </div>
+
+      @if (isEmpty()) {
+        <div class="flex flex-col items-center justify-center py-20 text-center bg-white rounded-2xl border border-gray-100">
+          <div class="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4">
+            <i class="pi pi-shopping-cart text-2xl text-gray-300"></i>
+          </div>
+          <h2 class="text-lg font-bold text-mlm-text mb-2">Your cart is empty</h2>
+          <p class="text-sm text-mlm-secondary mb-6 max-w-sm">
+            Browse the marketplace and add products to checkout later.
+          </p>
+          <a
+            routerLink="/marketplace"
+            class="px-6 py-3 bg-mlm-primary text-white rounded-xl text-sm font-semibold hover:bg-mlm-primary/90 transition-colors"
+          >
+            Browse Marketplace
+          </a>
+        </div>
+      } @else {
+        <div class="space-y-4">
+          @for (line of items(); track line.productId) {
+            <div
+              class="bg-white rounded-xl border p-4 sm:p-5 flex flex-col sm:flex-row gap-4"
+              [class.border-mlm-error/30]="isLineUnavailable(line)"
+              [class.border-gray-100]="!isLineUnavailable(line)"
+            >
+              <div class="w-full sm:w-24 h-24 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                <img
+                  [src]="line.product.images[0]"
+                  [alt]="line.product.name"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 class="text-sm font-bold text-mlm-text">{{ line.product.name }}</h3>
+                    <p class="text-xs text-mlm-secondary mt-1">{{ line.product.pv }} PV each</p>
+                    @if (isLineUnavailable(line)) {
+                      <p class="text-xs font-semibold text-mlm-error mt-2">
+                        This item is no longer available. Remove it to continue.
+                      </p>
+                    }
+                  </div>
+                  <button
+                    type="button"
+                    (click)="onRemove(line.productId)"
+                    class="text-gray-400 hover:text-mlm-error transition-colors shrink-0"
+                    aria-label="Remove item"
+                  >
+                    <i class="pi pi-trash text-sm"></i>
+                  </button>
+                </div>
+
+                <div class="flex flex-wrap items-end justify-between gap-4 mt-4">
+                  <app-quantity-selector
+                    [min]="1"
+                    [max]="10"
+                    [value]="line.quantity"
+                    [disabled]="isLineUnavailable(line)"
+                    (valueChange)="onQuantityChange(line.productId, $event)"
+                  />
+                  <div class="text-right">
+                    <p class="text-xs text-mlm-secondary">Line total</p>
+                    <p class="text-base font-bold text-mlm-text tabular-nums">
+                      {{ formatCurrency(line.product.price * line.quantity) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="mt-6 bg-white rounded-2xl border border-gray-100 p-5 sm:p-6">
+          <div class="space-y-2 mb-5">
+            <div class="flex justify-between text-sm">
+              <span class="text-mlm-secondary">Subtotal</span>
+              <span class="font-semibold text-mlm-text tabular-nums">{{ formatCurrency(subtotal()) }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-mlm-secondary">Total PV</span>
+              <span class="font-semibold text-mlm-secondary">{{ totalPv() }} PV</span>
+            </div>
+          </div>
+
+          @if (hasUnavailableItems()) {
+            <p class="text-xs text-mlm-error mb-4">
+              Remove unavailable items before proceeding to checkout.
+            </p>
+          }
+
+          <button
+            type="button"
+            (click)="onProceedToCheckout()"
+            [disabled]="!canCheckout()"
+            class="w-full py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-brand-green-dark shadow-lg shadow-mlm-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all"
+          >
+            Proceed to Checkout
+          </button>
+        </div>
+      }
+    </div>
+  </main>
+
+  <p-drawer
+    [visible]="fulfilmentDrawerVisible()"
+    (visibleChange)="onDrawerVisibleChange($event)"
+    position="right"
+    [style]="{ width: 'min(100vw, 520px)' }"
+    styleClass="border-0 !bg-white overflow-hidden flex flex-col"
+  >
+    <ng-template pTemplate="header">
+      <h3 class="text-lg font-black text-mlm-text uppercase tracking-tighter">Choose fulfilment</h3>
+    </ng-template>
+    <div class="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4">
+      <app-order-preview
+        [pendingOrderData]="pendingOrderData()"
+        [submitting]="orderSubmitting()"
+        (orderConfirmed)="submitOrder($event)"
+      />
+    </div>
+  </p-drawer>
+</div>
+
+<app-purchase-thank-you-modal></app-purchase-thank-you-modal>
+<app-invoice-modal></app-invoice-modal>

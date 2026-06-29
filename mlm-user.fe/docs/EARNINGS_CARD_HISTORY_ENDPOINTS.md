@@ -93,11 +93,16 @@ All endpoints below must be:
       "id": "evt_123",
       "date": "2026-04-20T08:10:00.000Z",
       "status": "POSTED",
-      "source": "Daily allocation engine",
+      "source": "@mikeuser",
       "sourceRef": "alloc_2026_04_20",
       "value": 120,
       "runningBalance": 4200,
-      "description": "PDPA daily drop"
+      "description": "CDPA (12%) from @mikeuser's PDPA — Level 4",
+      "earningType": "CDPA",
+      "sourceUsername": "mikeuser",
+      "sourceUserId": "usr_mike_002",
+      "level": 4,
+      "stage": 3
     }
   ],
   "nextCursor": "opaque_cursor_here"
@@ -114,8 +119,17 @@ Per row (`items[]`):
 4. `source` string required
 5. `value` number required
 6. `runningBalance` number optional but strongly recommended
-7. `description` optional
+7. `description` optional (strongly recommended — human-readable detail for UI)
 8. `sourceRef` optional
+
+**Additive fields (2026-06-29)** — same response shape; backend adds these on each row. See [`EARNINGS_HISTORY_TRANSACTION_DETAIL_BACKEND_SPEC.md`](./EARNINGS_HISTORY_TRANSACTION_DETAIL_BACKEND_SPEC.md).
+
+9. `sourceUsername` string \| null optional — public username of user who triggered the earning
+10. `sourceUserId` string \| null optional
+11. `level` number \| null optional — community/matrix level (1–13) when applicable
+12. `stage` number \| null optional — earner stage at credit time when applicable
+13. `earningType` string \| null optional — canonical earning type enum value
+14. `metadata` object optional — unchanged; may include package, rates, order IDs, etc.
 
 Top-level:
 
@@ -126,16 +140,18 @@ Top-level:
 
 ## Frontend Table Mapping
 
-The frontend table uses these columns:
+The frontend table uses these columns (**unchanged layout**):
 
 1. Date -> `items[].date`
 2. Status -> `items[].status`
-3. Source -> `items[].source`
+3. Source -> `items[].source`, plus `items[].description`, `items[].sourceUsername`, `items[].level`, `items[].stage` when present
 4. Value Dropped -> `items[].value` with `unit`
 
 Optional enhancement:
 
 1. Running Balance -> `items[].runningBalance`
+
+No new columns or endpoints on the frontend — only richer values in the existing Source cell.
 
 ## Error Handling
 

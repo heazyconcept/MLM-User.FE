@@ -156,6 +156,11 @@ export interface EarningsCardHistoryItem {
   value: number;
   runningBalance?: number;
   description?: string;
+  sourceUsername?: string;
+  sourceUserId?: string;
+  level?: number;
+  stage?: number;
+  earningType?: string;
   metadata?: {
     date?: string;
     package?: string;
@@ -164,7 +169,9 @@ export interface EarningsCardHistoryItem {
     pdpaAmountDisplay?: number;
     downlinePackage?: string;
     triggeredByUserId?: string;
-    [key: string]: any;
+    triggeredByUsername?: string;
+    downlinePdpaAmountDisplay?: number;
+    [key: string]: unknown;
   };
 }
 
@@ -474,7 +481,14 @@ export class EarningsService {
         runningBalance:
           item['runningBalance'] != null ? Number(item['runningBalance']) : undefined,
         description: item['description'] ? String(item['description']) : undefined,
-        metadata: item['metadata'] ? (item['metadata'] as Record<string, any>) : undefined
+        sourceUsername: item['sourceUsername'] ? String(item['sourceUsername']) : undefined,
+        sourceUserId: item['sourceUserId'] ? String(item['sourceUserId']) : undefined,
+        level: item['level'] != null ? Number(item['level']) : undefined,
+        stage: item['stage'] != null ? Number(item['stage']) : undefined,
+        earningType: item['earningType'] ? String(item['earningType']) : undefined,
+        metadata: item['metadata']
+          ? (item['metadata'] as EarningsCardHistoryItem['metadata'])
+          : undefined,
       };
     });
 

@@ -119,6 +119,74 @@ describe('EarningsService', () => {
       req.flush(mockResponse);
     });
 
+    it('should map enriched history item fields from backend', () => {
+      const mockResponse = {
+        cardKey: 'CDPA',
+        unit: 'MONEY',
+        currency: 'NGN',
+        items: [
+          {
+            id: '553777ab-0c78-4745-93c8-2964782da86b',
+            date: '2026-06-29T00:05:03.588Z',
+            status: 'POSTED',
+            sourceRef: 'CDA-REF-3A788133',
+            value: 2400,
+            source: '@Ade',
+            description: "CDPA (20%) from @Ade's PDPA",
+            sourceUsername: 'Ade',
+            sourceUserId: 'c432866d-9e7a-49a9-9c51-a4086ab6ef6d',
+            level: null,
+            stage: null,
+            earningType: 'CDPA',
+            runningBalance: 11585.1,
+          },
+        ],
+      };
+
+      service.fetchEarningsCardHistory('CDPA').subscribe((response) => {
+        const item = response.items[0];
+        expect(item.description).toBe("CDPA (20%) from @Ade's PDPA");
+        expect(item.sourceUsername).toBe('Ade');
+        expect(item.sourceUserId).toBe('c432866d-9e7a-49a9-9c51-a4086ab6ef6d');
+        expect(item.level).toBeUndefined();
+        expect(item.stage).toBeUndefined();
+        expect(item.earningType).toBe('CDPA');
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/earnings/cards/CDPA/history`);
+      req.flush(mockResponse);
+    });
+
+    it('should map level and stage when present', () => {
+      const mockResponse = {
+        cardKey: 'DIRECT_REFERRAL_PV',
+        unit: 'PV',
+        currency: 'NGN',
+        items: [
+          {
+            id: 'pv-1',
+            date: '2026-06-29T00:05:03.588Z',
+            status: 'POSTED',
+            source: '@Jane',
+            value: 120,
+            description: 'Direct referral PV from @Jane',
+            sourceUsername: 'Jane',
+            level: 2,
+            stage: 3,
+          },
+        ],
+      };
+
+      service.fetchEarningsCardHistory('DIRECT_REFERRAL_PV').subscribe((response) => {
+        const item = response.items[0];
+        expect(item.level).toBe(2);
+        expect(item.stage).toBe(3);
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/earnings/cards/DIRECT_REFERRAL_PV/history`);
+      req.flush(mockResponse);
+    });
+
     it('should handle history items without metadata', () => {
       const mockResponse = {
         cardKey: 'CDPA',
