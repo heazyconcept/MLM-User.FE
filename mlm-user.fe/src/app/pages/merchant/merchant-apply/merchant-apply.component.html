@@ -192,6 +192,12 @@
                       <dt class="text-mlm-secondary">Delivery Comm.</dt>
                       <dd class="font-semibold text-mlm-text">{{ cfg.deliveryCommissionPct }}%</dd>
                     </div>
+                    @if (cfg.registrationPV > 0) {
+                      <div class="flex justify-between border-b border-gray-50 pb-1">
+                        <dt class="text-mlm-secondary">Registration PV</dt>
+                        <dd class="font-semibold text-mlm-text tabular-nums">{{ cfg.registrationPV | number }} PV</dd>
+                      </div>
+                    }
                     @if (cfg.onboardingItems && cfg.onboardingItems.length > 0) {
                       <div class="pt-2">
                         <dt class="text-mlm-secondary font-bold mb-1 uppercase tracking-tight">
