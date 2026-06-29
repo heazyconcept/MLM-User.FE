@@ -16,17 +16,15 @@
     </div>
 
     <div>
-      <label for="pref-currency" class="block text-sm font-semibold text-mlm-text mb-2">Display currency</label>
-      <p-select
+      <label for="pref-currency" class="block text-sm font-semibold text-mlm-text mb-2">Account currency</label>
+      <p
         id="pref-currency"
-        [options]="currencyOptions"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="displayCurrency()"
-        (ngModelChange)="displayCurrency.set($event)"
-        placeholder="Select currency"
-        styleClass="w-full">
-      </p-select>
+        class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-mlm-secondary">
+        {{ accountCurrencyLabel() }}
+      </p>
+      <p class="mt-1.5 text-xs text-mlm-secondary">
+        Set at registration and used for wallets, cashout, and earnings.
+      </p>
     </div>
 
     <div>

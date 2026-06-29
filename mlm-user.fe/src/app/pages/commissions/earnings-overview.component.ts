@@ -267,6 +267,12 @@ export class EarningsOverviewComponent implements OnInit {
     return colors[pkg] ?? '#2d7a3a';
   }
 
+  /** Strip @ username prefixes from API text for display */
+  formatHistorySourceText(value: string | undefined): string {
+    if (!value) return '';
+    return value.replace(/@(?=\w)/g, '');
+  }
+
   formatHistoryValue(row: EarningsCardHistoryItem): string {
     if (this.selectedHistoryCard()?.unit === 'PV') {
       return `${row.value.toLocaleString()} PV`;

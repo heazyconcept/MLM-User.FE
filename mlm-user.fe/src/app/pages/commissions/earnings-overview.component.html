@@ -245,15 +245,30 @@
                           {{ row.status }}
                         </span>
                       </td>
-                      <td class="px-5 py-4 text-sm font-bold text-mlm-text">
-                        <div>{{ row.source }}</div>
+                      <td class="px-5 py-4 text-sm text-mlm-text">
                         @if (row.description) {
-                          <div class="text-xs text-mlm-text mt-0.5 font-bold">
-                            {{ row.description }}
+                          <div class="font-semibold text-mlm-text">{{ formatHistorySourceText(row.description) }}</div>
+                        } @else {
+                          <div class="font-semibold text-mlm-text">{{ formatHistorySourceText(row.source) }}</div>
+                        }
+                        @if (row.sourceUsername) {
+                          <div class="text-xs text-mlm-secondary mt-0.5">{{ formatHistorySourceText(row.sourceUsername) }}</div>
+                        }
+                        @if (row.level != null || row.stage != null) {
+                          <div class="text-[10px] text-mlm-secondary mt-1">
+                            @if (row.level != null) {
+                              <span>Level {{ row.level }}</span>
+                            }
+                            @if (row.level != null && row.stage != null) {
+                              <span class="mx-1">&middot;</span>
+                            }
+                            @if (row.stage != null) {
+                              <span>Stage {{ row.stage }}</span>
+                            }
                           </div>
                         }
-                        @if (selectedHistoryCardKey() === 'CDPA' && row.metadata) {
-                          <div class="text-[10px] text-mlm-text/90 mt-0.5 font-bold">
+                        @if (!row.description && selectedHistoryCardKey() === 'CDPA' && row.metadata) {
+                          <div class="text-[10px] text-mlm-text/90 mt-0.5 font-medium">
                             @if (row.metadata.downlinePackage) {
                               My Package: {{ getPackageLabel(row.metadata.package) }} &middot; Downline: {{ getPackageLabel(row.metadata.downlinePackage) }}
                             } @else if (row.metadata.pdpaAmountDisplay != null) {
