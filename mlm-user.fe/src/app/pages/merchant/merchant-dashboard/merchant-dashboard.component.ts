@@ -271,15 +271,21 @@ export class MerchantDashboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.merchantService.fetchProfile();
-    this.merchantService.fetchEarningsSummary();
-    this.merchantService.fetchOrders();
-    this.merchantService.fetchInventory();
-    this.merchantService.fetchAllocations();
+    this.merchantService.fetchProfile$().subscribe((profile) => {
+      if (profile?.status === 'ACTIVE') {
+        this.merchantService.fetchEarningsSummary();
+        this.merchantService.fetchOrders();
+        this.merchantService.fetchInventory();
+        this.merchantService.fetchAllocations();
+        this.initCharts();
+        this.runEntranceAnimations();
+      } else {
+        this.merchantService.clearError();
+      }
+    });
+  }
 
-    this.initCharts();
-
-    // Entrance animation for stat cards and bar chart
+  private runEntranceAnimations(): void {
     setTimeout(() => {
       this.barsAnimated = true;
       this.cdr.markForCheck();

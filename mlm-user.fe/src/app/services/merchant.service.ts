@@ -572,19 +572,21 @@ export class MerchantService {
   }
 
   /** GET /merchants/me */
-  fetchProfile(): void {
+  fetchProfile$(): Observable<MerchantProfileResponse | null> {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
-    this.refreshProfileFromApi()
-      .pipe(
-        catchError((err) => {
-          console.error('[MerchantService] fetchProfile failed', err);
-          this.errorSignal.set('Failed to load merchant profile.');
-          return of(null);
-        }),
-        finalize(() => this.loadingSignal.set(false)),
-      )
-      .subscribe();
+    return this.refreshProfileFromApi().pipe(
+      catchError((err) => {
+        console.error('[MerchantService] fetchProfile failed', err);
+        this.errorSignal.set('Failed to load merchant profile.');
+        return of(null);
+      }),
+      finalize(() => this.loadingSignal.set(false)),
+    );
+  }
+
+  fetchProfile(): void {
+    this.fetchProfile$().subscribe();
   }
 
   /** PATCH /merchants/me — update merchant profile */
@@ -636,8 +638,7 @@ export class MerchantService {
         }),
         catchError((err) => {
           console.error('[MerchantService] fetchOrders failed', err);
-          this.errorSignal.set('Failed to load orders.');
-          return of(null);
+          return this.handleOperationalFetchError(err, 'Failed to load orders.');
         }),
         finalize(() => this.loadingSignal.set(false)),
       )
@@ -773,8 +774,7 @@ export class MerchantService {
         tap((res) => this.earningsSignal.set(res)),
         catchError((err) => {
           console.error('[MerchantService] fetchEarningsSummary failed', err);
-          this.errorSignal.set('Failed to load earnings summary.');
-          return of(null);
+          return this.handleOperationalFetchError(err, 'Failed to load earnings summary.');
         }),
         finalize(() => this.loadingSignal.set(false)),
       )
@@ -793,8 +793,7 @@ export class MerchantService {
         tap((res) => this.allocationsSignal.set(res ?? [])),
         catchError((err) => {
           console.error('[MerchantService] fetchAllocations failed', err);
-          this.errorSignal.set('Failed to load allocations.');
-          return of(null);
+          return this.handleOperationalFetchError(err, 'Failed to load allocations.');
         }),
         finalize(() => this.loadingSignal.set(false)),
       )
@@ -834,8 +833,7 @@ export class MerchantService {
         tap((res) => this.inventorySignal.set(res.items ?? [])),
         catchError((err) => {
           console.error('[MerchantService] fetchInventory failed', err);
-          this.errorSignal.set('Failed to load inventory.');
-          return of(null);
+          return this.handleOperationalFetchError(err, 'Failed to load inventory.');
         }),
         finalize(() => this.loadingSignal.set(false)),
       )
@@ -861,6 +859,15 @@ export class MerchantService {
   }
 
   /* ── Helpers ─────────────────────────────────────────────────── */
+
+  private handleOperationalFetchError(err: unknown, message: string): Observable<null> {
+    const status = (err as { status?: number })?.status;
+    if (status === 403 && this.merchantStatus() !== 'ACTIVE') {
+      return of(null);
+    }
+    this.errorSignal.set(message);
+    return of(null);
+  }
 
   private mapCategoryConfig(raw: Record<string, unknown>): MerchantCategoryConfig {
     const merchantType = String(raw['merchantType'] ?? '') as MerchantType;
