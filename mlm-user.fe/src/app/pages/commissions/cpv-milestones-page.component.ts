@@ -12,8 +12,8 @@ import { SkeletonModule } from 'primeng/skeleton';
   templateUrl: './cpv-milestones-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    class: 'block bg-gray-50 min-h-screen'
-  }
+    class: 'block bg-gray-50 min-h-screen',
+  },
 })
 export class CpvMilestonesPageComponent implements OnInit {
   userService = inject(UserService);
@@ -27,6 +27,11 @@ export class CpvMilestonesPageComponent implements OnInit {
 
   displayCurrency = this.userService.displayCurrency;
   currencySymbol = computed(() => (this.displayCurrency() === 'NGN' ? '₦' : '$'));
+
+  pointsToGo = computed(() => {
+    const summary = this.cpvSummary();
+    return Math.max(0, summary.nextMilestoneCpv - summary.totalCpv);
+  });
 
   ngOnInit(): void {
     if (this.userService.isPaid()) {
@@ -52,11 +57,31 @@ export class CpvMilestonesPageComponent implements OnInit {
     return this.milestones().filter((m: MilestoneInfo) => m.achieved).length;
   }
 
-  /** Format cash reward with both USD and NGN based on the 1:1000 exchange rate */
+  /** Format cash reward in the user's account currency (USD base × 1000 for NGN). */
   getCashRewardLabel(rewardAmount?: number): string {
     if (rewardAmount == null || rewardAmount === 0) return '—';
-    const ngnAmount = rewardAmount * 1000;
-    return `$${rewardAmount.toLocaleString()} (₦${ngnAmount.toLocaleString()})`;
+    const amount =
+      this.displayCurrency() === 'NGN' ? rewardAmount * 1000 : rewardAmount;
+    return `${this.currencySymbol()}${amount.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  }
+
+  getNextMilestoneTargetLabel(): string {
+    const next = this.milestones().find((m) => !m.achieved);
+    if (!next) {
+      return this.cpvSummary().nextMilestoneReward || '—';
+    }
+
+    const cash = this.getCashRewardLabel(next.rewardAmount);
+    const material = this.getMaterialRewardLabel(next.materialReward);
+    const rewardParts: string[] = [];
+    if (cash !== '—') rewardParts.push(cash);
+    if (material !== '—') rewardParts.push(material);
+
+    if (rewardParts.length === 0) return next.name;
+    return `${next.name} — ${rewardParts.join(' + ')}`;
   }
 
   /** Format material reward description */
