@@ -107,6 +107,20 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
+      // Skip modal for merchant operational endpoints when merchant is not yet active
+      const merchantOperationalPaths = [
+        'merchants/orders',
+        'merchants/earnings',
+        'merchants/inventory',
+        'merchants/me/allocations',
+      ];
+      if (
+        error.status === 403 &&
+        merchantOperationalPaths.some((path) => req.url.includes(path))
+      ) {
+        return throwError(() => error);
+      }
+
       // Notification flows handle their own fallbacks locally, so do not show the global modal for them.
       if (req.url.includes('notifications')) {
         return throwError(() => error);
