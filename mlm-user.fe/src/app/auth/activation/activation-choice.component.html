@@ -4,12 +4,28 @@
       <i class="pi pi-credit-card text-5xl text-mlm-primary mb-4"></i>
       <h1 class="text-xl font-semibold text-slate-900 mb-2">Complete your activation</h1>
       <p class="text-slate-500 text-sm">
-        Fund your registration wallet via Paystack, then click Activate to unlock your account.
+        Choose how to pay your registration fee, then unlock your account.
       </p>
     </div>
 
     @if (errorMessage()) {
       <p-message severity="error" [text]="errorMessage()!" class="w-full mb-4"></p-message>
+    }
+
+    @if (pendingManualPayment()) {
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+        <p class="text-sm font-semibold text-slate-900 mb-1">Bank transfer under review</p>
+        <p class="text-xs text-slate-600 mb-2">
+          Your payment proof is pending admin approval. You cannot submit another until it is
+          reviewed.
+        </p>
+        <a
+          routerLink="/auth/activation/bank-transfer"
+          class="text-xs font-semibold text-mlm-primary hover:underline"
+        >
+          View submission status
+        </a>
+      </div>
     }
 
     @if (loading()) {
@@ -54,7 +70,7 @@
 
       <div class="flex flex-col gap-3 mb-6">
         <!-- Fund via Paystack -->
-        @if (!canActivate()) {
+        @if (!canActivate() && !pendingManualPayment()) {
           <div
             class="p-4 rounded-xl border-2 cursor-pointer transition-all hover:border-mlm-primary hover:bg-mlm-primary/5"
             [class.border-mlm-primary]="payingOnline()"
@@ -72,6 +88,23 @@
               }
             </div>
           </div>
+
+          <a
+            routerLink="/auth/activation/bank-transfer"
+            class="p-4 rounded-xl border-2 border-slate-200 transition-all hover:border-mlm-primary hover:bg-mlm-primary/5 block"
+          >
+            <div class="flex items-center gap-3">
+              <i class="pi pi-building text-2xl text-mlm-primary"></i>
+              <div class="flex-1">
+                <h2 class="font-semibold text-slate-900">Pay via bank transfer</h2>
+                <p class="text-sm text-slate-500">
+                  Transfer to our company account and upload your receipt
+                </p>
+              </div>
+              <i class="pi pi-arrow-right text-mlm-primary"></i>
+            </div>
+          </a>
+
           @if (balanceShortfall() > 0) {
             <p class="text-xs text-slate-500 text-center">
               You need {{ formatAmount(balanceShortfall(), userCurrency()) }} more to activate

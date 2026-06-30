@@ -38,6 +38,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'activation/bank-transfer',
+        loadComponent: () =>
+          import('./auth/activation/activation-manual-payment.component').then(
+            (m) => m.ActivationManualPaymentComponent,
+          ),
+      },
+      {
         path: 'activation/wallet',
         redirectTo: 'activation',
         pathMatch: 'full',
