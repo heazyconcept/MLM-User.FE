@@ -169,15 +169,16 @@ export class DashboardHeaderComponent implements OnInit {
         icon: 'pi pi-user',
         command: () => this.router.navigate(['/profile']),
       },
-      ...(this.userService.isMerchant() || this.merchantService.isActiveMerchant()
-        ? []
-        : [
+      ...(this.merchantService.needsPayment() ||
+      (!this.userService.isMerchant() && !this.merchantService.isActiveMerchant())
+        ? [
             {
               label: 'Become a Merchant',
               icon: 'pi pi-shop',
               command: () => this.router.navigate(['/merchant/apply']),
             },
-          ]),
+          ]
+        : []),
       {
         label: 'Settings',
         icon: 'pi pi-cog',
