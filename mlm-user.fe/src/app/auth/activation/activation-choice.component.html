@@ -4,7 +4,7 @@
       <i class="pi pi-credit-card text-5xl text-mlm-primary mb-4"></i>
       <h1 class="text-xl font-semibold text-slate-900 mb-2">Complete your activation</h1>
       <p class="text-slate-500 text-sm">
-        Fund your registration wallet via Paystack to complete activation.
+        Choose how to pay your registration fee, then unlock your account.
       </p>
     </div>
 
@@ -12,7 +12,6 @@
       <p-message severity="error" [text]="errorMessage()!" class="w-full mb-4"></p-message>
     }
 
-    <!-- Manual bank transfer (disabled for now)
     @if (pendingManualPayment()) {
       <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
         <p class="text-sm font-semibold text-slate-900 mb-1">Bank transfer under review</p>
@@ -28,7 +27,6 @@
         </a>
       </div>
     }
-    -->
 
     @if (loading()) {
       <div class="flex justify-center py-8">
@@ -72,7 +70,7 @@
 
       <div class="flex flex-col gap-3 mb-6">
         <!-- Fund via Paystack -->
-        @if (!canActivate()) {
+        @if (!canActivate() && !pendingManualPayment()) {
           <div
             class="p-4 rounded-xl border-2 cursor-pointer transition-all hover:border-mlm-primary hover:bg-mlm-primary/5"
             [class.border-mlm-primary]="payingOnline()"
@@ -91,7 +89,6 @@
             </div>
           </div>
 
-          <!-- Manual bank transfer (disabled for now)
           <a
             routerLink="/auth/activation/bank-transfer"
             class="p-4 rounded-xl border-2 border-slate-200 transition-all hover:border-mlm-primary hover:bg-mlm-primary/5 block"
@@ -107,7 +104,6 @@
               <i class="pi pi-arrow-right text-mlm-primary"></i>
             </div>
           </a>
-          -->
 
           @if (balanceShortfall() > 0) {
             <p class="text-xs text-slate-500 text-center">

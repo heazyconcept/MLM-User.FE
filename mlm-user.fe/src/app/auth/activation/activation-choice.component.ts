@@ -16,7 +16,7 @@ import { SelectModule } from 'primeng/select';
 import { MessageModule } from 'primeng/message';
 import { PaymentService } from '../../services/payment.service';
 import { UserService } from '../../services/user.service';
-import { RegistrationService, type RegistrationWallet } from '../../services/registration.service';
+import { RegistrationService, type RegistrationWallet, type ManualRegistrationPayment } from '../../services/registration.service';
 import { getRequiredAmount, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, IPV_PERCENT, NGN_TO_USD_RATE } from '../../core/constants/registration.constants';
 
 @Component({
@@ -38,7 +38,7 @@ export class ActivationChoiceComponent implements OnInit {
   payingOnline = signal(false);
   activating = signal(false);
   errorMessage = signal<string | null>(null);
-  // pendingManualPayment = signal<ManualRegistrationPayment | null>(null);
+  pendingManualPayment = signal<ManualRegistrationPayment | null>(null);
 
   userCurrency = computed(() => this.userService.currentUser()?.currency ?? 'NGN');
   userPackage = computed(() => this.userService.currentUser()?.package ?? 'NICKEL');
@@ -93,24 +93,23 @@ export class ActivationChoiceComponent implements OnInit {
       return;
     }
     this.loadWallet();
-    // Manual bank transfer (disabled for now)
-    // this.checkManualPaymentStatus();
+    this.checkManualPaymentStatus();
   }
 
-  // private checkManualPaymentStatus(): void {
-  //   this.registrationService.getManualPayment().subscribe({
-  //     next: (payment) => {
-  //       if (payment?.status === 'APPROVED') {
-  //         this.userService.fetchProfile().subscribe(() => {
-  //           this.router.navigate(['/dashboard']);
-  //         });
-  //         return;
-  //       }
-  //       this.pendingManualPayment.set(payment?.status === 'PENDING' ? payment : null);
-  //       this.cdr.markForCheck();
-  //     },
-  //   });
-  // }
+  private checkManualPaymentStatus(): void {
+    this.registrationService.getManualPayment().subscribe({
+      next: (payment) => {
+        if (payment?.status === 'APPROVED') {
+          this.userService.fetchProfile().subscribe(() => {
+            this.router.navigate(['/dashboard']);
+          });
+          return;
+        }
+        this.pendingManualPayment.set(payment?.status === 'PENDING' ? payment : null);
+        this.cdr.markForCheck();
+      },
+    });
+  }
 
   private loadWallet(): void {
     this.loading.set(true);
