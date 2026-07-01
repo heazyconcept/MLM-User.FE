@@ -39,24 +39,25 @@
         </div>
       }
 
-      <!-- Unpaid application — complete payment -->
+      <!-- Unpaid application — continue on apply page -->
       @if (!loading() && needsPayment()) {
         <div class="bg-white rounded-lg border border-amber-200 shadow-sm p-8 text-center">
           <div
             class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6"
           >
-            <i class="pi pi-wallet text-3xl text-amber-500" aria-hidden="true"></i>
+            <i class="pi pi-shop text-3xl text-amber-500" aria-hidden="true"></i>
           </div>
-          <h2 class="text-xl font-bold text-mlm-text mb-2">Complete Your Payment</h2>
+          <h2 class="text-xl font-bold text-mlm-text mb-2">Continue Your Application</h2>
           <p class="text-mlm-secondary text-sm mb-6 max-w-md mx-auto">
-            Your application is saved but the registration fee has not been paid. The admin will
-            only be notified after your payment is confirmed.
+            Your application is saved but the registration fee has not been paid. Review your
+            merchant tier and details, then complete payment. The admin will only be notified after
+            your payment is confirmed.
           </p>
           <a
             routerLink="/merchant/apply"
             class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2"
           >
-            Complete Payment
+            Become a Merchant
           </a>
         </div>
       }

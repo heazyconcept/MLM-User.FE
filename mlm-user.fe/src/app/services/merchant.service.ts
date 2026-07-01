@@ -49,9 +49,18 @@ export interface MerchantProfileResponse {
 }
 
 export interface UpdateMerchantProfileBody {
+  /** Allowed before fee paid; locked after payment (403). */
+  type?: MerchantType;
   phoneNumber?: string;
   address?: string;
   serviceAreas?: string[];
+}
+
+export interface ApplyMerchantBody {
+  phoneNumber: string;
+  type: MerchantType;
+  serviceAreas: string[];
+  address?: string;
 }
 
 export interface MerchantCategoryConfigItem {
@@ -332,11 +341,22 @@ export class MerchantService {
 
   /* ── Application & Discovery ─────────────────────────────────── */
 
-  /** POST /merchants/apply — returns observable so callers can chain payment */
-  apply(type: MerchantType, serviceAreas: string[], phoneNumber: string, address: string): Observable<MerchantProfile | null> {
+  /** POST /merchants/apply — creates DRAFT; returns observable so callers can chain payment */
+  apply(
+    type: MerchantType,
+    serviceAreas: string[],
+    phoneNumber: string,
+    address: string,
+  ): Observable<MerchantProfile | null> {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
-    return this.api.post<MerchantProfile>('merchants/apply', { type, serviceAreas, phoneNumber, address }).pipe(
+    const body: ApplyMerchantBody = {
+      phoneNumber,
+      type,
+      serviceAreas,
+      ...(address ? { address } : {}),
+    };
+    return this.api.post<MerchantProfile>('merchants/apply', body).pipe(
       tap((profile) => {
         if (profile && profile.id) {
           const asResponse: MerchantProfileResponse = {
@@ -589,7 +609,7 @@ export class MerchantService {
     this.fetchProfile$().subscribe();
   }
 
-  /** PATCH /merchants/me — update merchant profile */
+  /** PATCH /merchants/me — update profile; `type` allowed only before merchant fee is paid */
   updateProfile(body: UpdateMerchantProfileBody): Observable<MerchantProfileResponse | null> {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);

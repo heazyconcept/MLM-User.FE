@@ -33,114 +33,47 @@
           <div class="w-8 h-8 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"></div>
         </div>
 
-      } @else if (isMerchant()) {
-        <!-- ── User already has a merchant profile ── -->
+      } @else if (isMerchant() && isFeePaid()) {
+        <!-- Paid & awaiting admin approval, or ACTIVE / SUSPENDED -->
         <div class="bg-white rounded-lg border border-gray-100 shadow-sm">
-
-          @if (!isFeePaid()) {
-            <!--
-              DRAFT or PENDING + UNPAID: user applied but hasn't paid yet.
-              Let them complete payment — no re-application needed.
-            -->
-            <div class="px-8 pt-8 pb-4 border-b border-gray-100">
-              <div class="flex items-center gap-3 mb-2">
-                <span class="inline-block w-1.5 h-5 rounded-full bg-amber-400"></span>
-                <h2 class="text-lg font-bold text-mlm-text">Complete Your Payment</h2>
-              </div>
-              <p class="text-mlm-secondary text-sm ml-[18px] mb-3">
-                Your application exists but the registration fee hasn't been paid yet.
-                Complete your payment below to submit your application to the admin for review.
-              </p>
-              <div class="ml-[18px] flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p class="text-amber-700 text-xs leading-relaxed">
-                  The admin will only be notified once your payment is confirmed.
-                </p>
-              </div>
+          <div class="p-8 flex flex-col items-center text-center">
+            <div class="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-6">
+              <span class="text-2xl font-black text-mlm-primary">✓</span>
             </div>
-
-            <div class="px-8 py-6">
-              <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">
-                Select Payment Source
-              </p>
-              <div class="grid grid-cols-1 gap-2 mb-6">
-                @for (source of paymentSources; track source.value) {
-                  <button
-                    class="px-4 py-3.5 rounded-lg border text-left transition-all"
-                    [class]="
-                      selectedPaymentSource() === source.value
-                        ? 'border-mlm-primary bg-mlm-primary/5'
-                        : 'border-gray-200 hover:border-gray-300'
-                    "
-                    (click)="selectedPaymentSource.set(source.value)"
-                  >
-                    <div class="flex items-center gap-3">
-                      <span
-                        class="w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all"
-                        [class]="selectedPaymentSource() === source.value
-                          ? 'border-mlm-primary bg-mlm-primary'
-                          : 'border-gray-300'"
-                      ></span>
-                      <span class="text-sm font-medium text-mlm-text">{{ source.label }}</span>
-                    </div>
-                  </button>
-                }
-              </div>
-
-              @if (error()) {
-                <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                  <p class="text-red-700 text-xs">{{ error() }}</p>
-                </div>
+            <h2 class="text-xl font-bold text-mlm-text mb-2">Application Submitted</h2>
+            <p class="text-mlm-secondary text-sm mb-2">
+              Status: <strong>{{ profile()?.status }}</strong>
+            </p>
+            <p class="text-mlm-secondary text-sm mb-6">
+              @if (profile()?.status === 'PENDING') {
+                Your payment was received. Your application is now under admin review — you'll be notified once it's approved.
+              } @else {
+                Your merchant account is now <strong>{{ profile()?.status }}</strong>.
               }
-
-              <button
-                class="px-8 py-3 rounded-xl bg-mlm-primary text-white text-sm font-semibold tracking-wide transition-all hover:bg-mlm-green-600 active:scale-[.99] disabled:opacity-50 disabled:cursor-not-allowed"
-                [disabled]="actionLoading()"
-                (click)="onPayFee()"
-              >
-                @if (actionLoading()) {
-                  <span class="flex items-center gap-2">
-                    <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    Processing…
-                  </span>
-                } @else {
-                  Complete Payment
-                }
-              </button>
-            </div>
-
-          } @else {
-            <!-- Paid & awaiting admin approval, or ACTIVE / SUSPENDED -->
-            <div class="p-8 flex flex-col items-center text-center">
-              <div class="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-6">
-                <span class="text-2xl font-black text-mlm-primary">✓</span>
-              </div>
-              <h2 class="text-xl font-bold text-mlm-text mb-2">Application Submitted</h2>
-              <p class="text-mlm-secondary text-sm mb-2">
-                Status: <strong>{{ profile()?.status }}</strong>
-              </p>
-              <p class="text-mlm-secondary text-sm mb-6">
-                @if (profile()?.status === 'PENDING') {
-                  Your payment was received. Your application is now under admin review — you'll be notified once it's approved.
-                } @else {
-                  Your merchant account is now <strong>{{ profile()?.status }}</strong>.
-                }
-              </p>
-              <a
-                routerLink="/merchant/dashboard"
-                class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors"
-              >
-                Go to Dashboard
-              </a>
-            </div>
-          }
-
+            </p>
+            <a
+              routerLink="/merchant/dashboard"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors"
+            >
+              Go to Dashboard
+            </a>
+          </div>
         </div>
 
       } @else {
-        <!-- ── New application form ── -->
+        <!-- New application or unpaid returning user — full form with tier selection -->
+
+        @if (needsPayment()) {
+          <div class="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-amber-800 text-xs leading-relaxed">
+              Your application is saved. Review your tier and details below, then complete payment.
+              The admin will only be notified once your payment is confirmed.
+            </p>
+          </div>
+        }
 
         @if (categoryConfig().length === 0) {
           <!-- No tiers configured yet -->
@@ -383,7 +316,11 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p class="text-blue-600 text-xs leading-relaxed">
-                Your application will only be submitted to the admin after payment is confirmed. Clicking the button below applies and pays in one step.
+                @if (needsPayment()) {
+                  Update your tier or details if needed, then complete payment. Your application will only be submitted to the admin after payment is confirmed.
+                } @else {
+                  Your application will only be submitted to the admin after payment is confirmed. Clicking the button below applies and pays in one step.
+                }
               </p>
             </div>
 
@@ -403,6 +340,8 @@
                   <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                   Processing…
                 </span>
+              } @else if (needsPayment()) {
+                Complete Payment — {{ getTypeLabel(selectedType()) }}
               } @else {
                 Apply & Pay — {{ getTypeLabel(selectedType()) }}
               }

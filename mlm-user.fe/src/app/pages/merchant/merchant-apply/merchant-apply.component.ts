@@ -1,14 +1,24 @@
-import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  effect,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { switchMap, of, EMPTY } from 'rxjs';
+import { switchMap, EMPTY, Observable } from 'rxjs';
 import {
   MerchantService,
   type MerchantType,
   type MerchantFeePaymentSource,
   type MerchantProfile,
   type MerchantCategoryConfig,
+  type InitiateMerchantFeeResponse,
+  type UpdateMerchantProfileBody,
 } from '../../../services/merchant.service';
 import { UserService } from '../../../services/user.service';
 import { RealTimeNotificationService } from '../../../services/realtime-notification.service';
@@ -37,22 +47,46 @@ export class MerchantApplyComponent implements OnInit {
   actionLoading = this.merchantService.actionLoading;
   error = this.merchantService.error;
   isFeePaid = this.merchantService.isFeePaid;
+  needsPayment = this.merchantService.needsPayment;
 
   selectedType = signal<MerchantType>('REGIONAL');
   phoneNumberInput = signal('');
   addressInput = signal('');
-  
-  // Custom multi-select state selector signals
+
   selectedStates = signal<string[]>([]);
   statesDropdownOpen = signal(false);
   statesSearchQuery = signal('');
   allStates = NIGERIAN_STATES;
+
+  private prefillApplied = false;
 
   filteredStates = computed(() => {
     const query = this.statesSearchQuery().toLowerCase().trim();
     if (!query) return this.allStates;
     return this.allStates.filter((state) => state.toLowerCase().includes(query));
   });
+
+  constructor() {
+    effect(() => {
+      if (this.loading() || this.prefillApplied) return;
+      if (!this.needsPayment()) return;
+
+      const p = this.profile();
+      if (!p?.id) return;
+
+      this.selectedType.set(p.type ?? 'REGIONAL');
+      if (p.phoneNumber) {
+        this.phoneNumberInput.set(p.phoneNumber);
+      }
+      if (p.address) {
+        this.addressInput.set(p.address);
+      }
+      if (p.serviceAreas?.length) {
+        this.selectedStates.set([...p.serviceAreas]);
+      }
+      this.prefillApplied = true;
+    });
+  }
 
   toggleStateSelection(state: string): void {
     const current = this.selectedStates();
@@ -71,10 +105,8 @@ export class MerchantApplyComponent implements OnInit {
     this.selectedStates.set(this.selectedStates().filter((s) => s !== state));
   }
 
-  // Payment source is chosen on the same form as the application
   selectedPaymentSource = signal<MerchantFeePaymentSource>('REGISTRATION_WALLET');
 
-  // Gateway verification state
   verificationMessage = signal('');
   verificationError = signal('');
 
@@ -137,7 +169,6 @@ export class MerchantApplyComponent implements OnInit {
     return this.getConfigForType(this.selectedType());
   }
 
-  /** Returns the fee amount and symbol based on the user's currency */
   getRegistrationFee(cfg: MerchantCategoryConfig): { amount: number; symbol: string } {
     const currency = this.userCurrency();
     if (currency === 'NGN' && cfg.registrationFeeNGN != null) {
@@ -146,91 +177,81 @@ export class MerchantApplyComponent implements OnInit {
     return { amount: cfg.registrationFeeUsd, symbol: '$' };
   }
 
-  /**
-   * Single atomic action: apply THEN immediately initiate payment.
-   * Admin only sees a PENDING record once payment is in flight.
-   */
   onApplyAndPay(): void {
-    // Guard: don't re-apply if profile already exists
-    if (this.isMerchant()) return;
-
     const areas = this.selectedStates();
-
     if (areas.length === 0) return;
 
     const pNumber = this.phoneNumberInput().trim();
     const addr = this.addressInput().trim();
-
     if (!pNumber || !addr) return;
 
-    const source = this.selectedPaymentSource();
+    if (this.needsPayment()) {
+      const existing = this.profile();
+      if (!existing?.id) return;
+
+      const updateBody: UpdateMerchantProfileBody = {
+        type: this.selectedType(),
+        phoneNumber: pNumber,
+        address: addr,
+        serviceAreas: areas,
+      };
+
+      this.merchantService
+        .updateProfile(updateBody)
+        .pipe(
+          switchMap((updated) => {
+            const merchantId = updated?.id ?? existing.id;
+            if (!merchantId) return EMPTY;
+            return this.initiatePayment(merchantId);
+          }),
+        )
+        .subscribe({
+          next: (res) => this.handlePaymentResult(res),
+          error: () => this.handlePaymentFailure(),
+        });
+      return;
+    }
+
+    if (this.isMerchant()) return;
 
     this.merchantService
       .apply(this.selectedType(), areas, pNumber, addr)
       .pipe(
         switchMap((profile: MerchantProfile | null) => {
           if (!profile?.id) {
-            // apply() failed — error already set in service, stop chain
             return EMPTY;
           }
-
-          const payload: any = { source, merchantId: profile.id };
-          if (source === 'PAYSTACK') {
-            payload.callbackUrl = window.location.origin + '/merchant/apply';
-          }
-
-          return this.merchantService.initiateMerchantFeePayment(payload);
+          return this.initiatePayment(profile.id);
         }),
       )
       .subscribe({
-        next: (res) => {
-          if (!res) {
-            this.handlePaymentFailure();
-            return;
-          }
-          if (res.gatewayUrl) {
-            window.location.href = res.gatewayUrl;
-          } else {
-            this.handleWalletPaymentSuccess();
-          }
-        },
-        error: () => {
-          this.handlePaymentFailure();
-        },
+        next: (res) => this.handlePaymentResult(res),
+        error: () => this.handlePaymentFailure(),
       });
   }
 
-  /**
-   * For users who are already PENDING+unpaid (legacy or returned from cancelled Paystack).
-   * They already have a merchantId, just initiate payment directly.
-   */
-  onPayFee(): void {
-    const p = this.profile();
-    if (!p || !p.id) return;
-
+  private initiatePayment(merchantId: string): Observable<InitiateMerchantFeeResponse | null> {
     const source = this.selectedPaymentSource();
-    const payload: any = { source, merchantId: p.id };
-
+    const payload: { source: MerchantFeePaymentSource; merchantId: string; callbackUrl?: string } = {
+      source,
+      merchantId,
+    };
     if (source === 'PAYSTACK') {
       payload.callbackUrl = window.location.origin + '/merchant/apply';
     }
+    return this.merchantService.initiateMerchantFeePayment(payload);
+  }
 
-    this.merchantService.initiateMerchantFeePayment(payload).subscribe({
-      next: (res) => {
-        if (!res) {
-          this.handlePaymentFailure();
-          return;
-        }
-        if (res.gatewayUrl) {
-          window.location.href = res.gatewayUrl;
-        } else {
-          this.handleWalletPaymentSuccess();
-        }
-      },
-      error: () => {
-        this.handlePaymentFailure();
-      },
-    });
+  private handlePaymentResult(res: InitiateMerchantFeeResponse | null): void {
+    if (!res) {
+      this.handlePaymentFailure();
+      return;
+    }
+    if (res.gatewayUrl) {
+      window.location.href = res.gatewayUrl;
+    } else {
+      this.handleWalletPaymentSuccess();
+    }
   }
 
   private handleWalletPaymentSuccess(): void {

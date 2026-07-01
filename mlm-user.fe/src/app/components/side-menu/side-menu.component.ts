@@ -70,8 +70,8 @@ export class SideMenuComponent implements OnInit {
     if (this.merchantService.needsPayment()) {
       return [
         {
-          label: 'Complete Merchant Payment',
-          icon: 'pi pi-wallet',
+          label: 'Become a Merchant',
+          icon: 'pi pi-shop',
           route: '/merchant/apply',
         },
       ];
