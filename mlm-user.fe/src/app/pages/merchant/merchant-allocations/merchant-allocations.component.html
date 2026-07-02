@@ -1,86 +1,297 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
-    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div class="mb-10">
-        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Allocations</h1>
-        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
-        <p class="text-mlm-secondary text-sm">Pending stock allocations assigned to you</p>
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="mb-8">
+        <h1 class="mb-2 text-3xl font-extrabold tracking-tight text-mlm-text">Allocations</h1>
+        <div class="mb-4 h-px w-16 bg-mlm-primary/30"></div>
+        <p class="text-sm text-mlm-secondary">
+          Stock allocations from onboarding and refills. Confirm receipt only after admin marks a
+          shipment as delivered.
+        </p>
       </div>
 
-      <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
-        @if (loading()) {
-          <div class="flex items-center justify-center py-20">
-            <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
-          </div>
-        } @else if (error(); as err) {
-          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p class="text-red-700 text-sm">{{ err }}</p>
-          </div>
-        } @else if (allocations().length === 0) {
-          <div class="flex flex-col items-center justify-center py-20 text-center">
+      @if (error(); as err) {
+        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
+          <p class="text-sm text-red-700">{{ err }}</p>
+        </div>
+      }
+
+      @if (rejectedDisputes().length > 0 && !loading()) {
+        <div class="mb-6 space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p class="text-sm font-semibold text-amber-900">Action required — disputed receipts</p>
+          @for (dispute of rejectedDisputes(); track dispute.id) {
             <div
-              class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6"
+              class="flex flex-col gap-3 rounded-lg border border-amber-100 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
             >
-              <i class="pi pi-inbox text-4xl text-mlm-warm-400" aria-hidden="true"></i>
+              <div class="text-sm text-mlm-text">
+                <p class="font-semibold">{{ dispute.productName || 'Allocation' }}</p>
+                <p class="mt-1 text-mlm-secondary">
+                  Admin rejected your short-qty claim (received
+                  {{ dispute.claimedReceivedQuantity }} of {{ dispute.dispatchedQuantity }}). Acknowledge
+                  to credit the full dispatched quantity.
+                </p>
+              </div>
+              <p-button
+                label="Acknowledge dispute"
+                icon="pi pi-check"
+                [loading]="actionLoading()"
+                (onClick)="acknowledgeDispute(dispute)"
+                styleClass="!bg-mlm-primary !border-mlm-primary shrink-0"
+              ></p-button>
             </div>
-            <h2 class="text-xl font-bold text-mlm-text mb-2">No pending allocations</h2>
-            <p class="text-mlm-secondary text-sm mb-6 max-w-md">
-              When products are allocated to you, they'll appear here for you to accept.
-            </p>
-            <a
-              routerLink="/merchant/inventory"
-              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2"
-            >
-              View Inventory
-            </a>
-          </div>
-        } @else {
-          <ul class="divide-y divide-gray-100" role="list">
-            @for (alloc of allocations(); track alloc.id) {
-              <li class="py-5">
-                <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex flex-wrap items-center gap-2 mb-1">
-                      <span class="font-bold text-mlm-text">{{ alloc.product.name }}</span>
-                      <span
-                        class="text-xs px-2 py-0.5 rounded-full"
-                        [class]="
-                          alloc.status === 'PENDING'
-                            ? 'bg-amber-50 text-amber-600'
-                            : 'bg-green-50 text-green-600'
-                        "
-                      >
-                        {{ alloc.status }}
-                      </span>
+          }
+        </div>
+      }
+
+      <div class="mb-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          (click)="setFilter('all')"
+          [class]="
+            filter() === 'all'
+              ? 'bg-mlm-primary text-white'
+              : 'bg-white text-mlm-secondary border border-gray-200 hover:bg-gray-50'
+          "
+          class="rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+        >
+          All
+        </button>
+        <button
+          type="button"
+          (click)="setFilter('needs_action')"
+          [class]="
+            filter() === 'needs_action'
+              ? 'bg-mlm-primary text-white'
+              : 'bg-white text-mlm-secondary border border-gray-200 hover:bg-gray-50'
+          "
+          class="rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+        >
+          Needs action
+          @if (hasActionableItems()) {
+            <span class="ml-1.5 rounded-full bg-white/20 px-1.5 py-0.5 text-xs tabular-nums">
+              {{ actionableCount() }}
+            </span>
+          }
+        </button>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div class="merchant-allocations-table">
+          <app-ui-table
+            [value]="filteredAllocations()"
+            [headers]="tableHeaders"
+            [loading]="loading()"
+            [paginator]="filteredAllocations().length > 10"
+            [rows]="10"
+            responsiveLayout="stack"
+            breakpoint="1024px"
+            [tableStyle]="{ 'min-width': '56rem' }"
+          >
+            <ng-template #rowTemplate let-alloc>
+              <tr class="p-selectable-row">
+                <td data-label="Product">
+                  <div class="cell-value items-start!">
+                    <div class="flex w-full flex-col gap-1 text-left">
+                      <span class="text-sm font-semibold text-mlm-text">{{ productLabel(alloc) }}</span>
+                      <span class="text-xs text-mlm-secondary">SKU: {{ productSku(alloc) }}</span>
+                      @if (alloc.parentAllocationId) {
+                        <span
+                          class="inline-flex w-fit rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700"
+                        >
+                          Remainder allocation
+                        </span>
+                      }
+                      @if (disputeForAllocation(alloc); as dispute) {
+                        <span class="text-[11px] text-mlm-secondary">
+                          Dispute: {{ dispute.claimedReceivedQuantity }} / {{ dispute.dispatchedQuantity }}
+                          received
+                        </span>
+                      }
                     </div>
-                    <p class="text-sm text-mlm-secondary">
-                      SKU: {{ alloc.product.sku }} · Qty: {{ alloc.quantity }} ·
-                      {{ formatDate(alloc.createdAt) }}
-                    </p>
                   </div>
-                  <div class="shrink-0">
-                    @if (alloc.status === 'PENDING') {
+                </td>
+
+                <td data-label="Qty">
+                  <div class="cell-value">
+                    <span class="text-sm font-bold tabular-nums text-mlm-text">{{ alloc.quantity }}</span>
+                  </div>
+                </td>
+
+                <td data-label="Status">
+                  <div class="cell-value">
+                    <app-status-badge [status]="statusForBadge(alloc.status)" size="sm" />
+                  </div>
+                </td>
+
+                <td data-label="Tracking">
+                  <div class="cell-value">
+                    <span class="text-sm text-gray-700">{{ alloc.trackingReference || '—' }}</span>
+                  </div>
+                </td>
+
+                <td data-label="Timeline">
+                  <div class="cell-value">
+                    <span class="text-sm text-gray-700">{{ timelineLabel(alloc) }}</span>
+                  </div>
+                </td>
+
+                <td data-label="Action">
+                  <div class="cell-value">
+                    @if (MerchantService.canConfirmReceipt(alloc)) {
                       <p-button
-                        label="I have received this stock"
+                        label="Confirm receipt"
                         icon="pi pi-check"
+                        size="small"
                         [loading]="actionLoading()"
-                        (onClick)="accept(alloc.id)"
+                        (onClick)="openConfirmReceipt(alloc)"
                         styleClass="!bg-mlm-primary !border-mlm-primary"
                       ></p-button>
+                    } @else if (disputeForAllocation(alloc); as dispute) {
+                      @if (MerchantService.needsDisputeAcknowledgement(dispute)) {
+                        <p-button
+                          label="Acknowledge"
+                          icon="pi pi-exclamation-circle"
+                          size="small"
+                          [loading]="actionLoading()"
+                          (onClick)="acknowledgeDispute(dispute)"
+                          styleClass="!bg-amber-600 !border-amber-600"
+                        ></p-button>
+                      } @else {
+                        <span class="text-xs text-mlm-secondary">{{ statusForBadge(dispute.status) }}</span>
+                      }
                     } @else {
-                      <span
-                        class="inline-flex items-center gap-1 text-sm text-green-600 font-semibold"
-                      >
-                        <i class="pi pi-check-circle" aria-hidden="true"></i> Accepted
-                      </span>
+                      <span class="text-xs text-mlm-secondary">{{ waitingMessage(alloc) }}</span>
                     }
                   </div>
-                </div>
-              </li>
-            }
-          </ul>
-        }
+                </td>
+              </tr>
+            </ng-template>
+
+            <ng-template #emptyTemplate>
+              <tr>
+                <td [attr.colspan]="tableHeaders.length" class="px-5 py-16 text-center">
+                  @if (filter() === 'needs_action') {
+                    <i class="pi pi-check-circle mb-3 block text-3xl text-mlm-primary/50"></i>
+                    <p class="text-sm font-semibold text-mlm-text">Nothing needs your action right now.</p>
+                  } @else {
+                    <i class="pi pi-inbox mb-3 block text-3xl text-mlm-warm-400"></i>
+                    <h2 class="mb-2 text-xl font-bold text-mlm-text">No allocations yet</h2>
+                    <p class="mx-auto mb-6 max-w-md text-sm text-mlm-secondary">
+                      When stock is allocated after approval or refill, it will appear here through
+                      dispatch and delivery.
+                    </p>
+                    <a
+                      routerLink="/merchant/inventory"
+                      class="inline-flex items-center gap-2 rounded-xl bg-mlm-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-green-dark"
+                    >
+                      View Inventory
+                    </a>
+                  }
+                </td>
+              </tr>
+            </ng-template>
+          </app-ui-table>
+        </div>
       </div>
     </div>
   </main>
 </div>
+
+<p-dialog
+  [visible]="confirmDialogVisible()"
+  (visibleChange)="confirmDialogVisible.set($event)"
+  [modal]="true"
+  [closable]="!actionLoading()"
+  [draggable]="false"
+  [resizable]="false"
+  header="Confirm receipt"
+  styleClass="w-full max-w-lg"
+  (onHide)="closeConfirmReceipt()"
+>
+  @if (selectedAllocation(); as alloc) {
+    <div class="space-y-4">
+      <p class="text-sm text-mlm-secondary">
+        Confirm how many units of <span class="font-semibold text-mlm-text">{{ productLabel(alloc) }}</span>
+        you received. Dispatched quantity:
+        <span class="font-semibold text-mlm-text">{{ alloc.quantity }}</span>.
+      </p>
+
+      <div>
+        <label for="qty-received" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Quantity received
+        </label>
+        <input
+          id="qty-received"
+          type="number"
+          min="0"
+          [max]="alloc.quantity"
+          [ngModel]="quantityReceived()"
+          (ngModelChange)="quantityReceived.set(+$event)"
+          class="h-11 w-full rounded-xl border border-gray-100 bg-gray-50 px-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20"
+        />
+      </div>
+
+      <div>
+        <label for="merchant-notes" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Notes
+          @if (requiresEvidence()) {
+            <span class="normal-case text-amber-700">(recommended for short receipt)</span>
+          }
+        </label>
+        <textarea
+          id="merchant-notes"
+          rows="3"
+          [ngModel]="merchantNotes()"
+          (ngModelChange)="merchantNotes.set($event)"
+          class="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20"
+          placeholder="Optional context for admin review"
+        ></textarea>
+      </div>
+
+      @if (requiresEvidence()) {
+        <div>
+          <label for="receipt-evidence" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Evidence (required)
+          </label>
+          <input
+            id="receipt-evidence"
+            type="file"
+            multiple
+            accept="image/*,.pdf"
+            (change)="onEvidenceSelected($event)"
+            class="block w-full text-sm text-mlm-secondary file:mr-3 file:rounded-lg file:border-0 file:bg-mlm-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
+          />
+          <p class="mt-1 text-xs text-mlm-secondary">
+            Upload up to {{ maxEvidenceFiles }} images or PDF files.
+          </p>
+          @if (evidenceFiles().length > 0) {
+            <p class="mt-2 text-xs font-medium text-mlm-text">
+              {{ evidenceFiles().length }} file(s) selected
+            </p>
+          }
+        </div>
+      }
+
+      @if (formError()) {
+        <p class="text-sm text-red-600">{{ formError() }}</p>
+      }
+
+      <div class="flex justify-end gap-2 pt-2">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [text]="true"
+          [disabled]="actionLoading()"
+          (onClick)="closeConfirmReceipt()"
+        ></p-button>
+        <p-button
+          label="Submit receipt"
+          icon="pi pi-check"
+          [loading]="actionLoading()"
+          (onClick)="submitConfirmReceipt()"
+          styleClass="!bg-mlm-primary !border-mlm-primary"
+        ></p-button>
+      </div>
+    </div>
+  }
+</p-dialog>
