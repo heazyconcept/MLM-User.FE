@@ -85,23 +85,25 @@
 
       @if (isPaid()) {
         <div class="relative">
-          <a
+          <button
+            type="button"
             routerLink="/marketplace/cart"
             (click)="onCartClick()"
-            class="relative -m-2.5 p-2.5 text-gray-500 hover:text-mlm-primary hover:bg-gray-50 rounded-lg transition-colors inline-flex"
+            class="relative inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-100 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-mlm-text transition-colors hover:bg-gray-100"
             [class.cart-icon-hint-active]="cartCheckoutHintVisible()"
-            [class.text-mlm-primary]="cartCheckoutHintVisible()"
+            [class.border-mlm-primary/30]="cartCheckoutHintVisible()"
             [class.bg-mlm-primary/5]="cartCheckoutHintVisible()"
+            [class.text-mlm-primary]="cartCheckoutHintVisible()"
             aria-label="View cart"
           >
-            <i class="pi pi-shopping-cart text-xl" aria-hidden="true"></i>
+            <i class="pi pi-shopping-cart text-sm" aria-hidden="true"></i>
+            <span>Cart</span>
             @if (cartItemCount() > 0) {
               <span
-                class="absolute top-1 right-1 min-w-5 h-5 px-1.5 flex items-center justify-center text-[10px] font-bold text-white bg-mlm-primary rounded-full border-2 border-white"
-                >{{ cartItemCount() }}</span
-              >
+                class="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1.5 flex items-center justify-center text-[10px] font-bold text-white bg-mlm-primary rounded-full border-2 border-white"
+              >{{ cartItemCount() }}</span>
             }
-          </a>
+          </button>
 
           @if (cartCheckoutHintVisible()) {
             <div
