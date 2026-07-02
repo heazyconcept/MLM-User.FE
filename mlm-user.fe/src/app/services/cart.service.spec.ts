@@ -59,13 +59,13 @@ describe('CartService', () => {
     expect(service.itemCount()).toBe(5);
   });
 
-  it('should cap merged quantity at 10', () => {
+  it('should merge large quantities without a cap', () => {
     const product = mockProduct();
     service.addItem(product, 8);
     const result = service.addItem(product, 5);
 
     expect(result.success).toBe(true);
-    expect(service.items()[0].quantity).toBe(10);
+    expect(service.items()[0].quantity).toBe(13);
   });
 
   it('should reject unavailable products', () => {
