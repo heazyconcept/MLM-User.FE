@@ -1,27 +1,18 @@
 <div class="bg-mlm-background">
   <main class="py-4 sm:py-6">
     <div class="px-0 sm:px-2 max-w-2xl mx-auto">
-      <!-- Header -->
-
       <div class="mb-5 sm:mb-6">
         <p class="text-xs font-bold text-mlm-primary uppercase tracking-[.15em] mb-3">
           Order Setup
         </p>
-
         <h1 class="text-2xl sm:text-3xl font-extrabold text-mlm-text tracking-tight">
           Fulfilment Options
         </h1>
-
         <p class="text-mlm-secondary text-sm mt-2">Choose how you want to receive your order</p>
-
         <div class="mt-5 h-px bg-linear-to-r from-mlm-primary/20 to-transparent"></div>
       </div>
 
-      <!-- Option Cards -->
-
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-        <!-- Pickup -->
-
         <button
           type="button"
           (click)="setOption('pickup')"
@@ -35,15 +26,10 @@
           <span
             class="inline-block w-2 h-2 rounded-full mb-4 transition-colors"
             [class]="fulfilmentOption() === 'pickup' ? 'bg-mlm-primary' : 'bg-gray-300'"
-          >
-          </span>
-
+          ></span>
           <h2 class="text-sm font-bold text-mlm-text mb-1">Pickup</h2>
-
-          <p class="text-xs text-mlm-secondary leading-relaxed">Collect at a nearby store</p>
+          <p class="text-xs text-mlm-secondary leading-relaxed">Collect at a nearby merchant</p>
         </button>
-
-        <!-- Delivery -->
 
         <button
           type="button"
@@ -58,16 +44,11 @@
           <span
             class="inline-block w-2 h-2 rounded-full mb-4 transition-colors"
             [class]="fulfilmentOption() === 'delivery' ? 'bg-mlm-primary' : 'bg-gray-300'"
-          >
-          </span>
-
+          ></span>
           <h2 class="text-sm font-bold text-mlm-text mb-1">Home Delivery</h2>
-
           <p class="text-xs text-mlm-secondary leading-relaxed">Delivered to your address</p>
         </button>
       </div>
-
-      <!-- Pickup Detail -->
 
       @if (fulfilmentOption() === 'pickup') {
         <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 space-y-5">
@@ -78,7 +59,6 @@
             >
               Select State
             </label>
-
             <select
               id="pickup-state"
               class="w-full px-4 py-3 bg-mlm-background border border-gray-200 rounded-xl text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
@@ -86,14 +66,12 @@
               (ngModelChange)="onStateChange($event)"
             >
               <option value="">Choose a state…</option>
-
               @for (state of nigerianStates; track state) {
                 <option [value]="state">{{ state }}</option>
               }
             </select>
-
             <p class="text-xs text-mlm-secondary mt-1.5">
-              Merchants serving your state will appear below with address and phone number.
+              All active merchants in your state are shown. Stock availability is indicated per merchant.
             </p>
           </div>
 
@@ -108,10 +86,7 @@
                   <span
                     class="w-4 h-4 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"
                   ></span>
-
-                  <span class="text-sm text-mlm-secondary"
-                    >Loading merchants in {{ selectedState() }}…</span
-                  >
+                  <span class="text-sm text-mlm-secondary">Loading merchants in {{ selectedState() }}…</span>
                 </div>
               } @else if (pickupLocationsError()) {
                 <p class="text-sm text-red-600 py-2">{{ pickupLocationsError() }}</p>
@@ -122,7 +97,8 @@
                   <p
                     class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3"
                   >
-                    Merchants found but none have pickup address/phone yet.
+                    Merchants are listed below but none can fulfil this cart via pickup yet. Try another
+                    merchant or choose home delivery.
                   </p>
                 }
 
@@ -130,20 +106,92 @@
                   [locations]="pickupLocations()"
                   [selectedId]="selectedPickupId()"
                   (locationSelect)="onLocationSelect($event)"
-                >
-                </app-location-selector>
+                ></app-location-selector>
+
+                @if (availabilityLoading()) {
+                  <p class="text-sm text-mlm-secondary mt-3 flex items-center gap-2">
+                    <span
+                      class="w-3.5 h-3.5 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"
+                    ></span>
+                    Checking stock for selected merchant…
+                  </p>
+                }
+                @if (availabilityError()) {
+                  <p class="text-sm text-red-600 mt-3">{{ availabilityError() }}</p>
+                }
               }
+            </div>
+          }
+
+          @if (needsSplitResolution()) {
+            <div class="border border-amber-200 bg-amber-50/60 rounded-xl p-4 space-y-4">
+              <div>
+                <p class="text-sm font-bold text-amber-900">Stock conflict — split your order</p>
+                <p class="text-xs text-amber-800 mt-1">
+                  The selected merchant cannot fulfil every item. Assign each missing line to another
+                  merchant or admin delivery.
+                </p>
+              </div>
+
+              @for (item of missingItems(); track item.productId) {
+                <div class="bg-white border border-amber-100 rounded-lg p-3 space-y-2">
+                  <div class="flex justify-between gap-3 text-sm">
+                    <span class="font-semibold text-mlm-text">{{ productNameFor(item.productId) }}</span>
+                    <span class="text-mlm-secondary shrink-0">Qty {{ item.quantityNeeded }}</span>
+                  </div>
+
+                  @if (assignmentLabel(item.productId); as label) {
+                    <p class="text-xs font-medium text-mlm-primary">{{ label }}</p>
+                  }
+
+                  @if (item.anyMerchantHasStock && item.merchantsWithStock.length > 0) {
+                    <div class="flex flex-wrap gap-2">
+                      @for (alt of item.merchantsWithStock; track alt.merchantId) {
+                        <button
+                          type="button"
+                          (click)="assignMissingToMerchant(item, alt.merchantId, alt.username)"
+                          class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-mlm-primary/30 text-mlm-primary hover:bg-mlm-primary/5 transition-colors"
+                        >
+                          {{ alt.username }} ({{ alt.stockQuantity }} in stock)
+                        </button>
+                      }
+                    </div>
+                  }
+
+                  @if (item.adminDeliveryAvailable) {
+                    <button
+                      type="button"
+                      (click)="assignMissingToDelivery(item)"
+                      class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-mlm-secondary hover:bg-gray-50 transition-colors"
+                    >
+                      Ship via admin delivery
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          @if (splitSummary().length > 0 && selectedPickupId() && !availabilityLoading()) {
+            <div class="border border-gray-100 rounded-xl p-4 bg-gray-50/50">
+              <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">
+                Order summary
+              </p>
+              <ul class="space-y-2 text-sm">
+                @for (group of splitSummary(); track group.index) {
+                  <li class="flex justify-between gap-3">
+                    <span class="text-mlm-text">{{ group.label }}</span>
+                    <span class="text-mlm-secondary shrink-0">{{ group.itemCount }} item(s)</span>
+                  </li>
+                }
+              </ul>
             </div>
           }
         </div>
       }
 
-      <!-- Delivery Detail -->
-
       @if (fulfilmentOption() === 'delivery') {
         <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 space-y-5">
-          <!-- State Selector -->
-
           <div>
             <label
               for="delivery-state"
@@ -151,7 +199,6 @@
             >
               Select State
             </label>
-
             <select
               id="delivery-state"
               class="w-full px-4 py-3 bg-mlm-background border border-gray-200 rounded-xl text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
@@ -163,11 +210,8 @@
                 <option [value]="state">{{ state }}</option>
               }
             </select>
-
             <p class="text-xs text-mlm-secondary mt-1.5">Delivery fee depends on your state.</p>
           </div>
-
-          <!-- Address Input -->
 
           <div>
             <label
@@ -176,41 +220,27 @@
             >
               Delivery Address
             </label>
-
             <input
               id="delivery-address"
               type="text"
               [value]="deliveryAddress()"
               (input)="onDeliveryAddressInput($event)"
-              placeholder="Enter your full delivery address"
+              placeholder="Enter your full delivery address (min. 10 characters)"
               class="w-full px-4 py-3 bg-mlm-background border border-gray-200 rounded-xl text-sm text-mlm-text placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
               aria-label="Delivery address"
             />
           </div>
 
-          <!-- Delivery Fee -->
-
           @if (deliveryState()) {
             <div class="bg-gray-50 border border-gray-100 rounded-xl p-4">
               <div class="flex justify-between items-center text-sm">
                 <span class="text-mlm-secondary">Delivery Fee</span>
-
                 <span class="font-bold text-mlm-text">{{ formatCurrency(deliveryFee()) }}</span>
               </div>
-
-              <!-- <p class="text-xs text-mlm-secondary mt-1.5">
-                  @if (deliveryState().toLowerCase() === 'lagos') {
-                    Within Lagos delivery
-                  } @else {
-                    Outside Lagos delivery
-                  }
-                </p> -->
             </div>
           }
         </div>
       }
-
-      <!-- Confirm -->
 
       <div class="mt-5 pb-1">
         <button
@@ -224,8 +254,7 @@
               <span
                 class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
               ></span>
-
-              Creating order…
+              Processing checkout…
             </span>
           } @else {
             {{ confirmButtonLabel() }}

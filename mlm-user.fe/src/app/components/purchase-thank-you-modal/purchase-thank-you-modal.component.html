@@ -93,18 +93,34 @@
               <div class="flex justify-between items-center gap-4 px-4 py-3 text-sm">
                 <dt class="text-gray-400 shrink-0">Reference</dt>
                 <dd class="flex items-center gap-2 min-w-0">
-                  <span class="font-mono text-[11px] text-gray-600 truncate">{{ s.orderReference }}</span>
-                  <button
-                    type="button"
-                    (click)="onCopyReference(s.orderReference)"
-                    class="shrink-0 text-gray-400 hover:text-mlm-primary transition-colors"
-                    [title]="referenceCopied() ? 'Copied' : 'Copy reference'"
-                    aria-label="Copy order reference"
-                  >
-                    <i class="pi text-xs" [class.pi-check]="referenceCopied()" [class.pi-copy]="!referenceCopied()"></i>
-                  </button>
+                  @if (s.orderReferences && s.orderReferences.length > 1) {
+                    <span class="font-mono text-[11px] text-gray-600 text-right">
+                      {{ s.orderReferences.length }} orders ({{ s.checkoutId?.slice(0, 8) }}…)
+                    </span>
+                  } @else {
+                    <span class="font-mono text-[11px] text-gray-600 truncate">{{ s.orderReference }}</span>
+                    <button
+                      type="button"
+                      (click)="onCopyReference(s.orderReference)"
+                      class="shrink-0 text-gray-400 hover:text-mlm-primary transition-colors"
+                      [title]="referenceCopied() ? 'Copied' : 'Copy reference'"
+                      aria-label="Copy order reference"
+                    >
+                      <i class="pi text-xs" [class.pi-check]="referenceCopied()" [class.pi-copy]="!referenceCopied()"></i>
+                    </button>
+                  }
                 </dd>
               </div>
+              @if (s.orderReferences && s.orderReferences.length > 1) {
+                <div class="px-4 py-3 text-sm">
+                  <dt class="text-gray-400 mb-2">Order references</dt>
+                  <dd class="space-y-1">
+                    @for (ref of s.orderReferences; track ref) {
+                      <div class="font-mono text-[11px] text-gray-600">{{ ref }}</div>
+                    }
+                  </dd>
+                </div>
+              }
             </dl>
           </div>
 

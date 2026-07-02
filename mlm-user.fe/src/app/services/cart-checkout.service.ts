@@ -1,7 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, of, switchMap, tap, delay, map } from 'rxjs';
-import { Order, OrderService } from './order.service';
+import {
+  CheckoutGroup,
+  CheckoutResponse,
+  Order,
+  OrderService,
+} from './order.service';
 import { CartLineItem, CartService } from './cart.service';
 import { Product } from './product.service';
 import {
@@ -26,12 +31,9 @@ export interface CartCheckoutData {
 
 export type PendingCheckoutData = SingleCheckoutData | CartCheckoutData;
 
-export interface FulfilmentDetails {
-  fulfilmentOption: 'pickup' | 'delivery';
-  selectedPickupId?: string | null;
-  deliveryAddress?: string;
-  deliveryState?: string;
-  deliveryFee?: number;
+export interface CheckoutConfirmPayload {
+  state: string;
+  groups: CheckoutGroup[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -41,109 +43,123 @@ export class CartCheckoutService {
   private thankYouService = inject(PurchaseThankYouService);
   private router = inject(Router);
 
-  submitOrder(
+  submitCheckoutBatch(
     orderData: PendingCheckoutData,
-    fulfilmentDetails: FulfilmentDetails,
-  ): Observable<Order> {
-    const isPickup = fulfilmentDetails.fulfilmentOption === 'pickup';
-    const items =
-      orderData.mode === 'cart'
-        ? orderData.items.map((line) => ({
-            productId: line.productId,
-            quantity: line.quantity,
-          }))
-        : [{ productId: orderData.product.id, quantity: orderData.quantity }];
-
-    const payload = {
-      items,
-      paymentMethod: 'WALLET' as const,
-      fulfilmentMode: isPickup ? ('PICKUP' as const) : ('OFFLINE_DELIVERY' as const),
-      selectedMerchantId: isPickup ? fulfilmentDetails.selectedPickupId ?? undefined : undefined,
-      deliveryAddress:
-        fulfilmentDetails.fulfilmentOption === 'delivery'
-          ? fulfilmentDetails.deliveryAddress
-          : undefined,
-      deliveryFee:
-        fulfilmentDetails.fulfilmentOption === 'delivery'
-          ? fulfilmentDetails.deliveryFee
-          : undefined,
-      deliveryDisclaimerAccepted: true,
-    };
-
+    payload: CheckoutConfirmPayload,
+  ): Observable<CheckoutResponse> {
     const wallet = orderData.wallet;
+    const idempotencyKey = crypto.randomUUID();
 
-    return this.orderService.createOrder(payload).pipe(
-      switchMap((order) =>
-        this.orderService.payOrderWithWallet(order.id, wallet).pipe(
-          tap(() => {
-            if (orderData.mode === 'cart') {
-              this.cartService.clear();
-            }
-          }),
-          switchMap(() => this.fetchOrderWithPaymentRetry(order.id, order)),
+    return this.orderService
+      .checkoutBatch({
+        state: payload.state,
+        paymentMethod: 'WALLET',
+        idempotencyKey,
+        groups: payload.groups,
+      })
+      .pipe(
+        switchMap((checkout) =>
+          this.orderService.payCheckoutWithWallet(checkout.checkoutId, wallet).pipe(
+            tap(() => {
+              if (orderData.mode === 'cart') {
+                this.cartService.clear();
+              }
+            }),
+            switchMap(() => this.fetchFirstPaidOrderWithRetry(checkout)),
+            map((firstOrder) => ({ checkout, firstOrder })),
+          ),
         ),
-      ),
-      tap((order) => {
-        this.thankYouService.open(this.buildThankYouSummary(order, orderData, fulfilmentDetails), () => {
-          void this.router.navigate(['/orders']);
-        });
-      }),
-    );
+        tap(({ checkout, firstOrder }) => {
+          this.thankYouService.open(
+            this.buildThankYouSummary(checkout, firstOrder, orderData, payload),
+            () => {
+              void this.router.navigate(['/orders']);
+            },
+          );
+        }),
+        map(({ checkout }) => checkout),
+      );
   }
 
-  private fetchOrderWithPaymentRetry(orderId: string, fallback: Order): Observable<Order> {
-    return this.orderService.getOrderById(orderId, true).pipe(
+  private fetchFirstPaidOrderWithRetry(
+    checkout: CheckoutResponse,
+  ): Observable<Order | undefined> {
+    const firstId = checkout.orders[0]?.id;
+    if (!firstId) return of(undefined);
+
+    return this.orderService.getOrderById(firstId, true).pipe(
       switchMap((order) => {
         if (order?.paymentId) return of(order);
-        return of(order ?? fallback).pipe(
+        return of(order).pipe(
           delay(500),
-          switchMap(() => this.orderService.getOrderById(orderId, true)),
-          map((retried) => retried ?? order ?? fallback),
+          switchMap(() => this.orderService.getOrderById(firstId, true)),
         );
       }),
     );
   }
 
   buildThankYouSummary(
-    order: Order,
+    checkout: CheckoutResponse,
+    firstOrder: Order | undefined,
     orderData: PendingCheckoutData,
-    fulfilmentDetails: FulfilmentDetails,
+    payload: CheckoutConfirmPayload,
   ): PurchaseThankYouSummary {
     const wallet = orderData.wallet;
-    const orderItems = order.items.length
-      ? order.items.map((item) => ({ name: item.name, quantity: item.quantity }))
-      : orderData.mode === 'cart'
-        ? orderData.items.map((line) => ({
-            name: line.product.name,
-            quantity: line.quantity,
-          }))
-        : [{ name: orderData.product.name, quantity: orderData.quantity }];
-
+    const orderItems = this.resolveLineItems(orderData);
     const itemCount = orderItems.reduce((sum, item) => sum + item.quantity, 0);
-    const totalPv =
-      order.items.length > 0
-        ? order.items.reduce((sum, item) => sum + item.pv * item.quantity, 0)
-        : orderData.mode === 'cart'
-          ? orderData.items.reduce((sum, line) => sum + line.product.pv * line.quantity, 0)
-          : orderData.product.pv * orderData.quantity;
-
+    const totalPv = this.resolveTotalPv(orderData, firstOrder);
     const firstItem = orderItems[0];
+    const orderReferences = checkout.orders.map((o) => o.reference ?? o.id);
+    const hasPickup = payload.groups.some((g) => g.fulfilmentMode === 'PICKUP');
+    const hasDelivery = payload.groups.some((g) => g.fulfilmentMode === 'OFFLINE_DELIVERY');
+
+    let fulfilmentLabel = 'Pickup';
+    if (hasPickup && hasDelivery) {
+      fulfilmentLabel = 'Split pickup & delivery';
+    } else if (hasDelivery) {
+      fulfilmentLabel = 'Home Delivery';
+    } else if (checkout.orders.length > 1) {
+      fulfilmentLabel = `Pickup (${checkout.orders.length} orders)`;
+    }
 
     return {
-      orderId: order.id,
-      orderReference: order.reference ?? order.id,
-      paymentId: order.paymentId,
+      orderId: firstOrder?.id ?? checkout.orders[0]?.id ?? checkout.checkoutId,
+      orderReference: orderReferences[0] ?? checkout.checkoutId,
+      orderReferences: orderReferences.length > 1 ? orderReferences : undefined,
+      checkoutId: checkout.checkoutId,
+      paymentId: firstOrder?.paymentId,
       productName: firstItem?.name ?? 'Order',
       quantity: firstItem?.quantity ?? itemCount,
       items: orderItems.length > 1 ? orderItems : undefined,
       itemCount,
       paymentMethod: this.formatWalletLabel(wallet),
-      amount: order.total,
-      currency: order.currency ?? 'NGN',
-      fulfilmentLabel:
-        fulfilmentDetails.fulfilmentOption === 'pickup' ? 'Pickup' : 'Home Delivery',
+      amount: checkout.grandTotal,
+      currency: firstOrder?.currency ?? 'NGN',
+      fulfilmentLabel,
       totalPv,
     };
+  }
+
+  private resolveLineItems(
+    orderData: PendingCheckoutData,
+  ): { name: string; quantity: number }[] {
+    if (orderData.mode === 'cart') {
+      return orderData.items.map((line) => ({
+        name: line.product.name,
+        quantity: line.quantity,
+      }));
+    }
+    return [{ name: orderData.product.name, quantity: orderData.quantity }];
+  }
+
+  private resolveTotalPv(orderData: PendingCheckoutData, firstOrder?: Order): number {
+    if (firstOrder?.items.length) {
+      return firstOrder.items.reduce((sum, item) => sum + item.pv * item.quantity, 0);
+    }
+    if (orderData.mode === 'cart') {
+      return orderData.items.reduce((sum, line) => sum + line.product.pv * line.quantity, 0);
+    }
+    return orderData.product.pv * orderData.quantity;
   }
 
   formatWalletLabel(wallet: CheckoutWalletType): string {

@@ -1,5 +1,5 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { Observable, of, throwError, forkJoin } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { map, catchError, tap, finalize, switchMap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { UserService } from './user.service';
@@ -97,6 +97,8 @@ export interface AvailableMerchantProduct {
   id: string;
   name: string;
   sku: string;
+  stockQuantity?: number;
+  inStock?: boolean;
 }
 
 export interface AvailableMerchant {
@@ -107,7 +109,9 @@ export interface AvailableMerchant {
   phoneNumber: string;
   address?: string;
   serviceAreas: string[];
+  coversState?: boolean;
   products: AvailableMerchantProduct[];
+  requestedProductInStock?: boolean | null;
   pickupAvailable: boolean;
 }
 
@@ -115,6 +119,42 @@ export interface FetchPickupMerchantsParams {
   state: string;
   productId?: string;
   quantity?: number;
+}
+
+export interface CheckoutAvailabilityItem {
+  productId: string;
+  quantity: number;
+}
+
+export interface CheckoutAvailabilityBody {
+  state: string;
+  items: CheckoutAvailabilityItem[];
+  selectedMerchantId?: string;
+}
+
+export interface MerchantWithStock {
+  merchantId: string;
+  username: string;
+  stockQuantity: number;
+}
+
+export interface MissingCheckoutItem {
+  productId: string;
+  quantityNeeded: number;
+  merchantsWithStock: MerchantWithStock[];
+  anyMerchantHasStock: boolean;
+  adminDeliveryAvailable: boolean;
+}
+
+export interface SelectedMerchantAvailability {
+  merchantId: string;
+  canFulfillAll: boolean;
+  missingItems: MissingCheckoutItem[];
+}
+
+export interface CheckoutAvailabilityResponse {
+  merchants: AvailableMerchant[];
+  selectedMerchant: SelectedMerchantAvailability | null;
 }
 
 export interface MerchantOrderItem {
@@ -509,8 +549,7 @@ export class MerchantService {
       qp['productId'] = params.productId;
       qp['quantity'] = String(params.quantity ?? 1);
     }
-    return this.api.get<{ merchants: AvailableMerchant[] }>('merchants/available', qp).pipe(
-      map((res) => res.merchants ?? []),
+    return this.fetchAvailableMerchantsFromApi(qp).pipe(
       catchError((err) => {
         console.error('[MerchantService] fetchAvailableMerchantsForPickup failed', err);
         return throwError(() => err);
@@ -518,45 +557,39 @@ export class MerchantService {
     );
   }
 
-  /** Multi-item cart: merchants that can fulfil every line (intersection by id). */
+  /** All active merchants in a state (never filtered by stock client-side). */
   fetchPickupMerchantsForCart(
     state: string,
-    cartItems: { productId: string; quantity: number }[],
+    _cartItems?: { productId: string; quantity: number }[],
   ): Observable<AvailableMerchant[]> {
-    if (cartItems.length === 0) {
-      return this.fetchAvailableMerchantsForPickup({ state });
-    }
-    if (cartItems.length === 1) {
-      const line = cartItems[0];
-      return this.fetchAvailableMerchantsForPickup({
-        state,
-        productId: line.productId,
-        quantity: line.quantity,
-      });
-    }
-
-    return forkJoin(
-      cartItems.map((line) =>
-        this.fetchAvailableMerchantsForPickup({
-          state,
-          productId: line.productId,
-          quantity: line.quantity,
-        }),
-      ),
-    ).pipe(map((lists) => this.intersectMerchantsById(lists)));
+    return this.fetchAvailableMerchantsForPickup({ state });
   }
 
-  private intersectMerchantsById(lists: AvailableMerchant[][]): AvailableMerchant[] {
-    if (lists.length === 0) return [];
-    const [first, ...rest] = lists;
-    const idsInAll = new Set(first.map((m) => m.id));
-    for (const list of rest) {
-      const ids = new Set(list.map((m) => m.id));
-      for (const id of idsInAll) {
-        if (!ids.has(id)) idsInAll.delete(id);
-      }
-    }
-    return first.filter((m) => idsInAll.has(m.id));
+  /** POST /merchants/checkout/availability */
+  checkCheckoutAvailability(
+    body: CheckoutAvailabilityBody,
+  ): Observable<CheckoutAvailabilityResponse> {
+    return this.api
+      .post<{ merchants?: unknown[]; selectedMerchant?: unknown }>(
+        'merchants/checkout/availability',
+        body,
+      )
+      .pipe(
+        map((res) => ({
+          merchants: (res.merchants ?? []).map((m) =>
+            this.mapAvailableMerchant(m as Record<string, unknown>),
+          ),
+          selectedMerchant: res.selectedMerchant
+            ? this.mapSelectedMerchantAvailability(
+                res.selectedMerchant as Record<string, unknown>,
+              )
+            : null,
+        })),
+        catchError((err) => {
+          console.error('[MerchantService] checkCheckoutAvailability failed', err);
+          return throwError(() => err);
+        }),
+      );
   }
 
   static extractApiErrorMessage(err: unknown, fallback: string): string {
@@ -570,13 +603,83 @@ export class MerchantService {
   private fetchAvailableMerchantsFromApi(
     params: Record<string, string>,
   ): Observable<AvailableMerchant[]> {
-    return this.api.get<{ merchants: AvailableMerchant[] }>('merchants/available', params).pipe(
-      map((res) => res.merchants ?? []),
+    return this.api.get<{ merchants?: unknown[] }>('merchants/available', params).pipe(
+      map((res) =>
+        (res.merchants ?? []).map((m) => this.mapAvailableMerchant(m as Record<string, unknown>)),
+      ),
       catchError((err) => {
         console.error('[MerchantService] fetchAvailableMerchants failed', err);
         return of([]);
       }),
     );
+  }
+
+  private mapAvailableMerchant(raw: Record<string, unknown>): AvailableMerchant {
+    const productsRaw = raw['products'];
+    const products: AvailableMerchantProduct[] = Array.isArray(productsRaw)
+      ? productsRaw.map((p) => {
+          const row = p as Record<string, unknown>;
+          return {
+            id: String(row['id'] ?? ''),
+            name: String(row['name'] ?? ''),
+            sku: String(row['sku'] ?? ''),
+            stockQuantity: row['stockQuantity'] != null ? Number(row['stockQuantity']) : undefined,
+            inStock: row['inStock'] != null ? Boolean(row['inStock']) : undefined,
+          };
+        })
+      : [];
+
+    const requested = raw['requestedProductInStock'];
+    return {
+      id: String(raw['id'] ?? ''),
+      name: raw['name'] != null ? String(raw['name']) : undefined,
+      businessName: raw['businessName'] != null ? String(raw['businessName']) : undefined,
+      username: raw['username'] != null ? String(raw['username']) : undefined,
+      phoneNumber: String(raw['phoneNumber'] ?? ''),
+      address: raw['address'] != null ? String(raw['address']) : undefined,
+      serviceAreas: Array.isArray(raw['serviceAreas'])
+        ? (raw['serviceAreas'] as unknown[]).map(String)
+        : [],
+      coversState: raw['coversState'] != null ? Boolean(raw['coversState']) : undefined,
+      products,
+      requestedProductInStock:
+        requested === null || requested === undefined ? null : Boolean(requested),
+      pickupAvailable: Boolean(raw['pickupAvailable']),
+    };
+  }
+
+  private mapSelectedMerchantAvailability(
+    raw: Record<string, unknown>,
+  ): SelectedMerchantAvailability {
+    const missingRaw = raw['missingItems'];
+    const missingItems: MissingCheckoutItem[] = Array.isArray(missingRaw)
+      ? missingRaw.map((item) => {
+          const row = item as Record<string, unknown>;
+          const merchantsRaw = row['merchantsWithStock'];
+          return {
+            productId: String(row['productId'] ?? ''),
+            quantityNeeded: Number(row['quantityNeeded'] ?? 0),
+            merchantsWithStock: Array.isArray(merchantsRaw)
+              ? merchantsRaw.map((m) => {
+                  const mr = m as Record<string, unknown>;
+                  return {
+                    merchantId: String(mr['merchantId'] ?? ''),
+                    username: String(mr['username'] ?? ''),
+                    stockQuantity: Number(mr['stockQuantity'] ?? 0),
+                  };
+                })
+              : [],
+            anyMerchantHasStock: Boolean(row['anyMerchantHasStock']),
+            adminDeliveryAvailable: Boolean(row['adminDeliveryAvailable']),
+          };
+        })
+      : [];
+
+    return {
+      merchantId: String(raw['merchantId'] ?? ''),
+      canFulfillAll: Boolean(raw['canFulfillAll']),
+      missingItems,
+    };
   }
 
   private readonly LOCAL_PROFILE_KEY = 'mlm_local_merchant_profile';

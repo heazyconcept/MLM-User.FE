@@ -7,6 +7,8 @@ export interface PickupLocation {
   address?: string;
   phoneNumber?: string;
   pickupAvailable: boolean;
+  stockInStock?: boolean | null;
+  hasFullCartStock?: boolean;
 }
 
 @Component({
@@ -23,7 +25,7 @@ export class LocationSelectorComponent {
 
   onSelect(id: string): void {
     const loc = this.locations().find((l) => l.id === id);
-    if (loc?.pickupAvailable) {
+    if (loc?.pickupAvailable && loc.stockInStock !== false) {
       this.locationSelect.emit(id);
     }
   }

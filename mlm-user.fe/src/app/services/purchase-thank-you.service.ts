@@ -9,6 +9,8 @@ export interface PurchaseThankYouLineItem {
 export interface PurchaseThankYouSummary {
   orderId: string;
   orderReference: string;
+  orderReferences?: string[];
+  checkoutId?: string;
   paymentId?: string;
   productName: string;
   quantity: number;

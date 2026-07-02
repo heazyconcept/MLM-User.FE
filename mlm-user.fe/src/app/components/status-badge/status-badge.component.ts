@@ -83,7 +83,7 @@ export class StatusBadgeComponent {
       colorClasses = 'bg-yellow-50 text-yellow-600';
     }
     // Order fulfilment: in progress (pickup/delivery)
-    else if (s === 'ready for pickup' || s === 'out for delivery' || s === 'assigned' || s === 'in transit') {
+    else if (s === 'ready for pickup' || s === 'out for delivery' || s === 'assigned' || s === 'in transit' || s === 'picked up') {
       colorClasses = 'bg-blue-50 text-blue-600';
     }
     // Order: delivered (success)
@@ -117,7 +117,7 @@ export class StatusBadgeComponent {
       return s;
     }
     // Order statuses: preserve "Ready for Pickup", "Out for Delivery" etc.
-    if (s === 'Ready for Pickup' || s === 'Out for Delivery') {
+    if (s === 'Ready for Pickup' || s === 'Out for Delivery' || s === 'Picked Up') {
       return s;
     }
     // Inventory: "In Stock", "Low", "Out"
