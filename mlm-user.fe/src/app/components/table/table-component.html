@@ -1,17 +1,20 @@
 <p-table
   [value]="value"
-  [paginator]="true"
+  [paginator]="paginator"
   [rows]="rows"
   [rowsPerPageOptions]="rowsPerPageOptions"
   [loading]="loading"
-  responsiveLayout="scroll"
+  [responsiveLayout]="responsiveLayout"
+  [breakpoint]="breakpoint"
+  [rowHover]="rowHover"
+  [tableStyle]="resolvedTableStyle()"
   styleClass="ui-clean-table"
 >
   <!-- HEADER -->
   <ng-template pTemplate="header">
     <tr>
       @for (h of headers; track $index) {
-        <th class="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        <th [class.text-right]="$index >= headers.length - 2">
           {{ h }}
         </th>
       }

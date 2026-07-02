@@ -50,7 +50,7 @@ export class MerchantDashboardComponent implements OnInit {
   }
 
   get unreadAllocations(): number {
-    return this.merchantService.allocations()?.filter((a) => a.status === 'PENDING').length ?? 0;
+    return this.merchantService.actionableAllocationCount();
   }
 
   get salesMonths(): string[] {
@@ -277,6 +277,7 @@ export class MerchantDashboardComponent implements OnInit {
         this.merchantService.fetchOrders();
         this.merchantService.fetchInventory();
         this.merchantService.fetchAllocations();
+        this.merchantService.fetchStockDisputes();
         this.initCharts();
         this.runEntranceAnimations();
       } else {

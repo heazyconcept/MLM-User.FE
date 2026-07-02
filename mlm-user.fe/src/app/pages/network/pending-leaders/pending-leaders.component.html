@@ -1,0 +1,588 @@
+<div class="min-h-screen bg-mlm-background">
+
+  <main class="py-10">
+
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+      <div class="animate-fade-in space-y-8">
+
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+
+          <div>
+
+            <a
+
+              routerLink="/network/downline"
+
+              class="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80"
+
+            >
+
+              <i class="pi pi-arrow-left text-xs" aria-hidden="true"></i>
+
+              Back to downline list
+
+            </a>
+
+            <h1 class="text-2xl font-bold tracking-tight text-mlm-text">Pending Leaders</h1>
+
+            <p class="mt-1 max-w-2xl text-sm text-mlm-secondary">
+
+              Coach activated downlines who still need 3 direct referrals to qualify as leaders.
+
+            </p>
+
+          </div>
+
+
+
+          <div
+
+            class="min-w-[220px] rounded-2xl border border-mlm-primary/10 bg-white px-5 py-4 shadow-sm"
+
+          >
+
+            <p class="text-[11px] font-bold uppercase tracking-widest text-mlm-secondary">
+
+              Pending qualification
+
+            </p>
+
+            <p class="mt-1 text-3xl font-bold tabular-nums text-mlm-text">
+
+              {{ totalRecords() }}
+
+            </p>
+
+            <p class="mt-1 text-xs text-mlm-secondary">Activated members below 3 DR</p>
+
+          </div>
+
+        </div>
+
+
+
+        @if (errorMessage()) {
+
+          <div class="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
+
+            {{ errorMessage() }}
+
+          </div>
+
+        }
+
+
+
+        <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+
+          <div class="grid gap-4 md:grid-cols-[1fr_auto_auto] md:items-end">
+
+            <div>
+
+              <label
+
+                for="pending-leaders-search"
+
+                class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500"
+
+              >
+
+                Search
+
+              </label>
+
+              <div class="relative">
+
+                <i
+
+                  class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400"
+
+                  aria-hidden="true"
+
+                ></i>
+
+                <input
+
+                  id="pending-leaders-search"
+
+                  type="text"
+
+                  [ngModel]="searchQuery()"
+
+                  (ngModelChange)="onSearchInput($event)"
+
+                  placeholder="Search username, email, or phone..."
+
+                  class="w-full rounded-xl border border-gray-100 bg-gray-50 py-3 pl-11 pr-4 text-sm text-gray-900 transition-all placeholder:text-gray-400 focus:border-mlm-primary/20 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20"
+
+                />
+
+              </div>
+
+            </div>
+
+
+
+            <div>
+
+              <label
+
+                for="pending-leaders-depth"
+
+                class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500"
+
+              >
+
+                Depth
+
+              </label>
+
+              <select
+
+                id="pending-leaders-depth"
+
+                [ngModel]="depth()"
+
+                (ngModelChange)="onDepthChange($event)"
+
+                class="h-11 rounded-xl border border-gray-100 bg-gray-50 px-3 pr-8 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20"
+
+              >
+
+                <option value="all">All levels</option>
+
+                @for (option of depthOptions; track option) {
+
+                  <option [value]="option">Level {{ option }}</option>
+
+                }
+
+              </select>
+
+            </div>
+
+
+
+            <div>
+
+              <label
+
+                for="pending-leaders-limit"
+
+                class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500"
+
+              >
+
+                Page size
+
+              </label>
+
+              <select
+
+                id="pending-leaders-limit"
+
+                [ngModel]="limit()"
+
+                (ngModelChange)="onLimitChange($event)"
+
+                class="h-11 rounded-xl border border-gray-100 bg-gray-50 px-3 pr-8 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20"
+
+              >
+
+                @for (option of pageSizeOptions; track option) {
+
+                  <option [value]="option">{{ option }}</option>
+
+                }
+
+              </select>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="overflow-hidden rounded-2xl border border-mlm-warm-200 bg-white shadow-sm">
+
+          <div
+
+            class="flex flex-col gap-2 border-b border-mlm-warm-200 bg-white px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between"
+
+          >
+
+            <span class="text-[11px] font-semibold uppercase tracking-widest text-mlm-warm-600">
+
+              Downlines missing 3 DR
+
+            </span>
+
+            <span class="text-xs font-medium tabular-nums text-mlm-warm-600">
+
+              @if (totalRecords() === 0) {
+
+                0 results
+
+              } @else {
+
+                {{ showingFrom() }}-{{ showingTo() }} of {{ totalRecords() }}
+
+              }
+
+            </span>
+
+          </div>
+
+
+
+          <div class="pending-leaders-table">
+
+            <app-ui-table
+
+              [value]="rows()"
+
+              [headers]="tableHeaders"
+
+              [loading]="isLoading()"
+
+              [paginator]="false"
+
+              [rows]="limit()"
+
+              responsiveLayout="stack"
+
+              breakpoint="1024px"
+
+              [tableStyle]="{ 'min-width': '72rem' }"
+
+            >
+
+              <ng-template #rowTemplate let-row>
+
+                <tr class="p-selectable-row">
+
+                  <td data-label="Member">
+
+                    <div class="cell-value items-start!">
+
+                      <div class="flex w-full flex-col gap-1 text-left">
+
+                        <div class="flex flex-wrap items-center gap-2">
+
+                          <span class="text-sm font-semibold text-mlm-text">
+
+                            {{ row.username }}
+
+                          </span>
+
+                          @if (row.isDirectReferral) {
+
+                            <span
+
+                              class="rounded bg-mlm-green-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-mlm-primary"
+
+                            >
+
+                              Your DR
+
+                            </span>
+
+                          }
+
+                        </div>
+
+                        <span class="text-xs text-mlm-secondary">{{ memberName(row) }}</span>
+
+                        @if (row.email || row.phone) {
+
+                          <span class="text-[11px] text-mlm-secondary/80">
+
+                            {{ row.email || row.phone }}
+
+                          </span>
+
+                        }
+
+                      </div>
+
+                    </div>
+
+                  </td>
+
+
+
+                  <td data-label="DR Progress">
+
+                    <div class="cell-value">
+
+                      <div class="flex w-full flex-col gap-2">
+
+                        <div class="flex flex-wrap items-center justify-end gap-2 lg:justify-start">
+
+                          <span class="text-sm font-bold text-mlm-text">
+
+                            {{ drProgressLabel(row) }}
+
+                          </span>
+
+                          <span
+
+                            class="inline-flex rounded-full bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700"
+
+                          >
+
+                            {{ drRemainingLabel(row) }}
+
+                          </span>
+
+                        </div>
+
+                        <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+
+                          <div
+
+                            class="h-full rounded-full bg-mlm-primary transition-all duration-500"
+
+                            [style.width.%]="drProgressPercent(row)"
+
+                          ></div>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                  </td>
+
+
+
+                  <td data-label="Package">
+
+                    <div class="cell-value">
+
+                      <span
+
+                        [class]="
+
+                          'inline-flex rounded-lg px-3 py-1.5 text-xs font-medium uppercase tracking-wide ' +
+
+                          getPackageClass(row.registrationPackage)
+
+                        "
+
+                      >
+
+                        {{ row.registrationPackage }}
+
+                      </span>
+
+                    </div>
+
+                  </td>
+
+
+
+                  <td data-label="Rank">
+
+                    <div class="cell-value">
+
+                      <span class="text-sm font-semibold uppercase tracking-wide text-mlm-text">
+
+                        {{ row.rank || '—' }}
+
+                      </span>
+
+                    </div>
+
+                  </td>
+
+
+
+                  <td data-label="Stage">
+
+                    <div class="cell-value">
+
+                      <span class="text-sm text-gray-700">{{ row.stage || '—' }}</span>
+
+                    </div>
+
+                  </td>
+
+
+
+                  <td data-label="Depth">
+
+                    <div class="cell-value">
+
+                      <span
+
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm font-medium text-gray-700"
+
+                      >
+
+                        {{ row.level }}
+
+                      </span>
+
+                    </div>
+
+                  </td>
+
+
+
+                  <td data-label="Team">
+
+                    <div class="cell-value">
+
+                      <span class="text-sm font-semibold tabular-nums text-mlm-text">
+
+                        {{ row.teamSize }}
+
+                      </span>
+
+                    </div>
+
+                  </td>
+
+
+
+                  <td data-label="Joined">
+
+                    <div class="cell-value">
+
+                      <span class="text-sm text-gray-700">
+
+                        {{ row.joinDate | date: 'mediumDate' }}
+
+                      </span>
+
+                    </div>
+
+                  </td>
+
+
+
+                  <td data-label="Account" class="lg:text-right">
+
+                    <div class="cell-value">
+
+                      <app-status-badge [status]="accountStatus(row)" size="sm" />
+
+                    </div>
+
+                  </td>
+
+
+
+                  <td data-label="Status" class="lg:text-right">
+
+                    <div class="cell-value">
+
+                      <app-status-badge [status]="row.status" size="sm" />
+
+                    </div>
+
+                  </td>
+
+                </tr>
+
+              </ng-template>
+
+
+
+              <ng-template #emptyTemplate>
+
+                <tr>
+
+                  <td [attr.colspan]="tableHeaders.length" class="px-5 py-16 text-center">
+
+                    <i class="pi pi-check-circle mb-3 block text-3xl text-mlm-primary/50"></i>
+
+                    <p class="text-sm font-semibold text-mlm-text">
+
+                      All your activated downlines have qualified with 3 direct referrals.
+
+                    </p>
+
+                    <p class="mt-1 text-xs text-mlm-secondary">
+
+                      Adjust search or depth filters if you expected to see a specific member.
+
+                    </p>
+
+                  </td>
+
+                </tr>
+
+              </ng-template>
+
+            </app-ui-table>
+
+          </div>
+
+
+
+          <div
+
+            class="flex flex-col gap-3 border-t border-mlm-warm-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+
+          >
+
+            <p class="text-xs text-mlm-secondary">
+
+              Page {{ page() }} of {{ totalPages() }}
+
+            </p>
+
+            <div class="flex items-center gap-2">
+
+              <button
+
+                type="button"
+
+                (click)="previousPage()"
+
+                [disabled]="!hasPreviousPage() || isLoading()"
+
+                class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+
+              >
+
+                Previous
+
+              </button>
+
+              <button
+
+                type="button"
+
+                (click)="nextPage()"
+
+                [disabled]="!hasNextPage() || isLoading()"
+
+                class="rounded-lg bg-mlm-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-mlm-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+
+              >
+
+                Next
+
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+</div>
+

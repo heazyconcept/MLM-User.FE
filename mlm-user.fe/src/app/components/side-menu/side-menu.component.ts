@@ -160,6 +160,12 @@ export class SideMenuComponent implements OnInit {
                 requiresPayment: true,
               },
               {
+                label: 'My DRs',
+                icon: 'pi pi-user-plus',
+                route: '/network/direct-referrals',
+                requiresPayment: true,
+              },
+              {
                 label: 'Matrix Chart',
                 icon: 'pi pi-sitemap',
                 route: '/network/matrix',
@@ -180,6 +186,12 @@ export class SideMenuComponent implements OnInit {
                 label: 'Downline',
                 icon: 'pi pi-list',
                 route: '/network/downline',
+                requiresPayment: true,
+              },
+              {
+                label: 'Pending Leaders',
+                icon: 'pi pi-flag',
+                route: '/network/pending-leaders',
                 requiresPayment: true,
               },
                 // {

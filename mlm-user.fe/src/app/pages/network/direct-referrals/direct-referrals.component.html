@@ -1,0 +1,250 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="animate-fade-in space-y-8">
+        <div>
+          <a
+            routerLink="/network/overview"
+            class="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80"
+          >
+            <i class="pi pi-arrow-left text-xs" aria-hidden="true"></i>
+            Back to network
+          </a>
+          <h1 class="text-2xl font-bold tracking-tight text-mlm-text">My Direct Referrals</h1>
+          <p class="mt-1 max-w-2xl text-sm text-mlm-secondary">
+            Everyone who registered with your personal successline link — your direct referral (DR)
+            team.
+          </p>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
+            {{ errorMessage() }}
+          </div>
+        }
+
+        @if (hasInactiveDr() && !isLoading()) {
+          <div
+            class="flex flex-col gap-3 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p class="text-sm text-amber-900">
+              Some of your DRs are paid but still need 3 direct referrals to qualify as leaders.
+            </p>
+            <a
+              routerLink="/network/pending-leaders"
+              class="inline-flex items-center gap-2 text-sm font-semibold text-amber-900 hover:text-amber-950"
+            >
+              View pending leaders
+              <i class="pi pi-arrow-right text-xs" aria-hidden="true"></i>
+            </a>
+          </div>
+        }
+
+        <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div class="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+            <div>
+              <label
+                for="direct-referrals-search"
+                class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500"
+              >
+                Search
+              </label>
+              <div class="relative">
+                <i
+                  class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400"
+                  aria-hidden="true"
+                ></i>
+                <input
+                  id="direct-referrals-search"
+                  type="text"
+                  [ngModel]="searchQuery()"
+                  (ngModelChange)="onSearchInput($event)"
+                  placeholder="Search username, email, or phone..."
+                  class="w-full rounded-xl border border-gray-100 bg-gray-50 py-3 pl-11 pr-4 text-sm text-gray-900 transition-all placeholder:text-gray-400 focus:border-mlm-primary/20 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                for="direct-referrals-limit"
+                class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500"
+              >
+                Page size
+              </label>
+              <select
+                id="direct-referrals-limit"
+                [ngModel]="limit()"
+                (ngModelChange)="onLimitChange($event)"
+                class="h-11 rounded-xl border border-gray-100 bg-gray-50 px-3 pr-8 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20"
+              >
+                @for (option of pageSizeOptions; track option) {
+                  <option [value]="option">{{ option }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-mlm-warm-200 bg-white shadow-sm">
+          <div
+            class="flex flex-col gap-2 border-b border-mlm-warm-200 bg-white px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <span class="text-[11px] font-semibold uppercase tracking-widest text-mlm-warm-600">
+              Your direct referrals
+            </span>
+            <span class="text-xs font-medium tabular-nums text-mlm-warm-600">
+              @if (totalRecords() === 0) {
+                0 results
+              } @else {
+                {{ showingFrom() }}-{{ showingTo() }} of {{ totalRecords() }}
+              }
+            </span>
+          </div>
+
+          <div class="direct-referrals-table">
+            <app-ui-table
+              [value]="rows()"
+              [headers]="tableHeaders"
+              [loading]="isLoading()"
+              [paginator]="false"
+              [rows]="limit()"
+              responsiveLayout="stack"
+              breakpoint="1024px"
+              [tableStyle]="{ 'min-width': '56rem' }"
+            >
+              <ng-template #rowTemplate let-row>
+                <tr class="p-selectable-row">
+                  <td data-label="Member">
+                    <div class="cell-value items-start!">
+                      <div class="flex w-full flex-col gap-1 text-left">
+                        <span class="text-sm font-semibold text-mlm-text">{{ row.username }}</span>
+                        <span class="text-xs text-mlm-secondary">{{ memberName(row) }}</span>
+                        @if (!row.isRegistrationPaid) {
+                          <span
+                            class="inline-flex w-fit rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600"
+                          >
+                            Not activated
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  </td>
+
+                  <td data-label="Package">
+                    <div class="cell-value">
+                      <span
+                        [class]="
+                          'inline-flex rounded-lg px-3 py-1.5 text-xs font-medium uppercase tracking-wide ' +
+                          getPackageClass(row.registrationPackage)
+                        "
+                      >
+                        {{ row.registrationPackage }}
+                      </span>
+                    </div>
+                  </td>
+
+                  <td data-label="Status">
+                    <div class="cell-value">
+                      <app-status-badge [status]="statusForBadge(row.status)" size="sm" />
+                    </div>
+                  </td>
+
+                  <td data-label="Their DRs">
+                    <div class="cell-value">
+                      <div class="flex w-full flex-col gap-2">
+                        <span class="text-sm font-bold text-mlm-text">{{ drProgressLabel(row) }}</span>
+                        <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                          <div
+                            class="h-full rounded-full bg-mlm-primary transition-all duration-500"
+                            [style.width.%]="drProgressPercent(row)"
+                          ></div>
+                        </div>
+                        @if (row.drRemaining > 0) {
+                          <span class="text-[11px] font-medium text-mlm-secondary">
+                            {{ row.drRemaining }} to leader
+                          </span>
+                        }
+                      </div>
+                    </div>
+                  </td>
+
+                  <td data-label="Joined">
+                    <div class="cell-value">
+                      <span class="text-sm text-gray-700">
+                        {{ row.joinDate | date: 'mediumDate' }}
+                      </span>
+                    </div>
+                  </td>
+
+                  <td data-label="Contact">
+                    <div class="cell-value">
+                      <span class="break-all text-sm text-gray-700">{{ contactLabel(row) }}</span>
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+
+              <ng-template #emptyTemplate>
+                <tr>
+                  <td [attr.colspan]="tableHeaders.length" class="px-5 py-16 text-center">
+                    @if (searchQuery()) {
+                      <i class="pi pi-search mb-3 block text-3xl text-mlm-secondary/40"></i>
+                      <p class="text-sm font-semibold text-mlm-text">
+                        No direct referrals match your search.
+                      </p>
+                      <p class="mt-1 text-xs text-mlm-secondary">
+                        Try a different username, email, or phone number.
+                      </p>
+                    } @else {
+                      <i class="pi pi-users mb-3 block text-3xl text-mlm-primary/50"></i>
+                      <p class="text-sm font-semibold text-mlm-text">
+                        You have not referred anyone yet.
+                      </p>
+                      <p class="mt-1 text-xs text-mlm-secondary">
+                        Share your referral link to get started.
+                      </p>
+                      <a
+                        routerLink="/network/referrals"
+                        fragment="referral-link-section"
+                        class="mt-4 inline-flex items-center gap-2 rounded-lg bg-mlm-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-mlm-primary/90"
+                      >
+                        Share referral link
+                      </a>
+                    }
+                  </td>
+                </tr>
+              </ng-template>
+            </app-ui-table>
+          </div>
+
+          <div
+            class="flex flex-col gap-3 border-t border-mlm-warm-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p class="text-xs text-mlm-secondary">
+              Page {{ page() }} of {{ totalPages() }}
+            </p>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                (click)="previousPage()"
+                [disabled]="!hasPreviousPage() || isLoading()"
+                class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                (click)="nextPage()"
+                [disabled]="!hasNextPage() || isLoading()"
+                class="rounded-lg bg-mlm-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-mlm-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

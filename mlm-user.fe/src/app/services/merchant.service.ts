@@ -17,7 +17,20 @@ export type OrderStatus =
   | 'SENT';
 export type FulfilmentMode = 'PICKUP' | 'OFFLINE_DELIVERY';
 export type StockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
-export type AllocationStatus = 'PENDING' | 'ACCEPTED';
+export type AllocationStatus =
+  | 'PENDING'
+  | 'DISPATCHED'
+  | 'IN_TRANSIT'
+  | 'DELIVERED'
+  | 'RECEIVED'
+  | 'ACCEPTED'
+  | 'CANCELLED';
+export type StockDisputeStatus =
+  | 'OPEN'
+  | 'ADMIN_REJECTED'
+  | 'ADMIN_ACCEPTED'
+  | 'MERCHANT_ACKNOWLEDGED'
+  | 'CLOSED';
 export type MerchantFeePaymentSource = 'REGISTRATION_WALLET' | 'CASH_WALLET' | 'PAYSTACK';
 
 /* ── Interfaces ────────────────────────────────────────────────── */
@@ -196,14 +209,48 @@ export interface MerchantAllocationProduct {
   sku: string;
 }
 
+export interface MerchantAllocationDispute {
+  id: string;
+  status: StockDisputeStatus;
+  dispatchedQuantity: number;
+  claimedReceivedQuantity: number;
+}
+
 export interface MerchantAllocation {
   id: string;
-  merchantId: string;
+  merchantId?: string;
   productId: string;
+  productName: string;
   quantity: number;
   status: AllocationStatus;
-  createdAt: string;
-  product: MerchantAllocationProduct;
+  quantityReceived: number | null;
+  dispatchedAt: string | null;
+  inTransitAt: string | null;
+  deliveredAt: string | null;
+  receivedAt: string | null;
+  trackingReference: string | null;
+  parentAllocationId: string | null;
+  dispute: MerchantAllocationDispute | null;
+  product?: MerchantAllocationProduct;
+  createdAt?: string;
+}
+
+export interface MerchantStockDispute {
+  id: string;
+  status: StockDisputeStatus;
+  dispatchedQuantity: number;
+  claimedReceivedQuantity: number;
+  allocationId?: string;
+  productId?: string;
+  productName?: string;
+  merchantNotes?: string | null;
+  createdAt?: string;
+}
+
+export interface ConfirmAllocationReceiptBody {
+  quantityReceived: number;
+  merchantNotes?: string;
+  evidenceFiles?: File[];
 }
 
 export interface MerchantInventoryItem {
@@ -270,6 +317,7 @@ export class MerchantService {
   private deliveriesTotalSignal = signal(0);
   private earningsSignal = signal<MerchantEarningsSummary | null>(null);
   private allocationsSignal = signal<MerchantAllocation[]>([]);
+  private stockDisputesSignal = signal<MerchantStockDispute[]>([]);
   private inventorySignal = signal<MerchantInventoryItem[]>([]);
   private loadingSignal = signal(false);
   private errorSignal = signal<string | null>(null);
@@ -285,6 +333,7 @@ export class MerchantService {
   readonly deliveriesTotal = this.deliveriesTotalSignal.asReadonly();
   readonly earnings = this.earningsSignal.asReadonly();
   readonly allocations = this.allocationsSignal.asReadonly();
+  readonly stockDisputes = this.stockDisputesSignal.asReadonly();
   readonly inventory = this.inventorySignal.asReadonly();
   readonly loading = this.loadingSignal.asReadonly();
   readonly error = this.errorSignal.asReadonly();
@@ -316,6 +365,14 @@ export class MerchantService {
   readonly isAwaitingAdminApproval = computed(
     () => this.isMerchant() && this.isFeePaid() && this.merchantStatus() === 'PENDING',
   );
+
+  readonly actionableAllocationCount = computed(() => {
+    const delivered = this.allocationsSignal().filter((a) => a.status === 'DELIVERED').length;
+    const rejectedDisputes = this.stockDisputesSignal().filter(
+      (d) => d.status === 'ADMIN_REJECTED',
+    ).length;
+    return delivered + rejectedDisputes;
+  });
 
   readonly totalMerchantSales = computed(() => {
     return this.ordersSignal().reduce((sum, o) => sum + o.totalAmount, 0);
@@ -808,9 +865,12 @@ export class MerchantService {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
     this.api
-      .get<MerchantAllocation[]>('merchants/me/allocations')
+      .get<MerchantAllocation[] | { data?: MerchantAllocation[]; allocations?: MerchantAllocation[] }>(
+        'merchants/me/allocations',
+      )
       .pipe(
-        tap((res) => this.allocationsSignal.set(res ?? [])),
+        map((res) => this.normalizeAllocationsResponse(res)),
+        tap((res) => this.allocationsSignal.set(res)),
         catchError((err) => {
           console.error('[MerchantService] fetchAllocations failed', err);
           return this.handleOperationalFetchError(err, 'Failed to load allocations.');
@@ -820,25 +880,93 @@ export class MerchantService {
       .subscribe();
   }
 
-  /** POST /merchants/me/allocations/:id/accept */
-  acceptAllocation(id: string): void {
+  /** GET /merchants/me/stock-disputes */
+  fetchStockDisputes(): void {
+    this.api
+      .get<
+        MerchantStockDispute[] | { data?: MerchantStockDispute[]; disputes?: MerchantStockDispute[] }
+      >('merchants/me/stock-disputes')
+      .pipe(
+        map((res) => this.normalizeStockDisputesResponse(res)),
+        tap((res) => this.stockDisputesSignal.set(res)),
+        catchError((err) => {
+          console.error('[MerchantService] fetchStockDisputes failed', err);
+          return of([]);
+        }),
+      )
+      .subscribe();
+  }
+
+  /** POST /merchants/me/allocations/:id/confirm-receipt */
+  confirmAllocationReceipt(id: string, body: ConfirmAllocationReceiptBody): Observable<{ message?: string }> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+
+    const formData = new FormData();
+    formData.append('quantityReceived', String(body.quantityReceived));
+    if (body.merchantNotes?.trim()) {
+      formData.append('merchantNotes', body.merchantNotes.trim());
+    }
+    for (const file of body.evidenceFiles ?? []) {
+      formData.append('evidence', file, file.name);
+    }
+
+    return this.api.post<{ message?: string }>(`merchants/me/allocations/${id}/confirm-receipt`, formData).pipe(
+      tap(() => {
+        this.fetchAllocations();
+        this.fetchStockDisputes();
+        this.fetchInventory();
+      }),
+      catchError((err) => {
+        console.error('[MerchantService] confirmAllocationReceipt failed', err);
+        this.errorSignal.set(err?.error?.message || 'Failed to confirm receipt.');
+        return throwError(() => err);
+      }),
+      finalize(() => this.actionLoadingSignal.set(false)),
+    );
+  }
+
+  /** POST /merchants/me/stock-disputes/:id/acknowledge */
+  acknowledgeStockDispute(id: string): void {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
     this.api
-      .post<{ message: string }>(`merchants/me/allocations/${id}/accept`, {})
+      .post<{ message?: string }>(`merchants/me/stock-disputes/${id}/acknowledge`, {})
       .pipe(
         tap(() => {
           this.fetchAllocations();
+          this.fetchStockDisputes();
           this.fetchInventory();
         }),
         catchError((err) => {
-          console.error('[MerchantService] acceptAllocation failed', err);
-          this.errorSignal.set(err?.error?.message || 'Failed to accept allocation.');
+          console.error('[MerchantService] acknowledgeStockDispute failed', err);
+          this.errorSignal.set(err?.error?.message || 'Failed to acknowledge dispute.');
           return of(null);
         }),
         finalize(() => this.actionLoadingSignal.set(false)),
       )
       .subscribe();
+  }
+
+  static canConfirmReceipt(allocation: MerchantAllocation): boolean {
+    return allocation.status === 'DELIVERED';
+  }
+
+  static needsDisputeAcknowledgement(dispute: MerchantAllocationDispute | MerchantStockDispute): boolean {
+    return dispute.status === 'ADMIN_REJECTED';
+  }
+
+  static allocationStatusLabel(status: AllocationStatus): string {
+    const labels: Record<AllocationStatus, string> = {
+      PENDING: 'Pending dispatch',
+      DISPATCHED: 'Dispatched',
+      IN_TRANSIT: 'In transit',
+      DELIVERED: 'Delivered',
+      RECEIVED: 'Received',
+      ACCEPTED: 'Accepted',
+      CANCELLED: 'Cancelled',
+    };
+    return labels[status] ?? status;
   }
 
   /* ── Inventory ───────────────────────────────────────────────── */
@@ -926,6 +1054,108 @@ export class MerchantService {
 
   clearError(): void {
     this.errorSignal.set(null);
+  }
+
+  private normalizeAllocationsResponse(
+    res:
+      | MerchantAllocation[]
+      | { data?: unknown; allocations?: unknown; items?: unknown },
+  ): MerchantAllocation[] {
+    const source = (Array.isArray(res)
+      ? res
+      : ((res['data'] ?? res['allocations'] ?? res['items'] ?? []) as unknown[])) as Record<
+      string,
+      unknown
+    >[];
+    return source.map((raw) => this.mapAllocation(raw));
+  }
+
+  private normalizeStockDisputesResponse(
+    res:
+      | MerchantStockDispute[]
+      | { data?: unknown; disputes?: unknown; items?: unknown },
+  ): MerchantStockDispute[] {
+    const source = (Array.isArray(res)
+      ? res
+      : ((res['data'] ?? res['disputes'] ?? res['items'] ?? []) as unknown[])) as Record<
+      string,
+      unknown
+    >[];
+    return source.map((raw) => this.mapStockDispute(raw));
+  }
+
+  private mapAllocationDispute(raw: Record<string, unknown>): MerchantAllocationDispute | null {
+    if (!raw || typeof raw !== 'object' || !raw['id']) return null;
+    return {
+      id: String(raw['id']),
+      status: String(raw['status'] ?? 'OPEN') as StockDisputeStatus,
+      dispatchedQuantity: Number(raw['dispatchedQuantity'] ?? raw['dispatched_quantity'] ?? 0),
+      claimedReceivedQuantity: Number(
+        raw['claimedReceivedQuantity'] ?? raw['claimed_received_quantity'] ?? 0,
+      ),
+    };
+  }
+
+  private mapAllocation(raw: Record<string, unknown>): MerchantAllocation {
+    const productRaw = (raw['product'] as Record<string, unknown> | undefined) ?? {};
+    const productId = String(raw['productId'] ?? productRaw['id'] ?? '');
+    const productName = String(
+      raw['productName'] ?? productRaw['name'] ?? productRaw['productName'] ?? '—',
+    );
+    const disputeRaw = raw['dispute'] as Record<string, unknown> | null | undefined;
+
+    return {
+      id: String(raw['id'] ?? ''),
+      merchantId: raw['merchantId'] ? String(raw['merchantId']) : undefined,
+      productId,
+      productName,
+      quantity: Number(raw['quantity'] ?? 0),
+      status: String(raw['status'] ?? 'PENDING') as AllocationStatus,
+      quantityReceived:
+        raw['quantityReceived'] != null || raw['quantity_received'] != null
+          ? Number(raw['quantityReceived'] ?? raw['quantity_received'])
+          : null,
+      dispatchedAt: (raw['dispatchedAt'] ?? raw['dispatched_at'] ?? null) as string | null,
+      inTransitAt: (raw['inTransitAt'] ?? raw['in_transit_at'] ?? null) as string | null,
+      deliveredAt: (raw['deliveredAt'] ?? raw['delivered_at'] ?? null) as string | null,
+      receivedAt: (raw['receivedAt'] ?? raw['received_at'] ?? null) as string | null,
+      trackingReference: (raw['trackingReference'] ?? raw['tracking_reference'] ?? null) as
+        | string
+        | null,
+      parentAllocationId: (raw['parentAllocationId'] ?? raw['parent_allocation_id'] ?? null) as
+        | string
+        | null,
+      dispute: disputeRaw ? this.mapAllocationDispute(disputeRaw) : null,
+      product: productId
+        ? {
+            id: productId,
+            name: productName,
+            sku: String(productRaw['sku'] ?? raw['productSku'] ?? raw['product_sku'] ?? '—'),
+          }
+        : undefined,
+      createdAt: (raw['createdAt'] ?? raw['created_at']) as string | undefined,
+    };
+  }
+
+  private mapStockDispute(raw: Record<string, unknown>): MerchantStockDispute {
+    const allocation = (raw['allocation'] as Record<string, unknown> | undefined) ?? {};
+    return {
+      id: String(raw['id'] ?? ''),
+      status: String(raw['status'] ?? 'OPEN') as StockDisputeStatus,
+      dispatchedQuantity: Number(raw['dispatchedQuantity'] ?? raw['dispatched_quantity'] ?? 0),
+      claimedReceivedQuantity: Number(
+        raw['claimedReceivedQuantity'] ?? raw['claimed_received_quantity'] ?? 0,
+      ),
+      allocationId: String(
+        raw['allocationId'] ?? raw['allocation_id'] ?? allocation['id'] ?? '',
+      ) || undefined,
+      productId: String(raw['productId'] ?? allocation['productId'] ?? '') || undefined,
+      productName: String(
+        raw['productName'] ?? allocation['productName'] ?? allocation['product'] ?? '',
+      ) || undefined,
+      merchantNotes: (raw['merchantNotes'] ?? raw['merchant_notes'] ?? null) as string | null,
+      createdAt: (raw['createdAt'] ?? raw['created_at']) as string | undefined,
+    };
   }
 
   getCurrencySymbol(currency?: string): string {
