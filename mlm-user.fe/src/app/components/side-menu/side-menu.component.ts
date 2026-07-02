@@ -7,6 +7,7 @@ import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { LayoutService } from '../../services/layout.service';
 import { MerchantService } from '../../services/merchant.service';
+import { CartService } from '../../services/cart.service';
 
 interface MenuItem {
   label: string;
@@ -52,6 +53,7 @@ export class SideMenuComponent implements OnInit {
   private authService = inject(AuthService);
   private layoutService = inject(LayoutService);
   private merchantService = inject(MerchantService);
+  private cartService = inject(CartService);
 
   isPaid = this.userService.isPaid;
   isMerchant = this.userService.isMerchant;
@@ -65,6 +67,7 @@ export class SideMenuComponent implements OnInit {
   openMenus = signal<Set<string>>(new Set());
   collapsed = this.layoutService.isSidebarCollapsed;
   displayCurrency = this.userService.displayCurrency;
+  cartItemCount = this.cartService.itemCount;
 
   private merchantApplyMenuItems(): MenuItem[] {
     if (this.merchantService.needsPayment()) {
@@ -97,6 +100,7 @@ export class SideMenuComponent implements OnInit {
 
   menuSections = computed<MenuSection[]>(() => {
     const currency = this.displayCurrency();
+    const cartCount = this.cartItemCount();
     return [
       {
         title: 'MAIN MENU',
@@ -106,9 +110,16 @@ export class SideMenuComponent implements OnInit {
           ...this.merchantApplyMenuItems(),
           {
             label: 'Marketplace',
-            icon: 'pi pi-shopping-cart',
+            icon: 'pi pi-shopping-bag',
             route: '/marketplace',
             requiresPayment: true,
+          },
+          {
+            label: 'Cart',
+            icon: 'pi pi-shopping-cart',
+            route: '/marketplace/cart',
+            requiresPayment: true,
+            ...(cartCount > 0 ? { badge: cartCount } : {}),
           },
           {
             label: 'Wallet',
@@ -377,6 +388,10 @@ export class SideMenuComponent implements OnInit {
 
   isActiveRoute(route?: string): boolean {
     if (!route) return false;
-    return this.activeRoute() === route || this.activeRoute().startsWith(route + '/');
+    const current = this.activeRoute().split('?')[0];
+    if (current === route) return true;
+    if (!current.startsWith(route + '/')) return false;
+    if (route === '/marketplace' && current.startsWith('/marketplace/cart')) return false;
+    return true;
   }
 }
