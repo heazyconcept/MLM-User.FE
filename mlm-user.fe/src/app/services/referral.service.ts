@@ -111,6 +111,55 @@ export interface DirectReferralItem {
   profilePhotoUrl?: string;
 }
 
+export type MlmManagementStatus =
+  | 'SUSPENDED'
+  | 'REGISTERED'
+  | 'ACTIVATED'
+  | 'ACTIVE'
+  | 'INACTIVE';
+
+export interface DirectReferralsSummary {
+  totalDirectReferrals: number;
+  totalActiveDirectReferrals: number;
+  isLeader: boolean;
+}
+
+export interface DirectReferralRow {
+  id: string;
+  username: string;
+  email: string;
+  phone: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  registrationPackage: PackageTier | string;
+  package: PackageTier | string;
+  status: MlmManagementStatus | string;
+  isActive: boolean;
+  isRegistrationPaid: boolean;
+  joinDate: string;
+  directReferralsCount: number;
+  drRemaining: number;
+  profilePhotoUrl?: string | null;
+}
+
+export interface DirectReferralsQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  username?: string;
+}
+
+export interface DirectReferralsResponse {
+  status: 'success';
+  data: {
+    sponsorUserId: string;
+    sponsorUsername: string | null;
+    summary: DirectReferralsSummary;
+    pagination: Pending3DrPagination;
+    directReferrals: DirectReferralRow[];
+  };
+}
+
 export interface MatrixLevelUser {
   id: string;
   username: string;
@@ -169,11 +218,59 @@ export interface MatrixLevelResponse {
   };
 }
 
+export type PackageTier = 'NICKEL' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'RUBY' | 'DIAMOND';
+
+export interface Pending3DrPagination {
+  totalRecords: number;
+  currentPage: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface Pending3DrDownlineRow {
+  id: string;
+  username: string;
+  email: string;
+  phone: string | null;
+  firstName: string;
+  lastName: string;
+  level: number;
+  registrationPackage: PackageTier | string;
+  package: PackageTier | string;
+  status: 'INACTIVE';
+  isActive: boolean;
+  isRegistrationPaid: boolean;
+  joinDate: string;
+  directReferralsCount: number;
+  drRemaining: number;
+  isDirectReferral: boolean;
+  teamSize: number;
+  rank: string;
+  stage: string;
+  profilePhotoUrl?: string | null;
+}
+
+export interface Pending3DrResponse {
+  status: 'success';
+  data: {
+    pagination: Pending3DrPagination;
+    downlines: Pending3DrDownlineRow[];
+  };
+}
+
 export interface MatrixLevelQuery {
   level: number;
   limit?: number;
   offset?: number;
   search?: string;
+}
+
+export interface Pending3DrQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  depth?: number;
 }
 
 export interface MatrixStageMember {
@@ -318,6 +415,29 @@ export class ReferralService {
       );
   }
 
+  /** GET /referrals/me/downlines/pending-3-dr */
+  getDownlinesPending3Dr(query: Pending3DrQuery = {}): Observable<Pending3DrResponse> {
+    const page = this.clampNumber(query.page ?? 1, 1, Number.MAX_SAFE_INTEGER, 1);
+    const limit = this.clampNumber(query.limit ?? 20, 1, 100, 20);
+    const params: Record<string, string | number> = { page, limit };
+    const search = query.search?.trim();
+
+    if (search) {
+      params['search'] = search;
+    }
+
+    if (query.depth != null) {
+      params['depth'] = this.clampNumber(query.depth, 1, 13, 1);
+    }
+
+    return this.api
+      .get<Record<string, unknown> | Record<string, unknown>[]>(
+        'referrals/me/downlines/pending-3-dr',
+        params,
+      )
+      .pipe(map((res) => this.normalizePending3DrResponse(res, page, limit)));
+  }
+
   /** GET /referrals/me/sponsor */
   getSponsor(): Observable<SponsorInfo | null> {
     return this.api.get<Record<string, unknown> | null>('referrals/me/sponsor').pipe(
@@ -429,40 +549,42 @@ export class ReferralService {
   }
 
   /** GET /referrals/me/direct-referrals */
-  getDirectReferrals(limit = 50, offset = 0, username = ''): Observable<DirectReferralItem[]> {
-    const params: Record<string, string> = {
-      limit: String(limit),
-      offset: String(offset),
-    };
+  getMyDirectReferrals(query: DirectReferralsQuery = {}): Observable<DirectReferralsResponse> {
+    const page = this.clampNumber(query.page ?? 1, 1, Number.MAX_SAFE_INTEGER, 1);
+    const limit = this.clampNumber(query.limit ?? 20, 1, 100, 20);
+    const params: Record<string, string | number> = { page, limit };
+    const search = query.search?.trim();
+    const username = query.username?.trim();
 
-    if (username.trim()) {
-      params['username'] = username.trim();
+    if (search) {
+      params['search'] = search;
+    }
+    if (username) {
+      params['username'] = username;
     }
 
     return this.api
-      .get<
-        Record<string, unknown>[] | Record<string, unknown>
-      >('referrals/me/direct-referrals', params)
-      .pipe(
-        map((res) => {
-          const arr = Array.isArray(res)
-            ? res
-            : ((res['data'] ?? res['items'] ?? []) as Record<string, unknown>[]);
-          return arr.map((raw) => ({
-            id: String(raw['id'] ?? ''),
-            username: String(raw['username'] ?? ''),
-            email: String(raw['email'] ?? ''),
-            firstName: String(raw['firstName'] ?? ''),
-            lastName: String(raw['lastName'] ?? ''),
-            package: String(raw['package'] ?? ''),
-            isActive: (raw['isActive'] ?? false) as boolean,
-            isRegistrationPaid: (raw['isRegistrationPaid'] ?? false) as boolean,
-            createdAt: String(raw['createdAt'] ?? ''),
-            profilePhotoUrl: raw['profilePhotoUrl'] as string | undefined,
-          }));
-        }),
-        catchError(() => of([])),
-      );
+      .get<Record<string, unknown> | Record<string, unknown>[]>(
+        'referrals/me/direct-referrals',
+        params,
+      )
+      .pipe(map((res) => this.normalizeDirectReferralsResponse(res, page, limit)));
+  }
+
+  /**
+   * Legacy helper for create-referral placement flows.
+   * Maps the paginated direct-referrals envelope to a flat array.
+   */
+  getDirectReferrals(limit = 50, offset = 0, username = ''): Observable<DirectReferralItem[]> {
+    const page = Math.floor(offset / Math.max(limit, 1)) + 1;
+    return this.getMyDirectReferrals({
+      page,
+      limit: Math.min(Math.max(limit, 1), 100),
+      username: username.trim() || undefined,
+    }).pipe(
+      map((res) => res.data.directReferrals.map((row) => this.mapDirectReferralItemLegacy(row))),
+      catchError(() => of([])),
+    );
   }
 
   /** GET /referrals/me/matrix-level */
@@ -701,6 +823,286 @@ export class ReferralService {
       ? res
       : ((res['data'] ?? res['items'] ?? res['downlines'] ?? []) as Record<string, unknown>[]);
     return arr.map((raw) => this.mapDownlineItem(raw));
+  }
+
+  private normalizePending3DrResponse(
+    raw: Record<string, unknown> | Record<string, unknown>[],
+    page: number,
+    limit: number,
+  ): Pending3DrResponse {
+    const data = Array.isArray(raw)
+      ? { downlines: raw }
+      : ((raw['data'] as Record<string, unknown> | undefined) ?? raw);
+    const downlinesSource = Array.isArray(data)
+      ? data
+      : ((data['downlines'] ?? data['items'] ?? data['users'] ?? data['data'] ?? []) as Record<
+          string,
+          unknown
+        >[]);
+    const downlines = downlinesSource.map((item) => this.mapPending3DrDownline(item));
+    const paginationSource = !Array.isArray(data)
+      ? (data['pagination'] as Record<string, unknown> | undefined)
+      : undefined;
+    const totalRecords = this.readNumber(
+      paginationSource?.['totalRecords'] ??
+        paginationSource?.['total_records'] ??
+        data['totalRecords'] ??
+        data['total_records'] ??
+        downlines.length,
+      downlines.length,
+    );
+    const currentPage = this.readNumber(
+      paginationSource?.['currentPage'] ??
+        paginationSource?.['current_page'] ??
+        data['currentPage'] ??
+        page,
+      page,
+    );
+    const totalPages = this.readNumber(
+      paginationSource?.['totalPages'] ??
+        paginationSource?.['total_pages'] ??
+        data['totalPages'] ??
+        Math.max(1, Math.ceil(totalRecords / limit)),
+      Math.max(1, Math.ceil(totalRecords / limit)),
+    );
+    const hasNextPage =
+      this.readBoolean(paginationSource?.['hasNextPage'] ?? paginationSource?.['has_next_page']) ??
+      currentPage < totalPages;
+    const hasPreviousPage =
+      this.readBoolean(
+        paginationSource?.['hasPreviousPage'] ?? paginationSource?.['has_previous_page'],
+      ) ?? currentPage > 1;
+
+    return {
+      status: 'success',
+      data: {
+        pagination: {
+          totalRecords,
+          currentPage,
+          totalPages,
+          hasNextPage,
+          hasPreviousPage,
+        },
+        downlines,
+      },
+    };
+  }
+
+  private mapPending3DrDownline(raw: Record<string, unknown>): Pending3DrDownlineRow {
+    const firstName = String(raw['firstName'] ?? raw['first_name'] ?? '');
+    const lastName = String(raw['lastName'] ?? raw['last_name'] ?? '');
+    const directReferralsCount = this.readNumber(
+      raw['directReferralsCount'] ??
+        raw['direct_referrals_count'] ??
+        raw['directReferrals'] ??
+        raw['direct_referrals'],
+      0,
+    );
+    const drRemaining = this.readNumber(
+      raw['drRemaining'] ?? raw['dr_remaining'] ?? Math.max(0, 3 - directReferralsCount),
+      Math.max(0, 3 - directReferralsCount),
+    );
+    const registrationPackage = String(
+      raw['registrationPackage'] ?? raw['registration_package'] ?? raw['package'] ?? '—',
+    );
+
+    return {
+      id: String(raw['id'] ?? raw['userId'] ?? raw['user_id'] ?? ''),
+      username: String(raw['username'] ?? raw['email'] ?? '—'),
+      email: String(raw['email'] ?? ''),
+      phone:
+        (raw['phone'] as string | undefined) ??
+        (raw['phoneNumber'] as string | undefined) ??
+        (raw['phone_number'] as string | undefined) ??
+        null,
+      firstName,
+      lastName,
+      level: this.readNumber(raw['level'] ?? raw['depth'], 1),
+      registrationPackage,
+      package: String(raw['package'] ?? registrationPackage),
+      status: 'INACTIVE',
+      isActive: this.readBoolean(raw['isActive'] ?? raw['is_active']) ?? true,
+      isRegistrationPaid:
+        this.readBoolean(raw['isRegistrationPaid'] ?? raw['is_registration_paid']) ?? true,
+      joinDate: String(
+        raw['joinDate'] ??
+          raw['join_date'] ??
+          raw['createdAt'] ??
+          raw['created_at'] ??
+          new Date().toISOString(),
+      ),
+      directReferralsCount,
+      drRemaining,
+      isDirectReferral:
+        this.readBoolean(raw['isDirectReferral'] ?? raw['is_direct_referral']) ?? false,
+      teamSize: this.readNumber(raw['teamSize'] ?? raw['team_size'], 0),
+      rank: String(raw['rank'] ?? ''),
+      stage: String(raw['stage'] ?? raw['stageName'] ?? raw['stage_name'] ?? ''),
+      profilePhotoUrl:
+        (raw['profilePhotoUrl'] as string | undefined) ??
+        (raw['profile_photo_url'] as string | undefined) ??
+        null,
+    };
+  }
+
+  private normalizeDirectReferralsResponse(
+    raw: Record<string, unknown> | Record<string, unknown>[],
+    page: number,
+    limit: number,
+  ): DirectReferralsResponse {
+    const data = Array.isArray(raw)
+      ? { directReferrals: raw }
+      : ((raw['data'] as Record<string, unknown> | undefined) ?? raw);
+    const referralsSource = Array.isArray(data)
+      ? data
+      : ((data['directReferrals'] ??
+          data['direct_referrals'] ??
+          data['items'] ??
+          data['users'] ??
+          []) as Record<string, unknown>[]);
+    const directReferrals = referralsSource.map((item) => this.mapDirectReferralRow(item));
+    const summarySource = !Array.isArray(data)
+      ? (data['summary'] as Record<string, unknown> | undefined)
+      : undefined;
+    const paginationSource = !Array.isArray(data)
+      ? (data['pagination'] as Record<string, unknown> | undefined)
+      : undefined;
+    const totalRecords = this.readNumber(
+      paginationSource?.['totalRecords'] ??
+        paginationSource?.['total_records'] ??
+        summarySource?.['totalDirectReferrals'] ??
+        directReferrals.length,
+      directReferrals.length,
+    );
+    const currentPage = this.readNumber(
+      paginationSource?.['currentPage'] ?? paginationSource?.['current_page'] ?? page,
+      page,
+    );
+    const totalPages = this.readNumber(
+      paginationSource?.['totalPages'] ??
+        paginationSource?.['total_pages'] ??
+        Math.max(1, Math.ceil(totalRecords / limit)),
+      Math.max(1, Math.ceil(totalRecords / limit)),
+    );
+    const hasNextPage =
+      this.readBoolean(paginationSource?.['hasNextPage'] ?? paginationSource?.['has_next_page']) ??
+      currentPage < totalPages;
+    const hasPreviousPage =
+      this.readBoolean(
+        paginationSource?.['hasPreviousPage'] ?? paginationSource?.['has_previous_page'],
+      ) ?? currentPage > 1;
+
+    return {
+      status: 'success',
+      data: {
+        sponsorUserId: String(
+          data['sponsorUserId'] ?? data['sponsor_user_id'] ?? summarySource?.['sponsorUserId'] ?? '',
+        ),
+        sponsorUsername:
+          (data['sponsorUsername'] as string | null | undefined) ??
+          (data['sponsor_username'] as string | null | undefined) ??
+          null,
+        summary: {
+          totalDirectReferrals: this.readNumber(
+            summarySource?.['totalDirectReferrals'] ??
+              summarySource?.['total_direct_referrals'] ??
+              totalRecords,
+            totalRecords,
+          ),
+          totalActiveDirectReferrals: this.readNumber(
+            summarySource?.['totalActiveDirectReferrals'] ??
+              summarySource?.['total_active_direct_referrals'] ??
+              directReferrals.filter((row) => row.isRegistrationPaid).length,
+            directReferrals.filter((row) => row.isRegistrationPaid).length,
+          ),
+          isLeader:
+            this.readBoolean(summarySource?.['isLeader'] ?? summarySource?.['is_leader']) ??
+            totalRecords >= 3,
+        },
+        pagination: {
+          totalRecords,
+          currentPage,
+          totalPages,
+          hasNextPage,
+          hasPreviousPage,
+        },
+        directReferrals,
+      },
+    };
+  }
+
+  private mapDirectReferralRow(raw: Record<string, unknown>): DirectReferralRow {
+    const directReferralsCount = this.readNumber(
+      raw['directReferralsCount'] ??
+        raw['direct_referrals_count'] ??
+        raw['directReferrals'] ??
+        raw['direct_referrals'],
+      0,
+    );
+    const registrationPackage = String(
+      raw['registrationPackage'] ?? raw['registration_package'] ?? raw['package'] ?? '—',
+    );
+    const isActive = this.readBoolean(raw['isActive'] ?? raw['is_active']) ?? true;
+    const isRegistrationPaid =
+      this.readBoolean(raw['isRegistrationPaid'] ?? raw['is_registration_paid']) ?? false;
+
+    return {
+      id: String(raw['id'] ?? raw['userId'] ?? raw['user_id'] ?? ''),
+      username: String(raw['username'] ?? raw['email'] ?? '—'),
+      email: String(raw['email'] ?? ''),
+      phone:
+        (raw['phone'] as string | undefined) ??
+        (raw['phoneNumber'] as string | undefined) ??
+        (raw['phone_number'] as string | undefined) ??
+        null,
+      firstName: (raw['firstName'] ?? raw['first_name'] ?? null) as string | null,
+      lastName: (raw['lastName'] ?? raw['last_name'] ?? null) as string | null,
+      registrationPackage,
+      package: String(raw['package'] ?? registrationPackage),
+      status: String(
+        raw['status'] ??
+          (isActive === false
+            ? 'SUSPENDED'
+            : isRegistrationPaid
+              ? directReferralsCount >= 3
+                ? 'ACTIVE'
+                : 'INACTIVE'
+              : 'REGISTERED'),
+      ),
+      isActive,
+      isRegistrationPaid,
+      joinDate: String(
+        raw['joinDate'] ??
+          raw['join_date'] ??
+          raw['createdAt'] ??
+          raw['created_at'] ??
+          new Date().toISOString(),
+      ),
+      directReferralsCount,
+      drRemaining: this.readNumber(
+        raw['drRemaining'] ?? raw['dr_remaining'] ?? Math.max(0, 3 - directReferralsCount),
+        Math.max(0, 3 - directReferralsCount),
+      ),
+      profilePhotoUrl:
+        (raw['profilePhotoUrl'] as string | undefined) ??
+        (raw['profile_photo_url'] as string | undefined) ??
+        null,
+    };
+  }
+
+  private mapDirectReferralItemLegacy(row: DirectReferralRow): DirectReferralItem {
+    return {
+      id: row.id,
+      username: row.username,
+      email: row.email,
+      firstName: row.firstName ?? '',
+      lastName: row.lastName ?? '',
+      package: row.package,
+      isActive: row.isActive,
+      isRegistrationPaid: row.isRegistrationPaid,
+      createdAt: row.joinDate,
+      profilePhotoUrl: row.profilePhotoUrl ?? undefined,
+    };
   }
 
   private normalizeMatrixLevelResponse(
@@ -975,5 +1377,19 @@ export class ReferralService {
   private readNumber(value: unknown, fallback: number): number {
     const numeric = Number(value);
     return Number.isFinite(numeric) ? numeric : fallback;
+  }
+
+  private readBoolean(value: unknown): boolean | null {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true') return true;
+      if (normalized === 'false') return false;
+    }
+    if (typeof value === 'number') {
+      if (value === 1) return true;
+      if (value === 0) return false;
+    }
+    return null;
   }
 }

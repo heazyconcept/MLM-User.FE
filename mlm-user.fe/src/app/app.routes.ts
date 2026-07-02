@@ -273,6 +273,22 @@ export const routes: Routes = [
         data: { title: 'Downline List' },
       },
       {
+        path: 'pending-leaders',
+        loadComponent: () =>
+          import('./pages/network/pending-leaders/pending-leaders.component').then(
+            (m) => m.PendingLeadersComponent,
+          ),
+        data: { title: 'Pending Leaders' },
+      },
+      {
+        path: 'direct-referrals',
+        loadComponent: () =>
+          import('./pages/network/direct-referrals/direct-referrals.component').then(
+            (m) => m.DirectReferralsComponent,
+          ),
+        data: { title: 'My Direct Referrals' },
+      },
+      {
         path: 'performance',
         loadComponent: () =>
           import('./pages/network/performance/performance-cpv.component').then(
