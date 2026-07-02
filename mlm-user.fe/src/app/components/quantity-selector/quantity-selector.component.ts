@@ -10,17 +10,16 @@ import { CommonModule } from '@angular/common';
 })
 export class QuantitySelectorComponent {
   @Input() min = 1;
-  @Input() max = 10;
+  @Input() max?: number;
   @Input() value = 1;
   @Input() disabled = false;
 
   @Output() valueChange = new EventEmitter<number>();
 
   increment(): void {
-    if (this.value < this.max && !this.disabled) {
-      const next = this.value + 1;
-      this.valueChange.emit(next);
-    }
+    if (this.disabled) return;
+    if (this.max != null && this.value >= this.max) return;
+    this.valueChange.emit(this.value + 1);
   }
 
   decrement(): void {

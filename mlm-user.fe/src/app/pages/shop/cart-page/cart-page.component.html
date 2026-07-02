@@ -71,7 +71,6 @@
                 <div class="flex flex-wrap items-end justify-between gap-4 mt-4">
                   <app-quantity-selector
                     [min]="1"
-                    [max]="10"
                     [value]="line.quantity"
                     [disabled]="isLineUnavailable(line)"
                     (valueChange)="onQuantityChange(line.productId, $event)"

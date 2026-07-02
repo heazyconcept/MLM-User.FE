@@ -10,7 +10,7 @@
   <button
     type="button"
     (click)="increment()"
-    [disabled]="value >= max || disabled"
+    [disabled]="(max != null && value >= max) || disabled"
     class="w-12 h-12 rounded-xl border border-gray-200 flex items-center justify-center text-mlm-text hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
     <i class="pi pi-plus text-sm"></i>
   </button>

@@ -14,7 +14,6 @@ interface StoredCartLine {
 }
 
 const STORAGE_KEY = 'mlm_cart_v1';
-const MAX_QUANTITY = 10;
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
@@ -44,15 +43,12 @@ export class CartService {
       return { success: false, message: 'This product is not available for purchase.' };
     }
 
-    const qty = Math.min(Math.max(1, quantity), MAX_QUANTITY);
+    const qty = Math.max(1, quantity);
     const current = this.itemsState();
     const existing = current.find((line) => line.productId === product.id);
 
     if (existing) {
-      const newQty = Math.min(existing.quantity + qty, MAX_QUANTITY);
-      if (newQty === existing.quantity) {
-        return { success: false, message: `Maximum quantity is ${MAX_QUANTITY} per product.` };
-      }
+      const newQty = existing.quantity + qty;
       this.setItems(
         current.map((line) =>
           line.productId === product.id ? { ...line, quantity: newQty, product } : line,
@@ -70,9 +66,6 @@ export class CartService {
     if (quantity < 1) {
       this.removeItem(productId);
       return { success: true };
-    }
-    if (quantity > MAX_QUANTITY) {
-      return { success: false, message: `Maximum quantity is ${MAX_QUANTITY} per product.` };
     }
 
     const line = this.itemsState().find((l) => l.productId === productId);
@@ -137,7 +130,7 @@ export class CartService {
         .map((line) => ({
           productId: line.productId,
           product: line.product,
-          quantity: Math.min(line.quantity, MAX_QUANTITY),
+          quantity: line.quantity,
         }));
     } catch {
       return [];
