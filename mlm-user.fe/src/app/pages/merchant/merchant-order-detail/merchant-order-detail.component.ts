@@ -52,11 +52,7 @@ export class MerchantOrderDetailComponent implements OnInit {
 
   canMarkPickedUp = computed(() => {
     const o = this.order();
-    return (
-      o &&
-      o.fulfilmentMode === 'PICKUP' &&
-      (o.status === 'ASSIGNED_TO_MERCHANT' || o.status === 'READY_FOR_PICKUP')
-    );
+    return o && o.fulfilmentMode === 'PICKUP' && o.status === 'READY_FOR_PICKUP';
   });
 
   canConfirmDelivery = computed(() => {
