@@ -131,6 +131,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
+      // Order actions are handled inline on the order detail page.
+      if (req.url.includes('/orders/') && (req.url.includes('/confirm-received') || req.url.includes('/disputes'))) {
+        return throwError(() => error);
+      }
+
       modalService.open('error', 'Error', errorMessage);
       return throwError(() => error);
     })

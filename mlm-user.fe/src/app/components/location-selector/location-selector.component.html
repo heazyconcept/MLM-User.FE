@@ -1,6 +1,6 @@
 <div class="border-t border-gray-200" role="group" aria-label="Pickup locations">
   @for (loc of locations(); track loc.id) {
-    @if (loc.pickupAvailable) {
+    @if (loc.pickupAvailable && loc.stockInStock !== false) {
       <button
         type="button"
         (click)="onSelect(loc.id)"
@@ -14,7 +14,14 @@
           aria-hidden="true"
         ></span>
         <span class="min-w-0 flex-1">
-          <span class="block font-semibold text-mlm-text">{{ loc.name }}</span>
+          <span class="flex flex-wrap items-center gap-2">
+            <span class="font-semibold text-mlm-text">{{ loc.name }}</span>
+            @if (loc.hasFullCartStock === true || loc.stockInStock === true) {
+              <span class="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-green-50 text-green-700">
+                In stock
+              </span>
+            }
+          </span>
           @if (loc.address) {
             <span class="block text-xs text-mlm-secondary mt-0.5 leading-relaxed">{{ loc.address }}</span>
           }
@@ -37,7 +44,14 @@
           aria-hidden="true"
         ></span>
         <span class="min-w-0 flex-1">
-          <span class="block font-semibold text-mlm-secondary">{{ loc.name }}</span>
+          <span class="flex flex-wrap items-center gap-2">
+            <span class="block font-semibold text-mlm-secondary">{{ loc.name }}</span>
+            @if (loc.stockInStock === false) {
+              <span class="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-50 text-red-600">
+                Out of stock
+              </span>
+            }
+          </span>
           @if (loc.address) {
             <span class="block text-xs text-mlm-secondary mt-0.5 leading-relaxed">{{ loc.address }}</span>
           }
@@ -45,7 +59,11 @@
             <span class="block text-xs text-mlm-secondary mt-1">{{ loc.phoneNumber }}</span>
           }
           <span class="block text-xs text-amber-700 mt-1.5 font-medium">
-            Pickup contact details incomplete
+            @if (!loc.pickupAvailable) {
+              Pickup contact details incomplete
+            } @else {
+              Not available for this cart
+            }
           </span>
         </span>
       </div>

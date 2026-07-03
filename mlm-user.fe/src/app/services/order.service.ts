@@ -11,11 +11,13 @@ export type OrderStatus =
   | 'Processing'
   | 'Approved'
   | 'Ready for Pickup'
+  | 'Picked Up'
   | 'Out for Delivery'
   | 'Delivered'
   | 'Cancelled';
 
 export interface OrderItem {
+  productId?: string;
   name: string;
   quantity: number;
   price: number;
@@ -33,12 +35,68 @@ export interface Order {
   currency: 'NGN' | 'USD';
   fulfilmentMethod: OrderFulfilmentMethod;
   status: OrderStatus;
+  rawStatus?: string;
   paymentMethod?: string;
   deliveryAddress?: string;
   deliveryFee?: number;
   pickupLocationName?: string;
   pickupLocationDistance?: string;
+  selectedMerchantId?: string;
+  selectedMerchantName?: string;
+  checkoutBatchId?: string;
   paymentId?: string;
+  hasOpenDispute?: boolean;
+}
+
+export interface CheckoutGroupItem {
+  productId: string;
+  quantity: number;
+}
+
+export interface CheckoutGroup {
+  fulfilmentMode: 'PICKUP' | 'OFFLINE_DELIVERY';
+  items: CheckoutGroupItem[];
+  selectedMerchantId?: string;
+  deliveryAddress?: string;
+  deliveryDisclaimerAccepted?: boolean;
+}
+
+export interface CheckoutBatchPayload {
+  state: string;
+  paymentMethod: 'WALLET';
+  idempotencyKey?: string;
+  groups: CheckoutGroup[];
+}
+
+export interface CheckoutOrderSummary {
+  id: string;
+  reference?: string;
+  fulfilmentMode: 'PICKUP' | 'OFFLINE_DELIVERY';
+  selectedMerchantId?: string;
+  totalAmount: number;
+  items: CheckoutGroupItem[];
+}
+
+export interface CheckoutResponse {
+  checkoutId: string;
+  orders: CheckoutOrderSummary[];
+  grandTotal: number;
+}
+
+export interface PayCheckoutWalletResponse {
+  message?: string;
+  paidOrderIds?: string[];
+}
+
+export type OrderDisputeStatus = 'OPEN' | 'RESOLVED' | 'CLOSED';
+
+export interface OrderDispute {
+  id: string;
+  orderId: string;
+  reason: string;
+  customerNotes?: string | null;
+  status: OrderDisputeStatus;
+  createdAt: string;
 }
 
 const ORDER_STATUSES: OrderStatus[] = [
@@ -46,6 +104,7 @@ const ORDER_STATUSES: OrderStatus[] = [
   'Processing',
   'Approved',
   'Ready for Pickup',
+  'Picked Up',
   'Out for Delivery',
   'Delivered',
   'Cancelled',
@@ -149,6 +208,40 @@ export class OrderService {
     return this.api.post<any>('orders', payload).pipe(map((res) => this.mapOrder(res)));
   }
 
+  checkoutBatch(payload: CheckoutBatchPayload): Observable<CheckoutResponse> {
+    return this.api.post<any>('orders/checkout', payload).pipe(
+      map((res) => ({
+        checkoutId: String(res.checkoutId ?? ''),
+        orders: (res.orders ?? []).map((o: any) => ({
+          id: String(o.id ?? ''),
+          reference: o.reference != null ? String(o.reference) : undefined,
+          fulfilmentMode: o.fulfilmentMode === 'PICKUP' ? 'PICKUP' : 'OFFLINE_DELIVERY',
+          selectedMerchantId: o.selectedMerchantId ? String(o.selectedMerchantId) : undefined,
+          totalAmount: Number(o.totalAmount ?? 0),
+          items: (o.items ?? []).map((i: any) => ({
+            productId: String(i.productId ?? ''),
+            quantity: Number(i.quantity ?? 0),
+          })),
+        })),
+        grandTotal: Number(res.grandTotal ?? 0),
+      })),
+    );
+  }
+
+  payCheckoutWithWallet(
+    checkoutId: string,
+    walletType?: OrderWalletType,
+  ): Observable<PayCheckoutWalletResponse> {
+    const normalizedWalletType =
+      walletType === 'voucher' ? 'VOUCHER'
+      : walletType === 'autoship' ? 'AUTOSHIP'
+      : 'CASH';
+
+    return this.api.post<PayCheckoutWalletResponse>(`orders/checkout/${checkoutId}/pay-wallet`, {
+      walletType: normalizedWalletType,
+    });
+  }
+
   payOrderWithWallet(id: string, walletType?: OrderWalletType): Observable<void> {
     const normalizedWalletType =
       walletType === 'voucher' ? 'VOUCHER'
@@ -168,9 +261,63 @@ export class OrderService {
     return this.api.post<void>(`orders/${id}/confirm-received`, {});
   }
 
+  getOrderDisputes(orderId: string): Observable<OrderDispute[]> {
+    return this.api.get<any>(`orders/${orderId}/disputes`).pipe(
+      map((res) => {
+        const rows = Array.isArray(res) ? res : (res.disputes ?? res.data ?? []);
+        return rows.map((d: any) => this.mapDispute(d));
+      }),
+      catchError(() => of([])),
+    );
+  }
+
+  openOrderDispute(orderId: string, formData: FormData): Observable<OrderDispute> {
+    return this.api.post<any>(`orders/${orderId}/disputes`, formData).pipe(
+      map((res) => this.mapDispute(res)),
+    );
+  }
+
+  static hasOpenDispute(disputes: OrderDispute[]): boolean {
+    return disputes.some((d) => d.status === 'OPEN');
+  }
+
+  static canConfirmPickupReceived(order: Order, disputes: OrderDispute[]): boolean {
+    return order.rawStatus === 'PICKED_UP' && !OrderService.hasOpenDispute(disputes);
+  }
+
+  static canOpenPickupDispute(order: Order, disputes: OrderDispute[]): boolean {
+    return order.rawStatus === 'PICKED_UP' && !OrderService.hasOpenDispute(disputes);
+  }
+
+  static isAwaitingPickupCollection(order: Order): boolean {
+    if (order.fulfilmentMethod !== 'pickup') return false;
+    const status = order.rawStatus ?? '';
+    return status === 'READY_FOR_PICKUP' || status === 'ASSIGNED_TO_MERCHANT';
+  }
+
+  static pickupHandoffMessage(order: Order): string {
+    if (order.rawStatus === 'READY_FOR_PICKUP') {
+      return 'Your order is ready for pickup. Visit the merchant below to collect your items. After the merchant confirms handoff, you can confirm receipt on this page.';
+    }
+    return 'Your order has been assigned to the merchant. They will prepare it for pickup — check back here once it is ready.';
+  }
+
+  private mapDispute(d: any): OrderDispute {
+    return {
+      id: String(d.id ?? ''),
+      orderId: String(d.orderId ?? ''),
+      reason: String(d.reason ?? ''),
+      customerNotes: d.customerNotes ?? null,
+      status: (String(d.status ?? 'OPEN').toUpperCase() as OrderDisputeStatus) || 'OPEN',
+      createdAt: String(d.createdAt ?? new Date().toISOString()),
+    };
+  }
+
   private mapOrder(o: any): Order {
     const rawId = String(o.id ?? '');
     const reference = String(o.reference ?? '').trim() || rawId;
+    const rawStatus = String(o.status ?? '').toUpperCase();
+    const merchant = o.selectedMerchant ?? o.merchant;
 
     return {
       id: rawId,
@@ -178,9 +325,10 @@ export class OrderService {
       date: o.createdAt || new Date().toISOString(),
       items: o.items
         ? o.items.map((i: any) => ({
-            name: i.productName,
+            productId: i.productId ? String(i.productId) : undefined,
+            name: i.productName ?? i.name ?? 'Item',
             quantity: i.quantity,
-            price: i.unitPrice,
+            price: i.unitPrice ?? i.price ?? 0,
             pv: Number(i.pv ?? 0),
             directReferralPv: Number(i.directReferralPv ?? 0),
             cpv: Number(i.cpv ?? 0),
@@ -189,11 +337,19 @@ export class OrderService {
       total: o.totalAmount || 0,
       currency: o.currency || 'NGN',
       fulfilmentMethod: o.fulfilmentMode?.toLowerCase() === 'pickup' ? 'pickup' : 'delivery',
-      status: this.mapStatus(o.status),
+      status: this.mapStatus(rawStatus),
+      rawStatus,
       paymentMethod: o.paymentMethod || 'Cash',
       deliveryAddress: o.deliveryAddress || undefined,
       deliveryFee: o.deliveryFee != null ? Number(o.deliveryFee) : undefined,
-      pickupLocationName: o.selectedMerchantId ? 'Merchant Center' : undefined,
+      pickupLocationName:
+        merchant?.businessName ??
+        merchant?.username ??
+        (o.selectedMerchantId ? 'Merchant Center' : undefined),
+      selectedMerchantId: o.selectedMerchantId ? String(o.selectedMerchantId) : undefined,
+      selectedMerchantName:
+        merchant?.businessName ?? merchant?.username ?? merchant?.name ?? undefined,
+      checkoutBatchId: o.checkoutBatchId ? String(o.checkoutBatchId) : undefined,
       paymentId: o.paymentId ? String(o.paymentId) : undefined,
     };
   }
@@ -210,14 +366,19 @@ export class OrderService {
       case 'PAID':
       case 'PROCESSING':
       case 'CONFIRMED':
+      case 'ASSIGNED_TO_MERCHANT':
         return 'Processing';
       case 'READY_FOR_PICKUP':
       case 'READY FOR PICKUP':
         return 'Ready for Pickup';
+      case 'PICKED_UP':
+        return 'Picked Up';
       case 'OUT_FOR_DELIVERY':
       case 'OUT FOR DELIVERY':
       case 'IN_TRANSIT':
       case 'SHIPPED':
+      case 'SENT':
+      case 'OFFLINE_DELIVERY_REQUESTED':
         return 'Out for Delivery';
       case 'DELIVERED':
       case 'COMPLETED':

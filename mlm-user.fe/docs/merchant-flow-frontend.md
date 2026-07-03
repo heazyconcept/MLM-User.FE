@@ -14,10 +14,12 @@ This document describes the **merchant application, payment, approval/reject, re
 | 2a | User / Frontend | **Third-party only:** After redirect from gateway, call `POST /merchants/merchant-fee/verify` with `reference` so the backend verifies with the gateway and marks fee paid. Until then the fee is **not** considered paid. |
 | 3 | Admin | Approve or reject application |
 | 4a | — | If **reject**: fee is refunded to user's **withdrawal (CASH) wallet** |
-| 4b | — | If **approve**: backend creates **allocations** (one per onboarding item from category config) |
-| 5 | Merchant | **Accept** each allocation **after physically receiving** the stock |
-| 6 | Admin | Can **refill** a merchant (same products/quantities as category config); merchant accepts again after receipt |
-| 7 | System | **Stock**: PICKUP decrements merchant stock at order create; OFFLINE_DELIVERY decrements merchant stock when admin assigns merchant; **admin home delivery approve** decrements **warehouse** (admin pool) |
+| 4b | — | If **approve**: backend creates **allocations** (one per onboarding item from category config) in `PENDING` |
+| 5 | Admin | **Dispatches** stock → marks **in transit** → **delivered** |
+| 6 | Merchant | **Confirms receipt** on `DELIVERED` allocations (full or short qty with evidence) |
+| 7 | Admin / Merchant | Short-qty disputes: admin accepts/rejects; merchant **acknowledges** if rejected |
+| 8 | Admin | Can **refill** a merchant; remainder allocations may follow accepted disputes |
+| 9 | System | **Stock**: PICKUP decrements merchant stock at order create; OFFLINE_DELIVERY decrements merchant stock when admin assigns merchant; **admin home delivery approve** decrements **warehouse** (admin pool) |
 
 All amounts are in **main currency units** (NGN or USD). Fee is taken from category config (`registrationFeeUsd` or system default).
 
@@ -38,8 +40,12 @@ All amounts are in **main currency units** (NGN or USD). Fee is taken from categ
 | `POST` | `/merchants/merchant-fee/verify` | **Third-party only.** Verify gateway payment by reference; backend marks fee paid only after this. |
 | `GET` | `/merchants/category-config` | **Public.** Get tier config (fees, onboarding items) |
 | `GET` | `/merchants/me` | Get my merchant profile |
-| `GET` | `/merchants/me/allocations` | Get my pending allocations (onboarding/refill) |
-| `POST` | `/merchants/me/allocations/:id/accept` | Accept allocation **after physical receipt** |
+| `GET` | `/merchants/me/allocations` | List allocations with dispatch status + dispute summary |
+| `POST` | `/merchants/me/allocations/:id/confirm-receipt` | Confirm qty received (`multipart/form-data`; evidence if short) |
+| `GET` | `/merchants/me/stock-disputes` | List my stock receipt disputes |
+| `POST` | `/merchants/me/stock-disputes/:id/acknowledge` | Acknowledge after admin **rejects** a dispute |
+
+**Deprecated:** `POST /merchants/me/allocations/:id/accept` → `410 Gone`. Use confirm-receipt after `DELIVERED`.
 
 ### 2.2 Admin
 
@@ -139,7 +145,9 @@ Use this when the user changes tier or edits apply fields **after** `POST /merch
 | **PICKUP** order with `selectedMerchantId` | At **order creation** |
 | **OFFLINE_DELIVERY** order | When **admin assigns** a merchant (`POST /admin/orders/:id/assign-merchant`) |
 | **OFFLINE_DELIVERY** (admin fulfilment, no merchant) | When admin **approves** home delivery: **warehouse** decremented |
-| **Allocations** (onboarding / refill) | When merchant **accepts** allocation after physical receipt |
+| **Allocations** (onboarding / refill) | When merchant **confirms receipt** on `DELIVERED` (full qty), or after dispute resolution / acknowledge |
+
+See [frontend-integration-merchant-stock-dispatch.md](./frontend-integration-merchant-stock-dispatch.md) for dispatch lifecycle and dispute flows.
 
 ---
 
@@ -163,11 +171,13 @@ See `src/app/services/merchant.service.ts`:
 - `ApplyMerchantBody` — `phoneNumber`, `type`, `serviceAreas`, optional `address` (no `businessName` on apply)
 - `UpdateMerchantProfileBody` — optional `type`, `phoneNumber`, `address`, `serviceAreas`
 - `InitiateMerchantFeeBody`, `VerifyMerchantFeeBody`, `AvailableMerchant`
+- `ConfirmAllocationReceiptBody`, `MerchantAllocation`, `MerchantStockDispute`
 
 ---
 
 ## 7. Related docs
 
+- [frontend-integration-merchant-stock-dispatch.md](./frontend-integration-merchant-stock-dispatch.md)
 - [MERCHANTS_FRONTEND_GUIDE.md](./MERCHANTS_FRONTEND_GUIDE.md)
 - [MERCHANTS_API.md](./MERCHANTS_API.md)
 - [BACKEND_BUG_MERCHANT_PENDING_BEFORE_PAYMENT.md](./BACKEND_BUG_MERCHANT_PENDING_BEFORE_PAYMENT.md)

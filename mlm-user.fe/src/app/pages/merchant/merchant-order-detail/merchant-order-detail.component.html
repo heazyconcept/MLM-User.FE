@@ -157,6 +157,15 @@
                   styleClass="!bg-mlm-primary !border-mlm-primary"
                 ></p-button>
               }
+              @if (canMarkPickedUp()) {
+                <p-button
+                  label="Mark as Picked Up"
+                  icon="pi pi-shopping-bag"
+                  [loading]="actionLoading()"
+                  (onClick)="markPickedUp()"
+                  styleClass="!bg-mlm-primary !border-mlm-primary"
+                ></p-button>
+              }
               @if (canMarkSent()) {
                 <p-button
                   label="Mark as Sent"

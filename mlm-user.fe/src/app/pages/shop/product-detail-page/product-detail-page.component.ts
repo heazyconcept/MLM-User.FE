@@ -17,6 +17,7 @@ import { DialogService } from 'primeng/dynamicdialog';
 import { CartService } from '../../../services/cart.service';
 import {
   CartCheckoutService,
+  CheckoutConfirmPayload,
   CheckoutWalletType,
   PendingCheckoutData,
 } from '../../../services/cart-checkout.service';
@@ -175,30 +176,21 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  submitOrder(fulfilmentDetails: {
-    fulfilmentOption: 'pickup' | 'delivery';
-    selectedPickupId?: string | null;
-    deliveryAddress?: string;
-    deliveryState?: string;
-    deliveryFee?: number;
-  }): void {
+  submitOrder(payload: CheckoutConfirmPayload): void {
     const orderData = this.pendingOrderData();
     if (!orderData) return;
 
-    const isPickup = fulfilmentDetails.fulfilmentOption === 'pickup';
-    const selectedMerchantId = fulfilmentDetails.selectedPickupId;
-
-    if (isPickup && !selectedMerchantId) {
+    if (payload.groups.length === 0) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Pickup location required',
-        detail: 'Please select a pickup location before confirming.',
+        summary: 'Checkout incomplete',
+        detail: 'Please complete fulfilment options before confirming.',
       });
       return;
     }
 
     this.orderSubmitting.set(true);
-    this.checkoutService.submitOrder(orderData, fulfilmentDetails).subscribe({
+    this.checkoutService.submitCheckoutBatch(orderData, payload).subscribe({
       next: () => {
         this.orderSubmitting.set(false);
         this.fulfilmentDrawerVisible.set(false);

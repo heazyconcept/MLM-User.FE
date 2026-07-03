@@ -97,11 +97,6 @@
                 <div>
                   <dt class="text-mlm-secondary mb-1">Pickup location</dt>
                   <dd class="font-medium text-mlm-text">{{ o.pickupLocationName }}</dd>
-                  @if (o.pickupLocationDistance) {
-                    <dd class="text-mlm-secondary text-xs mt-0.5">
-                      {{ o.pickupLocationDistance }} away
-                    </dd>
-                  }
                 </div>
               }
             </dl>
@@ -111,6 +106,50 @@
             <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
               Order Actions
             </h2>
+
+            @if (isAwaitingPickupCollection()) {
+              <div
+                class="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900"
+              >
+                <p class="font-semibold flex items-center gap-2">
+                  <i class="pi pi-map-marker" aria-hidden="true"></i>
+                  Pickup in progress
+                </p>
+                <p class="mt-1 text-blue-800">{{ pickupHandoffMessage() }}</p>
+                @if (o.pickupLocationName) {
+                  <p class="mt-2 text-xs font-medium text-blue-900">
+                    Pickup at: {{ o.pickupLocationName }}
+                  </p>
+                }
+              </div>
+            }
+
+            @if (canConfirmPickup()) {
+              <div
+                class="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900"
+              >
+                <p class="font-semibold">Ready to confirm</p>
+                <p class="mt-1 text-green-800">
+                  The merchant has handed off your order. Confirm receipt below once you have your
+                  items.
+                </p>
+              </div>
+            }
+
+            @if (hasOpenDispute()) {
+              <div
+                class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+              >
+                <p class="font-semibold">Dispute open</p>
+                @if (openDisputeRecord(); as dispute) {
+                  <p class="mt-1 text-amber-800">{{ dispute.reason }}</p>
+                }
+                <p class="mt-1 text-xs text-amber-700">
+                  Confirm received is blocked until an admin resolves this dispute.
+                </p>
+              </div>
+            }
+
             <div class="flex flex-wrap gap-4">
               @if (o.paymentId) {
                 <button
@@ -122,13 +161,22 @@
                   View Receipt
                 </button>
               }
-              @if (o.status === 'Ready for Pickup' || o.status === 'Out for Delivery') {
+              @if (canConfirmPickup()) {
                 <button
                   (click)="onConfirmReceived()"
                   [disabled]="isProcessing()"
                   class="px-6 py-2 bg-mlm-secondary text-white font-bold rounded hover:bg-opacity-90 disabled:opacity-50 transition-colors"
                 >
                   Confirm Received
+                </button>
+              }
+              @if (canOpenDispute()) {
+                <button
+                  (click)="openDisputeDialog()"
+                  [disabled]="isProcessing()"
+                  class="px-6 py-2 bg-white text-mlm-error font-bold rounded-lg border-2 border-mlm-error/30 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                >
+                  Open Dispute
                 </button>
               }
             </div>
@@ -138,7 +186,10 @@
             <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
               Order timeline
             </h2>
-            <app-order-timeline [currentStatus]="o.status"></app-order-timeline>
+            <app-order-timeline
+              [currentStatus]="o.status"
+              [fulfilmentMethod]="o.fulfilmentMethod"
+            ></app-order-timeline>
           </div>
         </div>
       }
@@ -148,3 +199,79 @@
 
 <!-- Invoice Modal -->
 <app-invoice-modal></app-invoice-modal>
+
+@if (disputeDialogOpen()) {
+  <div class="fixed inset-0 z-[9999] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/40" (click)="closeDisputeDialog()"></div>
+    <div class="relative w-full max-w-md bg-white rounded-xl shadow-xl p-6 space-y-4">
+      <h3 class="text-lg font-bold text-mlm-text">Open order dispute</h3>
+      <p class="text-sm text-mlm-secondary">
+        Describe the issue with your pickup. An admin will review your dispute.
+      </p>
+
+      <div>
+        <label for="dispute-reason" class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-2">
+          Reason
+        </label>
+        <input
+          id="dispute-reason"
+          type="text"
+          [ngModel]="disputeReason()"
+          (ngModelChange)="disputeReason.set($event)"
+          maxlength="200"
+          placeholder="Brief reason (3–200 characters)"
+          class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm"
+        />
+      </div>
+
+      <div>
+        <label for="dispute-notes" class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-2">
+          Notes (optional)
+        </label>
+        <textarea
+          id="dispute-notes"
+          rows="3"
+          [ngModel]="disputeNotes()"
+          (ngModelChange)="disputeNotes.set($event)"
+          class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm resize-none"
+          placeholder="Additional details"
+        ></textarea>
+      </div>
+
+      <div>
+        <label for="dispute-evidence" class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-2">
+          Evidence (optional, up to 10 files)
+        </label>
+        <input
+          id="dispute-evidence"
+          type="file"
+          multiple
+          (change)="onEvidenceSelected($event)"
+          class="w-full text-sm"
+        />
+      </div>
+
+      @if (disputeError()) {
+        <p class="text-sm text-red-600">{{ disputeError() }}</p>
+      }
+
+      <div class="flex gap-3 pt-2">
+        <button
+          type="button"
+          (click)="closeDisputeDialog()"
+          class="flex-1 py-2.5 text-sm font-semibold border border-gray-200 rounded-lg"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          (click)="submitDispute()"
+          [disabled]="isProcessing()"
+          class="flex-1 py-2.5 text-sm font-bold text-white bg-mlm-error rounded-lg disabled:opacity-50"
+        >
+          Submit dispute
+        </button>
+      </div>
+    </div>
+  </div>
+}
