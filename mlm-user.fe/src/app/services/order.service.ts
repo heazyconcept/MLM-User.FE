@@ -289,6 +289,19 @@ export class OrderService {
     return order.rawStatus === 'PICKED_UP' && !OrderService.hasOpenDispute(disputes);
   }
 
+  static isAwaitingPickupCollection(order: Order): boolean {
+    if (order.fulfilmentMethod !== 'pickup') return false;
+    const status = order.rawStatus ?? '';
+    return status === 'READY_FOR_PICKUP' || status === 'ASSIGNED_TO_MERCHANT';
+  }
+
+  static pickupHandoffMessage(order: Order): string {
+    if (order.rawStatus === 'READY_FOR_PICKUP') {
+      return 'Your order is ready for pickup. Visit the merchant below to collect your items. After the merchant confirms handoff, you can confirm receipt on this page.';
+    }
+    return 'Your order has been assigned to the merchant. They will prepare it for pickup — check back here once it is ready.';
+  }
+
   private mapDispute(d: any): OrderDispute {
     return {
       id: String(d.id ?? ''),

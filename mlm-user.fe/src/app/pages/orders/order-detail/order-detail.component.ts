@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OrderService, Order, OrderDispute } from '../../../services/order.service';
 import { InvoiceService } from '../../../services/invoice.service';
+import { MessageService } from 'primeng/api';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import { InvoiceModalComponent } from '../../../components/invoice-modal/invoice-modal.component';
 import { OrderTimelineComponent } from '../../../components/order-timeline/order-timeline.component';
@@ -26,6 +27,7 @@ export class OrderDetailComponent implements OnInit {
   private router = inject(Router);
   private orderService = inject(OrderService);
   invoiceService = inject(InvoiceService);
+  private messageService = inject(MessageService);
 
   order = signal<Order | null>(null);
   disputes = signal<OrderDispute[]>([]);
@@ -51,6 +53,18 @@ export class OrderDetailComponent implements OnInit {
   hasOpenDispute = computed(() => OrderService.hasOpenDispute(this.disputes()));
 
   openDisputeRecord = computed(() => this.disputes().find((d) => d.status === 'OPEN') ?? null);
+
+  isAwaitingPickupCollection = computed(() => {
+    const o = this.order();
+    if (!o) return false;
+    return OrderService.isAwaitingPickupCollection(o);
+  });
+
+  pickupHandoffMessage = computed(() => {
+    const o = this.order();
+    if (!o) return '';
+    return OrderService.pickupHandoffMessage(o);
+  });
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -87,7 +101,17 @@ export class OrderDetailComponent implements OnInit {
     this.isProcessing.set(true);
     this.orderService.confirmOrderReceived(o.id).subscribe({
       next: () => this.refreshOrder(o.id),
-      error: () => this.isProcessing.set(false),
+      error: (err) => {
+        this.isProcessing.set(false);
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Cannot confirm yet',
+          detail:
+            err?.error?.message ??
+            'This order cannot be confirmed yet. Please wait until the merchant marks it as picked up.',
+          life: 6000,
+        });
+      },
     });
   }
 

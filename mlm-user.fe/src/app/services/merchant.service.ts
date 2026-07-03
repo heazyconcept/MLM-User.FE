@@ -11,6 +11,7 @@ export type MerchantStatus = 'DRAFT' | 'PENDING' | 'ACTIVE' | 'SUSPENDED';
 export type OrderStatus =
   | 'ASSIGNED_TO_MERCHANT'
   | 'READY_FOR_PICKUP'
+  | 'PICKED_UP'
   | 'OFFLINE_DELIVERY_REQUESTED'
   | 'DELIVERED'
   | 'PAID'
@@ -897,6 +898,24 @@ export class MerchantService {
       .subscribe();
   }
 
+  /** POST /merchants/orders/:id/mark-picked-up — PICKUP handoff to customer */
+  markPickedUp(id: string): void {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+    this.api
+      .post<{ message: string }>(`merchants/orders/${id}/mark-picked-up`, {})
+      .pipe(
+        tap(() => this.fetchOrderById(id)),
+        catchError((err) => {
+          console.error('[MerchantService] markPickedUp failed', err);
+          this.errorSignal.set(err?.error?.message || 'Failed to mark order as picked up.');
+          return of(null);
+        }),
+        finalize(() => this.actionLoadingSignal.set(false)),
+      )
+      .subscribe();
+  }
+
   /** POST /merchants/orders/:id/confirm-delivery */
   confirmDelivery(id: string, body: ConfirmDeliveryBody = {}): void {
     this.actionLoadingSignal.set(true);
@@ -1275,6 +1294,7 @@ export class MerchantService {
     const labels: Record<OrderStatus, string> = {
       ASSIGNED_TO_MERCHANT: 'Assigned',
       READY_FOR_PICKUP: 'Ready for Pickup',
+      PICKED_UP: 'Picked Up',
       OFFLINE_DELIVERY_REQUESTED: 'Delivery Requested',
       DELIVERED: 'Delivered',
       PAID: 'Paid',

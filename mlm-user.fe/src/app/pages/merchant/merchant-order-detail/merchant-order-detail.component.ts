@@ -47,17 +47,24 @@ export class MerchantOrderDetailComponent implements OnInit {
 
   canMarkSent = computed(() => {
     const o = this.order();
-    return o && (o.status === 'READY_FOR_PICKUP' || o.status === 'OFFLINE_DELIVERY_REQUESTED');
+    return o && o.fulfilmentMode === 'OFFLINE_DELIVERY' && o.status === 'OFFLINE_DELIVERY_REQUESTED';
+  });
+
+  canMarkPickedUp = computed(() => {
+    const o = this.order();
+    return (
+      o &&
+      o.fulfilmentMode === 'PICKUP' &&
+      (o.status === 'ASSIGNED_TO_MERCHANT' || o.status === 'READY_FOR_PICKUP')
+    );
   });
 
   canConfirmDelivery = computed(() => {
     const o = this.order();
     return (
       o &&
-      (o.status === 'READY_FOR_PICKUP' ||
-        o.status === 'OFFLINE_DELIVERY_REQUESTED' ||
-        o.status === 'PAID' ||
-        o.status === 'SENT')
+      o.fulfilmentMode === 'OFFLINE_DELIVERY' &&
+      (o.status === 'OFFLINE_DELIVERY_REQUESTED' || o.status === 'PAID' || o.status === 'SENT')
     );
   });
 
@@ -88,6 +95,11 @@ export class MerchantOrderDetailComponent implements OnInit {
   markSent(): void {
     const o = this.order();
     if (o) this.merchantService.markSent(o.id);
+  }
+
+  markPickedUp(): void {
+    const o = this.order();
+    if (o) this.merchantService.markPickedUp(o.id);
   }
 
   toggleConfirmForm(): void {
