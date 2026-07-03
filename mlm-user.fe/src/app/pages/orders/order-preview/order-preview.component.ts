@@ -72,19 +72,21 @@ export class OrderPreviewComponent {
   cartLines = computed(() => this.resolveCartLines(this.pendingOrderData() as PendingCheckoutData | null));
 
   pickupLocations = computed<PickupLocation[]>(() =>
-    this.merchants().map((m) => ({
-      id: m.id,
-      name: m.businessName || m.name || m.username || 'Unnamed Merchant',
-      address: m.address || undefined,
-      phoneNumber: m.phoneNumber || undefined,
-      pickupAvailable: m.pickupAvailable,
-      stockInStock: m.requestedProductInStock,
-      hasFullCartStock: this.merchantCanFulfillCart(m),
-    })),
+    this.merchants().map((m) => {
+      const hasStock = this.merchantHasStockForCart(m);
+      return {
+        id: m.id,
+        name: m.businessName || m.name || m.username || 'Unnamed Merchant',
+        address: m.address || undefined,
+        phoneNumber: m.phoneNumber || undefined,
+        pickupAvailable: m.pickupAvailable,
+        stockInStock: hasStock,
+      };
+    }),
   );
 
   hasSelectablePickup = computed(() =>
-    this.pickupLocations().some((l) => l.pickupAvailable && l.stockInStock !== false),
+    this.pickupLocations().some((l) => l.pickupAvailable && l.stockInStock === true),
   );
 
   deliveryFee = computed(() => {
@@ -162,7 +164,7 @@ export class OrderPreviewComponent {
 
   onLocationSelect(id: string): void {
     const loc = this.pickupLocations().find((l) => l.id === id);
-    if (!loc?.pickupAvailable) return;
+    if (!loc?.pickupAvailable || loc.stockInStock !== true) return;
     this.selectedPickupId.set(id);
     this.checkMerchantAvailability(id);
   }
@@ -305,12 +307,27 @@ export class OrderPreviewComponent {
       });
   }
 
+  private merchantHasStockForCart(merchant: AvailableMerchant): boolean {
+    if (merchant.requestedProductInStock != null) {
+      return merchant.requestedProductInStock;
+    }
+    return this.merchantCanFulfillCart(merchant);
+  }
+
   private merchantCanFulfillCart(merchant: AvailableMerchant): boolean {
     const lines = this.cartLines();
-    if (lines.length === 0) return merchant.requestedProductInStock !== false;
+    if (lines.length === 0) {
+      return merchant.requestedProductInStock === true;
+    }
     return lines.every((line) => {
       const product = merchant.products.find((p) => p.id === line.productId);
-      return product?.inStock === true;
+      if (!product) return false;
+      if (product.inStock === true) return true;
+      if (product.inStock === false) return false;
+      if (product.stockQuantity != null) {
+        return product.stockQuantity >= line.quantity;
+      }
+      return false;
     });
   }
 
