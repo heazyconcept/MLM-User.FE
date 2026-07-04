@@ -93,10 +93,20 @@
                   </div>
                 }
               }
-              @if (o.fulfilmentMethod === 'pickup' && o.pickupLocationName) {
+              @if (o.fulfilmentMethod === 'pickup' && (o.pickupLocationName || o.pickupLocationAddress)) {
                 <div>
                   <dt class="text-mlm-secondary mb-1">Pickup location</dt>
-                  <dd class="font-medium text-mlm-text">{{ o.pickupLocationName }}</dd>
+                  <dd class="font-medium text-mlm-text">
+                    @if (o.pickupLocationName) {
+                      <span>{{ o.pickupLocationName }}</span>
+                    }
+                    @if (o.pickupLocationAddress) {
+                      <p class="mt-1 text-sm font-normal text-mlm-secondary">{{ o.pickupLocationAddress }}</p>
+                    }
+                    @if (o.pickupLocationPhone) {
+                      <p class="mt-1 text-sm font-normal text-mlm-secondary">{{ o.pickupLocationPhone }}</p>
+                    }
+                  </dd>
                 </div>
               }
             </dl>
@@ -116,10 +126,18 @@
                   Pickup in progress
                 </p>
                 <p class="mt-1 text-blue-800">{{ pickupHandoffMessage() }}</p>
-                @if (o.pickupLocationName) {
-                  <p class="mt-2 text-xs font-medium text-blue-900">
-                    Pickup at: {{ o.pickupLocationName }}
-                  </p>
+                @if (o.pickupLocationName || o.pickupLocationAddress) {
+                  <div class="mt-2 text-xs font-medium text-blue-900">
+                    @if (o.pickupLocationName) {
+                      <p>Pickup at: {{ o.pickupLocationName }}</p>
+                    }
+                    @if (o.pickupLocationAddress) {
+                      <p class="mt-1 font-normal">{{ o.pickupLocationAddress }}</p>
+                    }
+                    @if (o.pickupLocationPhone) {
+                      <p class="mt-1 font-normal">{{ o.pickupLocationPhone }}</p>
+                    }
+                  </div>
                 }
               </div>
             }
