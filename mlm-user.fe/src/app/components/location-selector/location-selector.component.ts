@@ -7,8 +7,8 @@ export interface PickupLocation {
   address?: string;
   phoneNumber?: string;
   pickupAvailable: boolean;
-  stockInStock?: boolean | null;
-  hasFullCartStock?: boolean;
+  /** When false, merchant is shown greyed out and cannot be selected. */
+  stockInStock?: boolean;
 }
 
 @Component({
@@ -25,8 +25,12 @@ export class LocationSelectorComponent {
 
   onSelect(id: string): void {
     const loc = this.locations().find((l) => l.id === id);
-    if (loc?.pickupAvailable && loc.stockInStock !== false) {
+    if (this.isSelectable(loc)) {
       this.locationSelect.emit(id);
     }
+  }
+
+  isSelectable(loc: PickupLocation | undefined): boolean {
+    return !!loc?.pickupAvailable && loc.stockInStock === true;
   }
 }

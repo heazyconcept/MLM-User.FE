@@ -134,7 +134,6 @@ export class MerchantAllocationsComponent implements OnInit {
   }
 
   closeConfirmReceipt(): void {
-    if (this.actionLoading()) return;
     this.confirmDialogVisible.set(false);
     this.selectedAllocation.set(null);
     this.formError.set(null);
