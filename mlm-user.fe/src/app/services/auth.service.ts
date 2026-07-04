@@ -56,6 +56,7 @@ export interface LoginRequest {
 }
 
 export interface ForgotPasswordRequest {
+  username: string;
   email: string;
 }
 
@@ -201,8 +202,11 @@ export class AuthService {
     );
   }
 
-  forgotPassword(email: string): Observable<void> {
-    return this.api.post<void>('auth/forgot-password', { email });
+  forgotPassword(username: string, email: string): Observable<{ message: string }> {
+    return this.api.post<{ message: string }>('auth/forgot-password', {
+      username: username.trim(),
+      email: email.trim(),
+    });
   }
 
   resetPassword(token: string, newPassword: string): Observable<void> {

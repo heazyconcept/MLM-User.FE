@@ -188,12 +188,12 @@ describe('AuthService', () => {
   });
 
   describe('forgotPassword', () => {
-    it('should POST /auth/forgot-password with email', () => {
-      service.forgotPassword('user@example.com').subscribe();
+    it('should POST /auth/forgot-password with username and email', () => {
+      service.forgotPassword('johndoe', 'user@example.com').subscribe();
 
       const req = httpMock.expectOne(r => r.url === `${baseUrl}/auth/forgot-password` && r.method === 'POST');
-      expect(req.request.body).toEqual({ email: 'user@example.com' });
-      req.flush(null);
+      expect(req.request.body).toEqual({ username: 'johndoe', email: 'user@example.com' });
+      req.flush({ message: 'If an account matching your details exists, a password reset link has been sent' });
     });
   });
 

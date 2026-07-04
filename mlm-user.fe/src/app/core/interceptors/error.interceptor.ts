@@ -101,6 +101,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         'referrals/validate',
         'referrals/validate-placement',
         'auth/register',
+        'auth/forgot-password',
+        'auth/reset-password',
         'registration/manual-payment',
       ];
       if (validationPaths.some(path => req.url.includes(path))) {
