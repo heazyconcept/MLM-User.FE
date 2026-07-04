@@ -5,6 +5,7 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   computed,
+  signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -26,6 +27,7 @@ export class MerchantDashboardComponent implements OnInit {
   isMerchant = this.merchantService.isMerchant;
   merchantStatus = this.merchantService.merchantStatus;
   isActiveMerchant = this.merchantService.isActiveMerchant;
+  canUpgradeCategory = this.merchantService.canUpgradeCategory;
   needsPayment = this.merchantService.needsPayment;
   isAwaitingAdminApproval = this.merchantService.isAwaitingAdminApproval;
   earnings = this.merchantService.earnings;
@@ -44,6 +46,11 @@ export class MerchantDashboardComponent implements OnInit {
   salesOptions: any;
   barsAnimated = false;
   cardsVisible = [false, false, false, false];
+  hasUpgradeOptions = signal(false);
+
+  showUpgradeBanner = computed(
+    () => this.canUpgradeCategory() && this.hasUpgradeOptions(),
+  );
 
   get pendingOrders(): number {
     return this.pendingFulfilmentsCount() ?? 0;
@@ -280,6 +287,12 @@ export class MerchantDashboardComponent implements OnInit {
         this.merchantService.fetchStockDisputes();
         this.initCharts();
         this.runEntranceAnimations();
+        if (this.canUpgradeCategory()) {
+          this.merchantService.fetchUpgradeOptions({ silent: true }).subscribe((opts) => {
+            this.hasUpgradeOptions.set(!!opts && opts.eligibleUpgrades.length > 0);
+            this.cdr.markForCheck();
+          });
+        }
       } else {
         this.merchantService.clearError();
       }

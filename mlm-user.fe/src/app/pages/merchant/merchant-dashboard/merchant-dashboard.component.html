@@ -96,6 +96,33 @@
       <!-- Active merchant dashboard -->
       @if (!loading() && isActiveMerchant()) {
         <div class="space-y-6 animate-fade-in">
+          @if (showUpgradeBanner()) {
+            <div
+              class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border border-mlm-primary/20 bg-mlm-primary/5 px-5 py-4"
+            >
+              <div class="flex items-start gap-3">
+                <div
+                  class="w-10 h-10 rounded-xl bg-mlm-primary/10 flex items-center justify-center shrink-0"
+                >
+                  <i class="pi pi-arrow-up text-mlm-primary"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-bold text-mlm-text">Upgrade your merchant category</p>
+                  <p class="text-xs text-mlm-secondary mt-0.5">
+                    Move to a higher tier for better commissions and onboarding stock.
+                  </p>
+                </div>
+              </div>
+              <a
+                routerLink="/merchant/profile"
+                fragment="merchant-category-upgrade"
+                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-mlm-primary text-white text-sm font-semibold hover:bg-mlm-green-600 transition-colors shrink-0"
+              >
+                View upgrade options
+              </a>
+            </div>
+          }
+
           <!-- Welcome header -->
           @if (profile(); as profileData) {
             <div class="flex items-center justify-between mb-8">

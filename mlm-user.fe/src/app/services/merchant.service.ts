@@ -331,6 +331,50 @@ export interface VerifyMerchantFeeResponse {
   message: string;
 }
 
+export interface MerchantUpgradeOption {
+  merchantType: MerchantType;
+  upgradeAmount: number;
+  registrationPV: number;
+  deliveryCommissionPct: number;
+  productCommissionPct: number;
+}
+
+export interface MerchantUpgradeOptionsResponse {
+  currentType: MerchantType;
+  eligibleUpgrades: MerchantUpgradeOption[];
+}
+
+export interface InitiateMerchantUpgradeBody {
+  source: MerchantFeePaymentSource;
+  targetType: MerchantType;
+  callbackUrl?: string;
+}
+
+export interface InitiateMerchantUpgradeResponse {
+  paymentId: string;
+  reference: string;
+  amount: number;
+  currency: 'NGN' | 'USD';
+  gatewayUrl?: string;
+}
+
+export interface VerifyMerchantUpgradeBody {
+  reference: string;
+}
+
+export interface VerifyMerchantUpgradeResponse {
+  success: true;
+  payment: {
+    id: string;
+    reference: string;
+    amount: number;
+    currency: string;
+    type: 'MERCHANT_UPGRADE';
+    status: 'SUCCESS';
+  };
+  message: string;
+}
+
 export interface ConfirmDeliveryBody {
   proof?: string;
   notes?: string;
@@ -405,6 +449,10 @@ export class MerchantService {
 
   readonly isAwaitingAdminApproval = computed(
     () => this.isMerchant() && this.isFeePaid() && this.merchantStatus() === 'PENDING',
+  );
+
+  readonly canUpgradeCategory = computed(
+    () => this.isActiveMerchant() && this.profileSignal()?.type !== 'GLOBAL',
   );
 
   readonly actionableAllocationCount = computed(() => {
@@ -529,6 +577,66 @@ export class MerchantService {
       }),
       finalize(() => this.actionLoadingSignal.set(false)),
     );
+  }
+
+  /** GET /merchants/me/upgrade-options */
+  fetchUpgradeOptions(options?: { silent?: boolean }): Observable<MerchantUpgradeOptionsResponse | null> {
+    return this.api.get<Record<string, unknown>>('merchants/me/upgrade-options').pipe(
+      map((res) => this.mapUpgradeOptionsResponse(res)),
+      catchError((err) => {
+        console.error('[MerchantService] fetchUpgradeOptions failed', err);
+        if (!options?.silent) {
+          this.errorSignal.set(err?.error?.message || 'Failed to load merchant upgrade options.');
+        }
+        return of(null);
+      }),
+    );
+  }
+
+  /** POST /merchants/merchant-upgrade/initiate */
+  initiateMerchantUpgrade(
+    body: InitiateMerchantUpgradeBody,
+  ): Observable<InitiateMerchantUpgradeResponse | null> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+    return this.api
+      .post<InitiateMerchantUpgradeResponse>('merchants/merchant-upgrade/initiate', body)
+      .pipe(
+        switchMap((res) => this.refreshProfileFromApi().pipe(map(() => res))),
+        catchError((err) => {
+          console.error('[MerchantService] initiateMerchantUpgrade failed', err);
+          const msg = err?.error?.message;
+          this.errorSignal.set(
+            (typeof msg === 'string' ? msg : Array.isArray(msg) ? msg[0] : null) ??
+              'Failed to initiate merchant upgrade.',
+          );
+          return of(null);
+        }),
+        finalize(() => this.actionLoadingSignal.set(false)),
+      );
+  }
+
+  /** POST /merchants/merchant-upgrade/verify */
+  verifyMerchantUpgrade(
+    body: VerifyMerchantUpgradeBody,
+  ): Observable<VerifyMerchantUpgradeResponse | null> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+    return this.api
+      .post<VerifyMerchantUpgradeResponse>('merchants/merchant-upgrade/verify', body)
+      .pipe(
+        switchMap((res) => this.refreshProfileFromApi().pipe(map(() => res))),
+        catchError((err) => {
+          console.error('[MerchantService] verifyMerchantUpgrade failed', err);
+          const msg = err?.error?.message;
+          this.errorSignal.set(
+            (typeof msg === 'string' ? msg : Array.isArray(msg) ? msg[0] : null) ??
+              'Failed to verify merchant upgrade payment.',
+          );
+          return of(null);
+        }),
+        finalize(() => this.actionLoadingSignal.set(false)),
+      );
   }
 
   /** GET /merchants/available (public) */
@@ -1137,6 +1245,22 @@ export class MerchantService {
     }
     this.errorSignal.set(message);
     return of(null);
+  }
+
+  private mapUpgradeOptionsResponse(
+    raw: Record<string, unknown>,
+  ): MerchantUpgradeOptionsResponse {
+    const currentType = String(raw['currentType'] ?? '') as MerchantType;
+    const rawUpgrades = (raw['eligibleUpgrades'] ?? []) as Record<string, unknown>[];
+    const eligibleUpgrades: MerchantUpgradeOption[] = rawUpgrades.map((opt) => ({
+      merchantType: String(opt['merchantType'] ?? '') as MerchantType,
+      upgradeAmount: Number(opt['upgradeAmount'] ?? 0),
+      registrationPV: Number(opt['registrationPV'] ?? 0),
+      deliveryCommissionPct: Number(opt['deliveryCommissionPct'] ?? 0),
+      productCommissionPct: Number(opt['productCommissionPct'] ?? 0),
+    }));
+
+    return { currentType, eligibleUpgrades };
   }
 
   private mapCategoryConfig(raw: Record<string, unknown>): MerchantCategoryConfig {

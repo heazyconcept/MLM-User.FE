@@ -107,6 +107,12 @@ export class SideMenuComponent implements OnInit {
         items: [
           { label: 'Dashboard', icon: 'pi pi-th-large', route: '/dashboard' },
           { label: 'Profile', icon: 'pi pi-user', route: '/profile' },
+          {
+            label: 'Upgrade',
+            icon: 'pi pi-arrow-up',
+            route: '/settings/upgrade',
+            requiresPayment: true,
+          },
           ...this.merchantApplyMenuItems(),
           {
             label: 'Marketplace',
