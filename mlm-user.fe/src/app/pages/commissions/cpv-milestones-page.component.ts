@@ -25,9 +25,6 @@ export class CpvMilestonesPageComponent implements OnInit {
   isLoading = this.earningsService.isLoading;
   error = this.earningsService.error;
 
-  displayCurrency = this.userService.displayCurrency;
-  currencySymbol = computed(() => (this.displayCurrency() === 'NGN' ? '₦' : '$'));
-
   pointsToGo = computed(() => {
     const summary = this.cpvSummary();
     return Math.max(0, summary.nextMilestoneCpv - summary.totalCpv);
@@ -55,38 +52,5 @@ export class CpvMilestonesPageComponent implements OnInit {
 
   getAchievedCount(): number {
     return this.milestones().filter((m: MilestoneInfo) => m.achieved).length;
-  }
-
-  /** Format cash reward in the user's account currency (USD base × 1000 for NGN). */
-  getCashRewardLabel(rewardAmount?: number): string {
-    if (rewardAmount == null || rewardAmount === 0) return '—';
-    const amount =
-      this.displayCurrency() === 'NGN' ? rewardAmount * 1000 : rewardAmount;
-    return `${this.currencySymbol()}${amount.toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
-  }
-
-  getNextMilestoneTargetLabel(): string {
-    const next = this.milestones().find((m) => !m.achieved);
-    if (!next) {
-      return this.cpvSummary().nextMilestoneReward || '—';
-    }
-
-    const cash = this.getCashRewardLabel(next.rewardAmount);
-    const material = this.getMaterialRewardLabel(next.materialReward);
-    const rewardParts: string[] = [];
-    if (cash !== '—') rewardParts.push(cash);
-    if (material !== '—') rewardParts.push(material);
-
-    if (rewardParts.length === 0) return next.name;
-    return `${next.name} — ${rewardParts.join(' + ')}`;
-  }
-
-  /** Format material reward description */
-  getMaterialRewardLabel(materialReward?: string): string {
-    if (!materialReward || materialReward.toUpperCase() === 'NONE' || materialReward.trim() === '—') return '—';
-    return materialReward;
   }
 }
