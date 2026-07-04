@@ -37,6 +37,7 @@ import {
 import { RegistrationService, type RegistrationWallet } from '../../services/registration.service';
 import { RegistrationFundingComponent } from '../wallet/registration-funding/registration-funding.component';
 import { DialogService } from 'primeng/dynamicdialog';
+import { MerchantService, MerchantStatus, MerchantType } from '../../services/merchant.service';
 import { getRequiredAmount } from '../../core/constants/registration.constants';
 import { OverlayOptions } from 'primeng/api';
 import { signal } from '@angular/core';
@@ -89,6 +90,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private dashboardService = inject(DashboardService);
   private registrationService = inject(RegistrationService);
   private dialogService = inject(DialogService);
+  private merchantService = inject(MerchantService);
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
 
@@ -119,6 +121,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
   displayCurrency = this.userService.displayCurrency;
   unreadCount = this.notificationService.unreadCount;
   userPackageLabel = computed(() => this.getPackageLabel(this.currentUser()?.package));
+  merchantProfile = this.merchantService.profile;
+
+  showMerchantBadge = computed(() => {
+    const profile = this.merchantProfile();
+    return profile != null && !profile.message && !!profile.id;
+  });
+
+  merchantBadgeTitle = computed(() => {
+    const type = this.merchantProfile()?.type;
+    if (!type) return '';
+    return `${this.getMerchantTypeLabel(type)} Merchant`;
+  });
+
+  merchantStatusLabel = computed(() => {
+    const status = this.merchantProfile()?.status;
+    if (!status) return '';
+    return this.getMerchantStatusLabel(status);
+  });
 
   // Registration wallet state (for unpaid users)
   registrationWallet = signal<RegistrationWallet | null>(null);
@@ -658,6 +678,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
         },
       });
       this.earningsService.fetchEarningsSectionData();
+
+      this.merchantService.fetchProfile$().subscribe({
+        next: (profile) => {
+          if (!profile?.id) {
+            this.merchantService.clearError();
+          }
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.merchantService.clearError();
+          this.cdr.markForCheck();
+        },
+      });
     }
 
     // Listen to navigation events to detect when returning to dashboard
@@ -896,6 +929,37 @@ getPackageColor(): string {
   };
   return colors[pkg] ?? '#2d7a3a'; // fallback to brand green
 }
+
+  getMerchantTypeLabel(type: MerchantType): string {
+    const labels: Record<MerchantType, string> = {
+      REGIONAL: 'Regional',
+      NATIONAL: 'National',
+      GLOBAL: 'Global',
+    };
+    return labels[type] ?? type;
+  }
+
+  getMerchantStatusLabel(status: MerchantStatus): string {
+    const labels: Record<MerchantStatus, string> = {
+      DRAFT: 'Draft',
+      PENDING: 'Pending',
+      ACTIVE: 'Active',
+      SUSPENDED: 'Suspended',
+    };
+    return labels[status] ?? status;
+  }
+
+  getMerchantColor(): string {
+    const status = this.merchantProfile()?.status;
+    const colors: Record<MerchantStatus, string> = {
+      ACTIVE: '#2d7a3a',
+      PENDING: '#b8972a',
+      DRAFT: '#6b7280',
+      SUSPENDED: '#e11d48',
+    };
+    if (!status) return '#2d7a3a';
+    return colors[status] ?? '#2d7a3a';
+  }
 
   onPaymentSubmit(): void {
     if (this.paymentForm.valid) {
