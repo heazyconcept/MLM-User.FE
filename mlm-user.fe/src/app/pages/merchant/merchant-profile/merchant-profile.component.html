@@ -243,8 +243,222 @@
           </form>
 
         </div>
+
+        @if (verificationMessage()) {
+          <div class="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-2.5">
+            <i class="pi pi-spin pi-spinner text-blue-600 mt-0.5"></i>
+            <p class="text-blue-700 text-sm">{{ verificationMessage() }}</p>
+          </div>
+        }
+
+        @if (verificationError()) {
+          <div class="mt-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-2.5">
+            <p class="text-red-600 text-sm">{{ verificationError() }}</p>
+          </div>
+        }
+
+        @if (canUpgradeCategory()) {
+          <section
+            id="merchant-category-upgrade"
+            class="mt-8 bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-6"
+          >
+            <div>
+              <h2 class="text-xl font-bold text-mlm-text">Merchant Category</h2>
+              <p class="text-mlm-secondary text-sm mt-1">
+                Upgrade your merchant tier to unlock higher commissions and onboarding stock.
+              </p>
+            </div>
+
+            @if (upgradeOptions(); as opts) {
+              <div class="flex items-center gap-3 bg-mlm-primary/5 border border-mlm-primary/20 rounded-xl px-5 py-4">
+                <div class="w-10 h-10 rounded-lg bg-mlm-primary/10 flex items-center justify-center">
+                  <i class="pi pi-shop text-mlm-primary"></i>
+                </div>
+                <div>
+                  <p class="text-xs text-mlm-secondary font-medium">Current Category</p>
+                  <p class="text-lg font-bold text-mlm-primary">
+                    {{ getTypeLabel(opts.currentType) }} Merchant
+                  </p>
+                </div>
+              </div>
+            }
+
+            @if (upgradeSuccessMessage()) {
+              <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-2.5">
+                <i class="pi pi-check-circle text-green-600 mt-0.5"></i>
+                <p class="text-green-700 text-sm">{{ upgradeSuccessMessage() }}</p>
+              </div>
+            }
+
+            @if (upgradeLoadError()) {
+              <div class="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4">
+                <p class="text-sm text-amber-700">{{ upgradeLoadError() }}</p>
+              </div>
+            }
+
+            @if (isLoadingUpgradeOptions()) {
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                @for (i of [1, 2]; track i) {
+                  <div class="bg-gray-50 border border-gray-100 rounded-2xl p-6 animate-pulse h-48"></div>
+                }
+              </div>
+            } @else if (showUpgradeSection()) {
+              <div class="space-y-4">
+                <div>
+                  <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">
+                    Payment Source
+                  </p>
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    @for (source of paymentSources; track source.value) {
+                      <button
+                        type="button"
+                        class="px-4 py-3.5 rounded-lg border text-left transition-all"
+                        [class]="
+                          selectedPaymentSource() === source.value
+                            ? 'border-mlm-primary bg-mlm-primary/5'
+                            : 'border-gray-200 hover:border-gray-300'
+                        "
+                        (click)="selectedPaymentSource.set(source.value)"
+                      >
+                        <div class="flex items-center gap-3">
+                          <span
+                            class="w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all"
+                            [class]="
+                              selectedPaymentSource() === source.value
+                                ? 'border-mlm-primary bg-mlm-primary'
+                                : 'border-gray-300'
+                            "
+                          ></span>
+                          <span class="text-sm font-medium text-mlm-text">{{ source.label }}</span>
+                        </div>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  @for (option of upgradeOptions()!.eligibleUpgrades; track option.merchantType) {
+                    @let style = getTierStyle(option.merchantType);
+                    @let config = getConfigForType(option.merchantType);
+                    <div
+                      class="relative bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all"
+                    >
+                      <div class="h-2 bg-gradient-to-r" [ngClass]="style.color"></div>
+                      <div class="p-6 space-y-4">
+                        <div class="flex items-center gap-3">
+                          <div
+                            class="w-10 h-10 rounded-lg bg-gradient-to-br flex items-center justify-center text-white"
+                            [ngClass]="style.color"
+                          >
+                            <i class="pi" [ngClass]="style.icon"></i>
+                          </div>
+                          <div>
+                            <h3 class="text-lg font-bold text-mlm-text">
+                              {{ getTypeLabel(option.merchantType) }} Merchant
+                            </h3>
+                            <p class="text-2xl font-bold text-mlm-primary mt-0.5">
+                              {{ formatPrice(option.upgradeAmount) }}
+                            </p>
+                          </div>
+                        </div>
+
+                        <ul class="space-y-1.5 text-sm text-mlm-secondary">
+                          <li>Instant PV (tier total): {{ option.registrationPV }}</li>
+                          <li>Delivery commission: {{ option.deliveryCommissionPct }}%</li>
+                          <li>Product commission: {{ option.productCommissionPct }}%</li>
+                        </ul>
+
+                        @if (config && config.onboardingItems.length > 0) {
+                          <div class="pt-2 border-t border-gray-50">
+                            <p class="text-xs font-bold text-mlm-secondary uppercase tracking-wide mb-2">
+                              Onboarding stock
+                            </p>
+                            <ul class="space-y-1 text-xs text-mlm-secondary">
+                              @for (item of config.onboardingItems; track item.productId) {
+                                <li>
+                                  {{ item.productName || item.productId }} × {{ item.quantity }}
+                                </li>
+                              }
+                            </ul>
+                          </div>
+                        }
+
+                        <button
+                          type="button"
+                          class="w-full py-3 rounded-xl bg-mlm-primary hover:bg-mlm-green-600 text-white text-sm font-semibold transition-colors"
+                          (click)="selectUpgradeTarget(option)"
+                        >
+                          Upgrade to {{ getTypeLabel(option.merchantType) }}
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </section>
+        }
       }
 
     </div>
   </main>
 </div>
+
+<p-dialog
+  [visible]="showConfirmDialog()"
+  (visibleChange)="showConfirmDialog.set($event)"
+  [modal]="true"
+  header="Confirm Category Upgrade"
+  [style]="{ width: '90vw', maxWidth: '420px' }"
+  [draggable]="false"
+  [resizable]="false"
+>
+  @if (selectedTarget(); as target) {
+    <div class="space-y-6">
+      <div class="text-center py-2">
+        @let style = getTierStyle(target.merchantType);
+        <div
+          class="w-16 h-16 rounded-2xl bg-gradient-to-br mx-auto flex items-center justify-center text-white mb-4"
+          [ngClass]="style.color"
+        >
+          <i class="pi text-2xl" [ngClass]="style.icon"></i>
+        </div>
+        <h3 class="text-lg font-bold text-mlm-text">
+          Upgrade to {{ getTypeLabel(target.merchantType) }} Merchant
+        </h3>
+        <p class="text-2xl font-bold text-mlm-primary mt-2">
+          {{ formatPrice(target.upgradeAmount) }}
+        </p>
+        <p class="text-sm text-mlm-secondary mt-2">
+          Full registration fee for the {{ getTypeLabel(target.merchantType) }} tier.
+          Payment via {{ getPaymentSourceLabel(selectedPaymentSource()) }}.
+        </p>
+      </div>
+
+      @if (upgradeActionError()) {
+        <div class="bg-red-50 border border-red-200 rounded-xl p-3">
+          <p class="text-red-600 text-sm">{{ upgradeActionError() }}</p>
+        </div>
+      }
+
+      <div class="space-y-2">
+        <p-button
+          [label]="selectedPaymentSource() === 'PAYSTACK' ? 'Proceed to Payment' : 'Confirm Upgrade'"
+          icon="pi pi-arrow-right"
+          (onClick)="confirmUpgrade()"
+          [disabled]="actionLoading()"
+          [loading]="actionLoading()"
+          styleClass="w-full !bg-mlm-primary !border-mlm-primary !py-3 !rounded-xl !font-semibold !text-sm"
+        ></p-button>
+        <button
+          type="button"
+          (click)="cancelUpgrade()"
+          [disabled]="actionLoading()"
+          class="w-full text-sm text-mlm-secondary hover:text-mlm-text py-2 cursor-pointer disabled:opacity-50"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  }
+</p-dialog>
