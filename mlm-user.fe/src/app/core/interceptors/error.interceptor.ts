@@ -65,7 +65,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
           const isAuthRequest = authPaths.some(path => req.url.includes(path));
           const currentPath = router.url.split('?')[0];
-          const isAuthPage = currentPath.startsWith('/auth/');
+          const isAuthPage =
+            currentPath.startsWith('/auth/') ||
+            currentPath === '/forgot-password' ||
+            currentPath === '/reset-password';
 
           // Prevent infinite login redirects when login itself fails with 401.
           if (!isAuthRequest && !isAuthPage) {
