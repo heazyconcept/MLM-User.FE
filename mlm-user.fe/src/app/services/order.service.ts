@@ -40,7 +40,8 @@ export interface Order {
   deliveryAddress?: string;
   deliveryFee?: number;
   pickupLocationName?: string;
-  pickupLocationDistance?: string;
+  pickupLocationAddress?: string;
+  pickupLocationPhone?: string;
   selectedMerchantId?: string;
   selectedMerchantName?: string;
   checkoutBatchId?: string;
@@ -343,9 +344,12 @@ export class OrderService {
       deliveryAddress: o.deliveryAddress || undefined,
       deliveryFee: o.deliveryFee != null ? Number(o.deliveryFee) : undefined,
       pickupLocationName:
+        merchant?.displayName ??
         merchant?.businessName ??
         merchant?.username ??
         (o.selectedMerchantId ? 'Merchant Center' : undefined),
+      pickupLocationAddress: merchant?.address ? String(merchant.address) : undefined,
+      pickupLocationPhone: merchant?.phoneNumber ? String(merchant.phoneNumber) : undefined,
       selectedMerchantId: o.selectedMerchantId ? String(o.selectedMerchantId) : undefined,
       selectedMerchantName:
         merchant?.businessName ?? merchant?.username ?? merchant?.name ?? undefined,
