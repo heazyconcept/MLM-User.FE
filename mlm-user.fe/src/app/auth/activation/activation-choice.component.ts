@@ -6,7 +6,8 @@ import {
   linkedSignal,
   ChangeDetectorRef,
   OnInit,
-  computed
+  computed,
+  effect
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
@@ -18,7 +19,13 @@ import { PaymentService, type PaymentGatewayProvider } from '../../services/paym
 import { UserService } from '../../services/user.service';
 import { RegistrationService, type RegistrationWallet, type ManualRegistrationPayment } from '../../services/registration.service';
 import { getRequiredAmount, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, IPV_PERCENT, NGN_TO_USD_RATE } from '../../core/constants/registration.constants';
-import { getEnabledGatewayProviderOptions, getPaymentCallbackUrl } from '../../core/utils/payment-config.util';
+import {
+  getDefaultGatewayProvider,
+  getEnabledGatewayProviderOptions,
+  getPaymentCallbackUrl,
+} from '../../core/utils/payment-config.util';
+import { saveUsdtPaymentSession } from '../../core/utils/usdt-payment-storage.util';
+import { isUsdtInitiateResponse } from '../../services/payment-initiate.mapper';
 
 const REGISTRATION_PROVIDER_KEY = 'mlm_registration_payment_provider';
 
@@ -42,13 +49,16 @@ export class ActivationChoiceComponent implements OnInit {
   activating = signal(false);
   errorMessage = signal<string | null>(null);
   pendingManualPayment = signal<ManualRegistrationPayment | null>(null);
-  selectedProvider = signal<PaymentGatewayProvider>('PAYSTACK');
+
+  userCurrency = computed(() => this.userService.currentUser()?.currency ?? 'NGN');
+  selectedProvider = linkedSignal<PaymentGatewayProvider>(() =>
+    getDefaultGatewayProvider(this.userCurrency() === 'NGN' ? 'NGN' : 'USD')
+  );
 
   gatewayOptions = computed(() =>
     getEnabledGatewayProviderOptions(this.userCurrency() === 'NGN' ? 'NGN' : 'USD')
   );
 
-  userCurrency = computed(() => this.userService.currentUser()?.currency ?? 'NGN');
   userPackage = computed(() => this.userService.currentUser()?.package ?? 'NICKEL');
   selectedPackage = linkedSignal(() => this.userPackage());
   selectedPackageLabel = computed(() => {
@@ -94,6 +104,16 @@ export class ActivationChoiceComponent implements OnInit {
     if (!wallet) return this.requiredAmount();
     return Math.max(0, this.requiredAmount() - wallet.balance);
   });
+
+  constructor() {
+    effect(() => {
+      const opts = this.gatewayOptions();
+      const current = this.selectedProvider();
+      if (opts.length > 0 && !opts.some((o) => o.value === current)) {
+        this.selectedProvider.set(opts[0].value);
+      }
+    });
+  }
 
   ngOnInit(): void {
     if (this.userService.isPaid()) {
@@ -161,10 +181,10 @@ export class ActivationChoiceComponent implements OnInit {
         const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
         if (gatewayUrl) {
           window.location.href = gatewayUrl;
-        } else if (res.reference) {
+        } else if (isUsdtInitiateResponse(res)) {
+          saveUsdtPaymentSession({ ...res, flow: 'registration' });
           this.router.navigate(['/auth/register/payment-pending'], {
-            queryParams: { reference: res.reference },
-            state: { reference: res.reference }
+            replaceUrl: true,
           });
         }
       },

@@ -10,25 +10,24 @@
       class="w-full h-full object-cover"
       loading="lazy">
 
-    <!-- Out of Stock / Available Soon Overlay -->
-    @if (!product().inStock) {
+    <!-- Out of Stock / Scheduled Overlay -->
+    @if (!canPurchase()) {
       <div class="absolute inset-0 bg-white/45 backdrop-blur-[2px] flex items-center justify-center p-2 text-center">
         <div class="flex flex-col items-center gap-1">
           <span class="px-3 py-1.5 bg-mlm-text/80 text-white text-xs font-semibold rounded-full tracking-wide">
-            @if (product().priceStatus === 'unpriced') {
+            @if (product().priceStatus === 'scheduled') {
+              Out of Stock
+            } @else if (product().priceStatus === 'unpriced') {
               Unavailable
             } @else {
               Out of Stock
             }
           </span>
-          <!-- Scheduled date is hidden as per user request -->
-          <!--
           @if (product().priceStatus === 'scheduled' && product().availableFrom) {
             <span class="text-[10px] font-bold text-mlm-secondary">
-              {{ formatAvailableDate(product().availableFrom) }}
+              Available from {{ formatAvailableDate(product().availableFrom) }}
             </span>
           }
-          -->
         </div>
       </div>
     }
@@ -66,20 +65,20 @@
     <!-- Price + Actions -->
     <div class="flex flex-col gap-2">
       <span class="text-base font-extrabold text-mlm-text">
-        {{ formatCurrency(product().memberPriceNGN) }}
+        {{ formatCurrency(product().price) }}
       </span>
       <div class="flex items-center gap-2">
         <button
           type="button"
           (click)="onAddToCartClick($event)"
-          [disabled]="!product().inStock"
+          [disabled]="!canPurchase()"
           class="flex-1 px-3 py-2 border border-mlm-primary text-mlm-primary text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed tracking-wide hover:bg-mlm-primary/5 transition-colors">
           Add to Cart
         </button>
         <button
           type="button"
           (click)="onBuyClick($event)"
-          [disabled]="!product().inStock"
+          [disabled]="!canPurchase()"
           class="flex-1 px-3 py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed tracking-wide">
           Buy Now
         </button>

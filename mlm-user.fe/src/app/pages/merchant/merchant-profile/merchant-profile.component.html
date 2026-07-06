@@ -309,7 +309,7 @@
                     Payment Source
                   </p>
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    @for (source of paymentSources; track source.value) {
+                    @for (source of paymentSources(); track source.value) {
                       <button
                         type="button"
                         class="px-4 py-3.5 rounded-lg border text-left transition-all"
@@ -405,15 +405,29 @@
 </div>
 
 <p-dialog
-  [visible]="showConfirmDialog()"
-  (visibleChange)="showConfirmDialog.set($event)"
+  [visible]="showConfirmDialog() || !!usdtPayment()"
+  (visibleChange)="!$event && cancelUpgrade()"
   [modal]="true"
-  header="Confirm Category Upgrade"
-  [style]="{ width: '90vw', maxWidth: '420px' }"
+  [header]="usdtPayment() ? 'USDT Deposit' : 'Confirm Category Upgrade'"
+  [style]="{ width: '90vw', maxWidth: usdtPayment() ? '480px' : '420px' }"
   [draggable]="false"
   [resizable]="false"
 >
-  @if (selectedTarget(); as target) {
+  @if (usdtPayment(); as payment) {
+    <div class="space-y-4">
+      @if (usdtVerifyError()) {
+        <div class="bg-red-50 border border-red-200 rounded-xl p-3">
+          <p class="text-red-600 text-sm">{{ usdtVerifyError() }}</p>
+        </div>
+      }
+      <app-usdt-deposit
+        [payment]="payment"
+        title="Complete merchant upgrade payment"
+        (verified)="onUsdtVerified()"
+        (back)="onUsdtBack()">
+      </app-usdt-deposit>
+    </div>
+  } @else if (selectedTarget(); as target) {
     <div class="space-y-6">
       <div class="text-center py-2">
         @let style = getTierStyle(target.merchantType);
@@ -431,7 +445,11 @@
         </p>
         <p class="text-sm text-mlm-secondary mt-2">
           Full registration fee for the {{ getTypeLabel(target.merchantType) }} tier.
-          Payment via {{ getPaymentSourceLabel(selectedPaymentSource()) }}.
+          @if (isUsdtPaymentSource(selectedPaymentSource())) {
+            Send USDT on the deposit screen after you proceed.
+          } @else {
+            Payment via {{ getPaymentSourceLabel(selectedPaymentSource()) }}.
+          }
         </p>
       </div>
 
@@ -443,7 +461,7 @@
 
       <div class="space-y-2">
         <p-button
-          [label]="isGatewayPaymentSource(selectedPaymentSource()) ? 'Proceed to Payment' : 'Confirm Upgrade'"
+          [label]="isGatewayPaymentSource(selectedPaymentSource()) || isUsdtPaymentSource(selectedPaymentSource()) ? 'Proceed to Payment' : 'Confirm Upgrade'"
           icon="pi pi-arrow-right"
           (onClick)="confirmUpgrade()"
           [disabled]="actionLoading()"

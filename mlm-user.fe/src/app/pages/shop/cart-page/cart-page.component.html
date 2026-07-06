@@ -78,7 +78,7 @@
                   <div class="text-right">
                     <p class="text-xs text-mlm-secondary">Line total</p>
                     <p class="text-base font-bold text-mlm-text tabular-nums">
-                      {{ formatCurrency(line.product.price * line.quantity) }}
+                      {{ formatCurrency(line.product.price * line.quantity, line.product.currency) }}
                     </p>
                   </div>
                 </div>
@@ -91,7 +91,7 @@
           <div class="space-y-2 mb-5">
             <div class="flex justify-between text-sm">
               <span class="text-mlm-secondary">Subtotal</span>
-              <span class="font-semibold text-mlm-text tabular-nums">{{ formatCurrency(subtotal()) }}</span>
+              <span class="font-semibold text-mlm-text tabular-nums">{{ formatCurrency(subtotal(), cartCurrency()) }}</span>
             </div>
             <div class="flex justify-between text-sm">
               <span class="text-mlm-secondary">Total PV</span>

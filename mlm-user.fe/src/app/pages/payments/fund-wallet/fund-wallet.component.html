@@ -1,43 +1,16 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-8">
     <div class="px-4 sm:px-6 lg:px-8 mx-auto max-w-2xl">
-      @if (showPendingView()) {
-        <!-- Pending view: reference only (e.g. USDT) -->
+      @if (usdtPayment(); as payment) {
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
-          <div class="flex flex-col items-center text-center">
-            <div class="w-16 h-16 bg-mlm-green-50 rounded-full flex items-center justify-center mb-6">
-              <i class="pi pi-credit-card text-2xl text-mlm-primary" aria-hidden="true"></i>
-            </div>
-            <h1 class="text-xl font-semibold text-gray-900 mb-2">Complete your wallet funding</h1>
-            <p class="text-slate-500 mb-4">
-              Use the reference below to complete your payment via your preferred method (e.g. bank transfer, USDT).
-            </p>
-            <div class="bg-slate-100 rounded-xl p-4 mb-6 w-full">
-              <p class="text-xs font-medium text-slate-500 mb-1">Payment reference</p>
-              <p class="font-mono font-semibold text-gray-900 break-all">{{ pendingReference() }}</p>
-            </div>
-            <p class="text-sm text-slate-500 mb-6">
-              Once you have completed the payment, click below to verify.
-            </p>
-            <div class="flex flex-wrap gap-3 justify-center">
-              <p-button
-                label="I've paid - Verify"
-                icon="pi pi-check"
-                (onClick)="onVerify()"
-                severity="success">
-              </p-button>
-              <p-button
-                label="Back"
-                icon="pi pi-arrow-left"
-                [outlined]="true"
-                severity="secondary"
-                (onClick)="onBack()">
-              </p-button>
-            </div>
-          </div>
+          <app-usdt-deposit
+            [payment]="payment"
+            title="Complete your wallet funding"
+            (verified)="onUsdtVerified()"
+            (back)="onUsdtBack()">
+          </app-usdt-deposit>
         </div>
       } @else {
-        <!-- Form view -->
         <div class="space-y-6">
           <div>
             <h1 class="text-2xl font-bold text-gray-900">

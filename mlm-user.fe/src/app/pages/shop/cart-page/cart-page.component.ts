@@ -23,6 +23,7 @@ import { PurchaseSummaryModalComponent } from '../components/purchase-summary-mo
 import { OrderPreviewComponent } from '../../orders/order-preview/order-preview.component';
 import { PurchaseThankYouModalComponent } from '../../../components/purchase-thank-you-modal/purchase-thank-you-modal.component';
 import { InvoiceModalComponent } from '../../../components/invoice-modal/invoice-modal.component';
+import { formatCatalogPrice } from '../../../core/utils/product-catalog.util';
 
 @Component({
   selector: 'app-cart-page',
@@ -138,10 +139,16 @@ export class CartPageComponent implements OnDestroy {
       error: (err) => {
         this.orderSubmitting.set(false);
         console.error('Cart checkout failed', err);
+        const errMsg = err?.error?.message ?? '';
+        const friendlyMsg =
+          errMsg.toLowerCase().includes('no active price') ||
+          errMsg.toLowerCase().includes('no effective price')
+            ? 'This product is not available for purchase yet.'
+            : (errMsg || 'Could not complete order. Please try again.');
         this.messageService.add({
           severity: 'error',
           summary: 'Order failed',
-          detail: err?.error?.message ?? 'Could not complete order. Please try again.',
+          detail: friendlyMsg,
         });
       },
     });
@@ -154,12 +161,16 @@ export class CartPageComponent implements OnDestroy {
     }
   }
 
-  formatCurrency(amount: number): string {
-    return `₦${amount.toLocaleString('en-US')}`;
+  formatCurrency(amount: number, currency: 'NGN' | 'USD' = 'NGN'): string {
+    return formatCatalogPrice(amount, currency);
   }
 
-  isLineUnavailable(line: { product: { inStock: boolean; purchasable: boolean } }): boolean {
-    return !line.product.inStock || !line.product.purchasable;
+  cartCurrency(): 'NGN' | 'USD' {
+    return this.items()[0]?.product.currency ?? 'NGN';
+  }
+
+  isLineUnavailable(line: { product: { purchasable: boolean } }): boolean {
+    return !line.product.purchasable;
   }
 
   private cleanupLingeringDrawerMask(): void {

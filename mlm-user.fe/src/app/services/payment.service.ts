@@ -2,15 +2,34 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
+import { mapInitiatePaymentResponse } from './payment-initiate.mapper';
 
-export interface InitiateRegistrationPaymentResponse {
+export type PaymentCurrency = 'NGN' | 'USD';
+
+export interface UsdtGatewayData {
+  coin: 'USDT';
+  network: string;
+  depositAddress: string;
+  memo: string;
+  usdtAmount: number;
+  displayAmount: number;
+  displayCurrency: PaymentCurrency;
+  instructions: string;
+  simulation?: boolean;
+}
+
+export interface InitiatePaymentResponse {
   paymentId?: string;
   reference: string;
   amount?: number;
-  currency?: string;
+  currency?: PaymentCurrency;
   authorizationUrl?: string;
   gatewayUrl?: string;
+  gatewayData?: UsdtGatewayData;
 }
+
+/** @deprecated Use InitiatePaymentResponse */
+export type InitiateRegistrationPaymentResponse = InitiatePaymentResponse;
 
 export interface PaymentRecord {
   id: string;
@@ -47,9 +66,8 @@ export class PaymentService {
     currency: string,
     callbackUrl?: string,
     provider?: PaymentGatewayProvider
-  ): Observable<InitiateRegistrationPaymentResponse> {
+  ): Observable<InitiatePaymentResponse> {
     const body: Record<string, unknown> = { package: packageName, currency };
-    // Only send callbackUrl when valid (backend @IsUrl rejects localhost)
     const isValidUrl = callbackUrl && /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(callbackUrl);
     if (isValidUrl) {
       body['callbackUrl'] = callbackUrl;
@@ -59,16 +77,7 @@ export class PaymentService {
     }
     return this.api
       .post<Record<string, unknown>>('payments/registration/initiate', body)
-      .pipe(
-        map((res) => ({
-          paymentId: res['paymentId'] as string | undefined,
-          reference: String(res['reference'] ?? res['ref'] ?? ''),
-          amount: res['amount'] as number | undefined,
-          currency: res['currency'] as string | undefined,
-          authorizationUrl: res['authorizationUrl'] as string | undefined ?? res['authorization_url'] as string | undefined,
-          gatewayUrl: res['gatewayUrl'] as string | undefined ?? res['gateway_url'] as string | undefined
-        }))
-      );
+      .pipe(map((res) => mapInitiatePaymentResponse(res)));
   }
 
   initiateWalletFunding(
@@ -76,7 +85,7 @@ export class PaymentService {
     provider: PaymentGatewayProvider,
     callbackUrl?: string,
     walletType: 'CASH' | 'VOUCHER' = 'CASH'
-  ): Observable<InitiateRegistrationPaymentResponse> {
+  ): Observable<InitiatePaymentResponse> {
     const body: Record<string, unknown> = { amount, provider, walletType };
     const isValidUrl = callbackUrl && /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(callbackUrl);
     if (isValidUrl) {
@@ -84,13 +93,7 @@ export class PaymentService {
     }
     return this.api
       .post<Record<string, unknown>>('payments/wallet-funding/initiate', body)
-      .pipe(
-        map((res) => ({
-          reference: String(res['reference'] ?? res['ref'] ?? ''),
-          authorizationUrl: res['authorizationUrl'] as string | undefined ?? res['authorization_url'] as string | undefined,
-          gatewayUrl: res['gatewayUrl'] as string | undefined ?? res['gateway_url'] as string | undefined
-        }))
-      );
+      .pipe(map((res) => mapInitiatePaymentResponse(res)));
   }
 
   /** POST /payments/registration-wallet-funding/initiate */
@@ -98,7 +101,7 @@ export class PaymentService {
     amount: number,
     provider: PaymentGatewayProvider,
     callbackUrl?: string
-  ): Observable<InitiateRegistrationPaymentResponse> {
+  ): Observable<InitiatePaymentResponse> {
     const body: Record<string, unknown> = { amount, provider };
     const isValidUrl = callbackUrl && /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(callbackUrl);
     if (isValidUrl) {
@@ -106,13 +109,7 @@ export class PaymentService {
     }
     return this.api
       .post<Record<string, unknown>>('payments/registration-wallet-funding/initiate', body)
-      .pipe(
-        map((res) => ({
-          reference: String(res['reference'] ?? res['ref'] ?? ''),
-          authorizationUrl: res['authorizationUrl'] as string | undefined ?? res['authorization_url'] as string | undefined,
-          gatewayUrl: res['gatewayUrl'] as string | undefined ?? res['gateway_url'] as string | undefined
-        }))
-      );
+      .pipe(map((res) => mapInitiatePaymentResponse(res)));
   }
 
   verifyPayment(
@@ -146,7 +143,7 @@ export class PaymentService {
     targetPackage: string,
     callbackUrl?: string,
     provider?: PaymentGatewayProvider
-  ): Observable<InitiateRegistrationPaymentResponse> {
+  ): Observable<InitiatePaymentResponse> {
     const body: Record<string, unknown> = { targetPackage };
     const isValidUrl = callbackUrl && /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(callbackUrl);
     if (isValidUrl) {
@@ -157,13 +154,7 @@ export class PaymentService {
     }
     return this.api
       .post<Record<string, unknown>>('payments/upgrade/initiate', body)
-      .pipe(
-        map((res) => ({
-          reference: String(res['reference'] ?? res['ref'] ?? ''),
-          authorizationUrl: res['authorizationUrl'] as string | undefined ?? res['authorization_url'] as string | undefined,
-          gatewayUrl: res['gatewayUrl'] as string | undefined ?? res['gateway_url'] as string | undefined
-        }))
-      );
+      .pipe(map((res) => mapInitiatePaymentResponse(res)));
   }
 
   getPayments(limit = 20, offset = 0): Observable<{ items: PaymentRecord[]; total: number }> {
@@ -173,7 +164,7 @@ export class PaymentService {
         map((res) => {
           const rawItems = res.data ?? res.items ?? (Array.isArray(res) ? res : []);
           const total = res.total ?? res.meta?.total ?? rawItems.length;
-          
+
           const items: PaymentRecord[] = rawItems.map((item: any) => ({
             id: item.id || '',
             userId: item.userId || item.user_id || '',

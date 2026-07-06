@@ -14,7 +14,6 @@ import { SettingsService } from '../../services/settings.service';
 import { WithdrawalComponent } from './withdrawal/withdrawal.component';
 import { WalletTransferComponent } from './transfer/wallet-transfer.component';
 import { RegistrationFundingComponent } from './registration-funding/registration-funding.component';
-import { MessageService } from 'primeng/api';
 import {
   CASHOUT_SPLIT, AUTOSHIP_SPLIT,
   MONTHLY_AUTOSHIP_USD, AUTOSHIP_ADMIN_FEE_USD, NGN_TO_USD_RATE
@@ -42,7 +41,6 @@ export class WalletComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private dialogService = inject(DialogService);
-  private messageService = inject(MessageService);
 
   isPaid = this.userService.isPaid;
   wallets = this.walletService.allWallets;
@@ -79,6 +77,11 @@ export class WalletComponent implements OnInit {
   });
 
   ngOnInit() {
+    const funded = this.route.snapshot.queryParamMap.get('funded');
+    if (funded === 'true') {
+      this.router.navigate([], { queryParams: {}, replaceUrl: true });
+    }
+
     if (this.isPaid()) {
       this.isLoading.set(true);
       this.settingsService.fetchCommissionRules().subscribe();
@@ -96,19 +99,6 @@ export class WalletComponent implements OnInit {
         error: () => this.isLoading.set(false)
       });
       this.walletService.fetchAutoshipStatus().subscribe();
-
-      // Show success toast if redirected from wallet funding
-      const funded = this.route.snapshot.queryParamMap.get('funded');
-      if (funded === 'true') {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Wallet Funded',
-          detail: 'Your wallet has been credited successfully.',
-          life: 4000
-        });
-        // Remove the query param without reloading
-        this.router.navigate([], { queryParams: {}, replaceUrl: true });
-      }
     }
   }
 

@@ -1,16 +1,21 @@
 import { Component, inject, signal, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { UserService } from '../../../services/user.service';
-import { PaymentService, UpgradeOption, type PaymentGatewayProvider } from '../../../services/payment.service';
+import { PaymentService, UpgradeOption, type PaymentGatewayProvider, type InitiatePaymentResponse } from '../../../services/payment.service';
 import { LoadingService } from '../../../services/loading.service';
 import { ModalService } from '../../../services/modal.service';
 import { getRequiredAmount } from '../../../core/constants/registration.constants';
-import { getEnabledGatewayProviderOptions, getPaymentCallbackUrl } from '../../../core/utils/payment-config.util';
+import {
+  getDefaultGatewayProvider,
+  getEnabledGatewayProviderOptions,
+  getPaymentCallbackUrl,
+} from '../../../core/utils/payment-config.util';
+import { isUsdtInitiateResponse } from '../../../services/payment-initiate.mapper';
+import { UsdtDepositComponent } from '../../../components/usdt-deposit/usdt-deposit.component';
 
 interface PackageCard {
   name: string;
@@ -45,12 +50,11 @@ const STATIC_DETAILS: Record<string, PackageStaticInfo> = {
 @Component({
   selector: 'app-package-upgrade',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, DialogModule, SelectModule],
+  imports: [CommonModule, FormsModule, ButtonModule, DialogModule, SelectModule, UsdtDepositComponent],
   templateUrl: './package-upgrade.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PackageUpgradeComponent implements OnInit {
-  private router = inject(Router);
   private userService = inject(UserService);
   private paymentService = inject(PaymentService);
   private loadingService = inject(LoadingService);
@@ -67,13 +71,19 @@ export class PackageUpgradeComponent implements OnInit {
 
   showConfirmDialog = signal(false);
   selectedPackage = signal<PackageCard | null>(null);
-  selectedProvider = signal<PaymentGatewayProvider>('PAYSTACK');
+  selectedProvider = signal<PaymentGatewayProvider>(
+    getDefaultGatewayProvider('NGN'),
+  );
+  usdtPayment = signal<InitiatePaymentResponse | null>(null);
 
   providerOptions = computed(() =>
     getEnabledGatewayProviderOptions(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD')
   );
 
   ngOnInit(): void {
+    this.selectedProvider.set(
+      getDefaultGatewayProvider(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD'),
+    );
     this.loadUpgradeOptions();
   }
 
@@ -118,36 +128,33 @@ export class PackageUpgradeComponent implements OnInit {
 
   private buildPackageCards(options: UpgradeOption[], currentPkg: string, currentIdx: number): PackageCard[] {
     const currency = this.displayCurrency();
-    
+
     return PACKAGE_ORDER.map((name, idx) => {
       const details = STATIC_DETAILS[name] ?? STATIC_DETAILS['SILVER'];
       const isCurrent = name === currentPkg;
       const isDowngrade = idx <= currentIdx && !isCurrent;
-      
-      // Find matching live upgrade option
-      const liveOpt = options.find(opt => opt.package.toUpperCase() === name);
-      
+
+      const liveOpt = options.find((opt) => opt.package.toUpperCase() === name);
+
       let price = getRequiredAmount(name, currency);
       let benefits = details.benefits;
-      let optCurrency: string = currency;
-      
-      if (liveOpt) {
+
+      if (liveOpt && liveOpt.currency.toUpperCase() === currency) {
         price = liveOpt.price;
-        optCurrency = liveOpt.currency;
         if (liveOpt.benefits && Array.isArray(liveOpt.benefits)) {
           benefits = liveOpt.benefits;
         }
       }
-      
+
       return {
         name,
         price,
-        currency: optCurrency,
+        currency,
         isCurrent,
         isDowngrade,
         benefits,
         color: details.color,
-        icon: details.icon
+        icon: details.icon,
       };
     });
   }
@@ -174,11 +181,9 @@ export class PackageUpgradeComponent implements OnInit {
         const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
         if (gatewayUrl) {
           window.location.href = gatewayUrl;
-        } else if (res.reference) {
-          this.router.navigate(['/auth/register/payment-pending'], {
-            queryParams: { reference: res.reference },
-            state: { reference: res.reference }
-          });
+        } else if (isUsdtInitiateResponse(res)) {
+          this.usdtPayment.set(res);
+          this.cdr.markForCheck();
         } else {
           this.modalService.open(
             'error',
@@ -203,7 +208,38 @@ export class PackageUpgradeComponent implements OnInit {
   cancelUpgrade(): void {
     this.showConfirmDialog.set(false);
     this.selectedPackage.set(null);
-    this.selectedProvider.set('PAYSTACK');
+    this.selectedProvider.set(getDefaultGatewayProvider(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD'));
+    this.usdtPayment.set(null);
+  }
+
+  onUsdtVerified(): void {
+    this.usdtPayment.set(null);
+    this.showConfirmDialog.set(false);
+    this.selectedPackage.set(null);
+    this.userService.fetchProfile().subscribe({
+      next: () => {
+        this.loadUpgradeOptions();
+        this.modalService.open(
+          'success',
+          'Upgrade Complete',
+          'Your package has been upgraded successfully.',
+        );
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.modalService.open(
+          'success',
+          'Payment Verified',
+          'Your payment was verified. Your package will update shortly.',
+        );
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  onUsdtBack(): void {
+    this.usdtPayment.set(null);
+    this.cdr.markForCheck();
   }
 
   onProviderChange(provider: PaymentGatewayProvider): void {

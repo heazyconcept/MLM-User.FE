@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { ApiService } from './api.service';
 import { Observable, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { map, catchError, tap } from 'rxjs/operators';
 
 export interface Product {
   id: string;
@@ -123,13 +123,17 @@ export class ProductService {
   }
 
   getProductById(id: string): Observable<Product | undefined> {
-    const existing = this.productsState().find((p) => p.id === id);
-    if (existing) {
-      return of(existing);
-    }
-
     return this.api.get<any>(`products/${id}`).pipe(
       map((res) => this.mapProduct(res)),
+      tap((mapped) => {
+        const current = this.productsState();
+        const idx = current.findIndex((p) => p.id === id);
+        if (idx >= 0) {
+          const updated = [...current];
+          updated[idx] = mapped;
+          this.productsState.set(updated);
+        }
+      }),
       catchError(() => of(undefined)),
     );
   }
@@ -186,28 +190,34 @@ export class ProductService {
   }
 
   private mapProduct(item: any): Product {
-    const memberPriceNGN = Number(item.currentPrice?.memberPriceNGN ?? item.currentPrice?.basePrice ?? 0);
-    const nonMemberPriceNGN = Number(item.currentPrice?.nonMemberPriceNGN ?? item.currentPrice?.basePrice ?? 0);
+    const cp = item.currentPrice;
+    const displayCurrency = (cp?.displayCurrency ?? 'NGN') as 'NGN' | 'USD';
+    const memberDisplayPrice = Number(
+      cp?.memberDisplayPrice ?? cp?.memberPriceNGN ?? cp?.basePrice ?? 0,
+    );
+    const nonMemberDisplayPrice = Number(
+      cp?.nonMemberDisplayPrice ?? cp?.nonMemberPriceNGN ?? cp?.basePrice ?? 0,
+    );
+    const memberPriceNGN = Number(cp?.memberPriceNGN ?? memberDisplayPrice);
+    const nonMemberPriceNGN = Number(cp?.nonMemberPriceNGN ?? nonMemberDisplayPrice);
 
-    const priceStatus = item.priceStatus ?? (item.currentPrice ? 'active' : 'unpriced');
+    const priceStatus = item.priceStatus ?? (cp ? 'active' : 'unpriced');
     const purchasable = item.purchasable ?? (priceStatus === 'active' && item.status === 'ACTIVE');
-    const availableFrom = item.availableFrom ?? null;
+    const availableFrom = item.availableFrom ?? cp?.effectiveFrom ?? null;
 
-    // A product is in stock only if it is active and purchasable (has an effective price)
-    const inStock = item.status === 'ACTIVE' && purchasable;
+    const inStock = purchasable;
 
     return {
       id: item.id,
       name: item.name,
-      description: item.description,
+      description: item.description ?? '',
       memberPriceNGN,
       nonMemberPriceNGN,
-      // Keep `price` for existing purchase/order flows; use member price as default.
-      price: memberPriceNGN,
-      currency: 'NGN',
-      pv: item.currentPrice ? item.currentPrice.pv || 0 : 0,
-      directReferralPv: item.currentPrice ? item.currentPrice.directReferralPv || 0 : 0,
-      cpv: item.currentPrice ? item.currentPrice.cpv || 0 : 0,
+      price: memberDisplayPrice,
+      currency: displayCurrency,
+      pv: cp ? cp.pv || 0 : 0,
+      directReferralPv: cp ? cp.directReferralPv || 0 : 0,
+      cpv: cp ? cp.cpv || 0 : 0,
       category: item.category ? item.category.name.toLowerCase() : 'other',
       images:
         item.images && item.images.length > 0

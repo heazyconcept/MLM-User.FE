@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  getDefaultGatewayProvider,
   getEnabledGatewayProviderOptions,
   getMerchantCallbackUrl,
   getPaymentCallbackUrl,
@@ -22,14 +23,25 @@ describe('payment-config.util', () => {
     );
   });
 
-  it('reports flutterwave as enabled in production config', () => {
+  it('reports provider flags from production config', () => {
     expect(isPaymentProviderEnabled('flutterwave')).toBe(true);
-    expect(isPaymentProviderEnabled('paystack')).toBe(true);
-    expect(isPaymentProviderEnabled('usdt')).toBe(false);
+    expect(isPaymentProviderEnabled('paystack')).toBe(false);
+    expect(isPaymentProviderEnabled('usdt')).toBe(true);
   });
 
-  it('includes flutterwave in NGN gateway options when enabled', () => {
+  it('includes only USDT in USD gateway options when enabled', () => {
+    const options = getEnabledGatewayProviderOptions('USD');
+    expect(options.map((opt) => opt.value)).toEqual(['USDT']);
+    expect(options.find((opt) => opt.value === 'USDT')?.label).toBe('USDT (Crypto)');
+  });
+
+  it('includes only Flutterwave in NGN gateway options when paystack is disabled', () => {
     const options = getEnabledGatewayProviderOptions('NGN');
-    expect(options.map((opt) => opt.value)).toEqual(['PAYSTACK', 'FLUTTERWAVE']);
+    expect(options.map((opt) => opt.value)).toEqual(['FLUTTERWAVE']);
+  });
+
+  it('defaults NGN to Flutterwave and USD to USDT', () => {
+    expect(getDefaultGatewayProvider('NGN')).toBe('FLUTTERWAVE');
+    expect(getDefaultGatewayProvider('USD')).toBe('USDT');
   });
 });

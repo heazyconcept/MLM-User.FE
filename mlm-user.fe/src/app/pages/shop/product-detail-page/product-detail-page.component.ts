@@ -29,6 +29,11 @@ import { DrawerModule } from 'primeng/drawer';
 import { OrderPreviewComponent } from '../../orders/order-preview/order-preview.component';
 import { PurchaseThankYouModalComponent } from '../../../components/purchase-thank-you-modal/purchase-thank-you-modal.component';
 import { InvoiceModalComponent } from '../../../components/invoice-modal/invoice-modal.component';
+import {
+  canPurchaseProduct,
+  formatAvailableFrom,
+  formatCatalogPrice,
+} from '../../../core/utils/product-catalog.util';
 
 @Component({
   selector: 'app-product-detail-page',
@@ -132,7 +137,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
 
   onAddToCart(): void {
     const p = this.product();
-    if (!p || !p.inStock) return;
+    if (!p || !canPurchaseProduct(p)) return;
     const result = this.cartService.addItem(p, this.quantity());
     if (result.success) {
       this.messageService.add({
@@ -153,7 +158,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
 
   onBuyNow(): void {
     const p = this.product();
-    if (!p || !p.inStock) return;
+    if (!p || !canPurchaseProduct(p)) return;
     const ref = this.dialogService.open(PurchaseSummaryModalComponent, {
       data: {
         mode: 'single',
@@ -217,17 +222,25 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
   }
 
   formatCurrency(amount: number): string {
-    return `₦${amount.toLocaleString('en-US')}`;
+    const p = this.product();
+    return formatCatalogPrice(amount, p?.currency ?? 'NGN');
   }
 
   formatAvailableDate(dateStr: string | null | undefined): string {
-    if (!dateStr) return '';
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
-    } catch {
-      return '';
+    return formatAvailableFrom(dateStr);
+  }
+
+  canPurchase(p: Product): boolean {
+    return canPurchaseProduct(p);
+  }
+
+  buyNowLabel(p: Product): string {
+    if (p.priceStatus === 'scheduled' && p.availableFrom) {
+      return `Available from ${formatAvailableFrom(p.availableFrom)}`;
     }
+    if (p.priceStatus === 'scheduled') return 'Out of Stock';
+    if (p.priceStatus === 'unpriced') return 'Unavailable';
+    return 'Buy Now';
   }
 
   closeFulfilmentDrawer(): void {
