@@ -443,7 +443,7 @@
 
       <div class="space-y-2">
         <p-button
-          [label]="selectedPaymentSource() === 'PAYSTACK' ? 'Proceed to Payment' : 'Confirm Upgrade'"
+          [label]="isGatewayPaymentSource(selectedPaymentSource()) ? 'Proceed to Payment' : 'Confirm Upgrade'"
           icon="pi pi-arrow-right"
           (onClick)="confirmUpgrade()"
           [disabled]="actionLoading()"

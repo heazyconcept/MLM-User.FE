@@ -15,6 +15,7 @@ import {
   MerchantService,
   type MerchantType,
   type MerchantFeePaymentSource,
+  isMerchantGatewaySource,
   type MerchantProfile,
   type MerchantCategoryConfig,
   type InitiateMerchantFeeResponse,
@@ -24,6 +25,11 @@ import { UserService } from '../../../services/user.service';
 import { RealTimeNotificationService } from '../../../services/realtime-notification.service';
 import { ButtonModule } from 'primeng/button';
 import { NIGERIAN_STATES } from '../../../core/constants/states.constants';
+import {
+  GATEWAY_REFERENCE_QUERY_PARAMS,
+  resolvePaymentReference,
+} from '../../../core/utils/payment-reference.util';
+import { getMerchantCallbackUrl } from '../../../core/utils/payment-config.util';
 
 @Component({
   selector: 'app-merchant-apply',
@@ -115,6 +121,7 @@ export class MerchantApplyComponent implements OnInit {
     { label: 'Registration Wallet', value: 'REGISTRATION_WALLET' },
     { label: 'Cash Wallet', value: 'CASH_WALLET' },
     { label: 'Paystack (Gateway)', value: 'PAYSTACK' },
+    { label: 'Flutterwave (Gateway)', value: 'FLUTTERWAVE' },
   ];
 
   ngOnInit(): void {
@@ -124,9 +131,7 @@ export class MerchantApplyComponent implements OnInit {
   }
 
   private handleGatewayVerification(): void {
-    const reference = this.route.snapshot.queryParamMap.get('reference');
-    const trxref = this.route.snapshot.queryParamMap.get('trxref');
-    const paymentReference = reference || trxref;
+    const paymentReference = resolvePaymentReference(this.route.snapshot.queryParamMap);
 
     if (!paymentReference) return;
 
@@ -140,7 +145,7 @@ export class MerchantApplyComponent implements OnInit {
         );
         this.router.navigate([], {
           relativeTo: this.route,
-          queryParams: { reference: null, trxref: null },
+          queryParams: GATEWAY_REFERENCE_QUERY_PARAMS,
           queryParamsHandling: 'merge',
           replaceUrl: true,
         });
@@ -236,8 +241,8 @@ export class MerchantApplyComponent implements OnInit {
       source,
       merchantId,
     };
-    if (source === 'PAYSTACK') {
-      payload.callbackUrl = window.location.origin + '/merchant/apply';
+    if (isMerchantGatewaySource(source)) {
+      payload.callbackUrl = getMerchantCallbackUrl('/merchant/apply');
     }
     return this.merchantService.initiateMerchantFeePayment(payload);
   }

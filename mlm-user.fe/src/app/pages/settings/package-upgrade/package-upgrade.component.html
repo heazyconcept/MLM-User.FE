@@ -151,6 +151,21 @@
         </p>
       </div>
 
+      <div class="flex flex-col gap-1.5">
+        <label for="upgrade-provider" class="text-sm font-medium text-mlm-text">Payment method</label>
+        <p-select
+          inputId="upgrade-provider"
+          [options]="providerOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="selectedProvider()"
+          (ngModelChange)="onProviderChange($event)"
+          placeholder="Select payment method"
+          styleClass="w-full"
+          appendTo="body">
+        </p-select>
+      </div>
+
       <div class="space-y-2">
         <p-button
           label="Proceed to Payment"

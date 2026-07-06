@@ -2,10 +2,12 @@ import { Component, inject, ChangeDetectionStrategy, signal, ChangeDetectorRef, 
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { PaymentService } from '../../services/payment.service';
+import { PaymentService, type PaymentGatewayProvider } from '../../services/payment.service';
 import { UserService } from '../../services/user.service';
+import { getPaymentCallbackUrl } from '../../core/utils/payment-config.util';
 
 const REFERENCE_STORAGE_KEY = 'mlm_registration_payment_reference';
+const REGISTRATION_PROVIDER_KEY = 'mlm_registration_payment_provider';
 
 @Component({
   selector: 'app-payment-pending',
@@ -54,11 +56,14 @@ export class PaymentPendingComponent implements OnInit {
     const user = this.userService.currentUser();
     const packageName = user?.package ?? 'SILVER';
     const currency = user?.currency ?? 'NGN';
-    const callbackUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/payment/callback`
-      : undefined;
+    const callbackUrl = getPaymentCallbackUrl();
 
-    this.paymentService.initiateRegistrationPayment(packageName, currency, callbackUrl).subscribe({
+    const provider =
+      (typeof sessionStorage !== 'undefined'
+        ? (sessionStorage.getItem(REGISTRATION_PROVIDER_KEY) as PaymentGatewayProvider | null)
+        : null) ?? 'PAYSTACK';
+
+    this.paymentService.initiateRegistrationPayment(packageName, currency, callbackUrl, provider).subscribe({
       next: (res) => {
         this.isRestarting.set(false);
         this.cdr.markForCheck();

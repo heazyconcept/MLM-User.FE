@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { PaymentService } from '../../services/payment.service';
 import { UserService } from '../../services/user.service';
 import { WalletService } from '../../services/wallet.service';
+import { resolvePaymentReference } from '../../core/utils/payment-reference.util';
 
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const WALLET_FUNDING_FLOW = 'wallet_funding';
@@ -35,8 +36,7 @@ export class PaymentCallbackComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
 
   ngOnInit(): void {
-    const queryParams = this.route.snapshot.queryParamMap;
-    const reference = queryParams.get('reference') ?? queryParams.get('trxref');
+    const reference = resolvePaymentReference(this.route.snapshot.queryParamMap);
     if (!reference) {
       this.status.set('error');
       this.errorMessage.set('No payment reference found. Please try again from the registration flow.');

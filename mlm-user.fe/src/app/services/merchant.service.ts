@@ -32,7 +32,15 @@ export type StockDisputeStatus =
   | 'ADMIN_ACCEPTED'
   | 'MERCHANT_ACKNOWLEDGED'
   | 'CLOSED';
-export type MerchantFeePaymentSource = 'REGISTRATION_WALLET' | 'CASH_WALLET' | 'PAYSTACK';
+export type MerchantFeePaymentSource =
+  | 'REGISTRATION_WALLET'
+  | 'CASH_WALLET'
+  | 'PAYSTACK'
+  | 'FLUTTERWAVE';
+
+export function isMerchantGatewaySource(source: MerchantFeePaymentSource): boolean {
+  return source === 'PAYSTACK' || source === 'FLUTTERWAVE';
+}
 
 /* ── Interfaces ────────────────────────────────────────────────── */
 
