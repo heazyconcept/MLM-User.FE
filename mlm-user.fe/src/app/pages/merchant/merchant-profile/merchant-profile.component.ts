@@ -18,6 +18,7 @@ import { MessageModule } from 'primeng/message';
 import {
   MerchantService,
   MerchantFeePaymentSource,
+  isMerchantGatewaySource,
   MerchantType,
   MerchantUpgradeOption,
   MerchantUpgradeOptionsResponse,
@@ -26,6 +27,11 @@ import {
 import { UserService } from '../../../services/user.service';
 import { EarningsService } from '../../../services/earnings.service';
 import { NIGERIAN_STATES } from '../../../core/constants/states.constants';
+import {
+  GATEWAY_REFERENCE_QUERY_PARAMS,
+  resolvePaymentReference,
+} from '../../../core/utils/payment-reference.util';
+import { getMerchantCallbackUrl } from '../../../core/utils/payment-config.util';
 
 const TIER_STYLES: Record<MerchantType, { color: string; icon: string }> = {
   REGIONAL: { color: 'from-sky-400 to-sky-600', icon: 'pi-map-marker' },
@@ -87,6 +93,7 @@ export class MerchantProfileComponent implements OnInit {
     { label: 'Registration Wallet', value: 'REGISTRATION_WALLET' },
     { label: 'Cash Wallet', value: 'CASH_WALLET' },
     { label: 'Paystack (Gateway)', value: 'PAYSTACK' },
+    { label: 'Flutterwave (Gateway)', value: 'FLUTTERWAVE' },
   ];
 
   showUpgradeSection = computed(() => {
@@ -150,9 +157,7 @@ export class MerchantProfileComponent implements OnInit {
   }
 
   private handleGatewayVerification(): void {
-    const reference =
-      this.route.snapshot.queryParamMap.get('reference') ||
-      this.route.snapshot.queryParamMap.get('trxref');
+    const reference = resolvePaymentReference(this.route.snapshot.queryParamMap);
 
     if (!reference) return;
 
@@ -167,7 +172,7 @@ export class MerchantProfileComponent implements OnInit {
         );
         this.router.navigate([], {
           relativeTo: this.route,
-          queryParams: { reference: null, trxref: null },
+          queryParams: GATEWAY_REFERENCE_QUERY_PARAMS,
           queryParamsHandling: 'merge',
           replaceUrl: true,
         });
@@ -213,6 +218,10 @@ export class MerchantProfileComponent implements OnInit {
     return this.paymentSources.find((s) => s.value === source)?.label ?? source;
   }
 
+  isGatewayPaymentSource(source: MerchantFeePaymentSource): boolean {
+    return isMerchantGatewaySource(source);
+  }
+
   selectUpgradeTarget(option: MerchantUpgradeOption): void {
     this.upgradeActionError.set('');
     this.selectedTarget.set(option);
@@ -234,8 +243,8 @@ export class MerchantProfileComponent implements OnInit {
       targetType: target.merchantType,
     };
 
-    if (source === 'PAYSTACK' && typeof window !== 'undefined') {
-      payload.callbackUrl = `${window.location.origin}/merchant/profile`;
+    if (isMerchantGatewaySource(source)) {
+      payload.callbackUrl = getMerchantCallbackUrl('/merchant/profile');
     }
 
     this.merchantService.initiateMerchantUpgrade(payload).subscribe((res) => {

@@ -101,4 +101,53 @@ describe('PaymentService', () => {
       req.flush(mockResponse);
     });
   });
+
+  describe('initiateRegistrationPayment', () => {
+    it('should send FLUTTERWAVE provider in request body', () => {
+      const callbackUrl = 'https://dashboard.example.com/auth/payment/callback';
+
+      service
+        .initiateRegistrationPayment('SILVER', 'NGN', callbackUrl, 'FLUTTERWAVE')
+        .subscribe((res) => {
+          expect(res.reference).toBe('ref-flw');
+          expect(res.gatewayUrl).toBe('https://checkout.flutterwave.com/pay/abc');
+        });
+
+      const req = httpMock.expectOne(`${baseUrl}/payments/registration/initiate`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({
+        package: 'SILVER',
+        currency: 'NGN',
+        callbackUrl,
+        provider: 'FLUTTERWAVE',
+      });
+      req.flush({
+        reference: 'ref-flw',
+        gatewayUrl: 'https://checkout.flutterwave.com/pay/abc',
+      });
+    });
+  });
+
+  describe('initiateUpgradePayment', () => {
+    it('should send FLUTTERWAVE provider in request body', () => {
+      const callbackUrl = 'https://dashboard.example.com/auth/payment/callback';
+
+      service.initiateUpgradePayment('GOLD', callbackUrl, 'FLUTTERWAVE').subscribe((res) => {
+        expect(res.reference).toBe('ref-upgrade-flw');
+        expect(res.gatewayUrl).toBe('https://checkout.flutterwave.com/pay/xyz');
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/payments/upgrade/initiate`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({
+        targetPackage: 'GOLD',
+        callbackUrl,
+        provider: 'FLUTTERWAVE',
+      });
+      req.flush({
+        reference: 'ref-upgrade-flw',
+        gatewayUrl: 'https://checkout.flutterwave.com/pay/xyz',
+      });
+    });
+  });
 });

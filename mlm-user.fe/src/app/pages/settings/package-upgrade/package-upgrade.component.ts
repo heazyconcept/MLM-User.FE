@@ -1,13 +1,16 @@
-import { Component, inject, signal, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { SelectModule } from 'primeng/select';
 import { UserService } from '../../../services/user.service';
-import { PaymentService, UpgradeOption } from '../../../services/payment.service';
+import { PaymentService, UpgradeOption, type PaymentGatewayProvider } from '../../../services/payment.service';
 import { LoadingService } from '../../../services/loading.service';
 import { ModalService } from '../../../services/modal.service';
 import { getRequiredAmount } from '../../../core/constants/registration.constants';
+import { getEnabledGatewayProviderOptions, getPaymentCallbackUrl } from '../../../core/utils/payment-config.util';
 
 interface PackageCard {
   name: string;
@@ -42,7 +45,7 @@ const STATIC_DETAILS: Record<string, PackageStaticInfo> = {
 @Component({
   selector: 'app-package-upgrade',
   standalone: true,
-  imports: [CommonModule, ButtonModule, DialogModule],
+  imports: [CommonModule, FormsModule, ButtonModule, DialogModule, SelectModule],
   templateUrl: './package-upgrade.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -64,6 +67,11 @@ export class PackageUpgradeComponent implements OnInit {
 
   showConfirmDialog = signal(false);
   selectedPackage = signal<PackageCard | null>(null);
+  selectedProvider = signal<PaymentGatewayProvider>('PAYSTACK');
+
+  providerOptions = computed(() =>
+    getEnabledGatewayProviderOptions(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD')
+  );
 
   ngOnInit(): void {
     this.loadUpgradeOptions();
@@ -155,11 +163,9 @@ export class PackageUpgradeComponent implements OnInit {
     if (!pkg) return;
 
     this.loadingService.show();
-    const callbackUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/payment/callback`
-      : undefined;
+    const callbackUrl = getPaymentCallbackUrl();
 
-    this.paymentService.initiateUpgradePayment(pkg.name, callbackUrl).subscribe({
+    this.paymentService.initiateUpgradePayment(pkg.name, callbackUrl, this.selectedProvider()).subscribe({
       next: (res) => {
         this.loadingService.hide();
         this.showConfirmDialog.set(false);
@@ -197,6 +203,12 @@ export class PackageUpgradeComponent implements OnInit {
   cancelUpgrade(): void {
     this.showConfirmDialog.set(false);
     this.selectedPackage.set(null);
+    this.selectedProvider.set('PAYSTACK');
+  }
+
+  onProviderChange(provider: PaymentGatewayProvider): void {
+    this.selectedProvider.set(provider);
+    this.cdr.markForCheck();
   }
 
   formatPrice(price: number, currency: string): string {

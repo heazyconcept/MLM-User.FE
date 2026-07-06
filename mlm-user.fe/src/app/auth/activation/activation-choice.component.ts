@@ -14,10 +14,13 @@ import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { MessageModule } from 'primeng/message';
-import { PaymentService } from '../../services/payment.service';
+import { PaymentService, type PaymentGatewayProvider } from '../../services/payment.service';
 import { UserService } from '../../services/user.service';
 import { RegistrationService, type RegistrationWallet, type ManualRegistrationPayment } from '../../services/registration.service';
 import { getRequiredAmount, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, IPV_PERCENT, NGN_TO_USD_RATE } from '../../core/constants/registration.constants';
+import { getEnabledGatewayProviderOptions, getPaymentCallbackUrl } from '../../core/utils/payment-config.util';
+
+const REGISTRATION_PROVIDER_KEY = 'mlm_registration_payment_provider';
 
 @Component({
   selector: 'app-activation-choice',
@@ -39,6 +42,11 @@ export class ActivationChoiceComponent implements OnInit {
   activating = signal(false);
   errorMessage = signal<string | null>(null);
   pendingManualPayment = signal<ManualRegistrationPayment | null>(null);
+  selectedProvider = signal<PaymentGatewayProvider>('PAYSTACK');
+
+  gatewayOptions = computed(() =>
+    getEnabledGatewayProviderOptions(this.userCurrency() === 'NGN' ? 'NGN' : 'USD')
+  );
 
   userCurrency = computed(() => this.userService.currentUser()?.currency ?? 'NGN');
   userPackage = computed(() => this.userService.currentUser()?.package ?? 'NICKEL');
@@ -130,7 +138,7 @@ export class ActivationChoiceComponent implements OnInit {
     });
   }
 
-  onFundViaPaystack(): void {
+  onFundOnline(): void {
     if (this.payingOnline()) return;
     this.payingOnline.set(true);
     this.errorMessage.set(null);
@@ -139,11 +147,14 @@ export class ActivationChoiceComponent implements OnInit {
     const user = this.userService.currentUser();
     const packageName = this.selectedPackage();
     const currency = user?.currency ?? 'NGN';
-    const callbackUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/payment/callback`
-      : undefined;
+    const provider = this.selectedProvider();
+    const callbackUrl = getPaymentCallbackUrl();
 
-    this.paymentService.initiateRegistrationPayment(packageName, currency, callbackUrl).subscribe({
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(REGISTRATION_PROVIDER_KEY, provider);
+    }
+
+    this.paymentService.initiateRegistrationPayment(packageName, currency, callbackUrl, provider).subscribe({
       next: (res) => {
         this.payingOnline.set(false);
         this.cdr.markForCheck();
@@ -202,6 +213,11 @@ export class ActivationChoiceComponent implements OnInit {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  onProviderChange(provider: PaymentGatewayProvider): void {
+    this.selectedProvider.set(provider);
+    this.cdr.markForCheck();
   }
 
   formatAmount(amount: number, currency: 'NGN' | 'USD'): string {

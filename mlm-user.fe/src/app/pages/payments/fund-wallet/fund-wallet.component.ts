@@ -9,20 +9,13 @@ import { SelectModule } from 'primeng/select';
 import { PaymentService } from '../../../services/payment.service';
 import { UserService } from '../../../services/user.service';
 import { ModalService } from '../../../services/modal.service';
+import { getEnabledGatewayProviderOptions, getPaymentCallbackUrl } from '../../../core/utils/payment-config.util';
+import type { PaymentGatewayProvider } from '../../../services/payment.service';
 
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const WALLET_FUNDING_FLOW = 'wallet_funding';
 
-type ProviderOption = 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT';
-
-const PROVIDER_OPTIONS_NGN: { value: ProviderOption; label: string }[] = [
-  { value: 'PAYSTACK', label: 'Paystack (Card, Bank Transfer)' },
-  { value: 'FLUTTERWAVE', label: 'Flutterwave (Card, Mobile Money)' }
-];
-
-const PROVIDER_OPTIONS_USD: { value: ProviderOption; label: string }[] = [
-  { value: 'USDT', label: 'USDT (Manual)' }
-];
+type ProviderOption = PaymentGatewayProvider;
 
 @Component({
   selector: 'app-fund-wallet',
@@ -50,7 +43,7 @@ export class FundWalletComponent implements OnInit {
   displayCurrency = this.userService.displayCurrency;
   currencySymbol = computed(() => (this.displayCurrency() === 'NGN' ? '₦' : '$'));
   providerOptions = computed(() =>
-    this.displayCurrency() === 'NGN' ? PROVIDER_OPTIONS_NGN : PROVIDER_OPTIONS_USD
+    getEnabledGatewayProviderOptions(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD')
   );
 
   fundForm = this.fb.group({
@@ -93,9 +86,7 @@ export class FundWalletComponent implements OnInit {
     if (amount == null || amount < 0.01 || !provider) return;
 
     this.isSubmitting.set(true);
-    const callbackUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/payment/callback`
-      : undefined;
+    const callbackUrl = getPaymentCallbackUrl();
 
     this.paymentService.initiateWalletFunding(amount, provider, callbackUrl, walletType ?? 'CASH').subscribe({
       next: (res) => {

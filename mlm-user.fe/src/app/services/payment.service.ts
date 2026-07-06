@@ -12,14 +12,6 @@ export interface InitiateRegistrationPaymentResponse {
   gatewayUrl?: string;
 }
 
-export interface UpgradeOption {
-  package: string;
-  price: number;
-  currency: string;
-  currentPackage: boolean;
-  benefits?: string[];
-}
-
 export interface PaymentRecord {
   id: string;
   userId: string;
@@ -34,6 +26,16 @@ export interface PaymentRecord {
   createdAt: Date;
 }
 
+export type PaymentGatewayProvider = 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT';
+
+export interface UpgradeOption {
+  package: string;
+  price: number;
+  currency: string;
+  currentPackage: boolean;
+  benefits?: string[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -44,7 +46,7 @@ export class PaymentService {
     packageName: string,
     currency: string,
     callbackUrl?: string,
-    provider?: 'PAYSTACK' | 'USDT'
+    provider?: PaymentGatewayProvider
   ): Observable<InitiateRegistrationPaymentResponse> {
     const body: Record<string, unknown> = { package: packageName, currency };
     // Only send callbackUrl when valid (backend @IsUrl rejects localhost)
@@ -71,7 +73,7 @@ export class PaymentService {
 
   initiateWalletFunding(
     amount: number,
-    provider: 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT',
+    provider: PaymentGatewayProvider,
     callbackUrl?: string,
     walletType: 'CASH' | 'VOUCHER' = 'CASH'
   ): Observable<InitiateRegistrationPaymentResponse> {
@@ -94,7 +96,7 @@ export class PaymentService {
   /** POST /payments/registration-wallet-funding/initiate */
   initiateRegistrationWalletFunding(
     amount: number,
-    provider: 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT',
+    provider: PaymentGatewayProvider,
     callbackUrl?: string
   ): Observable<InitiateRegistrationPaymentResponse> {
     const body: Record<string, unknown> = { amount, provider };
@@ -142,12 +144,16 @@ export class PaymentService {
 
   initiateUpgradePayment(
     targetPackage: string,
-    callbackUrl?: string
+    callbackUrl?: string,
+    provider?: PaymentGatewayProvider
   ): Observable<InitiateRegistrationPaymentResponse> {
     const body: Record<string, unknown> = { targetPackage };
     const isValidUrl = callbackUrl && /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(callbackUrl);
     if (isValidUrl) {
       body['callbackUrl'] = callbackUrl;
+    }
+    if (provider) {
+      body['provider'] = provider;
     }
     return this.api
       .post<Record<string, unknown>>('payments/upgrade/initiate', body)

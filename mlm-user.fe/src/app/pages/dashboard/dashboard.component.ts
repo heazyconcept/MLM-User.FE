@@ -36,6 +36,7 @@ import {
 } from '../../services/dashboard.service';
 import { RegistrationService, type RegistrationWallet } from '../../services/registration.service';
 import { RegistrationFundingComponent } from '../wallet/registration-funding/registration-funding.component';
+import { getPaymentCallbackUrl } from '../../core/utils/payment-config.util';
 import { DialogService } from 'primeng/dynamicdialog';
 import { MerchantService, MerchantStatus, MerchantType } from '../../services/merchant.service';
 import { getRequiredAmount } from '../../core/constants/registration.constants';
@@ -967,10 +968,7 @@ getPackageColor(): string {
       const user = this.currentUser();
       const packageName = user?.package ?? 'SILVER';
       const currency = user?.currency ?? 'NGN';
-      const callbackUrl =
-        typeof window !== 'undefined'
-          ? `${window.location.origin}/auth/payment/callback`
-          : undefined;
+      const callbackUrl = getPaymentCallbackUrl();
 
       this.paymentService
         .initiateRegistrationPayment(packageName, currency, callbackUrl)

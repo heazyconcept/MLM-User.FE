@@ -10,23 +10,16 @@ import { DynamicDialogConfig, DynamicDialogRef, DynamicDialogModule } from 'prim
 import { PaymentService } from '../../../services/payment.service';
 import { UserService } from '../../../services/user.service';
 import { WalletService } from '../../../services/wallet.service';
+import { getEnabledGatewayProviderOptions, getPaymentCallbackUrl } from '../../../core/utils/payment-config.util';
 import { getRequiredAmount, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, NGN_TO_USD_RATE } from '../../../core/constants/registration.constants';
+import type { PaymentGatewayProvider } from '../../../services/payment.service';
 
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const REGISTRATION_FUNDING_FLOW = 'registration_funding';
 /** After Paystack return, payment-callback navigates here if set (e.g. Create Referral flow). */
 const REGISTRATION_FUND_RETURN_PATH_KEY = 'mlm_registration_fund_return_path';
 
-type ProviderOption = 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT';
-
-const PROVIDER_OPTIONS_NGN: { value: ProviderOption; label: string }[] = [
-  { value: 'PAYSTACK', label: 'Paystack (Card, Bank Transfer)' },
-  { value: 'FLUTTERWAVE', label: 'Flutterwave (Card, Mobile Money)' }
-];
-
-const PROVIDER_OPTIONS_USD: { value: ProviderOption; label: string }[] = [
-  { value: 'USDT', label: 'USDT (Manual Transfer)' }
-];
+type ProviderOption = PaymentGatewayProvider;
 
 @Component({
   selector: 'app-registration-funding',
@@ -207,7 +200,7 @@ export class RegistrationFundingComponent {
   });
 
   providerOptions = computed(() =>
-    this.currency() === 'NGN' ? PROVIDER_OPTIONS_NGN : PROVIDER_OPTIONS_USD
+    getEnabledGatewayProviderOptions(this.currency() === 'NGN' ? 'NGN' : 'USD')
   );
 
   fundForm: FormGroup;
@@ -235,9 +228,7 @@ export class RegistrationFundingComponent {
 
     this.isSubmitting.set(true);
 
-    const callbackUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/auth/payment/callback`
-      : undefined;
+    const callbackUrl = getPaymentCallbackUrl();
 
     this.paymentService.initiateRegistrationWalletFunding(
       amount,
