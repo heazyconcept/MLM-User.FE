@@ -24,7 +24,11 @@
               }}</span>
               @if (p.priceStatus === 'scheduled') {
                 <span class="text-xs font-semibold text-mlm-error">Out of Stock</span>
-                <!-- ({{ formatAvailableDate(p.availableFrom) }}) -->
+                @if (p.availableFrom) {
+                  <span class="text-xs text-mlm-secondary">
+                    · Available from {{ formatAvailableDate(p.availableFrom) }}
+                  </span>
+                }
               } @else if (p.priceStatus === 'unpriced') {
                 <span class="text-xs font-semibold text-mlm-error">Unavailable</span>
               } @else if (p.inStock) {
@@ -70,7 +74,7 @@
               <app-quantity-selector
                 [min]="1"
                 [value]="quantity()"
-                [disabled]="!p.inStock"
+                [disabled]="!canPurchase(p)"
                 (valueChange)="onQuantityChange($event)"
               >
               </app-quantity-selector>
@@ -101,7 +105,7 @@
               <button
                 type="button"
                 (click)="onAddToCart()"
-                [disabled]="!p.inStock"
+                [disabled]="!canPurchase(p)"
                 class="flex-1 py-4 border-2 border-mlm-primary text-mlm-primary text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-mlm-primary/5 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 Add to Cart
@@ -109,13 +113,11 @@
               <button
                 type="button"
                 (click)="onBuyNow()"
-                [disabled]="!p.inStock"
+                [disabled]="!canPurchase(p)"
                 class="flex-1 py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl hover:bg-brand-green-dark shadow-lg shadow-mlm-primary/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all"
               >
-                @if (p.priceStatus === 'scheduled') {
-                  Out of Stock
-                } @else if (p.priceStatus === 'unpriced') {
-                  Unavailable
+                @if (p.priceStatus === 'scheduled' || p.priceStatus === 'unpriced') {
+                  {{ buyNowLabel(p) }}
                 } @else {
                   Buy Now
                 }

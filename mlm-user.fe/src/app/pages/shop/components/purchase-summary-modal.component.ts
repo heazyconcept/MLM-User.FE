@@ -9,6 +9,7 @@ import {
   PendingCheckoutData,
   SingleCheckoutData,
 } from '../../../services/cart-checkout.service';
+import { formatCatalogPrice } from '../../../core/utils/product-catalog.util';
 
 @Component({
   selector: 'app-purchase-summary-modal',
@@ -85,7 +86,15 @@ export class PurchaseSummaryModalComponent {
   }
 
   formatCurrency(amount: number): string {
-    return `₦${amount.toLocaleString('en-US')}`;
+    const currency =
+      this.mode === 'cart'
+        ? (this.cartItems[0]?.product.currency ?? 'NGN')
+        : (this.product?.currency ?? 'NGN');
+    return formatCatalogPrice(amount, currency);
+  }
+
+  lineCurrency(line: CartLineItem): 'NGN' | 'USD' {
+    return line.product.currency;
   }
 
   walletLabel(): string {

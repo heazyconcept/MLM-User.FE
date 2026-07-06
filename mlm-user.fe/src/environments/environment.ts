@@ -7,9 +7,9 @@ export const environment = {
     appUrl: 'https://dashboard.segulahglobal-herbal.com',
     callbackUrl: 'https://dashboard.segulahglobal-herbal.com/auth/payment/callback',
     providers: {
-      paystack: true,
+      paystack: false,
       flutterwave: true,
-      usdt: false,
+      usdt: true,
     },
   },
 };

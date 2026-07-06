@@ -150,4 +150,32 @@ describe('PaymentService', () => {
       });
     });
   });
+
+  describe('USDT initiate mapping', () => {
+    it('maps gatewayData on wallet funding initiate', () => {
+      service.initiateWalletFunding(100, 'USDT', 'https://cb', 'VOUCHER').subscribe((res) => {
+        expect(res.reference).toBe('ref-usdt');
+        expect(res.gatewayData?.usdtAmount).toBe(100.5);
+        expect(res.gatewayUrl).toBeUndefined();
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/payments/wallet-funding/initiate`);
+      req.flush({
+        paymentId: 'pay-1',
+        reference: 'ref-usdt',
+        amount: 100.5,
+        currency: 'USD',
+        gatewayData: {
+          coin: 'USDT',
+          network: 'TRC20',
+          depositAddress: 'TAddr',
+          memo: 'ref-usdt',
+          usdtAmount: 100.5,
+          displayAmount: 100.5,
+          displayCurrency: 'USD',
+          instructions: 'Include memo',
+        },
+      });
+    });
+  });
 });

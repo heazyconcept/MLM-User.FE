@@ -12,7 +12,7 @@
       <p-message severity="error" [text]="errorMessage()!" class="w-full mb-4"></p-message>
     }
 
-    @if (pendingManualPayment()) {
+    @if (pendingManualPayment() && userCurrency() === 'NGN') {
       <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
         <p class="text-sm font-semibold text-slate-900 mb-1">Bank transfer under review</p>
         <p class="text-xs text-slate-600 mb-2">
@@ -75,7 +75,13 @@
               <i class="pi pi-globe text-2xl text-mlm-primary"></i>
               <div class="flex-1">
                 <h2 class="font-semibold text-slate-900">Pay online</h2>
-                <p class="text-sm text-slate-500">Pay securely via card, bank transfer, or mobile money</p>
+                <p class="text-sm text-slate-500">
+                  @if (userCurrency() === 'USD') {
+                    Pay with USDT (crypto) on the next screen.
+                  } @else {
+                    Pay securely via card, bank transfer, or mobile money
+                  }
+                </p>
               </div>
             </div>
 
@@ -104,21 +110,23 @@
             </p-button>
           </div>
 
-          <a
-            routerLink="/auth/activation/bank-transfer"
-            class="p-4 rounded-xl border-2 border-slate-200 transition-all hover:border-mlm-primary hover:bg-mlm-primary/5 block"
-          >
-            <div class="flex items-center gap-3">
-              <i class="pi pi-building text-2xl text-mlm-primary"></i>
-              <div class="flex-1">
-                <h2 class="font-semibold text-slate-900">Pay via bank transfer</h2>
-                <p class="text-sm text-slate-500">
-                  Transfer to our company account and upload your receipt
-                </p>
+          @if (userCurrency() === 'NGN') {
+            <a
+              routerLink="/auth/activation/bank-transfer"
+              class="p-4 rounded-xl border-2 border-slate-200 transition-all hover:border-mlm-primary hover:bg-mlm-primary/5 block"
+            >
+              <div class="flex items-center gap-3">
+                <i class="pi pi-building text-2xl text-mlm-primary"></i>
+                <div class="flex-1">
+                  <h2 class="font-semibold text-slate-900">Pay via bank transfer</h2>
+                  <p class="text-sm text-slate-500">
+                    Transfer to our company account and upload your receipt
+                  </p>
+                </div>
+                <i class="pi pi-arrow-right text-mlm-primary"></i>
               </div>
-              <i class="pi pi-arrow-right text-mlm-primary"></i>
-            </div>
-          </a>
+            </a>
+          }
 
           @if (balanceShortfall() > 0) {
             <p class="text-xs text-slate-500 text-center">

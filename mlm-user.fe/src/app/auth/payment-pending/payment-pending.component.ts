@@ -4,15 +4,18 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { PaymentService, type PaymentGatewayProvider } from '../../services/payment.service';
 import { UserService } from '../../services/user.service';
-import { getPaymentCallbackUrl } from '../../core/utils/payment-config.util';
+import { getDefaultGatewayProvider, getPaymentCallbackUrl } from '../../core/utils/payment-config.util';
+import { saveUsdtPaymentSession, loadUsdtPaymentSession, clearUsdtPaymentSession } from '../../core/utils/usdt-payment-storage.util';
+import { isUsdtInitiateResponse } from '../../services/payment-initiate.mapper';
+import { UsdtDepositComponent } from '../../components/usdt-deposit/usdt-deposit.component';
+import type { InitiatePaymentResponse } from '../../services/payment.service';
 
-const REFERENCE_STORAGE_KEY = 'mlm_registration_payment_reference';
 const REGISTRATION_PROVIDER_KEY = 'mlm_registration_payment_provider';
 
 @Component({
   selector: 'app-payment-pending',
   standalone: true,
-  imports: [CommonModule, RouterModule, ButtonModule],
+  imports: [CommonModule, RouterModule, ButtonModule, UsdtDepositComponent],
   templateUrl: './payment-pending.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
@@ -23,30 +26,32 @@ export class PaymentPendingComponent implements OnInit {
   private paymentService = inject(PaymentService);
   private userService = inject(UserService);
 
-  reference = signal<string>('');
-  isVerifying = signal(false);
+  usdtPayment = signal<InitiatePaymentResponse | null>(null);
   isRestarting = signal(false);
+  missingSession = signal(false);
 
   ngOnInit(): void {
-    const ref =
-      this.route.snapshot.queryParamMap.get('reference') ??
-      (history.state as { reference?: string })?.reference ??
-      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(REFERENCE_STORAGE_KEY) : null) ??
-      '';
-    this.reference.set(ref);
-    if (ref && typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem(REFERENCE_STORAGE_KEY, ref);
+    const session = loadUsdtPaymentSession();
+    if (session?.gatewayData) {
+      this.usdtPayment.set(session);
+      this.missingSession.set(false);
+    } else {
+      const ref =
+        this.route.snapshot.queryParamMap.get('reference') ??
+        (history.state as { reference?: string })?.reference ??
+        '';
+      if (ref) {
+        this.missingSession.set(true);
+      }
     }
     this.cdr.markForCheck();
   }
 
-  onVerify(): void {
-    const ref = this.reference();
-    if (!ref) return;
-    this.isVerifying.set(true);
-    this.cdr.markForCheck();
-    this.router.navigate(['/auth/payment/callback'], {
-      queryParams: { reference: ref }
+  onUsdtVerified(): void {
+    clearUsdtPaymentSession();
+    this.userService.fetchProfile().subscribe({
+      next: () => void this.router.navigate(['/auth/activation']),
+      error: () => void this.router.navigate(['/auth/activation']),
     });
   }
 
@@ -61,7 +66,7 @@ export class PaymentPendingComponent implements OnInit {
     const provider =
       (typeof sessionStorage !== 'undefined'
         ? (sessionStorage.getItem(REGISTRATION_PROVIDER_KEY) as PaymentGatewayProvider | null)
-        : null) ?? 'PAYSTACK';
+        : null) ?? getDefaultGatewayProvider(currency === 'NGN' ? 'NGN' : 'USD');
 
     this.paymentService.initiateRegistrationPayment(packageName, currency, callbackUrl, provider).subscribe({
       next: (res) => {
@@ -70,15 +75,11 @@ export class PaymentPendingComponent implements OnInit {
         const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
         if (gatewayUrl) {
           window.location.href = gatewayUrl;
-        } else if (res.reference) {
-          this.reference.set(res.reference);
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem(REFERENCE_STORAGE_KEY, res.reference);
-          }
-          this.router.navigate(['/auth/register/payment-pending'], {
-            queryParams: { reference: res.reference },
-            replaceUrl: true
-          });
+        } else if (isUsdtInitiateResponse(res)) {
+          saveUsdtPaymentSession({ ...res, flow: 'registration' });
+          this.usdtPayment.set(res);
+          this.missingSession.set(false);
+          this.router.navigate(['/auth/register/payment-pending'], { replaceUrl: true });
           this.cdr.markForCheck();
         }
       },

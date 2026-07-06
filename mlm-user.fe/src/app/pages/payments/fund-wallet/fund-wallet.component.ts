@@ -6,11 +6,16 @@ import { CardModule } from 'primeng/card';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
-import { PaymentService } from '../../../services/payment.service';
+import { PaymentService, type InitiatePaymentResponse, type PaymentGatewayProvider } from '../../../services/payment.service';
 import { UserService } from '../../../services/user.service';
 import { ModalService } from '../../../services/modal.service';
-import { getEnabledGatewayProviderOptions, getPaymentCallbackUrl } from '../../../core/utils/payment-config.util';
-import type { PaymentGatewayProvider } from '../../../services/payment.service';
+import {
+  getDefaultGatewayProvider,
+  getEnabledGatewayProviderOptions,
+  getPaymentCallbackUrl,
+} from '../../../core/utils/payment-config.util';
+import { isUsdtInitiateResponse } from '../../../services/payment-initiate.mapper';
+import { UsdtDepositComponent } from '../../../components/usdt-deposit/usdt-deposit.component';
 
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const WALLET_FUNDING_FLOW = 'wallet_funding';
@@ -27,7 +32,8 @@ type ProviderOption = PaymentGatewayProvider;
     CardModule,
     InputNumberModule,
     ButtonModule,
-    SelectModule
+    SelectModule,
+    UsdtDepositComponent,
   ],
   templateUrl: './fund-wallet.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -48,13 +54,12 @@ export class FundWalletComponent implements OnInit {
 
   fundForm = this.fb.group({
     amount: [null as number | null, [Validators.required, Validators.min(0.01)]],
-    provider: ['PAYSTACK' as ProviderOption, Validators.required],
+    provider: [getDefaultGatewayProvider('NGN') as ProviderOption, Validators.required],
     walletType: ['CASH' as 'CASH' | 'VOUCHER', Validators.required]
   });
 
   isSubmitting = signal(false);
-  showPendingView = signal(false);
-  pendingReference = signal('');
+  usdtPayment = signal<InitiatePaymentResponse | null>(null);
 
   constructor() {
     effect(() => {
@@ -98,11 +103,14 @@ export class FundWalletComponent implements OnInit {
             sessionStorage.setItem(PAYMENT_FLOW_KEY, WALLET_FUNDING_FLOW);
           }
           window.location.href = gatewayUrl;
-        } else if (res.reference) {
-          this.pendingReference.set(res.reference);
-          this.showPendingView.set(true);
+        } else if (isUsdtInitiateResponse(res)) {
+          this.usdtPayment.set(res);
         } else {
-          this.router.navigate(['/wallet']);
+          this.modalService.open(
+            'error',
+            'Payment Initiation Failed',
+            'No payment method was returned. Please try again or contact support.',
+          );
         }
       },
       error: (err) => {
@@ -114,17 +122,12 @@ export class FundWalletComponent implements OnInit {
     });
   }
 
-  onVerify(): void {
-    const ref = this.pendingReference();
-    if (!ref) return;
-    this.router.navigate(['/auth/payment/callback'], {
-      queryParams: { reference: ref }
-    });
+  onUsdtVerified(): void {
+    this.router.navigate(['/wallet'], { queryParams: { funded: 'true' } });
   }
 
-  onBack(): void {
-    this.showPendingView.set(false);
-    this.pendingReference.set('');
+  onUsdtBack(): void {
+    this.usdtPayment.set(null);
     const opts = this.providerOptions();
     this.fundForm.reset({ amount: null, provider: opts[0]?.value ?? 'USDT' });
   }

@@ -7,16 +7,21 @@ import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { MessageModule } from 'primeng/message';
 import { DynamicDialogConfig, DynamicDialogRef, DynamicDialogModule } from 'primeng/dynamicdialog';
-import { PaymentService } from '../../../services/payment.service';
+import { PaymentService, type InitiatePaymentResponse, type PaymentGatewayProvider } from '../../../services/payment.service';
 import { UserService } from '../../../services/user.service';
 import { WalletService } from '../../../services/wallet.service';
-import { getEnabledGatewayProviderOptions, getPaymentCallbackUrl } from '../../../core/utils/payment-config.util';
-import { getRequiredAmount, REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, NGN_TO_USD_RATE } from '../../../core/constants/registration.constants';
-import type { PaymentGatewayProvider } from '../../../services/payment.service';
+import {
+  getDefaultGatewayProvider,
+  getEnabledGatewayProviderOptions,
+  getPaymentCallbackUrl,
+} from '../../../core/utils/payment-config.util';
+import { isUsdtInitiateResponse } from '../../../services/payment-initiate.mapper';
+import { UsdtDepositComponent } from '../../../components/usdt-deposit/usdt-deposit.component';
+import { REGISTRATION_FEE_NGN, ADMIN_FEE_NGN, NGN_TO_USD_RATE } from '../../../core/constants/registration.constants';
 
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const REGISTRATION_FUNDING_FLOW = 'registration_funding';
-/** After Paystack return, payment-callback navigates here if set (e.g. Create Referral flow). */
+/** After gateway return, payment-callback navigates here if set (e.g. Create Referral flow). */
 const REGISTRATION_FUND_RETURN_PATH_KEY = 'mlm_registration_fund_return_path';
 
 type ProviderOption = PaymentGatewayProvider;
@@ -31,7 +36,8 @@ type ProviderOption = PaymentGatewayProvider;
     InputNumberModule,
     ButtonModule,
     SelectModule,
-    MessageModule
+    MessageModule,
+    UsdtDepositComponent,
   ],
   template: `
     <div class="space-y-5">
@@ -52,9 +58,6 @@ type ProviderOption = PaymentGatewayProvider;
               fluid="true"
               placeholder="0.00">
             </p-inputNumber>
-            <small class="text-xs text-gray-500">
-              {{ selectedPackageLabel() }} package requires {{ currencySymbol() }}{{ requiredAmount() | number:'1.2-2' }} total to activate.
-            </small>
             @if (fundForm.get('amount')?.invalid && (fundForm.get('amount')?.dirty || fundForm.get('amount')?.touched)) {
               <small class="text-red-500 text-xs">
                 @if (fundForm.get('amount')?.errors?.['required']) {
@@ -106,47 +109,13 @@ type ProviderOption = PaymentGatewayProvider;
         </form>
       }
 
-      @if (state() === 'pending') {
-        <!-- USDT Pending Reference View -->
-        <div class="flex flex-col items-center text-center space-y-4">
-          <div class="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center">
-            <i class="pi pi-credit-card text-xl text-blue-600" aria-hidden="true"></i>
-          </div>
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-1">Complete Your Payment</h3>
-            <p class="text-sm text-gray-500">
-              Use the reference below to complete your payment via USDT or bank transfer.
-            </p>
-          </div>
-          <div class="bg-gray-100 rounded-xl p-4 w-full">
-            <p class="text-[10px] font-medium text-gray-500 mb-1">Payment Reference</p>
-            <p class="font-mono font-semibold text-gray-900 break-all">{{ pendingReference() }}</p>
-          </div>
-
-          @if (verifyError()) {
-            <p-message severity="error" [text]="verifyError()" styleClass="w-full"></p-message>
-          }
-
-          <div class="flex gap-3 w-full">
-            <p-button
-              label="Back"
-              icon="pi pi-arrow-left"
-              [outlined]="true"
-              severity="secondary"
-              (onClick)="backToForm()"
-              [disabled]="isVerifying()"
-              styleClass="flex-1">
-            </p-button>
-            <p-button
-              label="I've Paid — Verify"
-              icon="pi pi-check"
-              severity="success"
-              (onClick)="onVerify()"
-              [loading]="isVerifying()"
-              styleClass="flex-1">
-            </p-button>
-          </div>
-        </div>
+      @if (state() === 'deposit' && usdtPayment(); as payment) {
+        <app-usdt-deposit
+          [payment]="payment"
+          title="Fund registration wallet"
+          (verified)="onUsdtVerified()"
+          (back)="backToForm()">
+        </app-usdt-deposit>
       }
 
     </div>
@@ -162,11 +131,9 @@ export class RegistrationFundingComponent {
   private userService = inject(UserService);
   private walletService = inject(WalletService);
 
-  state = signal<'form' | 'pending'>('form');
+  state = signal<'form' | 'deposit'>('form');
   isSubmitting = signal(false);
-  isVerifying = signal(false);
-  pendingReference = signal('');
-  verifyError = signal('');
+  usdtPayment = signal<InitiatePaymentResponse | null>(null);
   formError = signal('');
 
   currency = computed(() => this.userService.displayCurrency());
@@ -174,12 +141,6 @@ export class RegistrationFundingComponent {
 
   /** Package context for this funding flow (fixed for the modal session). */
   selectedPackage = signal('SILVER');
-  selectedPackageLabel = computed(() => {
-    const pkg = this.selectedPackage();
-    return pkg.charAt(0) + pkg.slice(1).toLowerCase();
-  });
-
-  requiredAmount = computed(() => getRequiredAmount(this.selectedPackage(), this.currency()));
 
   packageBaseOptions = [
     { label: 'Nickel', value: 'NICKEL' },
@@ -213,7 +174,7 @@ export class RegistrationFundingComponent {
 
     this.fundForm = this.fb.group({
       amount: [null as number | null, [Validators.required, Validators.min(1)]],
-      provider: [(currency === 'NGN' ? 'PAYSTACK' : 'USDT') as ProviderOption, Validators.required]
+      provider: [getDefaultGatewayProvider(currency === 'NGN' ? 'NGN' : 'USD') as ProviderOption, Validators.required]
     });
   }
 
@@ -240,7 +201,7 @@ export class RegistrationFundingComponent {
         const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
 
         if (gatewayUrl) {
-          // Gateway redirect (Paystack/Flutterwave)
+          // Gateway redirect (Flutterwave)
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem(PAYMENT_FLOW_KEY, REGISTRATION_FUNDING_FLOW);
             const returnPath = this.config.data?.['returnAfterFundingUrl'] as string | undefined;
@@ -251,10 +212,9 @@ export class RegistrationFundingComponent {
             }
           }
           window.location.href = gatewayUrl;
-        } else if (res.reference) {
-          // USDT pending reference
-          this.pendingReference.set(res.reference);
-          this.state.set('pending');
+        } else if (isUsdtInitiateResponse(res)) {
+          this.usdtPayment.set(res);
+          this.state.set('deposit');
         } else {
           this.ref.close(true);
         }
@@ -269,41 +229,22 @@ export class RegistrationFundingComponent {
     });
   }
 
-  onVerify(): void {
-    const reference = this.pendingReference();
-    if (!reference) return;
-
-    this.isVerifying.set(true);
-    this.verifyError.set('');
-
-    this.paymentService.verifyPayment(reference).subscribe({
-      next: () => {
-        this.isVerifying.set(false);
-        this.walletService.fetchWallets().subscribe();
-        this.ref.close(true);
-        const returnPath =
-          (this.config.data?.['returnAfterFundingUrl'] as string | undefined) ?? '/wallet';
-        const path = returnPath.startsWith('/') ? returnPath : '/wallet';
-        if (path === '/wallet') {
-          void this.router.navigate(['/wallet'], { queryParams: { funded: 'true' } });
-        } else {
-          void this.router.navigateByUrl(`${path}?registrationFunded=true`);
-        }
-      },
-      error: (err) => {
-        this.isVerifying.set(false);
-        const raw = err?.error?.message;
-        this.verifyError.set(
-          Array.isArray(raw) ? raw[0] : (raw ?? 'Could not verify payment. Please try again or contact support.')
-        );
-      }
-    });
+  onUsdtVerified(): void {
+    this.walletService.fetchWallets().subscribe();
+    this.ref.close(true);
+    const returnPath =
+      (this.config.data?.['returnAfterFundingUrl'] as string | undefined) ?? '/wallet';
+    const path = returnPath.startsWith('/') ? returnPath : '/wallet';
+    if (path === '/wallet') {
+      void this.router.navigate(['/wallet'], { queryParams: { funded: 'true' } });
+    } else {
+      void this.router.navigateByUrl(`${path}?registrationFunded=true`);
+    }
   }
 
   backToForm(): void {
     this.state.set('form');
-    this.pendingReference.set('');
-    this.verifyError.set('');
+    this.usdtPayment.set(null);
   }
 
   cancel(): void {

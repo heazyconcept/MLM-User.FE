@@ -16,6 +16,7 @@ import {
   type MerchantType,
   type MerchantFeePaymentSource,
   isMerchantGatewaySource,
+  isMerchantUsdtSource,
   type MerchantProfile,
   type MerchantCategoryConfig,
   type InitiateMerchantFeeResponse,
@@ -29,11 +30,13 @@ import {
   GATEWAY_REFERENCE_QUERY_PARAMS,
   resolvePaymentReference,
 } from '../../../core/utils/payment-reference.util';
-import { getMerchantCallbackUrl } from '../../../core/utils/payment-config.util';
+import { getMerchantCallbackUrl, isPaymentProviderEnabled } from '../../../core/utils/payment-config.util';
+import { UsdtDepositComponent } from '../../../components/usdt-deposit/usdt-deposit.component';
+import type { InitiatePaymentResponse } from '../../../services/payment.service';
 
 @Component({
   selector: 'app-merchant-apply',
-  imports: [CommonModule, RouterLink, FormsModule, ButtonModule],
+  imports: [CommonModule, RouterLink, FormsModule, ButtonModule, UsdtDepositComponent],
   templateUrl: './merchant-apply.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -115,14 +118,40 @@ export class MerchantApplyComponent implements OnInit {
 
   verificationMessage = signal('');
   verificationError = signal('');
+  usdtPayment = signal<InitiatePaymentResponse | null>(null);
+  usdtVerifyError = signal('');
 
   readonly merchantTypes: MerchantType[] = ['REGIONAL', 'NATIONAL', 'GLOBAL'];
-  readonly paymentSources: { label: string; value: MerchantFeePaymentSource }[] = [
+
+  private readonly walletPaymentSources: { label: string; value: MerchantFeePaymentSource }[] = [
     { label: 'Registration Wallet', value: 'REGISTRATION_WALLET' },
     { label: 'Cash Wallet', value: 'CASH_WALLET' },
-    { label: 'Paystack (Gateway)', value: 'PAYSTACK' },
-    { label: 'Flutterwave (Gateway)', value: 'FLUTTERWAVE' },
   ];
+
+  private readonly gatewayPaymentSources: {
+    label: string;
+    value: MerchantFeePaymentSource;
+    configKey: 'paystack' | 'flutterwave';
+  }[] = [
+    { label: 'Paystack', value: 'PAYSTACK', configKey: 'paystack' },
+    { label: 'Flutterwave', value: 'FLUTTERWAVE', configKey: 'flutterwave' },
+  ];
+
+  paymentSources = computed(() => {
+    const sources = [...this.walletPaymentSources];
+    if (this.userCurrency() === 'USD') {
+      if (isPaymentProviderEnabled('usdt')) {
+        sources.push({ label: 'USDT (Crypto)', value: 'USDT' });
+      }
+      return sources;
+    }
+    sources.push(
+      ...this.gatewayPaymentSources
+        .filter((source) => isPaymentProviderEnabled(source.configKey))
+        .map(({ label, value }) => ({ label, value })),
+    );
+    return sources;
+  });
 
   ngOnInit(): void {
     this.merchantService.fetchCategoryConfig();
@@ -254,9 +283,47 @@ export class MerchantApplyComponent implements OnInit {
     }
     if (res.gatewayUrl) {
       window.location.href = res.gatewayUrl;
+    } else if (res.gatewayData && res.reference) {
+      this.usdtPayment.set({
+        reference: res.reference,
+        amount: res.amount,
+        currency: res.currency,
+        gatewayData: res.gatewayData,
+        paymentId: res.paymentId,
+      });
     } else {
       this.handleWalletPaymentSuccess();
     }
+  }
+
+  onUsdtVerified(): void {
+    const reference = this.usdtPayment()?.reference;
+    if (!reference) return;
+
+    this.usdtVerifyError.set('');
+    this.merchantService.verifyMerchantFeePayment({ reference }).subscribe((verifyRes) => {
+      if (verifyRes?.success) {
+        this.usdtPayment.set(null);
+        this.verificationMessage.set(
+          verifyRes.message || 'Merchant fee verified. Your application is pending admin approval.',
+        );
+        setTimeout(() => this.realTimeNotifications.syncUnreadNotifications(), 2000);
+        void this.router.navigate(['/merchant/dashboard']);
+        return;
+      }
+      this.usdtVerifyError.set(
+        this.merchantService.error() || 'Payment could not be verified. Please contact support.',
+      );
+    });
+  }
+
+  onUsdtBack(): void {
+    this.usdtPayment.set(null);
+    this.usdtVerifyError.set('');
+  }
+
+  isUsdtPaymentSource(source: MerchantFeePaymentSource): boolean {
+    return isMerchantUsdtSource(source);
   }
 
   private handleWalletPaymentSuccess(): void {

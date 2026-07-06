@@ -37,6 +37,8 @@ import {
 import { RegistrationService, type RegistrationWallet } from '../../services/registration.service';
 import { RegistrationFundingComponent } from '../wallet/registration-funding/registration-funding.component';
 import { getPaymentCallbackUrl } from '../../core/utils/payment-config.util';
+import { saveUsdtPaymentSession } from '../../core/utils/usdt-payment-storage.util';
+import { isUsdtInitiateResponse } from '../../services/payment-initiate.mapper';
 import { DialogService } from 'primeng/dynamicdialog';
 import { MerchantService, MerchantStatus, MerchantType } from '../../services/merchant.service';
 import { getRequiredAmount } from '../../core/constants/registration.constants';
@@ -980,11 +982,9 @@ getPackageColor(): string {
             const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
             if (gatewayUrl) {
               window.location.href = gatewayUrl;
-            } else if (res.reference) {
-              this.router.navigate(['/auth/register/payment-pending'], {
-                queryParams: { reference: res.reference },
-                state: { reference: res.reference },
-              });
+            } else if (isUsdtInitiateResponse(res)) {
+              saveUsdtPaymentSession({ ...res, flow: 'registration' });
+              this.router.navigate(['/auth/register/payment-pending'], { replaceUrl: true });
             } else {
               this.modalService.open(
                 'error',

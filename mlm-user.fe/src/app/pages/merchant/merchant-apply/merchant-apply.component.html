@@ -28,6 +28,22 @@
         </div>
       }
 
+      @if (usdtPayment(); as payment) {
+        <div class="max-w-lg mx-auto bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+          @if (usdtVerifyError()) {
+            <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+              <p class="text-red-700 text-sm">{{ usdtVerifyError() }}</p>
+            </div>
+          }
+          <app-usdt-deposit
+            [payment]="payment"
+            title="Pay merchant registration fee"
+            (verified)="onUsdtVerified()"
+            (back)="onUsdtBack()">
+          </app-usdt-deposit>
+        </div>
+      } @else {
+
       @if (loading()) {
         <div class="flex items-center justify-center py-20">
           <div class="w-8 h-8 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"></div>
@@ -286,7 +302,7 @@
                 Payment Method
               </p>
               <div class="grid grid-cols-1 gap-2">
-                @for (source of paymentSources; track source.value) {
+                @for (source of paymentSources(); track source.value) {
                   <button
                     class="px-4 py-3.5 rounded-lg border text-left transition-all"
                     [class]="
@@ -350,6 +366,8 @@
           </div>
         }
       }
+      }
+
     </div>
   </main>
 </div>

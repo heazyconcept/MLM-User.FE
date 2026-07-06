@@ -5,7 +5,7 @@ const PAYMENT_CALLBACK_PATH = '/auth/payment/callback';
 
 const VALID_CALLBACK_URL = /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
 
-/** Payment callback URL for gateway redirects (Paystack, Flutterwave). */
+/** Payment callback URL for gateway redirects (Flutterwave). */
 export function getPaymentCallbackUrl(): string | undefined {
   const configured = environment.payments?.callbackUrl?.trim();
   if (configured && VALID_CALLBACK_URL.test(configured)) {
@@ -39,8 +39,8 @@ export const GATEWAY_PROVIDER_OPTIONS: {
   label: string;
   configKey: Lowercase<PaymentGatewayProvider>;
 }[] = [
-  { value: 'PAYSTACK', label: 'Paystack (Card, Bank Transfer)', configKey: 'paystack' },
-  { value: 'FLUTTERWAVE', label: 'Flutterwave (Card, Mobile Money)', configKey: 'flutterwave' },
+  { value: 'PAYSTACK', label: 'Paystack', configKey: 'paystack' },
+  { value: 'FLUTTERWAVE', label: 'Flutterwave', configKey: 'flutterwave' },
   { value: 'USDT', label: 'USDT (Crypto)', configKey: 'usdt' },
 ];
 
@@ -52,8 +52,17 @@ export function getEnabledGatewayProviderOptions(
   );
 
   if (currency === 'USD') {
-    return enabled.filter((opt) => opt.value === 'USDT' || opt.value === 'PAYSTACK');
+    return enabled.filter((opt) => opt.value === 'USDT');
   }
 
   return enabled.filter((opt) => opt.value !== 'USDT');
+}
+
+/** First enabled provider for a currency (NGN → Flutterwave; USD → USDT when available). */
+export function getDefaultGatewayProvider(currency: 'NGN' | 'USD' = 'NGN'): PaymentGatewayProvider {
+  const options = getEnabledGatewayProviderOptions(currency);
+  if (currency === 'USD') {
+    return options.find((opt) => opt.value === 'USDT')?.value ?? options[0]?.value ?? 'USDT';
+  }
+  return options.find((opt) => opt.value === 'FLUTTERWAVE')?.value ?? options[0]?.value ?? 'FLUTTERWAVE';
 }

@@ -19,6 +19,7 @@ import {
   MerchantService,
   MerchantFeePaymentSource,
   isMerchantGatewaySource,
+  isMerchantUsdtSource,
   MerchantType,
   MerchantUpgradeOption,
   MerchantUpgradeOptionsResponse,
@@ -31,7 +32,9 @@ import {
   GATEWAY_REFERENCE_QUERY_PARAMS,
   resolvePaymentReference,
 } from '../../../core/utils/payment-reference.util';
-import { getMerchantCallbackUrl } from '../../../core/utils/payment-config.util';
+import { getMerchantCallbackUrl, isPaymentProviderEnabled } from '../../../core/utils/payment-config.util';
+import { UsdtDepositComponent } from '../../../components/usdt-deposit/usdt-deposit.component';
+import type { InitiatePaymentResponse } from '../../../services/payment.service';
 
 const TIER_STYLES: Record<MerchantType, { color: string; icon: string }> = {
   REGIONAL: { color: 'from-sky-400 to-sky-600', icon: 'pi-map-marker' },
@@ -50,6 +53,7 @@ const TIER_STYLES: Record<MerchantType, { color: string; icon: string }> = {
     DialogModule,
     InputTextModule,
     MessageModule,
+    UsdtDepositComponent,
   ],
   templateUrl: './merchant-profile.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -88,13 +92,38 @@ export class MerchantProfileComponent implements OnInit {
   upgradeActionError = signal('');
   verificationMessage = signal('');
   verificationError = signal('');
+  usdtPayment = signal<InitiatePaymentResponse | null>(null);
+  usdtVerifyError = signal('');
 
-  readonly paymentSources: { label: string; value: MerchantFeePaymentSource }[] = [
+  private readonly walletPaymentSources: { label: string; value: MerchantFeePaymentSource }[] = [
     { label: 'Registration Wallet', value: 'REGISTRATION_WALLET' },
     { label: 'Cash Wallet', value: 'CASH_WALLET' },
-    { label: 'Paystack (Gateway)', value: 'PAYSTACK' },
-    { label: 'Flutterwave (Gateway)', value: 'FLUTTERWAVE' },
   ];
+
+  private readonly gatewayPaymentSources: {
+    label: string;
+    value: MerchantFeePaymentSource;
+    configKey: 'paystack' | 'flutterwave';
+  }[] = [
+    { label: 'Paystack', value: 'PAYSTACK', configKey: 'paystack' },
+    { label: 'Flutterwave', value: 'FLUTTERWAVE', configKey: 'flutterwave' },
+  ];
+
+  paymentSources = computed(() => {
+    const sources = [...this.walletPaymentSources];
+    if (this.displayCurrency() === 'USD') {
+      if (isPaymentProviderEnabled('usdt')) {
+        sources.push({ label: 'USDT (Crypto)', value: 'USDT' });
+      }
+      return sources;
+    }
+    sources.push(
+      ...this.gatewayPaymentSources
+        .filter((source) => isPaymentProviderEnabled(source.configKey))
+        .map(({ label, value }) => ({ label, value })),
+    );
+    return sources;
+  });
 
   showUpgradeSection = computed(() => {
     if (!this.canUpgradeCategory()) return false;
@@ -215,11 +244,15 @@ export class MerchantProfileComponent implements OnInit {
   }
 
   getPaymentSourceLabel(source: MerchantFeePaymentSource): string {
-    return this.paymentSources.find((s) => s.value === source)?.label ?? source;
+    return this.paymentSources().find((s) => s.value === source)?.label ?? source;
   }
 
   isGatewayPaymentSource(source: MerchantFeePaymentSource): boolean {
     return isMerchantGatewaySource(source);
+  }
+
+  isUsdtPaymentSource(source: MerchantFeePaymentSource): boolean {
+    return isMerchantUsdtSource(source);
   }
 
   selectUpgradeTarget(option: MerchantUpgradeOption): void {
@@ -264,6 +297,18 @@ export class MerchantProfileComponent implements OnInit {
         return;
       }
 
+      if (res.gatewayData && res.reference) {
+        this.usdtPayment.set({
+          reference: res.reference,
+          amount: res.amount,
+          currency: res.currency,
+          gatewayData: res.gatewayData,
+          paymentId: res.paymentId,
+        });
+        this.cdr.markForCheck();
+        return;
+      }
+
       this.upgradeSuccessMessage.set(
         `Upgraded to ${this.getTypeLabel(target.merchantType)} Merchant successfully.`,
       );
@@ -278,6 +323,38 @@ export class MerchantProfileComponent implements OnInit {
     this.showConfirmDialog.set(false);
     this.selectedTarget.set(null);
     this.upgradeActionError.set('');
+    this.usdtPayment.set(null);
+    this.usdtVerifyError.set('');
+  }
+
+  onUsdtVerified(): void {
+    const reference = this.usdtPayment()?.reference;
+    if (!reference) return;
+
+    this.usdtVerifyError.set('');
+    this.merchantService.verifyMerchantUpgrade({ reference }).subscribe((verifyRes) => {
+      if (verifyRes?.success) {
+        this.usdtPayment.set(null);
+        this.upgradeSuccessMessage.set(
+          verifyRes.message || 'Merchant category upgraded successfully.',
+        );
+        this.refreshAfterUpgrade();
+        this.loadUpgradeOptions();
+        this.scrollToUpgradeSection();
+        this.cdr.markForCheck();
+        return;
+      }
+      this.usdtVerifyError.set(
+        this.merchantService.error() || 'Payment could not be verified. Please contact support.',
+      );
+      this.cdr.markForCheck();
+    });
+  }
+
+  onUsdtBack(): void {
+    this.usdtPayment.set(null);
+    this.usdtVerifyError.set('');
+    this.cdr.markForCheck();
   }
 
   private refreshAfterUpgrade(): void {

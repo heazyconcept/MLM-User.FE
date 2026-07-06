@@ -1,6 +1,11 @@
 import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Product } from '../../../services/product.service';
+import {
+  canPurchaseProduct,
+  formatAvailableFrom,
+  formatCatalogPrice,
+} from '../../../core/utils/product-catalog.util';
 
 @Component({
   selector: 'app-product-card',
@@ -44,6 +49,7 @@ export class ProductCardComponent {
 
   onAddToCartClick(event: Event): void {
     event.stopPropagation();
+    if (!canPurchaseProduct(this.product())) return;
     this.addToCart.emit(this.product());
   }
 
@@ -71,16 +77,14 @@ export class ProductCardComponent {
   }
 
   formatCurrency(amount: number): string {
-    return `₦${amount.toLocaleString('en-US')}`;
+    return formatCatalogPrice(amount, this.product().currency);
   }
 
   formatAvailableDate(dateStr: string | null | undefined): string {
-    if (!dateStr) return '';
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
-    } catch (e) {
-      return '';
-    }
+    return formatAvailableFrom(dateStr);
+  }
+
+  canPurchase(): boolean {
+    return canPurchaseProduct(this.product());
   }
 }

@@ -8,9 +8,9 @@ export const environment = {
     appUrl: '',
     callbackUrl: '',
     providers: {
-      paystack: true,
+      paystack: false,
       flutterwave: true,
-      usdt: false,
+      usdt: true,
     },
   },
 };

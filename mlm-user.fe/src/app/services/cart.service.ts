@@ -1,5 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Product } from './product.service';
+import { getUnavailableCartMessage } from '../core/utils/product-catalog.util';
 
 export interface CartLineItem {
   productId: string;
@@ -39,8 +40,8 @@ export class CartService {
   );
 
   addItem(product: Product, quantity = 1): { success: boolean; message?: string } {
-    if (!product.inStock || !product.purchasable) {
-      return { success: false, message: 'This product is not available for purchase.' };
+    if (!product.purchasable) {
+      return { success: false, message: getUnavailableCartMessage(product) };
     }
 
     const qty = Math.max(1, quantity);

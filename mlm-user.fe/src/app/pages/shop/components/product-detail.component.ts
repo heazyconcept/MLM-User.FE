@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Product } from '../../../services/product.service';
+import {
+  canPurchaseProduct,
+  formatAvailableFrom,
+  formatCatalogPrice,
+} from '../../../core/utils/product-catalog.util';
 import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 
@@ -66,6 +71,7 @@ export class ProductDetailComponent {
   }
 
   onBuyNow(): void {
+    if (!canPurchaseProduct(this.product)) return;
     this.isProcessing.set(true);
     
     // Simulate order processing
@@ -94,16 +100,14 @@ export class ProductDetailComponent {
   }
 
   formatCurrency(amount: number): string {
-    return `₦${amount.toLocaleString('en-US')}`;
+    return formatCatalogPrice(amount, this.product.currency);
   }
 
   formatAvailableDate(dateStr: string | null | undefined): string {
-    if (!dateStr) return '';
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
-    } catch (e) {
-      return '';
-    }
+    return formatAvailableFrom(dateStr);
+  }
+
+  canPurchase(): boolean {
+    return canPurchaseProduct(this.product);
   }
 }

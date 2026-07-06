@@ -3,6 +3,8 @@ import { Observable, of, throwError } from 'rxjs';
 import { map, catchError, tap, finalize, switchMap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { UserService } from './user.service';
+import type { UsdtGatewayData } from './payment.service';
+import { mapInitiatePaymentResponse } from './payment-initiate.mapper';
 
 /* ── Enums ─────────────────────────────────────────────────────── */
 
@@ -36,10 +38,15 @@ export type MerchantFeePaymentSource =
   | 'REGISTRATION_WALLET'
   | 'CASH_WALLET'
   | 'PAYSTACK'
-  | 'FLUTTERWAVE';
+  | 'FLUTTERWAVE'
+  | 'USDT';
 
 export function isMerchantGatewaySource(source: MerchantFeePaymentSource): boolean {
   return source === 'PAYSTACK' || source === 'FLUTTERWAVE';
+}
+
+export function isMerchantUsdtSource(source: MerchantFeePaymentSource): boolean {
+  return source === 'USDT';
 }
 
 /* ── Interfaces ────────────────────────────────────────────────── */
@@ -325,8 +332,12 @@ export interface InitiateMerchantFeeBody {
 
 export interface InitiateMerchantFeeResponse {
   message: string;
-  gatewayUrl?: string;
+  paymentId?: string;
   reference?: string;
+  amount?: number;
+  currency?: 'NGN' | 'USD';
+  gatewayUrl?: string;
+  gatewayData?: UsdtGatewayData;
 }
 
 export interface VerifyMerchantFeeBody {
@@ -364,6 +375,7 @@ export interface InitiateMerchantUpgradeResponse {
   amount: number;
   currency: 'NGN' | 'USD';
   gatewayUrl?: string;
+  gatewayData?: UsdtGatewayData;
 }
 
 export interface VerifyMerchantUpgradeBody {
@@ -559,7 +571,8 @@ export class MerchantService {
   ): Observable<InitiateMerchantFeeResponse | null> {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
-    return this.api.post<InitiateMerchantFeeResponse>('merchants/merchant-fee/initiate', body).pipe(
+    return this.api.post<Record<string, unknown>>('merchants/merchant-fee/initiate', body).pipe(
+      map((res) => this.mapMerchantFeeInitiateResponse(res)),
       switchMap((res) => this.refreshProfileFromApi().pipe(map(() => res))),
       catchError((err) => {
         console.error('[MerchantService] initiateMerchantFeePayment failed', err);
@@ -608,8 +621,9 @@ export class MerchantService {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
     return this.api
-      .post<InitiateMerchantUpgradeResponse>('merchants/merchant-upgrade/initiate', body)
+      .post<Record<string, unknown>>('merchants/merchant-upgrade/initiate', body)
       .pipe(
+        map((res) => this.mapMerchantUpgradeInitiateResponse(res)),
         switchMap((res) => this.refreshProfileFromApi().pipe(map(() => res))),
         catchError((err) => {
           console.error('[MerchantService] initiateMerchantUpgrade failed', err);
@@ -1308,6 +1322,33 @@ export class MerchantService {
 
   clearError(): void {
     this.errorSignal.set(null);
+  }
+
+  private mapMerchantFeeInitiateResponse(res: Record<string, unknown>): InitiateMerchantFeeResponse {
+    const mapped = mapInitiatePaymentResponse(res);
+    return {
+      message: String(res['message'] ?? ''),
+      paymentId: mapped.paymentId,
+      reference: mapped.reference,
+      amount: mapped.amount,
+      currency: mapped.currency,
+      gatewayUrl: mapped.gatewayUrl,
+      gatewayData: mapped.gatewayData,
+    };
+  }
+
+  private mapMerchantUpgradeInitiateResponse(
+    res: Record<string, unknown>,
+  ): InitiateMerchantUpgradeResponse {
+    const mapped = mapInitiatePaymentResponse(res);
+    return {
+      paymentId: mapped.paymentId ?? String(res['paymentId'] ?? ''),
+      reference: mapped.reference,
+      amount: mapped.amount ?? Number(res['amount'] ?? 0),
+      currency: (mapped.currency ?? res['currency'] ?? 'USD') as 'NGN' | 'USD',
+      gatewayUrl: mapped.gatewayUrl,
+      gatewayData: mapped.gatewayData,
+    };
   }
 
   private normalizeAllocationsResponse(
