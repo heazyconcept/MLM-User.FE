@@ -16,19 +16,7 @@ export function formatAvailableFrom(dateStr: string | null | undefined): string 
 }
 
 export function formatNextActiveFrom(dateStr: string | null | undefined): string {
-  if (!dateStr) return '';
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleString(undefined, {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  } catch {
-    return '';
-  }
+  return formatAvailableFrom(dateStr);
 }
 
 export function getNextActiveFrom(product: Product): string | null {

@@ -82,10 +82,11 @@ describe('product-catalog.util', () => {
     expect(label).toContain('2026');
   });
 
-  it('formatNextActiveFrom includes time', () => {
+  it('formatNextActiveFrom shows date only', () => {
     const formatted = formatNextActiveFrom('2026-07-10T15:48:00.000Z');
     expect(formatted).toContain('2026');
     expect(formatted).toContain('July');
+    expect(formatted).not.toMatch(/\d{1,2}:\d{2}/);
   });
 
   it('formatAvailableFrom parses ISO dates', () => {
