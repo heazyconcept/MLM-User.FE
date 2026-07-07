@@ -54,7 +54,7 @@
                     <p class="text-xs text-mlm-secondary mt-1">{{ line.product.pv }} PV each</p>
                     @if (isLineUnavailable(line)) {
                       <p class="text-xs font-semibold text-mlm-error mt-2">
-                        This item is no longer available. Remove it to continue.
+                        {{ unavailableLineMessage(line) }} Remove it to continue.
                       </p>
                     }
                   </div>

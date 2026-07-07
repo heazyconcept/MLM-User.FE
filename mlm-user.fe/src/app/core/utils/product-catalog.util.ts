@@ -15,16 +15,49 @@ export function formatAvailableFrom(dateStr: string | null | undefined): string 
   }
 }
 
+export function formatNextActiveFrom(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleString(undefined, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  } catch {
+    return '';
+  }
+}
+
+export function getNextActiveFrom(product: Product): string | null {
+  const next = product.nextPriceEffectiveFrom?.trim();
+  if (next) return next;
+  if (product.priceStatus === 'scheduled' && product.availableFrom) {
+    return product.availableFrom;
+  }
+  return null;
+}
+
+export function getNextActiveLabel(product: Product): string | null {
+  const from = getNextActiveFrom(product);
+  if (!from) return null;
+  const formatted = formatNextActiveFrom(from);
+  return formatted ? `Available from ${formatted}` : null;
+}
+
 export function canPurchaseProduct(product: Product): boolean {
   return product.purchasable;
 }
 
 export function getUnavailableCartMessage(product: Product): string {
+  const nextActive = getNextActiveLabel(product);
+  if (nextActive) {
+    return `This product is not available for purchase yet. ${nextActive}.`;
+  }
   if (product.priceStatus === 'scheduled') {
-    const from = formatAvailableFrom(product.availableFrom);
-    return from
-      ? `This product is not available for purchase yet. Available from ${from}.`
-      : 'This product is not available for purchase yet.';
+    return 'This product is not available for purchase yet.';
   }
   return 'This product is not available for purchase.';
 }

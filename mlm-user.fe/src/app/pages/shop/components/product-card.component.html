@@ -23,9 +23,9 @@
               Out of Stock
             }
           </span>
-          @if (product().priceStatus === 'scheduled' && product().availableFrom) {
+          @if (nextActiveLabel(); as nextActive) {
             <span class="text-[10px] font-bold text-mlm-secondary">
-              Available from {{ formatAvailableDate(product().availableFrom) }}
+              {{ nextActive }}
             </span>
           }
         </div>

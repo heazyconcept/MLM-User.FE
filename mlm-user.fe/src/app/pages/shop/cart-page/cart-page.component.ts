@@ -23,7 +23,8 @@ import { PurchaseSummaryModalComponent } from '../components/purchase-summary-mo
 import { OrderPreviewComponent } from '../../orders/order-preview/order-preview.component';
 import { PurchaseThankYouModalComponent } from '../../../components/purchase-thank-you-modal/purchase-thank-you-modal.component';
 import { InvoiceModalComponent } from '../../../components/invoice-modal/invoice-modal.component';
-import { formatCatalogPrice } from '../../../core/utils/product-catalog.util';
+import { Product } from '../../../services/product.service';
+import { formatCatalogPrice, getUnavailableCartMessage } from '../../../core/utils/product-catalog.util';
 
 @Component({
   selector: 'app-cart-page',
@@ -171,6 +172,10 @@ export class CartPageComponent implements OnDestroy {
 
   isLineUnavailable(line: { product: { purchasable: boolean } }): boolean {
     return !line.product.purchasable;
+  }
+
+  unavailableLineMessage(line: { product: Product }): string {
+    return getUnavailableCartMessage(line.product);
   }
 
   private cleanupLingeringDrawerMask(): void {
