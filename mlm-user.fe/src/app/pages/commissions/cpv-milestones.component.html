@@ -150,12 +150,12 @@
                       <th
                         class="text-left px-5 py-3 text-[11px] font-medium text-mlm-secondary uppercase tracking-widest"
                       >
-                        Source
+                        Description
                       </th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-mlm-secondary/15 bg-white">
-                    @for (h of cpvHistory(); track $index) {
+                    @for (h of cpvHistory(); track h.id ?? h.date + h.totalCpv + h.source) {
                       <tr>
                         <td class="px-5 py-4 text-sm text-mlm-secondary">
                           {{ h.date | date: 'MMM d, yyyy' }}
@@ -165,8 +165,13 @@
                         >
                           {{ h.totalCpv | number }} PV
                         </td>
-                        <td class="px-5 py-4 text-sm text-mlm-secondary">
-                          {{ getSourceLabel(h.source, h.pvType) }}
+                        <td class="px-5 py-4 text-sm text-mlm-text">
+                          <div class="font-medium">{{ getHistoryDescription(h) }}</div>
+                          @if (h.pvType) {
+                            <div class="text-[11px] text-mlm-secondary mt-0.5 capitalize">
+                              {{ h.pvType | lowercase }} PV
+                            </div>
+                          }
                         </td>
                       </tr>
                     }

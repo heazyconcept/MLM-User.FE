@@ -48,12 +48,16 @@ export interface CpvMilestoneDto {
 }
 
 export interface CpvHistoryDto {
+  id?: string;
   date: string;
   personalCpv: number;
   teamCpv: number;
   totalCpv: number;
   source?: string;
   pvType?: string;
+  description?: string;
+  sourceUsername?: string;
+  sourceUserId?: string;
 }
 
 export interface CpvSummaryDto {
@@ -402,12 +406,16 @@ export class EarningsService {
       }
 
       return {
+        id: t['id'] ? String(t['id']) : undefined,
         date: String(t['createdAt'] ?? t['date'] ?? ''),
         personalCpv: personalAmount,
         teamCpv: communityAmount,
         totalCpv: amount,
         source: t['source'] ? String(t['source']) : undefined,
-        pvType: t['pvType'] ? String(t['pvType']) : undefined
+        pvType: t['pvType'] ? String(t['pvType']) : undefined,
+        description: t['description'] ? String(t['description']) : undefined,
+        sourceUsername: t['sourceUsername'] ? String(t['sourceUsername']) : undefined,
+        sourceUserId: t['sourceUserId'] ? String(t['sourceUserId']) : undefined,
       };
     });
 

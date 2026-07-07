@@ -3,7 +3,7 @@ import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { CommissionService, MilestoneInfo } from '../../services/commission.service';
 import { UserService } from '../../services/user.service';
-import { EarningsService } from '../../services/earnings.service';
+import { EarningsService, CpvHistoryDto } from '../../services/earnings.service';
 import { EarningsTabsComponent } from './earnings-tabs.component';
 import { SkeletonModule } from 'primeng/skeleton';
 
@@ -58,6 +58,18 @@ export class CpvMilestonesComponent implements OnInit {
       return labels[normalized];
     }
     return normalized.replace(/_/g, ' ');
+  }
+
+  getHistoryDescription(entry: CpvHistoryDto): string {
+    if (entry.description?.trim()) {
+      return this.formatHistoryText(entry.description);
+    }
+    return this.getSourceLabel(entry.source, entry.pvType);
+  }
+
+  /** Strip @ username prefixes from API text for display */
+  private formatHistoryText(value: string): string {
+    return value.replace(/@(?=\w)/g, '');
   }
 
   ngOnInit(): void {
