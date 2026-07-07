@@ -34,7 +34,9 @@
       <span class="w-1 h-1 rounded-full bg-gray-300"></span>
       @if (product.priceStatus === 'scheduled') {
         <span class="text-xs font-semibold text-mlm-error">Out of Stock</span>
-        @if (product.availableFrom) {
+        @if (nextActiveLabel(); as nextActive) {
+          <span class="text-xs text-mlm-secondary">· {{ nextActive }}</span>
+        } @else if (product.availableFrom) {
           <span class="text-xs text-mlm-secondary">
             · Available from {{ formatAvailableDate(product.availableFrom) }}
           </span>
@@ -45,6 +47,9 @@
         <span class="text-xs font-semibold text-mlm-primary">In Stock</span>
       } @else {
         <span class="text-xs font-semibold text-mlm-error">Out of Stock</span>
+        @if (nextActiveLabel(); as nextActive) {
+          <span class="text-xs text-mlm-secondary">· {{ nextActive }}</span>
+        }
       }
     </div>
 

@@ -20,6 +20,8 @@ export interface Product {
   eligibleWallets: ('cash' | 'voucher' | 'autoship')[];
   purchasable: boolean;
   availableFrom: string | null;
+  /** When out of stock, next time the product becomes purchasable again. */
+  nextPriceEffectiveFrom: string | null;
   priceStatus: 'active' | 'scheduled' | 'unpriced';
 }
 
@@ -204,6 +206,8 @@ export class ProductService {
     const priceStatus = item.priceStatus ?? (cp ? 'active' : 'unpriced');
     const purchasable = item.purchasable ?? (priceStatus === 'active' && item.status === 'ACTIVE');
     const availableFrom = item.availableFrom ?? cp?.effectiveFrom ?? null;
+    const nextPriceEffectiveFrom =
+      item.nextPriceEffectiveFrom != null ? String(item.nextPriceEffectiveFrom) : null;
 
     const inStock = purchasable;
 
@@ -227,6 +231,7 @@ export class ProductService {
       eligibleWallets: this.resolveEligibleWallets(item),
       purchasable,
       availableFrom,
+      nextPriceEffectiveFrom,
       priceStatus,
     };
   }

@@ -22,19 +22,15 @@
               <span class="text-xs font-bold text-mlm-secondary uppercase tracking-widest">{{
                 p.category
               }}</span>
-              @if (p.priceStatus === 'scheduled') {
-                <span class="text-xs font-semibold text-mlm-error">Out of Stock</span>
-                @if (p.availableFrom) {
-                  <span class="text-xs text-mlm-secondary">
-                    · Available from {{ formatAvailableDate(p.availableFrom) }}
-                  </span>
-                }
-              } @else if (p.priceStatus === 'unpriced') {
+              @if (p.priceStatus === 'unpriced') {
                 <span class="text-xs font-semibold text-mlm-error">Unavailable</span>
               } @else if (p.inStock) {
                 <span class="text-xs font-semibold text-mlm-primary">In Stock</span>
               } @else {
                 <span class="text-xs font-semibold text-mlm-error">Out of Stock</span>
+                @if (nextActiveLabel(p); as nextActive) {
+                  <span class="text-xs text-mlm-secondary">· {{ nextActive }}</span>
+                }
               }
             </div>
 

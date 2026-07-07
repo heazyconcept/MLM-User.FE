@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Product } from '../../../services/product.service';
 import {
   canPurchaseProduct,
-  formatAvailableFrom,
   formatCatalogPrice,
+  getNextActiveLabel,
 } from '../../../core/utils/product-catalog.util';
 
 @Component({
@@ -80,8 +80,8 @@ export class ProductCardComponent {
     return formatCatalogPrice(amount, this.product().currency);
   }
 
-  formatAvailableDate(dateStr: string | null | undefined): string {
-    return formatAvailableFrom(dateStr);
+  nextActiveLabel(): string | null {
+    return getNextActiveLabel(this.product());
   }
 
   canPurchase(): boolean {

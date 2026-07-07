@@ -31,8 +31,8 @@ import { PurchaseThankYouModalComponent } from '../../../components/purchase-tha
 import { InvoiceModalComponent } from '../../../components/invoice-modal/invoice-modal.component';
 import {
   canPurchaseProduct,
-  formatAvailableFrom,
   formatCatalogPrice,
+  getNextActiveLabel,
 } from '../../../core/utils/product-catalog.util';
 
 @Component({
@@ -226,8 +226,8 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     return formatCatalogPrice(amount, p?.currency ?? 'NGN');
   }
 
-  formatAvailableDate(dateStr: string | null | undefined): string {
-    return formatAvailableFrom(dateStr);
+  nextActiveLabel(p: Product): string | null {
+    return getNextActiveLabel(p);
   }
 
   canPurchase(p: Product): boolean {
@@ -235,11 +235,11 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
   }
 
   buyNowLabel(p: Product): string {
-    if (p.priceStatus === 'scheduled' && p.availableFrom) {
-      return `Available from ${formatAvailableFrom(p.availableFrom)}`;
-    }
+    const nextActive = getNextActiveLabel(p);
+    if (nextActive) return nextActive;
     if (p.priceStatus === 'scheduled') return 'Out of Stock';
     if (p.priceStatus === 'unpriced') return 'Unavailable';
+    if (!p.purchasable) return 'Out of Stock';
     return 'Buy Now';
   }
 

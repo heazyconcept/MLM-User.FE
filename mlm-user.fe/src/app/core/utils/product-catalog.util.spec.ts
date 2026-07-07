@@ -3,6 +3,8 @@ import {
   canPurchaseProduct,
   formatAvailableFrom,
   formatCatalogPrice,
+  formatNextActiveFrom,
+  getNextActiveLabel,
   getUnavailableCartMessage,
 } from './product-catalog.util';
 import type { Product } from '../../services/product.service';
@@ -25,6 +27,7 @@ function baseProduct(overrides: Partial<Product> = {}): Product {
     eligibleWallets: ['voucher'],
     purchasable: true,
     availableFrom: null,
+    nextPriceEffectiveFrom: null,
     priceStatus: 'active',
     ...overrides,
   };
@@ -51,6 +54,38 @@ describe('product-catalog.util', () => {
     );
     expect(msg).toContain('not available for purchase yet');
     expect(msg).toContain('Available from');
+  });
+
+  it('getUnavailableCartMessage prefers nextPriceEffectiveFrom', () => {
+    const msg = getUnavailableCartMessage(
+      baseProduct({
+        purchasable: false,
+        inStock: false,
+        priceStatus: 'active',
+        nextPriceEffectiveFrom: '2026-07-10T15:48:00.000Z',
+      }),
+    );
+    expect(msg).toContain('not available for purchase yet');
+    expect(msg).toContain('Available from');
+    expect(msg).toContain('2026');
+  });
+
+  it('getNextActiveLabel uses nextPriceEffectiveFrom over availableFrom', () => {
+    const label = getNextActiveLabel(
+      baseProduct({
+        priceStatus: 'scheduled',
+        availableFrom: '2026-06-30T00:00:00.000Z',
+        nextPriceEffectiveFrom: '2026-07-10T15:48:00.000Z',
+      }),
+    );
+    expect(label).toContain('Available from');
+    expect(label).toContain('2026');
+  });
+
+  it('formatNextActiveFrom includes time', () => {
+    const formatted = formatNextActiveFrom('2026-07-10T15:48:00.000Z');
+    expect(formatted).toContain('2026');
+    expect(formatted).toContain('July');
   });
 
   it('formatAvailableFrom parses ISO dates', () => {

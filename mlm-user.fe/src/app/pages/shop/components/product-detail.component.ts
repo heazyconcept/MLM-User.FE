@@ -7,6 +7,7 @@ import {
   canPurchaseProduct,
   formatAvailableFrom,
   formatCatalogPrice,
+  getNextActiveLabel,
 } from '../../../core/utils/product-catalog.util';
 import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -105,6 +106,10 @@ export class ProductDetailComponent {
 
   formatAvailableDate(dateStr: string | null | undefined): string {
     return formatAvailableFrom(dateStr);
+  }
+
+  nextActiveLabel(): string | null {
+    return getNextActiveLabel(this.product);
   }
 
   canPurchase(): boolean {

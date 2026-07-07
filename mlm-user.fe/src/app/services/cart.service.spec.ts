@@ -20,6 +20,7 @@ function mockProduct(overrides: Partial<Product> = {}): Product {
     eligibleWallets: ['voucher'],
     purchasable: true,
     availableFrom: null,
+    nextPriceEffectiveFrom: null,
     priceStatus: 'active',
     ...overrides,
   };
