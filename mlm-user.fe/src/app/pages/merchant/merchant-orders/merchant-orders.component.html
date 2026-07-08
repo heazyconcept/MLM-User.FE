@@ -65,10 +65,16 @@
                         >{{ getFulfilmentLabel(order.fulfilmentMode) }}</span
                       >
                     </div>
-                    <p class="text-sm text-mlm-secondary">
-                      {{ order.user.email }} · {{ formatDate(order.createdAt) }}
+                    <p class="text-sm font-medium text-mlm-text">{{ getProductSummary(order) }}</p>
+                    <p class="text-sm text-mlm-secondary mt-1">
+                      {{ getBuyerUsername(order) }}
+                      @if (getBuyerPhone(order); as phone) {
+                        · {{ phone }}
+                      }
                     </p>
-                    <p class="text-xs text-mlm-secondary mt-1">{{ order.items.length }} item(s)</p>
+                    <p class="text-xs text-mlm-secondary mt-1">
+                      {{ formatDate(order.createdAt) }} · {{ order.items.length }} item(s)
+                    </p>
                   </div>
                   <div class="text-right shrink-0">
                     <span class="font-bold text-mlm-text">{{

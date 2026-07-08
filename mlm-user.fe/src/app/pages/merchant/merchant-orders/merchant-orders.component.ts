@@ -91,4 +91,19 @@ export class MerchantOrdersComponent implements OnInit {
   getFulfilmentLabel(mode: string): string {
     return mode === 'PICKUP' ? 'Pickup' : 'Delivery';
   }
+
+  getBuyerUsername(order: MerchantOrder): string {
+    return order.buyerUsername ?? order.user.username ?? order.user.email;
+  }
+
+  getBuyerPhone(order: MerchantOrder): string | null {
+    return order.buyerPhone ?? order.user.phone ?? null;
+  }
+
+  getProductSummary(order: MerchantOrder): string {
+    if (!order.items.length) return 'No items';
+    return order.items
+      .map((item) => `${item.productName} × ${item.quantity}`)
+      .join(', ');
+  }
 }
