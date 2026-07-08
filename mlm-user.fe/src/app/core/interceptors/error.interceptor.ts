@@ -103,6 +103,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       const validationPaths = [
         'referrals/validate',
         'referrals/validate-placement',
+        'auth/login',
         'auth/register',
         'auth/forgot-password',
         'auth/reset-password',
