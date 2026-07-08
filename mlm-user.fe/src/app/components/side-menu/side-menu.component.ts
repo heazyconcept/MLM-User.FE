@@ -139,6 +139,16 @@ export class SideMenuComponent implements OnInit {
                 route: '/wallet',
                 requiresPayment: true,
               },
+              ...(this.authService.impersonation()
+                ? []
+                : [
+                    {
+                      label: 'Fund Transfer',
+                      icon: 'pi pi-send',
+                      route: '/wallet/fund-transfer',
+                      requiresPayment: true,
+                    },
+                  ]),
               {
                 label: 'Activity History',
                 icon: 'pi pi-history',

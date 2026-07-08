@@ -30,6 +30,7 @@
 | Registration Wallet | `GET /registration/wallet` | ✅ Completed | 2026-02-24 | RegistrationService.getRegistrationWallet(); Activation wallet page |
 | Transfer to Registration | `POST /registration/transfer-to-registration` | ✅ Completed | 2026-02-24 | amount, currency; RegistrationService.transferToRegistration(); CASH to REGISTRATION |
 | Registration Activate | `POST /registration/activate` | ✅ Completed | 2026-02-24 | RegistrationService.activate(); Debits REGISTRATION wallet, sets isRegistrationPaid |
+| Fund Transfer | `POST /wallets/fund-transfer` | ✅ Completed | 2026-07-08 | Cross-user wallet transfer by username; PIN required; page at /wallet/fund-transfer |
 
 ---
 

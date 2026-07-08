@@ -222,6 +222,14 @@ export const routes: Routes = [
           ),
         data: { title: 'Activity History' },
       },
+      {
+        path: 'fund-transfer',
+        loadComponent: () =>
+          import('./pages/wallet/fund-transfer/fund-transfer.component').then(
+            (m) => m.FundTransferComponent,
+          ),
+        data: { title: 'Fund Transfer' },
+      },
     ],
   },
   {

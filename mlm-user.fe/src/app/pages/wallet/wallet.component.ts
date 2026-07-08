@@ -9,6 +9,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
 import { DialogService } from 'primeng/dynamicdialog';
 import { UserService } from '../../services/user.service';
+import { AuthService } from '../../services/auth.service';
 import { WalletService, Wallet } from '../../services/wallet.service';
 import { SettingsService } from '../../services/settings.service';
 import { WithdrawalComponent } from './withdrawal/withdrawal.component';
@@ -36,6 +37,7 @@ import {
 })
 export class WalletComponent implements OnInit {
   private userService = inject(UserService);
+  private authService = inject(AuthService);
   private walletService = inject(WalletService);
   private settingsService = inject(SettingsService);
   private router = inject(Router);
@@ -43,6 +45,7 @@ export class WalletComponent implements OnInit {
   private dialogService = inject(DialogService);
 
   isPaid = this.userService.isPaid;
+  isImpersonating = computed(() => !!this.authService.impersonation());
   wallets = this.walletService.allWallets;
   totalBalance = this.walletService.totalBalance;
   totalCashBalance = this.walletService.totalCashBalance;
@@ -128,6 +131,10 @@ export class WalletComponent implements OnInit {
     this.router.navigate(['/transactions']);
   }
 
+  navigateToFundTransfer() {
+    this.router.navigate(['/wallet/fund-transfer']);
+  }
+
   openWithdrawDialog(wallet: Wallet) {
     this.dialogService.open(WithdrawalComponent, {
       header: `Withdraw ${wallet.currency} Funds`,
@@ -202,7 +209,7 @@ export class WalletComponent implements OnInit {
     currency?: 'NGN' | 'USD'
   ): void {
     this.dialogService.open(WalletTransferComponent, {
-      header: 'Transfer Funds',
+      header: 'Move Between My Wallets',
       width: '480px',
       contentStyle: { 'max-height': '600px', overflow: 'auto' },
       baseZIndex: 10000,
