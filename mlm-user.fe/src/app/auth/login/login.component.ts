@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
@@ -11,6 +12,7 @@ import { LoadingService } from '../../services/loading.service';
 import { UserService } from '../../services/user.service';
 import { ModalService } from '../../services/modal.service';
 import { AuthInputComponent } from '../components/auth-input/auth-input.component';
+import { resolveLoginErrorMessage } from '../../core/utils/login-error.util';
 
 @Component({
   selector: 'app-login',
@@ -75,14 +77,13 @@ export class LoginComponent {
               this.router.navigate([redirectPath]);
             }, 2000);
           },
-          error: () => {
+          error: (err: HttpErrorResponse) => {
             this.isLoading.set(false);
             this.loadingService.hide();
-            // Show error modal
             this.modalService.open(
               'error',
               'Login Failed',
-              'Invalid username or password. Please try again.',
+              resolveLoginErrorMessage(err),
             );
           },
         });

@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormsModule } from '@angular/forms';
@@ -7,6 +8,7 @@ import { AuthService } from '../../services/auth.service';
 import { UserService } from '../../services/user.service';
 import { ModalService } from '../../services/modal.service';
 import { LoadingService } from '../../services/loading.service';
+import { resolveLoginErrorMessage } from '../../core/utils/login-error.util';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 // import { AuthInputComponent } from '../components/auth-input/auth-input.component';
@@ -69,7 +71,7 @@ export class LoginModernComponent {
               this.router.navigate([redirectPath]);
             }, 2000);
           },
-          error: (err) => {
+          error: (err: HttpErrorResponse) => {
             this.isLoading.set(false);
             this.loadingService.hide();
             if (typeof ngDevMode !== 'undefined' && ngDevMode) {
@@ -78,7 +80,7 @@ export class LoginModernComponent {
             this.modalService.open(
               'error',
               'Login Failed',
-              'Invalid username or password. Please try again.',
+              resolveLoginErrorMessage(err),
             );
           },
         });
