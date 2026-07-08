@@ -70,7 +70,7 @@ export class SideMenuComponent implements OnInit {
   cartItemCount = this.cartService.itemCount;
 
   private merchantApplyMenuItems(): MenuItem[] {
-    if (this.merchantService.needsPayment()) {
+    if (this.merchantService.needsPayment() || this.merchantService.canReapplyAsMerchant()) {
       return [
         {
           label: 'Become a Merchant',

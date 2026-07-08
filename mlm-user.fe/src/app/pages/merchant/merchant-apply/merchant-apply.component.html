@@ -85,8 +85,13 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p class="text-amber-800 text-xs leading-relaxed">
-              Your application is saved. Review your tier and details below, then complete payment.
-              The admin will only be notified once your payment is confirmed.
+              @if (canReapplyAsMerchant()) {
+                Your previous application was not approved and your fee was refunded. Review your tier
+                and details below, then submit a new application with payment.
+              } @else {
+                Your application is saved. Review your tier and details below, then complete payment.
+                The admin will only be notified once your payment is confirmed.
+              }
             </p>
           </div>
         }
@@ -332,9 +337,14 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p class="text-blue-600 text-xs leading-relaxed">
-                @if (needsPayment()) {
-                  Update your tier or details if needed, then complete payment. Your application will only be submitted to the admin after payment is confirmed.
+              @if (needsPayment()) {
+                @if (canReapplyAsMerchant()) {
+                  Update your tier or details if needed, then pay the registration fee to submit a new
+                  application for admin review.
                 } @else {
+                  Update your tier or details if needed, then complete payment. Your application will only be submitted to the admin after payment is confirmed.
+                }
+              } @else {
                   Your application will only be submitted to the admin after payment is confirmed. Clicking the button below applies and pays in one step.
                 }
               </p>
@@ -357,7 +367,11 @@
                   Processing…
                 </span>
               } @else if (needsPayment()) {
-                Complete Payment — {{ getTypeLabel(selectedType()) }}
+                @if (canReapplyAsMerchant()) {
+                  Reapply & Pay — {{ getTypeLabel(selectedType()) }}
+                } @else {
+                  Complete Payment — {{ getTypeLabel(selectedType()) }}
+                }
               } @else {
                 Apply & Pay — {{ getTypeLabel(selectedType()) }}
               }

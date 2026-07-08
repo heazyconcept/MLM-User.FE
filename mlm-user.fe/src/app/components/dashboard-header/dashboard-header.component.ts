@@ -170,6 +170,7 @@ export class DashboardHeaderComponent implements OnInit {
         command: () => this.router.navigate(['/profile']),
       },
       ...(this.merchantService.needsPayment() ||
+      this.merchantService.canReapplyAsMerchant() ||
       (!this.userService.isMerchant() && !this.merchantService.isActiveMerchant())
         ? [
             {
