@@ -1,0 +1,282 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-8">
+    <div class="px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl">
+      <div class="space-y-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Fund transfer</h1>
+          <p class="text-gray-500 text-sm mt-1">Send funds to another member by username</p>
+        </div>
+
+        @if (isImpersonating()) {
+          <p-message severity="warn" variant="simple">
+            Fund transfer is disabled while viewing as another user.
+          </p-message>
+        }
+
+        @if (isLoading()) {
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-8 animate-pulse">
+            <div class="h-6 bg-gray-100 rounded w-1/3 mb-4"></div>
+            <div class="h-10 bg-gray-100 rounded mb-4"></div>
+            <div class="h-10 bg-gray-100 rounded mb-4"></div>
+            <div class="h-10 bg-gray-100 rounded"></div>
+          </div>
+        } @else if (formState() === 'PIN_SETUP') {
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="p-6 space-y-6">
+              <div class="p-6 bg-amber-50/50 rounded-2xl border border-amber-100/50 space-y-4">
+                <div class="flex gap-3 items-start">
+                  <i class="pi pi-shield text-amber-600 mt-1 text-lg"></i>
+                  <div>
+                    <p class="text-sm font-bold text-amber-800 uppercase tracking-tight">
+                      Configure Transaction PIN
+                    </p>
+                    <p class="text-xs text-amber-600 leading-normal font-medium mt-1">
+                      A 4-digit Transaction PIN is required before you can send funds to another
+                      member.
+                    </p>
+                  </div>
+                </div>
+
+                <form [formGroup]="transferForm" (ngSubmit)="onPinSetupSubmit()" class="space-y-4">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-2">
+                      <label for="pin" class="text-xs font-bold text-mlm-text uppercase tracking-wider">
+                        New 4-Digit PIN
+                      </label>
+                      <input
+                        type="password"
+                        id="pin"
+                        formControlName="pin"
+                        maxlength="4"
+                        placeholder="••••"
+                        class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary text-center text-xl tracking-[1.2em] font-mono font-bold bg-white" />
+                      @if (
+                        transferForm.get('pin')?.invalid &&
+                        (transferForm.get('pin')?.dirty || transferForm.get('pin')?.touched)
+                      ) {
+                        <small class="text-mlm-error text-[10px] font-bold">Must be 4 digits.</small>
+                      }
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                      <label
+                        for="confirmPin"
+                        class="text-xs font-bold text-mlm-text uppercase tracking-wider">
+                        Confirm PIN
+                      </label>
+                      <input
+                        type="password"
+                        id="confirmPin"
+                        formControlName="confirmPin"
+                        maxlength="4"
+                        placeholder="••••"
+                        class="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary text-center text-xl tracking-[1.2em] font-mono font-bold bg-white" />
+                      @if (
+                        transferForm.get('confirmPin')?.invalid &&
+                        (transferForm.get('confirmPin')?.dirty ||
+                          transferForm.get('confirmPin')?.touched)
+                      ) {
+                        @if (transferForm.get('confirmPin')?.errors?.['pinMismatch']) {
+                          <small class="text-mlm-error text-[10px] font-bold">PINs do not match.</small>
+                        } @else {
+                          <small class="text-mlm-error text-[10px] font-bold">Must be 4 digits.</small>
+                        }
+                      }
+                    </div>
+                  </div>
+
+                  <div class="flex justify-end gap-3 pt-2">
+                    <p-button
+                      type="button"
+                      label="Back to Wallet"
+                      [outlined]="true"
+                      severity="secondary"
+                      routerLink="/wallet"
+                      [disabled]="pinSetupSubmitting()">
+                    </p-button>
+                    <p-button
+                      type="submit"
+                      label="Save PIN"
+                      [loading]="pinSetupSubmitting()"
+                      [disabled]="transferForm.invalid || pinSetupSubmitting() || isImpersonating()">
+                    </p-button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="p-6">
+              @if (isCashLocked()) {
+                <p-message severity="warn" variant="simple" class="mb-6">
+                  Your cash wallet is locked. Withdrawals and transfers from cash are blocked.
+                </p-message>
+              }
+
+              <div class="p-4 bg-green-50 rounded-xl border border-green-100 mb-6">
+                <p class="text-xs font-semibold text-green-800 uppercase tracking-wide mb-1">
+                  From: {{ selectedSourceLabel() }}
+                </p>
+                <p class="text-lg font-bold text-green-700">
+                  {{ currencySymbol() }}{{ sourceBalance() | number: '1.2-2' }}
+                </p>
+                <p class="text-[10px] text-green-600 mt-0.5">Available balance · {{ currency() }}</p>
+              </div>
+
+              <form [formGroup]="transferForm" (ngSubmit)="onSubmit()" class="space-y-5">
+                <div class="flex flex-col gap-1.5">
+                  <label for="recipient" class="text-sm font-semibold text-gray-700">
+                    Recipient username
+                  </label>
+                  <input
+                    pInputText
+                    id="recipient"
+                    formControlName="recipientUsername"
+                    placeholder="janedoe"
+                    class="w-full"
+                    [disabled]="isFormDisabled()" />
+                  @if (recipientError()) {
+                    <small class="text-red-500 text-xs">{{ recipientError() }}</small>
+                  }
+                  @if (
+                    transferForm.get('recipientUsername')?.invalid &&
+                    (transferForm.get('recipientUsername')?.dirty ||
+                      transferForm.get('recipientUsername')?.touched)
+                  ) {
+                    <small class="text-red-500 text-xs">Recipient username is required.</small>
+                  }
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <label for="source" class="text-sm font-semibold text-gray-700">Transfer from</label>
+                  <p-select
+                    formControlName="fromWalletType"
+                    inputId="source"
+                    [options]="sourceOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Select source wallet"
+                    styleClass="w-full"
+                    [disabled]="isFormDisabled()">
+                  </p-select>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <label for="target" class="text-sm font-semibold text-gray-700">Transfer to</label>
+                  <p-select
+                    formControlName="toWalletType"
+                    inputId="target"
+                    [options]="targetOptions()"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Select recipient wallet"
+                    styleClass="w-full"
+                    [disabled]="isFormDisabled()">
+                  </p-select>
+                  <p class="text-xs text-gray-500">
+                    Credits the recipient's {{ selectedTargetLabel() | lowercase }}.
+                  </p>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <label for="amount" class="text-sm font-semibold text-gray-700">Amount</label>
+                  <p-inputNumber
+                    formControlName="amount"
+                    inputId="amount"
+                    [mode]="'currency'"
+                    [currency]="currency()"
+                    [currencyDisplay]="'symbol'"
+                    [min]="1"
+                    [max]="sourceBalance()"
+                    fluid="true"
+                    placeholder="0.00"
+                    [disabled]="isFormDisabled()">
+                  </p-inputNumber>
+                  @if (
+                    transferForm.get('amount')?.invalid &&
+                    (transferForm.get('amount')?.dirty || transferForm.get('amount')?.touched)
+                  ) {
+                    <small class="text-red-500 text-xs">
+                      @if (transferForm.get('amount')?.errors?.['required']) {
+                        Amount is required.
+                      }
+                      @if (transferForm.get('amount')?.errors?.['min']) {
+                        Minimum amount is {{ currencySymbol() }}1.
+                      }
+                      @if (transferForm.get('amount')?.errors?.['max']) {
+                        Cannot exceed selected wallet balance.
+                      }
+                    </small>
+                  }
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <label for="transferPin" class="text-sm font-semibold text-gray-700">
+                    Transaction PIN
+                  </label>
+                  <input
+                    type="password"
+                    id="transferPin"
+                    formControlName="pin"
+                    maxlength="4"
+                    placeholder="••••"
+                    [disabled]="isFormDisabled()"
+                    class="w-full max-w-xs px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary text-center text-xl tracking-[1.2em] font-mono font-bold bg-white" />
+                  @if (pinError()) {
+                    <small class="text-red-500 text-xs">{{ pinError() }}</small>
+                  }
+                  @if (
+                    transferForm.get('pin')?.invalid &&
+                    (transferForm.get('pin')?.dirty || transferForm.get('pin')?.touched)
+                  ) {
+                    <small class="text-red-500 text-xs">PIN must be exactly 4 digits.</small>
+                  }
+                </div>
+
+                @if (transferForm.valid && !isFormDisabled()) {
+                  <div class="p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs space-y-1">
+                    <div class="flex justify-between">
+                      <span class="text-gray-500">Amount</span>
+                      <span class="font-bold text-gray-900">
+                        {{ currencySymbol() }}{{ transferForm.value.amount | number: '1.2-2' }}
+                      </span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-500">Recipient</span>
+                      <span class="font-medium text-gray-700">
+                        @{{ transferForm.value.recipientUsername }}
+                      </span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-500">To wallet</span>
+                      <span class="font-medium text-gray-700">{{ selectedTargetLabel() }}</span>
+                    </div>
+                  </div>
+                }
+
+                <div class="flex flex-wrap gap-3 pt-2">
+                  <p-button
+                    type="button"
+                    label="Back to Wallet"
+                    [outlined]="true"
+                    severity="secondary"
+                    routerLink="/wallet"
+                    [disabled]="isSubmitting()">
+                  </p-button>
+                  <p-button
+                    type="submit"
+                    label="Transfer funds"
+                    icon="pi pi-send"
+                    [loading]="isSubmitting()"
+                    [disabled]="transferForm.invalid || isFormDisabled()">
+                  </p-button>
+                </div>
+              </form>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </main>
+</div>

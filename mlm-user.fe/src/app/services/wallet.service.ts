@@ -3,6 +3,7 @@ import { Observable, of } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { ModalService } from './modal.service';
+import { resolveWalletErrorMessage } from '../core/utils/wallet-error.util';
 
 // API response types (OpenAPI has no schema; infer from API.md)
 export type WalletType = 'CASH' | 'VOUCHER' | 'AUTOSHIP' | 'REGISTRATION';
@@ -27,6 +28,30 @@ export interface TransferResponse {
   transferId: string;
 }
 
+export interface FundTransferRequest {
+  recipientUsername: string;
+  fromWalletType: 'CASH' | 'REGISTRATION';
+  toWalletType: WalletType;
+  amount: number;
+  currency: 'NGN' | 'USD';
+  pin: string;
+}
+
+export interface FundTransferResponse {
+  transferId: string;
+}
+
+export interface InsufficientBalanceError {
+  error: 'Insufficient balance';
+  fromWalletType: WalletType;
+  toWalletType: WalletType;
+  currency: 'NGN' | 'USD';
+  requestedDisplayAmount: number;
+  requiredAmountBase: number;
+  availableBalanceBase: number;
+  availableDisplayAmount: number;
+}
+
 export interface ApiWalletItem {
   id: string;
   type?: WalletType;
@@ -46,6 +71,8 @@ export interface Wallet {
   voucherBalance: number;
   autoshipBalance: number;
   registrationBalance: number;
+  cashStatus?: string;
+  registrationStatus?: string;
 }
 
 export interface Transaction {
@@ -136,6 +163,20 @@ export class WalletService {
     return computed(() => this.allWallets().find(w => w.currency === currency));
   }
 
+  isCashWalletLocked(currency: 'NGN' | 'USD'): boolean {
+    const wallet = this.allWallets().find(w => w.currency === currency);
+    return wallet?.cashStatus?.toUpperCase() === 'LOCKED';
+  }
+
+  private isImpersonationBlocked(err: unknown): boolean {
+    const error = err as { status?: number; error?: { error?: string; code?: string } } | undefined;
+    return (
+      error?.status === 403 &&
+      (error?.error?.error === 'IMPERSONATION_ACTION_BLOCKED' ||
+        error?.error?.code === 'IMPERSONATION_ACTION_BLOCKED')
+    );
+  }
+
   /**
    * Maps API response to Wallet[]. Handles:
    * - Array of per-type wallets (CASH, VOUCHER, AUTOSHIP) grouped by currency
@@ -156,11 +197,15 @@ export class WalletService {
       let currency = (obj['currency'] ?? 'NGN') as 'NGN' | 'USD';
 
       // Shape B: separate wallets { cashWallet, voucherWallet, autoshipWallet, registrationWallet }
-      const cashWallet = obj['cashWallet'] as { balance?: unknown; currency?: unknown } | undefined;
+      const cashWallet = obj['cashWallet'] as
+        | { balance?: unknown; currency?: unknown; status?: unknown }
+        | undefined;
       const voucherWallet = obj['voucherWallet'] as { balance?: unknown; currency?: unknown } | undefined;
       const autoshipWallet = obj['autoshipWallet'] as { balance?: unknown; currency?: unknown } | undefined;
 
-      const registrationWallet = obj['registrationWallet'] as { balance?: unknown; currency?: unknown } | undefined;
+      const registrationWallet = obj['registrationWallet'] as
+        | { balance?: unknown; currency?: unknown; status?: unknown }
+        | undefined;
 
       if (cashWallet || voucherWallet || autoshipWallet || registrationWallet) {
         const derivedCurrency =
@@ -183,7 +228,10 @@ export class WalletService {
           cashBalance: cash,
           voucherBalance: voucher,
           autoshipBalance: autoship,
-          registrationBalance: registration
+          registrationBalance: registration,
+          cashStatus: cashWallet?.status != null ? String(cashWallet.status) : undefined,
+          registrationStatus:
+            registrationWallet?.status != null ? String(registrationWallet.status) : undefined,
         }];
       }
 
@@ -199,7 +247,18 @@ export class WalletService {
       }];
     }
 
-    const byCurrency = new Map<string, { cash: number; voucher: number; autoship: number; registration: number; id: string }>();
+    const byCurrency = new Map<
+      string,
+      {
+        cash: number;
+        voucher: number;
+        autoship: number;
+        registration: number;
+        id: string;
+        cashStatus?: string;
+        registrationStatus?: string;
+      }
+    >();
     for (const item of items as ApiWalletItem[]) {
       const type = (item.type ?? 'CASH').toUpperCase();
       const currency = (item.currency ?? 'NGN') as 'NGN' | 'USD';
@@ -215,13 +274,22 @@ export class WalletService {
         existing.voucher += type === 'VOUCHER' ? balance : voucher;
         existing.autoship += type === 'AUTOSHIP' ? balance : autoship;
         existing.registration += type === 'REGISTRATION' ? balance : 0;
+        if (type === 'CASH' && item.status) {
+          existing.cashStatus = String(item.status);
+        }
+        if (type === 'REGISTRATION' && item.status) {
+          existing.registrationStatus = String(item.status);
+        }
       } else {
         byCurrency.set(key, {
           id: item.id,
           cash: type === 'CASH' ? balance : cash,
           voucher: type === 'VOUCHER' ? balance : voucher,
           autoship: type === 'AUTOSHIP' ? balance : autoship,
-          registration: type === 'REGISTRATION' ? balance : 0
+          registration: type === 'REGISTRATION' ? balance : 0,
+          cashStatus: type === 'CASH' && item.status ? String(item.status) : undefined,
+          registrationStatus:
+            type === 'REGISTRATION' && item.status ? String(item.status) : undefined,
         });
       }
     }
@@ -233,7 +301,9 @@ export class WalletService {
       cashBalance: data.cash,
       voucherBalance: data.voucher,
       autoshipBalance: data.autoship,
-      registrationBalance: data.registration
+      registrationBalance: data.registration,
+      cashStatus: data.cashStatus,
+      registrationStatus: data.registrationStatus,
     }));
   }
 
@@ -308,11 +378,7 @@ export class WalletService {
         this.fetchWithdrawals().subscribe();
       }),
       catchError(err => {
-        const isImpersonationBlocked =
-          err?.status === 403 &&
-          (err?.error?.error === 'IMPERSONATION_ACTION_BLOCKED' ||
-            err?.error?.code === 'IMPERSONATION_ACTION_BLOCKED');
-        const msg = isImpersonationBlocked
+        const msg = this.isImpersonationBlocked(err)
           ? 'Action disabled during impersonation.'
           : err?.status === 403
             ? "You're not yet eligible to withdraw."
@@ -396,6 +462,31 @@ export class WalletService {
         const msg = Array.isArray(raw) ? raw[0] : (raw ?? 'Transfer failed. Please try again or contact support.');
         this.modalService.open('error', 'Transfer Failed', msg);
         throw err;
+      })
+    );
+  }
+
+  /** POST /wallets/fund-transfer — send funds to another member by username */
+  fundTransfer(request: FundTransferRequest): Observable<FundTransferResponse> {
+    return this.api.post<FundTransferResponse>('wallets/fund-transfer', request).pipe(
+      tap((response) => {
+        this.modalService.open(
+          'success',
+          'Transfer Completed',
+          `Transfer completed. Reference: ${response.transferId}`,
+          '/wallet'
+        );
+        this.fetchWallets().subscribe();
+      }),
+      catchError((err) => {
+        const msg = this.isImpersonationBlocked(err)
+          ? 'Action disabled during impersonation.'
+          : resolveWalletErrorMessage(err?.error?.message, request.currency);
+        const isIncorrectPin = msg.toLowerCase().includes('incorrect transaction pin');
+        if (!isIncorrectPin) {
+          this.modalService.open('error', 'Fund Transfer Failed', msg);
+        }
+        throw { ...err, friendlyMessage: msg, isIncorrectPin };
       })
     );
   }
