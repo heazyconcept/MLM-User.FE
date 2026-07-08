@@ -162,4 +162,57 @@ describe('MerchantService — category upgrade', () => {
       profileReq.flush({ ...mockProfile, type: 'NATIONAL' });
     });
   });
+
+  describe('canReapplyAsMerchant', () => {
+    it('is true when merchant is SUSPENDED and fee was refunded', () => {
+      service.fetchProfile();
+
+      const req = httpMock.expectOne(`${baseUrl}/merchants/me`);
+      req.flush({
+        id: 'merchant-1',
+        userId: 'user-1',
+        type: 'REGIONAL',
+        status: 'SUSPENDED',
+        serviceAreas: ['Lagos'],
+        merchantFeePaidAt: null,
+      });
+
+      expect(service.canReapplyAsMerchant()).toBe(true);
+      expect(service.needsPayment()).toBe(true);
+    });
+
+    it('is false for SUSPENDED merchants who already paid the fee', () => {
+      service.fetchProfile();
+
+      const req = httpMock.expectOne(`${baseUrl}/merchants/me`);
+      req.flush({
+        id: 'merchant-1',
+        userId: 'user-1',
+        type: 'REGIONAL',
+        status: 'SUSPENDED',
+        serviceAreas: ['Lagos'],
+        merchantFeePaidAt: '2026-01-01T00:00:00Z',
+      });
+
+      expect(service.canReapplyAsMerchant()).toBe(false);
+      expect(service.needsPayment()).toBe(false);
+    });
+
+    it('is false for unpaid DRAFT applications', () => {
+      service.fetchProfile();
+
+      const req = httpMock.expectOne(`${baseUrl}/merchants/me`);
+      req.flush({
+        id: 'merchant-1',
+        userId: 'user-1',
+        type: 'REGIONAL',
+        status: 'DRAFT',
+        serviceAreas: ['Lagos'],
+        merchantFeePaidAt: null,
+      });
+
+      expect(service.canReapplyAsMerchant()).toBe(false);
+      expect(service.needsPayment()).toBe(true);
+    });
+  });
 });

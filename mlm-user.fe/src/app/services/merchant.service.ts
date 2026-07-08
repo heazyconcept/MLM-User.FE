@@ -460,7 +460,16 @@ export class MerchantService {
 
   readonly isFeePaid = computed(() => MerchantService.isFeePaidValue(this.profileSignal()?.merchantFeePaidAt));
 
+  /** Admin rejected application: SUSPENDED and registration fee refunded. */
+  readonly canReapplyAsMerchant = computed(
+    () =>
+      this.isMerchant() &&
+      this.merchantStatus() === 'SUSPENDED' &&
+      !this.isFeePaid(),
+  );
+
   readonly needsPayment = computed(() => {
+    if (this.canReapplyAsMerchant()) return true;
     if (!this.isMerchant()) return false;
     if (this.isFeePaid()) return false;
     const status = this.merchantStatus();

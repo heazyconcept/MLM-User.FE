@@ -40,7 +40,7 @@
       }
 
       <!-- Unpaid application — continue on apply page -->
-      @if (!loading() && needsPayment()) {
+      @if (!loading() && needsPayment() && !canReapplyAsMerchant()) {
         <div class="bg-white rounded-lg border border-amber-200 shadow-sm p-8 text-center">
           <div
             class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6"
@@ -62,6 +62,28 @@
         </div>
       }
 
+      <!-- Rejected application — fee refunded, user may reapply -->
+      @if (!loading() && canReapplyAsMerchant()) {
+        <div class="bg-white rounded-lg border border-red-200 shadow-sm p-8 text-center">
+          <div
+            class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6"
+          >
+            <i class="pi pi-times-circle text-3xl text-red-500" aria-hidden="true"></i>
+          </div>
+          <h2 class="text-xl font-bold text-mlm-text mb-2">Application Not Approved</h2>
+          <p class="text-mlm-secondary text-sm mb-6 max-w-md mx-auto">
+            Your merchant application was not approved. Your registration fee has been refunded to
+            your cash wallet. You can update your details and submit a new application.
+          </p>
+          <a
+            routerLink="/merchant/apply"
+            class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2"
+          >
+            Apply Again
+          </a>
+        </div>
+      }
+
       <!-- Paid — pending admin approval -->
       @if (!loading() && isAwaitingAdminApproval()) {
         <div class="bg-white rounded-lg border border-amber-200 shadow-sm p-8 text-center">
@@ -78,8 +100,8 @@
         </div>
       }
 
-      <!-- Suspended -->
-      @if (!loading() && merchantStatus() === 'SUSPENDED') {
+      <!-- Suspended active merchant (not a rejected application) -->
+      @if (!loading() && merchantStatus() === 'SUSPENDED' && !canReapplyAsMerchant()) {
         <div class="bg-white rounded-lg border border-red-200 shadow-sm p-8 text-center">
           <div
             class="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6"

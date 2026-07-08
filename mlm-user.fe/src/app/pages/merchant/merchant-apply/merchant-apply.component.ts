@@ -57,6 +57,7 @@ export class MerchantApplyComponent implements OnInit {
   error = this.merchantService.error;
   isFeePaid = this.merchantService.isFeePaid;
   needsPayment = this.merchantService.needsPayment;
+  canReapplyAsMerchant = this.merchantService.canReapplyAsMerchant;
 
   selectedType = signal<MerchantType>('REGIONAL');
   phoneNumberInput = signal('');
