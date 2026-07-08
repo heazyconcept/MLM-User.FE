@@ -186,6 +186,10 @@ export interface MerchantOrderItem {
 export interface MerchantOrderUser {
   id: string;
   email: string;
+  username?: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 export interface DeliveryConfirmation {
@@ -208,6 +212,8 @@ export interface MerchantOrder {
   paymentMethod: string;
   fulfilmentMode: FulfilmentMode;
   selectedMerchantId: string;
+  buyerUsername?: string;
+  buyerPhone?: string;
   deliveryAddress: string | null;
   items: MerchantOrderItem[];
   user: MerchantOrderUser;
