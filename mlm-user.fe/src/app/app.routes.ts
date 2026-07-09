@@ -247,6 +247,14 @@ export const routes: Routes = [
           ),
         data: { title: 'Fund Wallet' },
       },
+      {
+        path: 'manual-deposit',
+        loadComponent: () =>
+          import('./pages/payments/manual-deposit/manual-deposit.component').then(
+            (m) => m.ManualDepositComponent,
+          ),
+        data: { title: 'Bank Transfer Deposit' },
+      },
     ],
   },
 

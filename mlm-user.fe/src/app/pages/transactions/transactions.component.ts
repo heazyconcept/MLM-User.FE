@@ -14,7 +14,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 type DateRangePreset = 'all' | 'today' | 'last7days' | 'last30days' | 'thisMonth';
 type TransactionStatus = DashboardTransaction['status'];
 type TransactionType = DashboardTransaction['type'];
-type TransactionTab = 'all' | 'earnings' | 'breakdown' | 'wallet' | 'withdrawals' | 'payments' | 'autoship';
+type TransactionTab = 'all' | 'earnings' | 'breakdown' | 'wallet' | 'withdrawals' | 'payments' | 'autoship' | 'voucher';
 
 type TransactionFilters = {
   dateRange: DateRangePreset;
@@ -104,6 +104,7 @@ export class TransactionsComponent implements OnInit {
     { label: 'Withdrawals', value: 'withdrawals' },
     { label: 'Payments', value: 'payments' },
     { label: 'Autoship', value: 'autoship' },
+    { label: 'Product Voucher', value: 'voucher' },
   ];
 
   transactions = computed(() => {
@@ -111,8 +112,8 @@ export class TransactionsComponent implements OnInit {
     const f = this.filters();
     const tab = this.activeTab();
 
-    if (tab !== 'all') {
-      result = result.filter((t) => this.resolveTransactionTab(t) === tab);
+    if (tab !== 'all' && tab !== 'breakdown') {
+      result = result.filter((t) => this.matchesTabFilter(t, tab));
     }
 
     result = this.applyDateFilter(result, f.dateRange);
@@ -183,6 +184,9 @@ export class TransactionsComponent implements OnInit {
     if (tab === 'withdrawals') return 'No withdrawal transactions available yet.';
     if (tab === 'payments') return 'No payment transactions available yet.';
     if (tab === 'autoship') return 'No autoship transactions available yet.';
+    if (tab === 'voucher') {
+      return 'No product voucher transactions found. History may be limited until the backend adds a dedicated voucher filter.';
+    }
     return 'No transactions available.';
   });
 
@@ -293,7 +297,7 @@ export class TransactionsComponent implements OnInit {
     const rows = this.transactions().map((tx) => [
       new Date(tx.date).toISOString(),
       tx.description,
-      this.getTransactionCategoryLabel(tx),
+      this.formatTransactionCategory(tx),
       this.isCredit(tx) ? 'Credit' : 'Debit',
       this.formatTransactionAmount(tx),
       tx.status
@@ -407,14 +411,61 @@ export class TransactionsComponent implements OnInit {
   }
 
   getTransactionCategoryLabel(tx: DashboardTransaction): string {
-    const raw = tx.categoryGroup?.trim() || tx.source?.trim();
-    if (!raw) {
-      return this.getTabLabel(this.resolveTransactionTab(tx));
+    return this.formatTransactionCategory(tx);
+  }
+
+  formatTransactionCategory(tx: DashboardTransaction): string {
+    const categoryCode = tx.category?.trim().toUpperCase();
+    if (categoryCode) {
+      const known = TransactionsComponent.CATEGORY_LABELS[categoryCode];
+      if (known) {
+        return known;
+      }
+      return this.formatSnakeCaseLabel(categoryCode);
     }
-    return raw
-      .split(/[_\\s-]+/)
+
+    const group = tx.categoryGroup?.trim();
+    if (group) {
+      return this.formatSnakeCaseLabel(group);
+    }
+
+    const source = tx.source?.trim();
+    if (source) {
+      return this.formatSnakeCaseLabel(source);
+    }
+
+    return this.getTabLabel(this.resolveTransactionTab(tx));
+  }
+
+  private static readonly CATEGORY_LABELS: Record<string, string> = {
+    REGISTRATION_WALLET_FUNDING: 'Registration wallet funding',
+    WALLET_FUNDING: 'Cash wallet funding',
+    REFERRAL_CREATION: 'Referral creation',
+    TRANSFER: 'Wallet transfer',
+    ACTIVATION_IPV: 'Product voucher credit',
+    REGISTRATION_ACTIVATION: 'Registration activation',
+    PRODUCT_PURCHASE: 'Product purchase',
+    ADMIN_FUNDING: 'Admin wallet funding',
+    AUTOSHIP_TO_PV: 'Autoship to PV',
+    AUTOSHIP_ADMIN_FEE: 'Autoship admin fee',
+  };
+
+  private formatSnakeCaseLabel(value: string): string {
+    return value
+      .split(/[_\s-]+/)
+      .filter(Boolean)
       .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1).toLowerCase())
       .join(' ');
+  }
+
+  private matchesTabFilter(tx: DashboardTransaction, tab: TransactionTab): boolean {
+    if (tab === 'wallet') {
+      return (tx.categoryGroup ?? '').toUpperCase() === 'WALLET';
+    }
+    if (tab === 'voucher') {
+      return this.isVoucherTransaction(tx);
+    }
+    return this.resolveTransactionTab(tx) === tab;
   }
 
   getTabDescription(): string {
@@ -434,7 +485,10 @@ export class TransactionsComponent implements OnInit {
     if (tab === 'autoship') {
       return 'Track autoship subscriptions, renewals, and recurring product orders.';
     }
-    return 'View and filter all your financial activities across earnings, wallet, withdrawals, and payments.';
+    if (tab === 'voucher') {
+      return 'Track product voucher credits, purchases, transfers, and wallet activity.';
+    }
+    return 'View and filter all your financial activities across earnings, wallet, withdrawals, payments, and vouchers.';
   }
 
   getTabLabel(tab: TransactionTab): string {
@@ -536,14 +590,18 @@ export class TransactionsComponent implements OnInit {
 
   private getTabQuery(): { category?: string } {
     const tab = this.activeTab();
-    if (tab === 'all') {
+    if (tab === 'all' || tab === 'breakdown' || tab === 'voucher') {
       return {};
     }
     return { category: tab };
   }
 
   private resolveTransactionTab(tx: DashboardTransaction): TransactionTab {
-    const normalized = `${tx.categoryGroup ?? ''}`.toLowerCase();
+    if (this.isVoucherTransaction(tx)) {
+      return 'voucher';
+    }
+
+    const normalized = `${tx.categoryGroup ?? ''} ${tx.source ?? ''} ${tx.subType ?? ''} ${tx.description ?? ''}`.toLowerCase();
 
     if (this.matchesKeywords(normalized, ['withdrawal', 'cashout', 'payout'])) {
       return 'withdrawals';
@@ -569,7 +627,6 @@ export class TransactionsComponent implements OnInit {
         'referral',
         'registration',
         'product',
-        'voucher',
         'pv',
       ])
     ) {
@@ -577,6 +634,26 @@ export class TransactionsComponent implements OnInit {
     }
 
     return 'all';
+  }
+
+  private isVoucherTransaction(tx: DashboardTransaction): boolean {
+    const walletType = `${tx.walletType ?? tx.metadata?.['walletType'] ?? tx.metadata?.['wallet_type'] ?? ''}`.toUpperCase();
+    if (walletType === 'VOUCHER') {
+      return true;
+    }
+
+    const categoryCode = `${tx.category ?? ''}`.toUpperCase();
+    if (categoryCode.includes('VOUCHER') || categoryCode === 'ACTIVATION_IPV') {
+      return true;
+    }
+
+    const normalized = `${tx.categoryGroup ?? ''} ${tx.source ?? ''} ${tx.subType ?? ''} ${tx.description ?? ''}`.toLowerCase();
+    return this.matchesKeywords(normalized, [
+      'product voucher',
+      'voucher wallet',
+      'activation_ipv',
+      'voucher',
+    ]);
   }
 
   private matchesKeywords(value: string, keywords: string[]): boolean {

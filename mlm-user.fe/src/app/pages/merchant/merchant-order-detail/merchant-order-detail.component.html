@@ -24,7 +24,7 @@
         <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
           <!-- Header -->
           <div class="border-b border-gray-200 pb-6 mb-6">
-            <h1 class="text-2xl font-bold text-mlm-text mb-2">Order {{ o.id | slice: 0 : 12 }}…</h1>
+            <h1 class="text-2xl font-bold text-mlm-text mb-2">{{ getProductSummary(o) }}</h1>
             <p class="text-sm text-mlm-secondary mb-4">{{ formatDate(o.createdAt) }}</p>
             <div class="flex flex-wrap items-center gap-3">
               <app-status-badge [status]="getStatusLabel(o.status)" size="lg"></app-status-badge>
@@ -40,11 +40,37 @@
           <!-- Customer info -->
           <div class="border-b border-gray-200 pb-6 mb-6">
             <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
-              Customer
+              Buyer
             </h2>
-            <p class="text-sm text-mlm-text">{{ o.user.email }}</p>
+            <dl class="space-y-2 text-sm">
+              <div>
+                <dt class="text-mlm-secondary">Username</dt>
+                <dd class="font-semibold text-mlm-text">{{ getBuyerUsername(o) }}</dd>
+              </div>
+              @if (getBuyerPhone(o); as phone) {
+                <div>
+                  <dt class="text-mlm-secondary">Phone</dt>
+                  <dd class="font-semibold text-mlm-text">{{ phone }}</dd>
+                </div>
+              }
+              @if (getBuyerName(o); as name) {
+                <div>
+                  <dt class="text-mlm-secondary">Name</dt>
+                  <dd class="font-semibold text-mlm-text">{{ name }}</dd>
+                </div>
+              }
+              <div>
+                <dt class="text-mlm-secondary">Email</dt>
+                <dd class="font-semibold text-mlm-text">{{ o.user.email }}</dd>
+              </div>
+            </dl>
             @if (o.deliveryAddress) {
-              <p class="text-sm text-mlm-secondary mt-1">{{ o.deliveryAddress }}</p>
+              <p class="text-sm text-mlm-secondary mt-4">
+                <span class="font-bold text-mlm-secondary uppercase tracking-widest text-xs block mb-1"
+                  >Delivery address</span
+                >
+                {{ o.deliveryAddress }}
+              </p>
             }
           </div>
 

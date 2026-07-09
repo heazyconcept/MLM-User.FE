@@ -89,21 +89,33 @@ type ProviderOption = PaymentGatewayProvider;
           }
 
           <!-- Actions -->
-          <div class="flex gap-3 pt-2">
+          <div class="flex flex-col gap-3 pt-2">
+            <div class="flex gap-3">
+              <p-button
+                type="button"
+                label="Cancel"
+                [outlined]="true"
+                severity="secondary"
+                (onClick)="cancel()"
+                [disabled]="isSubmitting()">
+              </p-button>
+              <p-button
+                type="submit"
+                label="Continue to Payment"
+                icon="pi pi-arrow-right"
+                [loading]="isSubmitting()"
+                [disabled]="fundForm.invalid || isSubmitting()">
+              </p-button>
+            </div>
             <p-button
               type="button"
-              label="Cancel"
+              label="Pay via bank transfer"
+              icon="pi pi-building"
               [outlined]="true"
               severity="secondary"
-              (onClick)="cancel()"
+              styleClass="w-full"
+              (onClick)="goToBankTransfer()"
               [disabled]="isSubmitting()">
-            </p-button>
-            <p-button
-              type="submit"
-              label="Continue to Payment"
-              icon="pi pi-arrow-right"
-              [loading]="isSubmitting()"
-              [disabled]="fundForm.invalid || isSubmitting()">
             </p-button>
           </div>
         </form>
@@ -249,6 +261,13 @@ export class RegistrationFundingComponent {
 
   cancel(): void {
     this.ref.close();
+  }
+
+  goToBankTransfer(): void {
+    this.ref.close();
+    void this.router.navigate(['/payments/manual-deposit'], {
+      queryParams: { walletType: 'REGISTRATION' },
+    });
   }
 
   private getPackagePriceLabel(packageCode: string, currency: string): string {

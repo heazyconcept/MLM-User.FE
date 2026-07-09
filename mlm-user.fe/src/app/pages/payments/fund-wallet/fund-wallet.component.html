@@ -10,6 +10,53 @@
             (back)="onUsdtBack()">
           </app-usdt-deposit>
         </div>
+      } @else if (showMethodPicker()) {
+        <div class="space-y-6">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">Fund Product Voucher Wallet</h1>
+            <p class="text-gray-500 text-sm mt-1">Choose how you would like to add funds.</p>
+          </div>
+
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden divide-y divide-gray-100">
+            <button
+              type="button"
+              class="w-full p-6 text-left hover:bg-gray-50 transition-colors"
+              (click)="selectOnlineFunding()"
+            >
+              <div class="flex items-center gap-4">
+                <i class="pi pi-globe text-2xl text-mlm-primary"></i>
+                <div class="flex-1">
+                  <h2 class="font-semibold text-gray-900">Online payment</h2>
+                
+                </div>
+                <i class="pi pi-arrow-right text-mlm-primary"></i>
+              </div>
+            </button>
+            <button
+              type="button"
+              class="w-full p-6 text-left hover:bg-gray-50 transition-colors"
+              (click)="goToBankTransfer()"
+            >
+              <div class="flex items-center gap-4">
+                <i class="pi pi-building text-2xl text-mlm-primary"></i>
+                <div class="flex-1">
+                  <h2 class="font-semibold text-gray-900">Bank transfer</h2>
+                 
+                </div>
+                <i class="pi pi-arrow-right text-mlm-primary"></i>
+              </div>
+            </button>
+          </div>
+
+          <p-button
+            type="button"
+            label="Cancel"
+            [outlined]="true"
+            severity="secondary"
+            icon="pi pi-arrow-left"
+            (onClick)="cancel()">
+          </p-button>
+        </div>
       } @else {
         <div class="space-y-6">
           <div>
@@ -27,6 +74,15 @@
                 Add funds to your wallet using your preferred payment method.
               }
             </p>
+            @if (isVoucherWallet()) {
+              <button
+                type="button"
+                class="text-xs font-semibold text-mlm-primary hover:underline mt-2"
+                (click)="backToMethodPicker()"
+              >
+                Change payment method
+              </button>
+            }
           </div>
 
           <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">

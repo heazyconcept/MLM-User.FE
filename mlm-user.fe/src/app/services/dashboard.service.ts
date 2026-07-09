@@ -20,6 +20,8 @@ export type DashboardOverview = {
   };
 };
 
+export type DashboardTransactionWalletType = 'REGISTRATION' | 'CASH' | 'VOUCHER' | 'AUTOSHIP';
+
 export type DashboardTransaction = {
   id: string;
   date: string;
@@ -30,6 +32,7 @@ export type DashboardTransaction = {
   status: 'Completed' | 'Pending' | 'Failed';
   category?: string;
   categoryGroup?: string;
+  walletType?: DashboardTransactionWalletType;
   source?: string;
   subType?: string;
   reference?: string;

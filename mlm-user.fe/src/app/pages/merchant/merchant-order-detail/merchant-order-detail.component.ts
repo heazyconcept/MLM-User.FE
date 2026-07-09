@@ -136,4 +136,24 @@ export class MerchantOrderDetailComponent implements OnInit {
   getFulfilmentLabel(mode: string): string {
     return mode === 'PICKUP' ? 'Pickup' : 'Delivery';
   }
+
+  getBuyerUsername(order: MerchantOrder): string {
+    return order.buyerUsername ?? order.user.username ?? order.user.email;
+  }
+
+  getBuyerPhone(order: MerchantOrder): string | null {
+    return order.buyerPhone ?? order.user.phone ?? null;
+  }
+
+  getBuyerName(order: MerchantOrder): string | null {
+    const first = order.user.firstName?.trim();
+    const last = order.user.lastName?.trim();
+    const full = [first, last].filter(Boolean).join(' ');
+    return full || null;
+  }
+
+  getProductSummary(order: MerchantOrder): string {
+    if (!order.items.length) return 'Order';
+    return order.items.map((item) => `${item.productName} × ${item.quantity}`).join(', ');
+  }
 }
