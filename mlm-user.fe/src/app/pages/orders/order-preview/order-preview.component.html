@@ -152,7 +152,7 @@
                           (click)="assignMissingToMerchant(item, alt.merchantId, alt.username)"
                           class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-mlm-primary/30 text-mlm-primary hover:bg-mlm-primary/5 transition-colors"
                         >
-                          {{ alt.username }} ({{ alt.stockQuantity }} in stock)
+                          {{ merchantWithStockLabel(alt) }} ({{ alt.stockQuantity }} in stock)
                         </button>
                       }
                     </div>

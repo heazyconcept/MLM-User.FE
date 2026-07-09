@@ -13,7 +13,7 @@
         <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Merchant Profile Settings</h1>
         <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
         <p class="text-mlm-secondary text-sm">
-          Update your store details, physical pickup address, contact number, and service areas.
+          Update your business name, physical pickup address, contact number, and service areas.
         </p>
       </div>
 
@@ -58,7 +58,27 @@
           </div>
 
           <form (ngSubmit)="onSubmit()" #profileForm="ngForm" class="space-y-6">
-            
+
+            <!-- Business Name -->
+            <div>
+              <label
+                for="business-name"
+                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
+              >Business Name</label>
+              <input
+                id="business-name"
+                type="text"
+                name="businessName"
+                placeholder="e.g. Herb World Ventures"
+                required
+                minlength="2"
+                [ngModel]="businessName()"
+                (ngModelChange)="businessName.set($event)"
+                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
+              />
+           
+            </div>
+
             <!-- Phone Number -->
             <div>
               <label

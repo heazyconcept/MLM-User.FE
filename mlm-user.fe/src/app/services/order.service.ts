@@ -2,6 +2,7 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { ApiService } from './api.service';
 import { Observable, of } from 'rxjs';
 import { map, catchError, tap } from 'rxjs/operators';
+import { formatMerchantUsernameLabel } from '../core/utils/merchant-display.util';
 
 export type OrderFulfilmentMethod = 'pickup' | 'delivery';
 export type OrderWalletType = 'cash' | 'voucher' | 'autoship';
@@ -319,6 +320,9 @@ export class OrderService {
     const reference = String(o.reference ?? '').trim() || rawId;
     const rawStatus = String(o.status ?? '').toUpperCase();
     const merchant = o.selectedMerchant ?? o.merchant;
+    const merchantLabel = merchant
+      ? formatMerchantUsernameLabel(merchant.username, merchant.businessName ?? merchant.name)
+      : '';
 
     return {
       id: rawId,
@@ -344,15 +348,13 @@ export class OrderService {
       deliveryAddress: o.deliveryAddress || undefined,
       deliveryFee: o.deliveryFee != null ? Number(o.deliveryFee) : undefined,
       pickupLocationName:
-        merchant?.displayName ??
-        merchant?.businessName ??
-        merchant?.username ??
+        merchantLabel ||
+        merchant?.displayName ||
         (o.selectedMerchantId ? 'Merchant Center' : undefined),
       pickupLocationAddress: merchant?.address ? String(merchant.address) : undefined,
       pickupLocationPhone: merchant?.phoneNumber ? String(merchant.phoneNumber) : undefined,
       selectedMerchantId: o.selectedMerchantId ? String(o.selectedMerchantId) : undefined,
-      selectedMerchantName:
-        merchant?.businessName ?? merchant?.username ?? merchant?.name ?? undefined,
+      selectedMerchantName: merchantLabel || merchant?.name || undefined,
       checkoutBatchId: o.checkoutBatchId ? String(o.checkoutBatchId) : undefined,
       paymentId: o.paymentId ? String(o.paymentId) : undefined,
     };

@@ -74,6 +74,7 @@ export class MerchantProfileComponent implements OnInit {
   canUpgradeCategory = this.merchantService.canUpgradeCategory;
   displayCurrency = this.userService.displayCurrency;
 
+  businessName = signal('');
   phoneNumber = signal('');
   address = signal('');
   selectedStates = signal<string[]>([]);
@@ -141,6 +142,7 @@ export class MerchantProfileComponent implements OnInit {
     effect(() => {
       const p = this.profile();
       if (p && !p.message) {
+        this.businessName.set(p.businessName || '');
         this.phoneNumber.set(p.phoneNumber || '');
         this.address.set(p.address || '');
         this.selectedStates.set(p.serviceAreas || []);
@@ -391,16 +393,18 @@ export class MerchantProfileComponent implements OnInit {
 
   onSubmit(): void {
     this.successMessage.set('');
+    const business = this.businessName().trim();
     const phone = this.phoneNumber().trim();
     const addr = this.address().trim();
     const areas = this.selectedStates();
 
-    if (!phone || !addr || areas.length === 0) {
+    if (business.length < 2 || !phone || !addr || areas.length === 0) {
       return;
     }
 
     this.merchantService
       .updateProfile({
+        businessName: business,
         phoneNumber: phone,
         address: addr,
         serviceAreas: areas,
@@ -417,6 +421,7 @@ export class MerchantProfileComponent implements OnInit {
   onReset(): void {
     const p = this.profile();
     if (p) {
+      this.businessName.set(p.businessName || '');
       this.phoneNumber.set(p.phoneNumber || '');
       this.address.set(p.address || '');
       this.selectedStates.set(p.serviceAreas || []);
