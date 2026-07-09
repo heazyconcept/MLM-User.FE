@@ -60,6 +60,14 @@ export class FundWalletComponent implements OnInit {
 
   isSubmitting = signal(false);
   usdtPayment = signal<InitiatePaymentResponse | null>(null);
+  selectedFundingMethod = signal<'online' | null>(null);
+
+  showMethodPicker = computed(() => {
+    const walletType = this.fundForm.get('walletType')?.value;
+    return walletType === 'VOUCHER' && this.selectedFundingMethod() === null;
+  });
+
+  isVoucherWallet = computed(() => this.fundForm.get('walletType')?.value === 'VOUCHER');
 
   constructor() {
     effect(() => {
@@ -78,7 +86,24 @@ export class FundWalletComponent implements OnInit {
       if (type === 'VOUCHER' || type === 'CASH') {
         this.fundForm.patchValue({ walletType: type });
       }
+      const method = type === 'CASH' ? 'online' : null;
+      this.selectedFundingMethod.set(method);
     });
+  }
+
+  selectOnlineFunding(): void {
+    this.selectedFundingMethod.set('online');
+  }
+
+  goToBankTransfer(): void {
+    this.router.navigate(['/payments/manual-deposit'], {
+      queryParams: { walletType: 'VOUCHER' },
+    });
+  }
+
+  backToMethodPicker(): void {
+    this.selectedFundingMethod.set(null);
+    this.usdtPayment.set(null);
   }
 
   onSubmit(): void {
