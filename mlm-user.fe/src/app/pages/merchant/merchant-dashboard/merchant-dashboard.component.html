@@ -218,7 +218,7 @@
                     Products Low/Out
                   </p>
                   <p class="text-white font-bold font-mono text-[22px]">
-                    {{ inventorySummary().lowOrOut }}
+                    {{ lowOrOutCount() }}
                   </p>
                 </div>
               </div>
@@ -261,12 +261,10 @@
 
           <!-- Stat cards -->
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-            @for (card of statCardsData(); track card.label; let i = $index) {
+            @for (card of statCardsData(); track card.label) {
               <div
                 class="rounded-2xl p-5 transition-all duration-300 border border-transparent"
                 [style.background]="card.gradient"
-                [style.opacity]="cardsVisible[i] ? '1' : '0'"
-                [style.transform]="cardsVisible[i] ? 'translateY(0)' : 'translateY(12px)'"
               >
                 <div class="text-2xl mb-2.5 text-white">
                   <i [class]="'pi ' + card.icon"></i>

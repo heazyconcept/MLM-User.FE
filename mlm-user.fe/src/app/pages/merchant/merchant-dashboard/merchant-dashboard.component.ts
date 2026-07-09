@@ -42,7 +42,6 @@ export class MerchantDashboardComponent implements OnInit {
   displayCurrency = this.userService.displayCurrency;
 
   barsAnimated = false;
-  cardsVisible = [false, false, false, false];
   hasUpgradeOptions = signal(false);
 
   showUpgradeBanner = computed(
@@ -59,13 +58,9 @@ export class MerchantDashboardComponent implements OnInit {
     () => this.dashboardSummary()?.orders.pendingFulfillments ?? 0,
   );
 
-  inventorySummary = computed(() => {
-    const inv = this.dashboardSummary()?.inventory;
-    return {
-      total: inv?.totalProducts ?? 0,
-      lowOrOut: inv?.lowOrOutCount ?? 0,
-    };
-  });
+  totalProducts = computed(() => this.dashboardSummary()?.inventory.totalProducts ?? 0);
+
+  lowOrOutCount = computed(() => this.dashboardSummary()?.inventory.lowOrOutCount ?? 0);
 
   salesChangePct = computed(() => this.dashboardSummary()?.sales.salesChangePct ?? null);
 
@@ -117,7 +112,7 @@ export class MerchantDashboardComponent implements OnInit {
       },
       {
         label: 'Inventory Summary',
-        value: String(this.inventorySummary().total),
+        value: String(this.totalProducts()),
         icon: 'pi-box',
         gradient: bgMuted,
       },
@@ -270,12 +265,6 @@ export class MerchantDashboardComponent implements OnInit {
       this.barsAnimated = true;
       this.cdr.markForCheck();
     }, 400);
-    [0, 80, 160, 240].forEach((delay, i) => {
-      setTimeout(() => {
-        this.cardsVisible[i] = true;
-        this.cdr.markForCheck();
-      }, delay + 100);
-    });
   }
 
   private buildSparklinePoints(vals: number[]): string {
