@@ -80,6 +80,7 @@ export interface MerchantProfileResponse {
 export interface UpdateMerchantProfileBody {
   /** Allowed before fee paid; locked after payment (403). */
   type?: MerchantType;
+  businessName?: string;
   phoneNumber?: string;
   address?: string;
   serviceAreas?: string[];
@@ -151,6 +152,7 @@ export interface CheckoutAvailabilityBody {
 export interface MerchantWithStock {
   merchantId: string;
   username: string;
+  businessName?: string;
   stockQuantity: number;
 }
 
@@ -811,6 +813,8 @@ export class MerchantService {
                   return {
                     merchantId: String(mr['merchantId'] ?? ''),
                     username: String(mr['username'] ?? ''),
+                    businessName:
+                      mr['businessName'] != null ? String(mr['businessName']) : undefined,
                     stockQuantity: Number(mr['stockQuantity'] ?? 0),
                   };
                 })

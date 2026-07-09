@@ -145,6 +145,7 @@ export class FundTransferComponent implements OnInit {
     });
 
     effect(() => {
+      if (this.formState() !== 'FORM') return;
       const max = this.sourceBalance();
       const amountCtrl = this.transferForm.get('amount');
       if (amountCtrl) {
@@ -173,9 +174,18 @@ export class FundTransferComponent implements OnInit {
 
   setFormState(state: 'PIN_SETUP' | 'FORM'): void {
     this.formState.set(state);
+
+    const recipientCtrl = this.transferForm.get('recipientUsername')!;
+    const fromCtrl = this.transferForm.get('fromWalletType')!;
+    const toCtrl = this.transferForm.get('toWalletType')!;
+    const amountCtrl = this.transferForm.get('amount')!;
     const pinCtrl = this.transferForm.get('pin')!;
     const confirmPinCtrl = this.transferForm.get('confirmPin')!;
 
+    recipientCtrl.clearValidators();
+    fromCtrl.clearValidators();
+    toCtrl.clearValidators();
+    amountCtrl.clearValidators();
     pinCtrl.clearValidators();
     confirmPinCtrl.clearValidators();
     this.transferForm.clearValidators();
@@ -185,28 +195,48 @@ export class FundTransferComponent implements OnInit {
       confirmPinCtrl.setValidators([Validators.required, Validators.pattern(/^\d{4}$/)]);
       this.transferForm.addValidators(this.pinMatchValidator);
     } else {
+      recipientCtrl.setValidators([Validators.required, Validators.pattern(/\S+/)]);
+      fromCtrl.setValidators([Validators.required]);
+      toCtrl.setValidators([Validators.required]);
+      const max = this.sourceBalance();
+      amountCtrl.setValidators([Validators.required, Validators.min(1), Validators.max(max)]);
       pinCtrl.setValidators([Validators.required, Validators.pattern(/^\d{4}$/)]);
     }
 
+    recipientCtrl.updateValueAndValidity();
+    fromCtrl.updateValueAndValidity();
+    toCtrl.updateValueAndValidity();
+    amountCtrl.updateValueAndValidity();
     pinCtrl.updateValueAndValidity();
     confirmPinCtrl.updateValueAndValidity();
     this.transferForm.updateValueAndValidity();
   }
 
   private pinMatchValidator = (control: {
-    get: (name: string) => { value: string; setErrors: (e: Record<string, boolean>) => void } | null;
+    get: (name: string) => {
+      value: string;
+      errors?: Record<string, unknown> | null;
+      setErrors: (e: Record<string, unknown> | null) => void;
+    } | null;
   }) => {
     const pin = control.get('pin')?.value;
-    const confirmPin = control.get('confirmPin')?.value;
+    const confirmPinCtrl = control.get('confirmPin');
+    const confirmPin = confirmPinCtrl?.value;
     if (pin && confirmPin && pin !== confirmPin) {
-      control.get('confirmPin')?.setErrors({ pinMismatch: true });
+      confirmPinCtrl?.setErrors({ ...(confirmPinCtrl.errors ?? {}), pinMismatch: true });
       return { pinMismatch: true };
+    }
+    if (confirmPinCtrl?.errors?.['pinMismatch']) {
+      const { pinMismatch: _removed, ...rest } = confirmPinCtrl.errors;
+      confirmPinCtrl.setErrors(Object.keys(rest).length ? rest : null);
     }
     return null;
   };
 
   onPinSetupSubmit(): void {
-    if (this.transferForm.invalid || this.isImpersonating()) return;
+    const pinCtrl = this.transferForm.get('pin');
+    const confirmPinCtrl = this.transferForm.get('confirmPin');
+    if (pinCtrl?.invalid || confirmPinCtrl?.invalid || this.isImpersonating()) return;
 
     this.pinSetupSubmitting.set(true);
     const pin = this.transferForm.value.pin ?? '';

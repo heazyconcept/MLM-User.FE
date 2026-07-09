@@ -8,6 +8,7 @@ import { AuthService } from '../../services/auth.service';
 import { LayoutService } from '../../services/layout.service';
 import { MerchantService } from '../../services/merchant.service';
 import { CartService } from '../../services/cart.service';
+import { formatMerchantUsernameLabel } from '../../core/utils/merchant-display.util';
 
 interface MenuItem {
   label: string;
@@ -62,6 +63,12 @@ export class SideMenuComponent implements OnInit {
     () => this.isMerchant() || this.merchantService.isActiveMerchant(),
   );
   currentUser = this.userService.currentUser;
+  /** For merchant users, show `username(businessName)`; otherwise plain username. */
+  displayUsername = computed(() => {
+    const username = this.currentUser()?.username ?? '';
+    if (!this.showMerchantCenter()) return username;
+    return formatMerchantUsernameLabel(username, this.merchantService.profile()?.businessName) || username;
+  });
   mobileMenuOpen = this.layoutService.isMobileMenuOpen;
   activeRoute = signal('');
   openMenus = signal<Set<string>>(new Set());

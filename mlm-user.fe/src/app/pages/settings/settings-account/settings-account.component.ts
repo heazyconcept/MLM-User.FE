@@ -2,6 +2,8 @@ import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../../services/user.service';
+import { MerchantService } from '../../../services/merchant.service';
+import { formatMerchantUsernameLabel } from '../../../core/utils/merchant-display.util';
 
 @Component({
   selector: 'app-settings-account',
@@ -13,6 +15,7 @@ import { UserService } from '../../../services/user.service';
 })
 export class SettingsAccountComponent implements OnInit {
   private userService = inject(UserService);
+  private merchantService = inject(MerchantService);
 
   firstName = signal('');
   lastName = signal('');
@@ -22,9 +25,10 @@ export class SettingsAccountComponent implements OnInit {
 
   username = computed(() => {
     const user = this.currentUser();
-    if (user?.username) return user.username;
-    const email = user?.email ?? '';
-    return email ? email.split('@')[0] : '—';
+    const base = user?.username || (user?.email ? user.email.split('@')[0] : '');
+    if (!base) return '—';
+    if (!this.merchantService.isActiveMerchant()) return base;
+    return formatMerchantUsernameLabel(base, this.merchantService.profile()?.businessName) || base;
   });
 
   hasChanges = computed(() => {

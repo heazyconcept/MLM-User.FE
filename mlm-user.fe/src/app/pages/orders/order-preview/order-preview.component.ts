@@ -13,6 +13,7 @@ import { OrderService } from '../../../services/order.service';
 import {
   MerchantService,
   type AvailableMerchant,
+  type MerchantWithStock,
   type MissingCheckoutItem,
   type SelectedMerchantAvailability,
 } from '../../../services/merchant.service';
@@ -22,6 +23,7 @@ import {
 } from '../../../components/location-selector/location-selector.component';
 import { NIGERIAN_STATES } from '../../../core/constants/states.constants';
 import { getDeliveryFee } from '../../../core/constants/delivery.constants';
+import { formatMerchantUsernameLabel } from '../../../core/utils/merchant-display.util';
 import {
   CheckoutConfirmPayload,
   PendingCheckoutData,
@@ -76,7 +78,9 @@ export class OrderPreviewComponent {
       const hasStock = this.merchantHasStockForCart(m);
       return {
         id: m.id,
-        name: m.businessName || m.name || m.username || 'Unnamed Merchant',
+        name:
+          formatMerchantUsernameLabel(m.username, m.businessName ?? m.name) ||
+          'Unnamed Merchant',
         address: m.address || undefined,
         phoneNumber: m.phoneNumber || undefined,
         pickupAvailable: m.pickupAvailable,
@@ -169,11 +173,27 @@ export class OrderPreviewComponent {
     this.checkMerchantAvailability(id);
   }
 
-  assignMissingToMerchant(item: MissingCheckoutItem, merchantId: string, merchantName: string): void {
+  assignMissingToMerchant(item: MissingCheckoutItem, merchantId: string, fallbackName: string): void {
+    const merchantName = this.getMerchantDisplayById(merchantId) || fallbackName;
     this.missingAssignments.update((prev) => ({
       ...prev,
       [item.productId]: { mode: 'pickup', merchantId, merchantName },
     }));
+  }
+
+  /** Resolve a merchant's `username(businessName)` label by id from the loaded merchant list. */
+  getMerchantDisplayById(merchantId: string): string {
+    const merchant = this.merchants().find((m) => m.id === merchantId);
+    if (!merchant) return '';
+    return formatMerchantUsernameLabel(merchant.username, merchant.businessName ?? merchant.name);
+  }
+
+  /** Label for a split-order alternate merchant, preferring embedded businessName then a lookup. */
+  merchantWithStockLabel(alt: MerchantWithStock): string {
+    if (alt.businessName) {
+      return formatMerchantUsernameLabel(alt.username, alt.businessName);
+    }
+    return this.getMerchantDisplayById(alt.merchantId) || alt.username;
   }
 
   assignMissingToDelivery(item: MissingCheckoutItem): void {
@@ -416,8 +436,8 @@ export class OrderPreviewComponent {
 
   private groupLabel(group: CheckoutGroup): string {
     if (group.fulfilmentMode === 'OFFLINE_DELIVERY') return 'Admin delivery';
-    const merchant = this.merchants().find((m) => m.id === group.selectedMerchantId);
-    return `Pickup — ${merchant?.businessName ?? merchant?.username ?? 'Merchant'}`;
+    const label = this.getMerchantDisplayById(group.selectedMerchantId ?? '');
+    return `Pickup — ${label || 'Merchant'}`;
   }
 
   private resolveCartLines(orderData: PendingCheckoutData | null): CartLine[] {
