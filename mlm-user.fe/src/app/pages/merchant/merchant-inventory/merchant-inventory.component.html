@@ -1,198 +1,475 @@
 <div class="min-h-screen bg-mlm-background">
-  <main class="py-10">
+  <main class="py-6 sm:py-8 lg:py-10">
     <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div class="mb-10">
-        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Inventory</h1>
-        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
-        <p class="text-mlm-secondary text-sm">Product list, stock quantity, and status</p>
+      <div class="mb-5 sm:mb-8">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-mlm-text tracking-tight mb-2">
+          Inventory
+        </h1>
+        <div class="h-px w-16 bg-mlm-primary/30 mb-3 sm:mb-4"></div>
+        <p class="text-mlm-secondary text-sm leading-relaxed max-w-2xl">
+          See how many units you have for each product. If your count is different from what we
+          have on file, tell us why — we will review it before anything changes.
+        </p>
       </div>
 
-      <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
-        @if (loading()) {
-          <div class="flex items-center justify-center py-20">
-            <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
-          </div>
-        } @else if (error(); as err) {
-          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p class="text-red-700 text-sm">{{ err }}</p>
-          </div>
-        } @else if (inventory().length === 0) {
-          <div class="flex flex-col items-center justify-center py-20 text-center">
-            <div
-              class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6"
-            >
-              <i class="pi pi-box text-4xl text-mlm-warm-400" aria-hidden="true"></i>
-            </div>
-            <h2 class="text-xl font-bold text-mlm-text mb-2">No inventory</h2>
-            <p class="text-mlm-secondary text-sm mb-6 max-w-md">
-              Accept allocations to add products to your inventory.
-            </p>
-            <a
-              routerLink="/merchant/allocations"
-              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2"
-            >
-              View Allocations
-            </a>
-          </div>
-        } @else {
-          <!-- Desktop table -->
-          <div class="hidden md:block overflow-x-auto">
-            <table class="w-full text-left">
-              <thead>
-                <tr class="border-b border-gray-200">
-                  <th
-                    class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest"
-                  >
-                    Product
-                  </th>
-                  <th
-                    class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest"
-                  >
-                    SKU
-                  </th>
-                  <th
-                    class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center"
-                  >
-                    Stock
-                  </th>
-                  <th
-                    class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center"
-                  >
-                    Status
-                  </th>
-                  <th
-                    class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-right"
-                  >
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100">
-                @for (item of inventory(); track item.productId) {
-                  <tr class="hover:bg-gray-50/50 transition-colors">
-                    <td class="py-4 px-4 font-semibold text-mlm-text">{{ item.productName }}</td>
-                    <td class="py-4 px-4 text-sm text-mlm-secondary">{{ item.productSku }}</td>
-                    <td class="py-4 px-4 text-center font-semibold text-mlm-text">
-                      {{ item.stockQuantity }}
-                    </td>
-                    <td class="py-4 px-4 text-center">
-                      <span
-                        class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full {{
-                          getStockStatusClass(item.stockStatus)
-                        }}"
-                      >
-                        {{ getStockStatusLabel(item.stockStatus) }}
-                      </span>
-                    </td>
-                    <td class="py-4 px-4 text-right">
-                      <button
-                        class="text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80 transition-colors"
-                        (click)="onEditStock(item)"
-                      >
-                        Edit stock
-                      </button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+      @if (successMessage(); as msg) {
+        <p-message severity="success" variant="simple" class="mb-4 block">{{ msg }}</p-message>
+      }
 
-          <!-- Mobile cards -->
-          <ul class="md:hidden divide-y divide-gray-100" role="list">
-            @for (item of inventory(); track item.productId) {
-              <li class="py-4">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="font-semibold text-mlm-text">{{ item.productName }}</span>
-                  <span
-                    class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full {{
-                      getStockStatusClass(item.stockStatus)
-                    }}"
-                  >
-                    {{ getStockStatusLabel(item.stockStatus) }}
-                  </span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="text-sm text-mlm-secondary"
-                    >SKU: {{ item.productSku }} · Stock: {{ item.stockQuantity }}</span
-                  >
-                  <button
-                    class="text-sm font-semibold text-mlm-primary"
-                    (click)="onEditStock(item)"
-                  >
-                    Edit
-                  </button>
-                </div>
-              </li>
+      @if (error(); as err) {
+        <div class="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-4">
+          <p class="text-red-700 text-sm leading-relaxed">{{ err }}</p>
+        </div>
+      }
+
+      <div class="mb-4 sm:mb-6">
+        <div
+          class="grid grid-cols-2 gap-2 sm:inline-flex sm:gap-0 rounded-xl border border-gray-200 bg-white p-1 w-full sm:w-auto">
+          <button
+            type="button"
+            class="min-h-11 px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors"
+            [class]="
+              activeTab() === 'stock'
+                ? 'bg-mlm-primary text-white shadow-sm'
+                : 'text-mlm-secondary hover:text-mlm-text hover:bg-gray-50'
+            "
+            (click)="setTab('stock')">
+            Stock
+          </button>
+          <button
+            type="button"
+            class="min-h-11 px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+            [class]="
+              activeTab() === 'disputes'
+                ? 'bg-mlm-primary text-white shadow-sm'
+                : 'text-mlm-secondary hover:text-mlm-text hover:bg-gray-50'
+            "
+            (click)="setTab('disputes')">
+            <span class="truncate">Change requests</span>
+            @if (openDisputesCount() > 0) {
+              <span
+                class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[10px] font-bold shrink-0"
+                [class]="
+                  activeTab() === 'disputes' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+                ">
+                {{ openDisputesCount() }}
+              </span>
             }
-          </ul>
-        }
+          </button>
+        </div>
       </div>
+
+      @if (activeTab() === 'stock') {
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-4 lg:p-6">
+          @if (loading()) {
+            <div class="flex items-center justify-center py-16 sm:py-20">
+              <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
+            </div>
+          } @else if (inventory().length === 0) {
+            <div class="flex flex-col items-center justify-center py-12 sm:py-20 text-center px-2">
+              <div
+                class="w-16 h-16 sm:w-24 sm:h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-5 sm:mb-6">
+                <i class="pi pi-box text-3xl sm:text-4xl text-mlm-warm-400" aria-hidden="true"></i>
+              </div>
+              <h2 class="text-lg sm:text-xl font-bold text-mlm-text mb-2">No inventory</h2>
+              <p class="text-mlm-secondary text-sm mb-6 max-w-md leading-relaxed">
+                Accept allocations to add products to your inventory.
+              </p>
+              <a
+                routerLink="/merchant/allocations"
+                class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors">
+                View Allocations
+              </a>
+            </div>
+          } @else {
+            <!-- Desktop / large tablet table -->
+            <div class="hidden lg:block overflow-x-auto -mx-3 sm:mx-0">
+              <table class="w-full text-left min-w-[720px]">
+                <thead>
+                  <tr class="border-b border-gray-200">
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest">
+                      Product
+                    </th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest">
+                      SKU
+                    </th>
+                    <th
+                      class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center">
+                      On our records
+                    </th>
+                    <th
+                      class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center">
+                      You have
+                    </th>
+                    <th
+                      class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center">
+                      Availability
+                    </th>
+                    <th
+                      class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-right">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  @for (item of inventory(); track item.productId) {
+                    <tr class="hover:bg-gray-50/50 transition-colors">
+                      <td class="py-4 px-4">
+                        <p class="font-semibold text-mlm-text">{{ item.productName }}</p>
+                        @if (item.hasOpenAdjustmentDispute) {
+                          <span
+                            class="text-[10px] font-bold uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full mt-1 inline-block">
+                            Waiting for review
+                          </span>
+                        } @else if (quantityMismatch(item)) {
+                          <span
+                            class="text-[10px] font-bold uppercase text-red-700 bg-red-50 px-2 py-0.5 rounded-full mt-1 inline-block">
+                            Count differs
+                          </span>
+                        }
+                      </td>
+                      <td class="py-4 px-4 text-sm text-mlm-secondary">{{ item.productSku }}</td>
+                      <td class="py-4 px-4 text-center font-semibold text-mlm-text">
+                        {{ item.authorizedQuantity }}
+                      </td>
+                      <td class="py-4 px-4 text-center font-semibold text-mlm-text">
+                        {{ item.stockQuantity }}
+                        @if (item.pendingRequestedQuantity != null) {
+                          <span class="block text-[10px] text-amber-600 font-medium mt-0.5">
+                            Requested: {{ item.pendingRequestedQuantity }}
+                          </span>
+                        }
+                      </td>
+                      <td class="py-4 px-4 text-center">
+                        <span
+                          class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full {{
+                            getStockStatusClass(item.stockStatus)
+                          }}">
+                          {{ getStockStatusLabel(item.stockStatus) }}
+                        </span>
+                      </td>
+                      <td class="py-4 px-4 text-right">
+                        <button
+                          type="button"
+                          class="text-sm font-semibold transition-colors min-h-10 px-2"
+                          [class]="
+                            item.hasOpenAdjustmentDispute
+                              ? 'text-gray-400 cursor-not-allowed'
+                              : 'text-mlm-primary hover:text-mlm-primary/80'
+                          "
+                          [disabled]="item.hasOpenAdjustmentDispute"
+                          (click)="onEditStock(item)">
+                          {{ item.hasOpenAdjustmentDispute ? 'Waiting for review' : 'Update count' }}
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Mobile / tablet cards -->
+            <ul class="lg:hidden space-y-3" role="list">
+              @for (item of inventory(); track item.productId) {
+                <li class="rounded-xl border border-gray-100 bg-gray-50/40 p-4 space-y-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0 flex-1">
+                      <p class="font-semibold text-mlm-text leading-snug break-words">
+                        {{ item.productName }}
+                      </p>
+                      <p class="text-xs text-mlm-secondary mt-1">SKU: {{ item.productSku }}</p>
+                      <div class="flex flex-wrap gap-1.5 mt-2">
+                        @if (item.hasOpenAdjustmentDispute) {
+                          <span
+                            class="text-[10px] font-bold uppercase text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+                            Waiting for review
+                          </span>
+                        } @else if (quantityMismatch(item)) {
+                          <span
+                            class="text-[10px] font-bold uppercase text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
+                            Count differs
+                          </span>
+                        }
+                        <span
+                          class="text-[10px] font-semibold px-2 py-0.5 rounded-full {{
+                            getStockStatusClass(item.stockStatus)
+                          }}">
+                          {{ getStockStatusLabel(item.stockStatus) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                    <div class="rounded-lg bg-white border border-gray-100 px-3 py-2.5">
+                      <p class="text-[10px] font-bold uppercase text-mlm-secondary tracking-wide">
+                        On our records
+                      </p>
+                      <p class="text-lg font-bold text-mlm-text mt-1">{{ item.authorizedQuantity }}</p>
+                    </div>
+                    <div class="rounded-lg bg-white border border-gray-100 px-3 py-2.5">
+                      <p class="text-[10px] font-bold uppercase text-mlm-secondary tracking-wide">
+                        You have
+                      </p>
+                      <p class="text-lg font-bold text-mlm-text mt-1">{{ item.stockQuantity }}</p>
+                      @if (item.pendingRequestedQuantity != null) {
+                        <p class="text-[10px] text-amber-600 font-medium mt-1">
+                          Requested: {{ item.pendingRequestedQuantity }}
+                        </p>
+                      }
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="w-full min-h-11 text-sm font-semibold py-2.5 rounded-xl border transition-colors"
+                    [class]="
+                      item.hasOpenAdjustmentDispute
+                        ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-white'
+                        : 'border-mlm-primary/30 text-mlm-primary bg-white hover:bg-mlm-primary/5'
+                    "
+                    [disabled]="item.hasOpenAdjustmentDispute"
+                    (click)="onEditStock(item)">
+                    {{ item.hasOpenAdjustmentDispute ? 'Waiting for review' : 'Update count' }}
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      } @else {
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-4 lg:p-6">
+          @if (sortedDisputes().length === 0) {
+            <div class="flex flex-col items-center justify-center py-12 sm:py-16 text-center px-2">
+              <div class="w-14 h-14 sm:w-16 sm:h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                <i class="pi pi-inbox text-xl sm:text-2xl text-gray-400"></i>
+              </div>
+              <h2 class="text-lg font-bold text-mlm-text mb-2">No change requests yet</h2>
+              <p class="text-mlm-secondary text-sm max-w-md leading-relaxed">
+                When you update a product count and it is different from our records, your request
+                will show up here while we review it.
+              </p>
+            </div>
+          } @else {
+            <div class="hidden lg:block overflow-x-auto -mx-3 sm:mx-0">
+              <table class="w-full text-left min-w-[800px]">
+                <thead>
+                  <tr class="border-b border-gray-200">
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest">
+                      Product
+                    </th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center">
+                      Our records → Your request
+                    </th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center">
+                      Change type
+                    </th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest">
+                      Your explanation
+                    </th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center">
+                      Status
+                    </th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-right">
+                      Submitted
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  @for (dispute of sortedDisputes(); track dispute.id) {
+                    <tr class="hover:bg-gray-50/50">
+                      <td class="py-4 px-4 font-semibold text-mlm-text">{{ dispute.productName }}</td>
+                      <td class="py-4 px-4 text-center text-sm whitespace-nowrap">
+                        <span class="font-semibold">{{ dispute.authorizedQuantity }}</span>
+                        <span class="text-mlm-secondary mx-1">→</span>
+                        <span class="font-semibold text-mlm-primary">{{ dispute.requestedQuantity }}</span>
+                      </td>
+                      <td class="py-4 px-4 text-center text-sm">
+                        <span class="text-xs font-medium text-mlm-secondary">
+                          {{ adjustmentTypeLabel(dispute.adjustmentType) }}
+                        </span>
+                      </td>
+                      <td class="py-4 px-4 text-sm text-mlm-secondary max-w-xs">
+                        {{ dispute.reason }}
+                      </td>
+                      <td class="py-4 px-4 text-center">
+                        <span
+                          class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap {{
+                            getDisputeStatusClass(dispute.status)
+                          }}">
+                          {{ MerchantService.inventoryAdjustmentStatusLabel(dispute.status) }}
+                        </span>
+                      </td>
+                      <td class="py-4 px-4 text-right text-xs text-mlm-secondary whitespace-nowrap">
+                        {{ formatDate(dispute.createdAt) }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <ul class="lg:hidden space-y-3" role="list">
+              @for (dispute of sortedDisputes(); track dispute.id) {
+                <li class="rounded-xl border border-gray-100 bg-gray-50/40 p-4 space-y-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <p class="font-semibold text-mlm-text leading-snug break-words flex-1 min-w-0">
+                      {{ dispute.productName }}
+                    </p>
+                    <span
+                      class="shrink-0 text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-full {{
+                        getDisputeStatusClass(dispute.status)
+                      }}">
+                      {{ MerchantService.inventoryAdjustmentStatusLabel(dispute.status) }}
+                    </span>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="rounded-lg bg-white border border-gray-100 px-3 py-2.5 text-center">
+                      <p class="text-[10px] font-bold uppercase text-mlm-secondary">Our records</p>
+                      <p class="text-lg font-bold text-mlm-text mt-1">{{ dispute.authorizedQuantity }}</p>
+                    </div>
+                    <div class="rounded-lg bg-white border border-gray-100 px-3 py-2.5 text-center">
+                      <p class="text-[10px] font-bold uppercase text-mlm-secondary">You asked for</p>
+                      <p class="text-lg font-bold text-mlm-primary mt-1">{{ dispute.requestedQuantity }}</p>
+                    </div>
+                  </div>
+
+                  <p class="text-xs font-medium text-mlm-secondary">
+                    {{ adjustmentTypeLabel(dispute.adjustmentType) }}
+                  </p>
+
+                  <div class="rounded-lg bg-white border border-gray-100 px-3 py-2.5">
+                    <p class="text-[10px] font-bold uppercase text-mlm-secondary mb-1">Your explanation</p>
+                    <p class="text-sm text-mlm-text leading-relaxed break-words">{{ dispute.reason }}</p>
+                  </div>
+
+                  @if (dispute.adminNotes) {
+                    <div class="rounded-lg bg-mlm-primary/5 border border-mlm-primary/10 px-3 py-2.5">
+                      <p class="text-[10px] font-bold uppercase text-mlm-secondary mb-1">Our reply</p>
+                      <p class="text-sm text-mlm-text leading-relaxed break-words">{{ dispute.adminNotes }}</p>
+                    </div>
+                  }
+
+                  <p class="text-xs text-mlm-secondary">{{ formatDate(dispute.createdAt) }}</p>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
     </div>
   </main>
 
-  <!-- Edit stock modal -->
   <p-dialog
     [visible]="editModalVisible()"
     (visibleChange)="editModalVisible.set($event)"
     [modal]="true"
-    [header]="'Edit stock'"
-    [style]="{ width: '90vw', maxWidth: '400px' }"
+    [header]="'Update stock count'"
+    [style]="{ width: '100%', maxWidth: '480px' }"
+    [breakpoints]="{ '640px': '95vw', '480px': '100vw' }"
     [draggable]="false"
     [resizable]="false"
-    (onHide)="onCloseModal()"
-    styleClass="rounded-xl"
-  >
-    <div class="py-2">
-      <p class="text-sm text-mlm-secondary mb-4">{{ editProductName() }}</p>
+    (onHide)="closeModal()"
+    styleClass="inventory-edit-dialog rounded-xl"
+    contentStyleClass="!p-0">
+    @if (editItem(); as item) {
+      <div class="px-4 pb-4 sm:px-5 sm:pb-5 space-y-4">
+        <p class="text-sm sm:text-base font-semibold text-mlm-text leading-snug break-words">
+          {{ item.productName }}
+        </p>
 
-      <label
-        for="edit-qty"
-        class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
-        >Quantity</label
-      >
-      <p-inputNumber
-        id="edit-qty"
-        [ngModel]="editQuantity()"
-        (ngModelChange)="editQuantity.set($event)"
-        [min]="0"
-        [showButtons]="true"
-        inputId="edit-qty"
-        class="w-full"
-      ></p-inputNumber>
+        <div class="grid grid-cols-2 gap-2 sm:gap-3">
+          <div class="rounded-xl bg-gray-50 border border-gray-100 px-3 sm:px-4 py-3">
+            <p class="text-xs font-medium text-mlm-secondary">On our records</p>
+            <p class="text-xl sm:text-2xl font-bold text-mlm-text mt-1">
+              {{ editAuthorizedQuantity() }}
+              <span class="text-sm font-semibold text-mlm-secondary">units</span>
+            </p>
+          </div>
+          <div class="rounded-xl bg-gray-50 border border-gray-100 px-3 sm:px-4 py-3">
+            <p class="text-xs font-medium text-mlm-secondary">You have now</p>
+            <p class="text-xl sm:text-2xl font-bold text-mlm-text mt-1">
+              {{ editOriginalQuantity() }}
+              <span class="text-sm font-semibold text-mlm-secondary">units</span>
+            </p>
+          </div>
+        </div>
 
-      <label
-        for="edit-status"
-        class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2 mt-4"
-        >Status</label
-      >
-      <select
-        id="edit-status"
-        [ngModel]="editStatus()"
-        (ngModelChange)="editStatus.set($event)"
-        class="w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
-      >
-        <option value="">Keep current</option>
-        @for (s of stockStatuses; track s) {
-          <option [value]="s">{{ getStockStatusLabel(s) }}</option>
+        <div>
+          <label for="edit-qty" class="block text-sm font-semibold text-mlm-text mb-2">
+            How many units do you have?
+          </label>
+          <p-inputNumber
+            id="edit-qty"
+            [ngModel]="editQuantity()"
+            (ngModelChange)="editQuantity.set($event ?? 0)"
+            [min]="0"
+            [showButtons]="true"
+            inputId="edit-qty"
+            styleClass="inventory-qty-input w-full">
+          </p-inputNumber>
+        </div>
+
+        @if (requiresAdjustmentDispute()) {
+          <div class="rounded-xl border border-amber-200 bg-amber-50/60 p-3 sm:p-4 space-y-3">
+            <p class="text-sm font-semibold text-amber-900">We need to review this change</p>
+            <p class="text-sm text-amber-900 leading-relaxed">
+              You entered <span class="font-bold">{{ editQuantity() }} units</span>, but we have
+              <span class="font-bold">{{ editAuthorizedQuantity() }} units</span> on record
+              @if (adjustmentType(); as type) {
+                ({{ adjustmentTypeLabel(type) }}).
+              }
+              Please tell us why. Your stock will not change until we approve.
+            </p>
+
+            <div>
+              <label for="edit-reason" class="block text-sm font-semibold text-mlm-text mb-2">
+                Why is your count different?
+              </label>
+              <textarea
+                pTextarea
+                id="edit-reason"
+                rows="4"
+                [ngModel]="editReason()"
+                (ngModelChange)="editReason.set($event)"
+                placeholder="For example: I received extra units, or some items were damaged…"
+                class="w-full text-sm min-h-24 resize-y">
+              </textarea>
+              <p class="text-xs text-mlm-secondary mt-1.5">
+                Write at least {{ reasonMinLength }} characters
+                ({{ editReason().trim().length }}/{{ reasonMinLength }})
+              </p>
+            </div>
+          </div>
+        } @else if (editQuantity() !== editOriginalQuantity()) {
+          <p class="text-sm text-mlm-secondary leading-relaxed">
+            This matches our records. You can save without a review.
+          </p>
         }
-      </select>
 
-      <div class="flex gap-3 mt-6">
-        <p-button
-          label="Save"
-          icon="pi pi-check"
-          [loading]="actionLoading()"
-          (onClick)="onSaveStock()"
-          styleClass="flex-1 !bg-mlm-primary !border-mlm-primary"
-        ></p-button>
-        <p-button
-          label="Cancel"
-          severity="secondary"
-          (onClick)="onCloseModal()"
-          styleClass="flex-1"
-        ></p-button>
+        @if (formError(); as fe) {
+          <p class="text-sm text-red-600 leading-relaxed">{{ fe }}</p>
+        }
+
+        <div class="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-1 sm:pt-2">
+          <p-button
+            label="Cancel"
+            severity="secondary"
+            styleClass="w-full sm:w-auto min-h-11"
+            (onClick)="closeModal()"
+            [disabled]="actionLoading()">
+          </p-button>
+          <p-button
+            [label]="requiresAdjustmentDispute() ? 'Send for review' : 'Save'"
+            icon="pi pi-check"
+            styleClass="w-full sm:flex-1 min-h-11 !bg-mlm-primary !border-mlm-primary"
+            [loading]="actionLoading()"
+            [disabled]="!canSaveEdit()"
+            (onClick)="onSaveStock()">
+          </p-button>
+        </div>
       </div>
-    </div>
+    }
   </p-dialog>
 </div>

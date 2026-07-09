@@ -9,7 +9,10 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { MerchantService } from '../../../services/merchant.service';
+import {
+  MerchantDashboardActivityType,
+  MerchantService,
+} from '../../../services/merchant.service';
 import { UserService } from '../../../services/user.service';
 
 @Component({
@@ -31,20 +34,13 @@ export class MerchantDashboardComponent implements OnInit {
   needsPayment = this.merchantService.needsPayment;
   canReapplyAsMerchant = this.merchantService.canReapplyAsMerchant;
   isAwaitingAdminApproval = this.merchantService.isAwaitingAdminApproval;
-  earnings = this.merchantService.earnings;
-  inventory = this.merchantService.inventory;
-  inventorySummary = this.merchantService.inventorySummary;
-  orders = this.merchantService.orders;
-  totalMerchantSales = this.merchantService.totalMerchantSales;
-  pendingFulfilmentsCount = this.merchantService.pendingFulfilmentsCount;
+  dashboardSummary = this.merchantService.dashboardSummary;
+  dashboardLoading = this.merchantService.dashboardLoading;
   loading = this.merchantService.loading;
   error = this.merchantService.error;
 
   displayCurrency = this.userService.displayCurrency;
 
-  // Chart Properties
-  salesData: any;
-  salesOptions: any;
   barsAnimated = false;
   cardsVisible = [false, false, false, false];
   hasUpgradeOptions = signal(false);
@@ -53,121 +49,92 @@ export class MerchantDashboardComponent implements OnInit {
     () => this.canUpgradeCategory() && this.hasUpgradeOptions(),
   );
 
-  get pendingOrders(): number {
-    return this.pendingFulfilmentsCount() ?? 0;
-  }
+  summaryCurrency = computed(
+    () => this.dashboardSummary()?.currency ?? this.displayCurrency(),
+  );
 
-  get unreadAllocations(): number {
-    return this.merchantService.actionableAllocationCount();
-  }
+  totalMerchantSales = computed(() => this.dashboardSummary()?.sales.totalSales ?? 0);
 
-  get salesMonths(): string[] {
-    return this.salesData?.labels?.slice(-7) ?? [];
-  }
+  pendingFulfilmentsCount = computed(
+    () => this.dashboardSummary()?.orders.pendingFulfillments ?? 0,
+  );
 
-  get salesValues(): number[] {
-    const d = this.salesData?.datasets?.[0]?.data;
-    return Array.isArray(d) ? d.slice(-7) : [];
-  }
+  inventorySummary = computed(() => {
+    const inv = this.dashboardSummary()?.inventory;
+    return {
+      total: inv?.totalProducts ?? 0,
+      lowOrOut: inv?.lowOrOutCount ?? 0,
+    };
+  });
 
-  get barItems(): { value: number; label: string; isLast: boolean }[] {
-    return this.salesValues.map((v, i) => ({
-      value: v,
-      label: this.salesMonths[i] ?? '',
-      isLast: i === this.salesValues.length - 1,
+  salesChangePct = computed(() => this.dashboardSummary()?.sales.salesChangePct ?? null);
+
+  trendChangePct = computed(
+    () => this.dashboardSummary()?.sales.trend.changePctVsPreviousPeriod ?? null,
+  );
+
+  barItems = computed(() => {
+    const months = this.dashboardSummary()?.sales.monthlyOverview ?? [];
+    const slice = months.slice(-7);
+    return slice.map((m, i) => ({
+      value: m.amount,
+      label: m.label,
+      isLast: i === slice.length - 1,
     }));
-  }
+  });
 
-  get statCardsData(): { label: string; value: string; icon: string; gradient: string }[] {
-    const fmt = (n: number) =>
-      new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 }).format(n);
+  maxBarValue = computed(() => {
+    const items = this.barItems();
+    if (items.length === 0) return 0;
+    return Math.max(...items.map((b) => b.value));
+  });
+
+  trendAmounts = computed(
+    () => this.dashboardSummary()?.sales.trend.points.map((p) => p.amount) ?? [],
+  );
+
+  sparklinePoints = computed(() => this.buildSparklinePoints(this.trendAmounts()));
+
+  sparklineArea = computed(() => this.buildSparklineArea(this.trendAmounts()));
+
+  statCardsData = computed(() => {
+    const currency = this.summaryCurrency();
     const bgPrimary = 'linear-gradient(180deg,#49A321 0%,#3d8a1c 100%)';
     const bgMuted = 'linear-gradient(180deg,#64748b 0%,#475569 100%)';
-    const sym = this.displayCurrency() === 'NGN' ? '₦' : '$';
 
     return [
       {
         label: 'Total Merchant Sales',
-        value: this.formatCurrency(this.totalMerchantSales(), this.earnings()?.currency),
+        value: this.formatCurrency(this.totalMerchantSales(), currency),
         icon: 'pi-shopping-cart',
         gradient: bgPrimary,
       },
       {
         label: 'Pending Fulfillments',
-        value: String(this.pendingFulfilmentsCount() ?? 0),
+        value: String(this.pendingFulfilmentsCount()),
         icon: 'pi-clock',
         gradient: bgMuted,
       },
       {
         label: 'Inventory Summary',
-        value: `${this.inventorySummary().total} (${this.inventorySummary().lowOrOut} low/out)`,
+        value: String(this.inventorySummary().total),
         icon: 'pi-box',
         gradient: bgMuted,
       },
       {
         label: 'Merchant Earnings',
         value: this.formatCurrency(
-          this.earnings()?.merchantEarnings?.totalEarnings ?? 0,
-          this.earnings()?.currency,
+          this.dashboardSummary()?.earnings.totalEarnings ?? 0,
+          currency,
         ),
         icon: 'pi-money-bill',
         gradient: bgPrimary,
       },
     ];
-  }
-
-  getBarHeight(val: number): string {
-    const vals = this.salesValues;
-    if (vals.length === 0) return '0%';
-    const max = Math.max(...vals);
-    return this.barsAnimated ? `${(val / max) * 100}%` : '0%';
-  }
-
-  getBarBackground(i: number, isLast: boolean): string {
-    return isLast ? '#49A321' : '#e7e5e4';
-  }
-
-  getBarBorder(_i: number, isLast: boolean): string {
-    return isLast ? 'none' : '1px solid var(--color-mlm-warm-200)';
-  }
-
-  getBarDelay(i: number): string {
-    return `${i * 60}ms`;
-  }
-
-  get sparklinePoints(): string {
-    const vals = this.salesValues;
-    if (vals.length === 0) return '';
-    const max = Math.max(...vals);
-    const min = Math.min(...vals);
-    const W = 200;
-    const H = 48;
-    return vals
-      .map(
-        (v, i) =>
-          `${(i / (vals.length - 1)) * W},${H - ((v - min) / (max - min || 1)) * H * 0.8 - H * 0.1}`,
-      )
-      .join(' ');
-  }
-
-  get sparklineArea(): string {
-    const vals = this.salesValues;
-    if (vals.length === 0) return '';
-    const max = Math.max(...vals);
-    const min = Math.min(...vals);
-    const W = 200;
-    const H = 48;
-    const pts = vals
-      .map(
-        (v, i) =>
-          `${(i / (vals.length - 1)) * W},${H - ((v - min) / (max - min || 1)) * H * 0.8 - H * 0.1}`,
-      )
-      .join(' ');
-    return `0,${H} ${pts} ${W},${H}`;
-  }
+  });
 
   earningsBreakdown = computed(() => {
-    const e = this.earnings()?.merchantEarnings;
+    const e = this.dashboardSummary()?.earnings;
     if (!e) return [];
 
     const colors = ['#49A321', '#64748b', '#3b82f6', '#f59e0b', '#8b5cf6'];
@@ -182,66 +149,82 @@ export class MerchantDashboardComponent implements OnInit {
   });
 
   recentActivities = computed(() => {
-    const orders = this.orders()
-      .slice(0, 3)
-      .map((o) => ({
-        id: `ord-${o.id}`,
-        type: 'Order Received',
-        title: 'New Order',
-        description: `Order ${o.id.slice(0, 8)}...`,
-        amount: o.totalAmount,
-        currency: o.currency,
-        date: o.createdAt,
-        icon: 'pi-shopping-bag',
-      }));
-
-    const deliveries = this.merchantService
-      .deliveries()
-      .slice(0, 2)
-      .map((d) => ({
-        id: `del-${d.id}`,
-        type: 'Delivery Confirmed',
-        title: 'Delivery Done',
-        description: `Order ${d.orderId.slice(0, 8)}...`,
-        amount: null,
-        currency: null,
-        date: d.createdAt,
-        icon: 'pi-check-circle',
-      }));
-
-    return [...orders, ...deliveries]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 5);
+    const items = this.dashboardSummary()?.recentActivity ?? [];
+    return items.map((a) => ({
+      id: a.id,
+      type: this.activityDisplayType(a.type),
+      title: a.title,
+      description: a.description,
+      amount: a.amount,
+      currency: a.currency,
+      date: a.occurredAt,
+      icon: this.activityIcon(a.type),
+    }));
   });
 
-  private formatTypeLabel(key: string): string {
-    const labels: Record<string, string> = {
-      personalProduct: 'Merchant product purchase commission',
-      directReferralProduct: 'Merchant direct referral product commission',
-      communityProduct: 'Merchant community product commission',
-      deliveryBonus: 'Merchant delivery commission',
-      MERCHANT_PERSONAL_PRODUCT: 'Merchant product purchase commission',
-      MERCHANT_DIRECT_REFERRAL_PRODUCT: 'Merchant direct referral product commission',
-      MERCHANT_COMMUNITY_PRODUCT: 'Merchant community product commission',
-      MERCHANT_DELIVERY_BONUS: 'Merchant delivery commission',
-    };
-    return labels[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+  actionableAllocationsCount = computed(
+    () => this.dashboardSummary()?.allocations.actionableCount ?? 0,
+  );
+
+  totalEarnings = computed(() => this.dashboardSummary()?.earnings.totalEarnings ?? 0);
+
+  ngOnInit(): void {
+    this.merchantService.fetchProfile$().subscribe((profile) => {
+      if (profile?.status === 'ACTIVE') {
+        this.merchantService.fetchDashboardSummary$().subscribe(() => {
+          this.runEntranceAnimations();
+          this.cdr.markForCheck();
+        });
+        if (this.canUpgradeCategory()) {
+          this.merchantService.fetchUpgradeOptions({ silent: true }).subscribe((opts) => {
+            this.hasUpgradeOptions.set(!!opts && opts.eligibleUpgrades.length > 0);
+            this.cdr.markForCheck();
+          });
+        }
+      } else {
+        this.merchantService.clearError();
+      }
+    });
   }
 
-  activityBadge(activity: { amount?: number; currency?: string; type: string }): string {
+  getBarHeight(val: number): string {
+    const max = this.maxBarValue();
+    if (max === 0) return '0%';
+    return this.barsAnimated ? `${(val / max) * 100}%` : '0%';
+  }
+
+  getBarBackground(_i: number, isLast: boolean): string {
+    return isLast ? '#49A321' : '#e7e5e4';
+  }
+
+  getBarBorder(_i: number, isLast: boolean): string {
+    return isLast ? 'none' : '1px solid var(--color-mlm-warm-200)';
+  }
+
+  getBarDelay(i: number): string {
+    return `${i * 60}ms`;
+  }
+
+  formatCurrency(amount: number, currency?: string): string {
+    return this.merchantService.formatCurrency(amount, currency);
+  }
+
+  formatPct(value: number): string {
+    return `${Math.abs(value)}%`;
+  }
+
+  activityBadge(activity: { amount?: number | null; currency?: string | null; type: string }): string {
     if (activity.amount == null) return '';
     const sym = activity.currency === 'USD' ? '$' : '₦';
     const n = new Intl.NumberFormat('en-NG', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(
-      Math.abs(activity.amount),
-    );
-    return `+${sym}${n}`; // simplified for merchant
+    }).format(Math.abs(activity.amount));
+    return `+${sym}${n}`;
   }
 
   isPositiveActivityBadge(activity: { type: string }): boolean {
-    return true; // all merchant money interactions here are positive
+    return activity.type !== 'Stock Dispute';
   }
 
   formatActivityDate(dateString: string): string {
@@ -264,7 +247,9 @@ export class MerchantDashboardComponent implements OnInit {
     const map: Record<string, string> = {
       'Earnings Posted': '#f0fdf4',
       'Order Received': '#f5f5f4',
-      'Product Approved': '#f0fdf4',
+      'Delivery Confirmed': '#f0fdf4',
+      'Allocation Delivered': '#f0fdf4',
+      'Stock Dispute': '#fef2f2',
     };
     return map[type] ?? '#f5f5f4';
   }
@@ -273,31 +258,11 @@ export class MerchantDashboardComponent implements OnInit {
     const map: Record<string, string> = {
       'Earnings Posted': '#bbf7d0',
       'Order Received': '#e7e5e4',
-      'Product Approved': '#bbf7d0',
+      'Delivery Confirmed': '#bbf7d0',
+      'Allocation Delivered': '#bbf7d0',
+      'Stock Dispute': '#fecaca',
     };
     return map[type] ?? '#e7e5e4';
-  }
-
-  ngOnInit(): void {
-    this.merchantService.fetchProfile$().subscribe((profile) => {
-      if (profile?.status === 'ACTIVE') {
-        this.merchantService.fetchEarningsSummary();
-        this.merchantService.fetchOrders();
-        this.merchantService.fetchInventory();
-        this.merchantService.fetchAllocations();
-        this.merchantService.fetchStockDisputes();
-        this.initCharts();
-        this.runEntranceAnimations();
-        if (this.canUpgradeCategory()) {
-          this.merchantService.fetchUpgradeOptions({ silent: true }).subscribe((opts) => {
-            this.hasUpgradeOptions.set(!!opts && opts.eligibleUpgrades.length > 0);
-            this.cdr.markForCheck();
-          });
-        }
-      } else {
-        this.merchantService.clearError();
-      }
-    });
   }
 
   private runEntranceAnimations(): void {
@@ -313,24 +278,86 @@ export class MerchantDashboardComponent implements OnInit {
     });
   }
 
-  private initCharts() {
-    // Sales Overview (Line Chart)
-    this.salesData = {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-      datasets: [
-        {
-          label: 'Revenue',
-          data: [5000, 12000, 18000, 15000, 28000, 35000, 32000, 42000, 45000, 41000, 58000, 65000],
-          fill: true,
-          borderColor: '#49A321',
-          tension: 0.4,
-          backgroundColor: 'rgba(73, 163, 33, 0.1)',
-        },
-      ],
-    };
+  private buildSparklinePoints(vals: number[]): string {
+    if (vals.length === 0) return '';
+    const max = Math.max(...vals);
+    const min = Math.min(...vals);
+    const W = 200;
+    const H = 48;
+    const denom = vals.length - 1 || 1;
+    return vals
+      .map(
+        (v, i) =>
+          `${(i / denom) * W},${H - ((v - min) / (max - min || 1)) * H * 0.8 - H * 0.1}`,
+      )
+      .join(' ');
   }
 
-  formatCurrency(amount: number, currency?: string): string {
-    return this.merchantService.formatCurrency(amount, currency);
+  private buildSparklineArea(vals: number[]): string {
+    if (vals.length === 0) return '';
+    const max = Math.max(...vals);
+    const min = Math.min(...vals);
+    const W = 200;
+    const H = 48;
+    const denom = vals.length - 1 || 1;
+    const pts = vals
+      .map(
+        (v, i) =>
+          `${(i / denom) * W},${H - ((v - min) / (max - min || 1)) * H * 0.8 - H * 0.1}`,
+      )
+      .join(' ');
+    return `0,${H} ${pts} ${W},${H}`;
+  }
+
+  private formatTypeLabel(key: string): string {
+    const labels: Record<string, string> = {
+      personalProduct: 'Merchant product purchase commission',
+      directReferralProduct: 'Merchant direct referral product commission',
+      communityProduct: 'Merchant community product commission',
+      deliveryBonus: 'Merchant delivery commission',
+      MERCHANT_PERSONAL_PRODUCT: 'Merchant product purchase commission',
+      MERCHANT_DIRECT_REFERRAL_PRODUCT: 'Merchant direct referral product commission',
+      MERCHANT_COMMUNITY_PRODUCT: 'Merchant community product commission',
+      MERCHANT_DELIVERY_BONUS: 'Merchant delivery commission',
+    };
+    return labels[key] ?? key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+  }
+
+  private activityDisplayType(type: MerchantDashboardActivityType): string {
+    switch (type) {
+      case 'ORDER_RECEIVED':
+        return 'Order Received';
+      case 'DELIVERY_CONFIRMED':
+        return 'Delivery Confirmed';
+      case 'EARNING_CREDITED':
+        return 'Earnings Posted';
+      case 'ALLOCATION_DELIVERED':
+        return 'Allocation Delivered';
+      case 'STOCK_DISPUTE_OPENED':
+        return 'Stock Dispute';
+      default: {
+        const _exhaustive: never = type;
+        return _exhaustive;
+      }
+    }
+  }
+
+  private activityIcon(type: MerchantDashboardActivityType): string {
+    switch (type) {
+      case 'ORDER_RECEIVED':
+        return 'pi-shopping-bag';
+      case 'DELIVERY_CONFIRMED':
+        return 'pi-check-circle';
+      case 'EARNING_CREDITED':
+        return 'pi-money-bill';
+      case 'ALLOCATION_DELIVERED':
+        return 'pi-inbox';
+      case 'STOCK_DISPUTE_OPENED':
+        return 'pi-exclamation-triangle';
+      default: {
+        const _exhaustive: never = type;
+        return _exhaustive;
+      }
+    }
   }
 }
