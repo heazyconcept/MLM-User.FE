@@ -34,6 +34,14 @@ export type StockDisputeStatus =
   | 'ADMIN_ACCEPTED'
   | 'MERCHANT_ACKNOWLEDGED'
   | 'CLOSED';
+
+export type InventoryAdjustmentType = 'INCREASE' | 'DECREASE';
+
+export type InventoryAdjustmentDisputeStatus =
+  | 'OPEN'
+  | 'ADMIN_APPROVED'
+  | 'ADMIN_REJECTED'
+  | 'CLOSED';
 export type MerchantFeePaymentSource =
   | 'REGISTRATION_WALLET'
   | 'CASH_WALLET'
@@ -267,6 +275,69 @@ export interface MerchantEarningsSummary {
   currency: string;
 }
 
+export type MerchantDashboardActivityType =
+  | 'ORDER_RECEIVED'
+  | 'DELIVERY_CONFIRMED'
+  | 'EARNING_CREDITED'
+  | 'ALLOCATION_DELIVERED'
+  | 'STOCK_DISPUTE_OPENED';
+
+export interface MerchantDashboardTrendPoint {
+  date: string;
+  amount: number;
+}
+
+export interface MerchantDashboardMonthlyOverview {
+  month: string;
+  label: string;
+  amount: number;
+}
+
+export interface MerchantDashboardRecentActivity {
+  id: string;
+  type: MerchantDashboardActivityType;
+  title: string;
+  description: string;
+  amount: number | null;
+  currency: string | null;
+  occurredAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface MerchantDashboardSummary {
+  currency: string;
+  sales: {
+    totalSales: number;
+    salesChangePct: number | null;
+    trend: {
+      period: string;
+      points: MerchantDashboardTrendPoint[];
+      changePctVsPreviousPeriod: number | null;
+    };
+    monthlyOverview: MerchantDashboardMonthlyOverview[];
+  };
+  orders: {
+    pendingFulfillments: number;
+    pendingByStatus?: Record<string, number>;
+  };
+  inventory: {
+    totalProducts: number;
+    lowStockCount: number;
+    outOfStockCount: number;
+    lowOrOutCount: number;
+  };
+  earnings: {
+    totalEarnings: number;
+    availableEarnings: number;
+    pendingEarnings: number;
+    byType: MerchantEarningsByType;
+  };
+  allocations: {
+    actionableCount: number;
+  };
+  recentActivity: MerchantDashboardRecentActivity[];
+}
+
 export interface MerchantAllocationProduct {
   id: string;
   name: string;
@@ -323,14 +394,41 @@ export interface MerchantInventoryItem {
   productName: string;
   productSku: string;
   stockQuantity: number;
+  /** Ledger-derived qty the platform recognizes. Falls back to stockQuantity when BE omits it. */
+  authorizedQuantity: number;
   stockStatus: StockStatus | null;
   isActive: boolean;
+  hasOpenAdjustmentDispute?: boolean;
+  pendingRequestedQuantity?: number | null;
+}
+
+export interface MerchantInventoryAdjustmentDispute {
+  id: string;
+  productId: string;
+  productName: string;
+  productSku?: string;
+  authorizedQuantity: number;
+  requestedQuantity: number;
+  adjustmentType: InventoryAdjustmentType;
+  reason: string;
+  status: InventoryAdjustmentDisputeStatus;
+  adminNotes?: string | null;
+  createdAt?: string;
+  resolvedAt?: string | null;
+}
+
+export interface SubmitInventoryAdjustmentBody {
+  requestedQuantity: number;
+  adjustmentType: InventoryAdjustmentType;
+  reason: string;
 }
 
 export interface UpdateStockBody {
   stockQuantity?: number;
   stockStatus?: StockStatus;
 }
+
+export const INVENTORY_ADJUSTMENT_REASON_MIN_LENGTH = 10;
 
 export interface InitiateMerchantFeeBody {
   source: MerchantFeePaymentSource;
@@ -431,7 +529,10 @@ export class MerchantService {
   private earningsSignal = signal<MerchantEarningsSummary | null>(null);
   private allocationsSignal = signal<MerchantAllocation[]>([]);
   private stockDisputesSignal = signal<MerchantStockDispute[]>([]);
+  private inventoryAdjustmentDisputesSignal = signal<MerchantInventoryAdjustmentDispute[]>([]);
   private inventorySignal = signal<MerchantInventoryItem[]>([]);
+  private dashboardSummarySignal = signal<MerchantDashboardSummary | null>(null);
+  private dashboardLoadingSignal = signal(false);
   private loadingSignal = signal(false);
   private errorSignal = signal<string | null>(null);
   private actionLoadingSignal = signal(false);
@@ -447,7 +548,10 @@ export class MerchantService {
   readonly earnings = this.earningsSignal.asReadonly();
   readonly allocations = this.allocationsSignal.asReadonly();
   readonly stockDisputes = this.stockDisputesSignal.asReadonly();
+  readonly inventoryAdjustmentDisputes = this.inventoryAdjustmentDisputesSignal.asReadonly();
   readonly inventory = this.inventorySignal.asReadonly();
+  readonly dashboardSummary = this.dashboardSummarySignal.asReadonly();
+  readonly dashboardLoading = this.dashboardLoadingSignal.asReadonly();
   readonly loading = this.loadingSignal.asReadonly();
   readonly error = this.errorSignal.asReadonly();
   readonly actionLoading = this.actionLoadingSignal.asReadonly();
@@ -521,6 +625,28 @@ export class MerchantService {
     ).length;
     return { total, lowOrOut };
   });
+
+  readonly openInventoryAdjustmentDisputesCount = computed(
+    () =>
+      this.inventoryAdjustmentDisputesSignal().filter((d) => d.status === 'OPEN').length,
+  );
+
+  static resolveAdjustmentType(
+    authorizedQuantity: number,
+    requestedQuantity: number,
+  ): InventoryAdjustmentType {
+    return requestedQuantity >= authorizedQuantity ? 'INCREASE' : 'DECREASE';
+  }
+
+  static inventoryAdjustmentStatusLabel(status: InventoryAdjustmentDisputeStatus): string {
+    const labels: Record<InventoryAdjustmentDisputeStatus, string> = {
+      OPEN: 'Waiting for review',
+      ADMIN_APPROVED: 'Approved',
+      ADMIN_REJECTED: 'Not approved',
+      CLOSED: 'Closed',
+    };
+    return labels[status] ?? status;
+  }
 
   /* ── Application & Discovery ─────────────────────────────────── */
 
@@ -1110,6 +1236,35 @@ export class MerchantService {
       .subscribe();
   }
 
+  /* ── Dashboard summary ───────────────────────────────────────── */
+
+  /** GET /merchants/dashboard/summary */
+  fetchDashboardSummary$(params?: {
+    trendDays?: number;
+    salesMonths?: number;
+  }): Observable<MerchantDashboardSummary | null> {
+    this.dashboardLoadingSignal.set(true);
+    this.errorSignal.set(null);
+
+    const query: Record<string, number> = {};
+    if (params?.trendDays != null) query['trendDays'] = params.trendDays;
+    if (params?.salesMonths != null) query['salesMonths'] = params.salesMonths;
+
+    return this.api.get<unknown>('merchants/dashboard/summary', query).pipe(
+      map((res) => this.mapDashboardSummary(res)),
+      tap((summary) => this.dashboardSummarySignal.set(summary)),
+      catchError((err) => {
+        console.error('[MerchantService] fetchDashboardSummary failed', err);
+        return this.handleOperationalFetchError(err, 'Failed to load dashboard summary.');
+      }),
+      finalize(() => this.dashboardLoadingSignal.set(false)),
+    );
+  }
+
+  fetchDashboardSummary(params?: { trendDays?: number; salesMonths?: number }): void {
+    this.fetchDashboardSummary$(params).subscribe();
+  }
+
   /* ── Earnings ────────────────────────────────────────────────── */
 
   /** GET /merchants/earnings/summary */
@@ -1247,9 +1402,10 @@ export class MerchantService {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
     this.api
-      .get<{ items: MerchantInventoryItem[] }>('merchants/inventory')
+      .get<{ items: unknown[] }>('merchants/inventory')
       .pipe(
-        tap((res) => this.inventorySignal.set(res.items ?? [])),
+        map((res) => (res.items ?? []).map((raw) => this.mapInventoryItem(raw as Record<string, unknown>))),
+        tap((items) => this.inventorySignal.set(items)),
         catchError((err) => {
           console.error('[MerchantService] fetchInventory failed', err);
           return this.handleOperationalFetchError(err, 'Failed to load inventory.');
@@ -1259,22 +1415,74 @@ export class MerchantService {
       .subscribe();
   }
 
-  /** PUT /merchants/inventory/:productId/stock */
-  updateStock(productId: string, body: UpdateStockBody): void {
+  /** GET /merchants/me/inventory-adjustment-disputes */
+  fetchInventoryAdjustmentDisputes(): void {
+    this.api
+      .get<
+        | MerchantInventoryAdjustmentDispute[]
+        | { disputes?: unknown[]; data?: unknown[]; items?: unknown[]; total?: number }
+      >('merchants/me/inventory-adjustment-disputes')
+      .pipe(
+        map((res) => this.normalizeInventoryAdjustmentDisputesResponse(res)),
+        tap((disputes) => this.inventoryAdjustmentDisputesSignal.set(disputes)),
+        catchError((err) => {
+          console.error('[MerchantService] fetchInventoryAdjustmentDisputes failed', err);
+          return of([]);
+        }),
+      )
+      .subscribe();
+  }
+
+  /**
+   * POST /merchants/inventory/:productId/adjustment-requests
+   * Creates a Product Dispute when requested qty differs from authorized qty.
+   */
+  submitInventoryAdjustmentRequest(
+    productId: string,
+    body: SubmitInventoryAdjustmentBody,
+  ): Observable<MerchantInventoryAdjustmentDispute | null> {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
-    this.api
-      .put(`merchants/inventory/${productId}/stock`, body)
+
+    return this.api
+      .post<Record<string, unknown>>(
+        `merchants/inventory/${productId}/adjustment-requests`,
+        body,
+      )
       .pipe(
-        tap(() => this.fetchInventory()),
+        map((raw) => this.mapInventoryAdjustmentDispute(raw)),
+        tap(() => {
+          this.fetchInventory();
+          this.fetchInventoryAdjustmentDisputes();
+        }),
         catchError((err) => {
-          console.error('[MerchantService] updateStock failed', err);
-          this.errorSignal.set(err?.error?.message || 'Failed to update stock.');
+          console.error('[MerchantService] submitInventoryAdjustmentRequest failed', err);
+          const msg = MerchantService.extractApiErrorMessage(
+            err,
+            'Failed to submit adjustment request.',
+          );
+          this.errorSignal.set(msg);
           return of(null);
         }),
         finalize(() => this.actionLoadingSignal.set(false)),
-      )
-      .subscribe();
+      );
+  }
+
+  /** PUT /merchants/inventory/:productId/stock — status-only or sync-to-authorized quantity */
+  updateStock(productId: string, body: UpdateStockBody): Observable<unknown> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+    return this.api.put(`merchants/inventory/${productId}/stock`, body).pipe(
+      tap(() => this.fetchInventory()),
+      catchError((err) => {
+        console.error('[MerchantService] updateStock failed', err);
+        this.errorSignal.set(
+          MerchantService.extractApiErrorMessage(err, 'Failed to update stock.'),
+        );
+        return of(null);
+      }),
+      finalize(() => this.actionLoadingSignal.set(false)),
+    );
   }
 
   /* ── Helpers ─────────────────────────────────────────────────── */
@@ -1469,6 +1677,186 @@ export class MerchantService {
       ) || undefined,
       merchantNotes: (raw['merchantNotes'] ?? raw['merchant_notes'] ?? null) as string | null,
       createdAt: (raw['createdAt'] ?? raw['created_at']) as string | undefined,
+    };
+  }
+
+  private mapInventoryItem(raw: Record<string, unknown>): MerchantInventoryItem {
+    const stockQuantity = Number(raw['stockQuantity'] ?? raw['stock_quantity'] ?? 0);
+    const authorizedRaw = raw['authorizedQuantity'] ?? raw['authorized_quantity'];
+    const authorizedQuantity =
+      authorizedRaw != null ? Number(authorizedRaw) : stockQuantity;
+
+    return {
+      merchantProductId: String(raw['merchantProductId'] ?? raw['merchant_product_id'] ?? raw['id'] ?? ''),
+      productId: String(raw['productId'] ?? raw['product_id'] ?? ''),
+      productName: String(raw['productName'] ?? raw['product_name'] ?? '—'),
+      productSku: String(raw['productSku'] ?? raw['product_sku'] ?? raw['sku'] ?? '—'),
+      stockQuantity,
+      authorizedQuantity,
+      stockStatus: (raw['stockStatus'] ?? raw['stock_status'] ?? null) as StockStatus | null,
+      isActive: raw['isActive'] !== false && raw['is_active'] !== false,
+      hasOpenAdjustmentDispute: Boolean(
+        raw['hasOpenAdjustmentDispute'] ?? raw['has_open_adjustment_dispute'],
+      ),
+      pendingRequestedQuantity:
+        raw['pendingRequestedQuantity'] != null || raw['pending_requested_quantity'] != null
+          ? Number(raw['pendingRequestedQuantity'] ?? raw['pending_requested_quantity'])
+          : null,
+    };
+  }
+
+  private normalizeInventoryAdjustmentDisputesResponse(
+    res:
+      | MerchantInventoryAdjustmentDispute[]
+      | { disputes?: unknown[]; data?: unknown[]; items?: unknown[] },
+  ): MerchantInventoryAdjustmentDispute[] {
+    const source = (Array.isArray(res)
+      ? res
+      : ((res['disputes'] ?? res['data'] ?? res['items'] ?? []) as unknown[])) as Record<
+      string,
+      unknown
+    >[];
+    return source.map((raw) => this.mapInventoryAdjustmentDispute(raw));
+  }
+
+  private mapDashboardSummary(raw: unknown): MerchantDashboardSummary {
+    const data = (raw ?? {}) as Record<string, unknown>;
+    const sales = (data['sales'] ?? {}) as Record<string, unknown>;
+    const trend = (sales['trend'] ?? {}) as Record<string, unknown>;
+    const orders = (data['orders'] ?? {}) as Record<string, unknown>;
+    const inventory = (data['inventory'] ?? {}) as Record<string, unknown>;
+    const earnings = (data['earnings'] ?? {}) as Record<string, unknown>;
+    const allocations = (data['allocations'] ?? {}) as Record<string, unknown>;
+    const rawActivity = (data['recentActivity'] ?? data['recent_activity'] ?? []) as unknown[];
+
+    const trendPoints = ((trend['points'] ?? []) as unknown[]).map((point) => {
+      const p = (point ?? {}) as Record<string, unknown>;
+      return {
+        date: String(p['date'] ?? ''),
+        amount: Number(p['amount'] ?? 0),
+      };
+    });
+
+    const monthlyOverview = ((sales['monthlyOverview'] ?? sales['monthly_overview'] ?? []) as unknown[]).map(
+      (month) => {
+        const m = (month ?? {}) as Record<string, unknown>;
+        return {
+          month: String(m['month'] ?? ''),
+          label: String(m['label'] ?? ''),
+          amount: Number(m['amount'] ?? 0),
+        };
+      },
+    );
+
+    const byTypeRaw = (earnings['byType'] ?? earnings['by_type'] ?? {}) as Record<string, unknown>;
+    const byType: MerchantEarningsByType = {
+      personalProduct: Number(byTypeRaw['personalProduct'] ?? byTypeRaw['personal_product'] ?? 0),
+      directReferralProduct: Number(
+        byTypeRaw['directReferralProduct'] ?? byTypeRaw['direct_referral_product'] ?? 0,
+      ),
+      communityProduct: Number(byTypeRaw['communityProduct'] ?? byTypeRaw['community_product'] ?? 0),
+      deliveryBonus: Number(byTypeRaw['deliveryBonus'] ?? byTypeRaw['delivery_bonus'] ?? 0),
+    };
+
+    return {
+      currency: String(data['currency'] ?? 'NGN'),
+      sales: {
+        totalSales: Number(sales['totalSales'] ?? sales['total_sales'] ?? 0),
+        salesChangePct: this.mapNullableNumber(sales['salesChangePct'] ?? sales['sales_change_pct']),
+        trend: {
+          period: String(trend['period'] ?? '7d'),
+          points: trendPoints,
+          changePctVsPreviousPeriod: this.mapNullableNumber(
+            trend['changePctVsPreviousPeriod'] ?? trend['change_pct_vs_previous_period'],
+          ),
+        },
+        monthlyOverview,
+      },
+      orders: {
+        pendingFulfillments: Number(
+          orders['pendingFulfillments'] ?? orders['pending_fulfillments'] ?? 0,
+        ),
+        pendingByStatus: (orders['pendingByStatus'] ?? orders['pending_by_status']) as
+          | Record<string, number>
+          | undefined,
+      },
+      inventory: {
+        totalProducts: Number(inventory['totalProducts'] ?? inventory['total_products'] ?? 0),
+        lowStockCount: Number(inventory['lowStockCount'] ?? inventory['low_stock_count'] ?? 0),
+        outOfStockCount: Number(inventory['outOfStockCount'] ?? inventory['out_of_stock_count'] ?? 0),
+        lowOrOutCount: Number(inventory['lowOrOutCount'] ?? inventory['low_or_out_count'] ?? 0),
+      },
+      earnings: {
+        totalEarnings: Number(earnings['totalEarnings'] ?? earnings['total_earnings'] ?? 0),
+        availableEarnings: Number(earnings['availableEarnings'] ?? earnings['available_earnings'] ?? 0),
+        pendingEarnings: Number(earnings['pendingEarnings'] ?? earnings['pending_earnings'] ?? 0),
+        byType,
+      },
+      allocations: {
+        actionableCount: Number(allocations['actionableCount'] ?? allocations['actionable_count'] ?? 0),
+      },
+      recentActivity: rawActivity
+        .map((item) => this.mapDashboardActivity(item))
+        .filter((item): item is MerchantDashboardRecentActivity => item != null),
+    };
+  }
+
+  private mapDashboardActivity(raw: unknown): MerchantDashboardRecentActivity | null {
+    const data = (raw ?? {}) as Record<string, unknown>;
+    const id = String(data['id'] ?? '');
+    if (!id) return null;
+
+    const type = String(data['type'] ?? 'ORDER_RECEIVED') as MerchantDashboardActivityType;
+    const amountRaw = data['amount'];
+
+    return {
+      id,
+      type,
+      title: String(data['title'] ?? ''),
+      description: String(data['description'] ?? ''),
+      amount: amountRaw == null ? null : Number(amountRaw),
+      currency: (data['currency'] ?? null) as string | null,
+      occurredAt: String(data['occurredAt'] ?? data['occurred_at'] ?? ''),
+      metadata: (data['metadata'] ?? undefined) as Record<string, unknown> | undefined,
+    };
+  }
+
+  private mapNullableNumber(value: unknown): number | null {
+    if (value == null || value === '') return null;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : null;
+  }
+
+  private mapInventoryAdjustmentDispute(
+    raw: Record<string, unknown>,
+  ): MerchantInventoryAdjustmentDispute {
+    const authorizedQuantity = Number(
+      raw['authorizedQuantity'] ?? raw['authorized_quantity'] ?? 0,
+    );
+    const requestedQuantity = Number(
+      raw['requestedQuantity'] ?? raw['requested_quantity'] ?? 0,
+    );
+    const adjustmentTypeRaw = String(
+      raw['adjustmentType'] ?? raw['adjustment_type'] ?? '',
+    ).toUpperCase();
+    const adjustmentType: InventoryAdjustmentType =
+      adjustmentTypeRaw === 'DECREASE'
+        ? 'DECREASE'
+        : MerchantService.resolveAdjustmentType(authorizedQuantity, requestedQuantity);
+
+    return {
+      id: String(raw['id'] ?? ''),
+      productId: String(raw['productId'] ?? raw['product_id'] ?? ''),
+      productName: String(raw['productName'] ?? raw['product_name'] ?? '—'),
+      productSku: String(raw['productSku'] ?? raw['product_sku'] ?? '') || undefined,
+      authorizedQuantity,
+      requestedQuantity,
+      adjustmentType,
+      reason: String(raw['reason'] ?? ''),
+      status: String(raw['status'] ?? 'OPEN') as InventoryAdjustmentDisputeStatus,
+      adminNotes: (raw['adminNotes'] ?? raw['admin_notes'] ?? null) as string | null,
+      createdAt: (raw['createdAt'] ?? raw['created_at']) as string | undefined,
+      resolvedAt: (raw['resolvedAt'] ?? raw['resolved_at'] ?? null) as string | null,
     };
   }
 

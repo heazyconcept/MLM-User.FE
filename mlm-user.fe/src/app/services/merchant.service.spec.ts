@@ -216,3 +216,104 @@ describe('MerchantService — category upgrade', () => {
     });
   });
 });
+
+describe('MerchantService — inventory adjustment disputes', () => {
+  it('resolveAdjustmentType returns INCREASE when requested >= authorized', () => {
+    expect(MerchantService.resolveAdjustmentType(10, 12)).toBe('INCREASE');
+    expect(MerchantService.resolveAdjustmentType(10, 10)).toBe('INCREASE');
+  });
+
+  it('resolveAdjustmentType returns DECREASE when requested < authorized', () => {
+    expect(MerchantService.resolveAdjustmentType(10, 7)).toBe('DECREASE');
+  });
+
+  it('inventoryAdjustmentStatusLabel maps known statuses', () => {
+    expect(MerchantService.inventoryAdjustmentStatusLabel('OPEN')).toBe('Waiting for review');
+    expect(MerchantService.inventoryAdjustmentStatusLabel('ADMIN_APPROVED')).toBe('Approved');
+  });
+});
+
+describe('MerchantService — dashboard summary', () => {
+  let service: MerchantService;
+  let httpMock: HttpTestingController;
+  const baseUrl = environment.apiUrl;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        MerchantService,
+        ApiService,
+        {
+          provide: UserService,
+          useValue: {
+            displayCurrency: () => 'NGN',
+          },
+        },
+      ],
+    });
+
+    service = TestBed.inject(MerchantService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+  });
+
+  it('maps dashboard summary response', () => {
+    const mockResponse = {
+      currency: 'NGN',
+      sales: {
+        totalSales: 10000,
+        salesChangePct: 12,
+        trend: {
+          period: '7d',
+          points: [{ date: '2026-07-02', amount: 1200 }],
+          changePctVsPreviousPeriod: 15,
+        },
+        monthlyOverview: [{ month: '2026-01', label: 'Jan', amount: 5000 }],
+      },
+      orders: { pendingFulfillments: 3 },
+      inventory: {
+        totalProducts: 5,
+        lowStockCount: 1,
+        outOfStockCount: 0,
+        lowOrOutCount: 1,
+      },
+      earnings: {
+        totalEarnings: 7141.6,
+        availableEarnings: 5000,
+        pendingEarnings: 2141.6,
+        byType: {
+          personalProduct: 1000,
+          directReferralProduct: 2000,
+          communityProduct: 500,
+          deliveryBonus: 3641.6,
+        },
+      },
+      allocations: { actionableCount: 2 },
+      recentActivity: [
+        {
+          id: 'act-1',
+          type: 'ORDER_RECEIVED',
+          title: 'New Order',
+          description: 'Order 940d41a4…',
+          amount: 40000,
+          currency: 'NGN',
+          occurredAt: '2026-06-24T15:31:40.046Z',
+        },
+      ],
+    };
+
+    service.fetchDashboardSummary$().subscribe((result) => {
+      expect(result).toEqual(mockResponse);
+      expect(service.dashboardSummary()).toEqual(mockResponse);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/merchants/dashboard/summary`);
+    expect(req.request.method).toBe('GET');
+    req.flush(mockResponse);
+  });
+});

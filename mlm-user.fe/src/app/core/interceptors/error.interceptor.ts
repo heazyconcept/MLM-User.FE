@@ -109,6 +109,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         'auth/reset-password',
         'registration/manual-payment',
         'payments/manual-deposit',
+        'merchants/inventory',
+        'inventory-adjustment-disputes',
       ];
       if (validationPaths.some(path => req.url.includes(path))) {
         return throwError(() => error);
@@ -125,6 +127,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         'merchants/earnings',
         'merchants/inventory',
         'merchants/me/allocations',
+        'merchants/dashboard/summary',
       ];
       if (
         error.status === 403 &&

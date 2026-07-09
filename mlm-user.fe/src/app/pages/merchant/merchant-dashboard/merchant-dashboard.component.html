@@ -2,7 +2,7 @@
   <main class="py-10">
     <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <!-- Loading state -->
-      @if (loading()) {
+      @if (loading() || dashboardLoading()) {
         <div class="flex items-center justify-center py-20">
           <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
         </div>
@@ -116,7 +116,7 @@
       }
 
       <!-- Active merchant dashboard -->
-      @if (!loading() && isActiveMerchant()) {
+      @if (!loading() && !dashboardLoading() && isActiveMerchant()) {
         <div class="space-y-6 animate-fade-in">
           @if (showUpgradeBanner()) {
             <div
@@ -153,8 +153,19 @@
                   Good morning 👋
                 </h1>
                 <p class="text-mlm-warm-500 mt-1 text-[13px]">
-                  Your store sales are up
-                  <strong class="text-mlm-primary">12%</strong> this month
+                  @if (salesChangePct(); as pct) {
+                    @if (pct > 0) {
+                      Your store sales are up
+                      <strong class="text-mlm-primary">{{ formatPct(pct) }}</strong> this month
+                    } @else if (pct < 0) {
+                      Your store sales are down
+                      <strong class="text-red-600">{{ formatPct(pct) }}</strong> this month
+                    } @else {
+                      Your store sales are unchanged this month
+                    }
+                  } @else {
+                    Your store overview for this month
+                  }
                 </p>
               </div>
             </div>
@@ -170,7 +181,7 @@
                 <p
                   class="text-white font-extrabold font-mono text-4xl tracking-tight leading-tight mb-2"
                 >
-                  {{ displayCurrency() === 'NGN' ? '₦' : '$' }}
+                  {{ summaryCurrency() === 'NGN' ? '₦' : '$' }}
                   {{ totalMerchantSales() | number: '1.2-2' }}
                 </p>
 
@@ -224,9 +235,9 @@
                         <stop offset="100%" stop-color="#fff" stop-opacity="0" />
                       </linearGradient>
                     </defs>
-                    <polygon [attr.points]="sparklineArea" fill="url(#dashboardSparkGrad)" />
+                    <polygon [attr.points]="sparklineArea()" fill="url(#dashboardSparkGrad)" />
                     <polyline
-                      [attr.points]="sparklinePoints"
+                      [attr.points]="sparklinePoints()"
                       fill="none"
                       stroke="#fff"
                       stroke-width="2"
@@ -236,10 +247,13 @@
                   </svg>
                 </div>
                 <div class="flex items-center gap-2 mt-3">
-                  <span class="text-white font-bold rounded-full px-2.5 py-0.5 text-xs bg-white/20"
-                    >↑ 15%</span
-                  >
-                  <span class="text-white/80 text-xs">vs last week</span>
+                  @if (trendChangePct(); as pct) {
+                    <span
+                      class="text-white font-bold rounded-full px-2.5 py-0.5 text-xs bg-white/20"
+                      >{{ pct >= 0 ? '↑' : '↓' }} {{ formatPct(pct) }}</span
+                    >
+                    <span class="text-white/80 text-xs">vs last week</span>
+                  }
                 </div>
               </div>
             </div>
@@ -247,7 +261,7 @@
 
           <!-- Stat cards -->
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-            @for (card of statCardsData; track card.label; let i = $index) {
+            @for (card of statCardsData(); track card.label; let i = $index) {
               <div
                 class="rounded-2xl p-5 transition-all duration-300 border border-transparent"
                 [style.background]="card.gradient"
@@ -285,7 +299,7 @@
                 </select>
               </div>
               <div class="flex items-end gap-2.5 px-1 h-[210px]">
-                @for (bar of barItems; track bar.label; let i = $index) {
+                @for (bar of barItems(); track bar.label; let i = $index) {
                   <div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
                     <div
                       class="w-full rounded-t-xl rounded-b transition-all duration-700"
@@ -315,7 +329,7 @@
                       }}</span>
                     </div>
                     <span class="font-bold text-mlm-warm-900 font-mono text-[13px]">
-                      {{ displayCurrency() === 'NGN' ? '₦' : '$'
+                      {{ summaryCurrency() === 'NGN' ? '₦' : '$'
                       }}{{ item.value | number: '1.2-2' }}
                     </span>
                   </div>
@@ -333,8 +347,8 @@
               >
                 <span class="font-bold text-mlm-warm-900 text-[13px]">Total Earnings</span>
                 <span class="font-extrabold text-mlm-primary font-mono text-[17px]">
-                  {{ displayCurrency() === 'NGN' ? '₦' : '$'
-                  }}{{ earnings()?.merchantEarnings?.totalEarnings ?? 0 | number: '1.2-2' }}
+                  {{ summaryCurrency() === 'NGN' ? '₦' : '$'
+                  }}{{ totalEarnings() | number: '1.2-2' }}
                 </span>
               </div>
             </div>
@@ -392,11 +406,12 @@
                 <i class="pi pi-shopping-bag text-gray-800 text-base" aria-hidden="true"></i>
               </div>
               <span class="text-[11px] font-semibold">Orders</span>
-              <span
-                *ngIf="pendingOrders > 0"
-                class="absolute top-2 sm:right-3 right-1 bg-gray-800 text-white text-[9px] font-bold px-1.5 py-px rounded-full leading-none"
-                >{{ pendingOrders }}</span
-              >
+              @if (pendingFulfilmentsCount() > 0) {
+                <span
+                  class="absolute top-2 sm:right-3 right-1 bg-gray-800 text-white text-[9px] font-bold px-1.5 py-px rounded-full leading-none"
+                  >{{ pendingFulfilmentsCount() }}</span
+                >
+              }
             </a>
 
             <!-- Deliveries -->
@@ -456,11 +471,12 @@
                 <i class="pi pi-inbox text-gray-800 text-base" aria-hidden="true"></i>
               </div>
               <span class="text-[11px] font-semibold">Allocations</span>
-              <span
-                *ngIf="unreadAllocations > 0"
-                class="absolute top-2 sm:right-3 right-1 bg-gray-800 text-white text-[9px] font-bold px-1.5 py-px rounded-full leading-none"
-                >{{ unreadAllocations }}</span
-              >
+              @if (actionableAllocationsCount() > 0) {
+                <span
+                  class="absolute top-2 sm:right-3 right-1 bg-gray-800 text-white text-[9px] font-bold px-1.5 py-px rounded-full leading-none"
+                  >{{ actionableAllocationsCount() }}</span
+                >
+              }
             </a>
           </div>
 
