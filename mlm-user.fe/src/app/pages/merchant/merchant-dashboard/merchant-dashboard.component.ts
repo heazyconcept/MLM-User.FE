@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import {
   MerchantDashboardActivityType,
+  MerchantProfileResponse,
   MerchantService,
 } from '../../../services/merchant.service';
 import { UserService } from '../../../services/user.service';
@@ -164,22 +165,15 @@ export class MerchantDashboardComponent implements OnInit {
   totalEarnings = computed(() => this.dashboardSummary()?.earnings.totalEarnings ?? 0);
 
   ngOnInit(): void {
-    this.merchantService.fetchProfile$().subscribe((profile) => {
-      if (profile?.status === 'ACTIVE') {
-        this.merchantService.fetchDashboardSummary$().subscribe(() => {
-          this.runEntranceAnimations();
-          this.cdr.markForCheck();
-        });
-        if (this.canUpgradeCategory()) {
-          this.merchantService.fetchUpgradeOptions({ silent: true }).subscribe((opts) => {
-            this.hasUpgradeOptions.set(!!opts && opts.eligibleUpgrades.length > 0);
-            this.cdr.markForCheck();
-          });
-        }
-      } else {
-        this.merchantService.clearError();
-      }
-    });
+    const cachedProfile = this.profile();
+    if (cachedProfile) {
+      this.loadDashboardForProfile(cachedProfile);
+      return;
+    }
+
+    this.merchantService
+      .fetchProfile$()
+      .subscribe((profile) => this.loadDashboardForProfile(profile));
   }
 
   getBarHeight(val: number): string {
@@ -265,6 +259,23 @@ export class MerchantDashboardComponent implements OnInit {
       this.barsAnimated = true;
       this.cdr.markForCheck();
     }, 400);
+  }
+
+  private loadDashboardForProfile(profile: MerchantProfileResponse | null): void {
+    if (profile?.status === 'ACTIVE') {
+      this.merchantService.fetchDashboardSummary$().subscribe(() => {
+        this.runEntranceAnimations();
+        this.cdr.markForCheck();
+      });
+      if (this.canUpgradeCategory()) {
+        this.merchantService.fetchUpgradeOptions({ silent: true }).subscribe((opts) => {
+          this.hasUpgradeOptions.set(!!opts && opts.eligibleUpgrades.length > 0);
+          this.cdr.markForCheck();
+        });
+      }
+    } else {
+      this.merchantService.clearError();
+    }
   }
 
   private buildSparklinePoints(vals: number[]): string {

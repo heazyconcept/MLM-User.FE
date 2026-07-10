@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { map, catchError, tap, finalize, switchMap } from 'rxjs/operators';
+import { map, catchError, tap, finalize, shareReplay, switchMap } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { UserService } from './user.service';
 import type { UsdtGatewayData } from './payment.service';
@@ -536,6 +536,7 @@ export class MerchantService {
   private loadingSignal = signal(false);
   private errorSignal = signal<string | null>(null);
   private actionLoadingSignal = signal(false);
+  private profileRequest$: Observable<MerchantProfileResponse | null> | null = null;
 
   /* ── Public readonly signals ─────────────────────────────────── */
   readonly profile = this.profileSignal.asReadonly();
@@ -1029,16 +1030,26 @@ export class MerchantService {
 
   /** GET /merchants/me */
   fetchProfile$(): Observable<MerchantProfileResponse | null> {
+    if (this.profileRequest$) {
+      return this.profileRequest$;
+    }
+
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
-    return this.refreshProfileFromApi().pipe(
+    this.profileRequest$ = this.refreshProfileFromApi().pipe(
       catchError((err) => {
         console.error('[MerchantService] fetchProfile failed', err);
         this.errorSignal.set('Failed to load merchant profile.');
         return of(null);
       }),
-      finalize(() => this.loadingSignal.set(false)),
+      finalize(() => {
+        this.profileRequest$ = null;
+        this.loadingSignal.set(false);
+      }),
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
+
+    return this.profileRequest$;
   }
 
   fetchProfile(): void {
