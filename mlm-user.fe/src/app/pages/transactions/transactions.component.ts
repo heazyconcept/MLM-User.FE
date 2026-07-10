@@ -2,7 +2,7 @@ import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } 
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { DashboardService, DashboardTransaction } from '../../services/dashboard.service';
+import { DashboardService, DashboardTransaction, DashboardTransactionsQuery } from '../../services/dashboard.service';
 import { CommissionService } from '../../services/commission.service';
 import { EarningsService } from '../../services/earnings.service';
 import { UserService } from '../../services/user.service';
@@ -185,7 +185,7 @@ export class TransactionsComponent implements OnInit {
     if (tab === 'payments') return 'No payment transactions available yet.';
     if (tab === 'autoship') return 'No autoship transactions available yet.';
     if (tab === 'voucher') {
-      return 'No product voucher transactions found. History may be limited until the backend adds a dedicated voucher filter.';
+      return 'No product voucher transactions available yet.';
     }
     return 'No transactions available.';
   });
@@ -588,10 +588,13 @@ export class TransactionsComponent implements OnInit {
     this.loadInitialTransactions();
   }
 
-  private getTabQuery(): { category?: string } {
+  private getTabQuery(): DashboardTransactionsQuery {
     const tab = this.activeTab();
-    if (tab === 'all' || tab === 'breakdown' || tab === 'voucher') {
+    if (tab === 'all' || tab === 'breakdown') {
       return {};
+    }
+    if (tab === 'voucher') {
+      return { walletType: 'voucher' };
     }
     return { category: tab };
   }

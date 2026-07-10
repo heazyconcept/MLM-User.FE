@@ -32,6 +32,7 @@ describe('MerchantService — category upgrade', () => {
           provide: UserService,
           useValue: {
             displayCurrency: () => 'NGN',
+            markAsMerchant: () => undefined,
           },
         },
       ],
@@ -266,6 +267,7 @@ describe('MerchantService — dashboard summary', () => {
           provide: UserService,
           useValue: {
             displayCurrency: () => 'NGN',
+            markAsMerchant: () => undefined,
           },
         },
       ],
