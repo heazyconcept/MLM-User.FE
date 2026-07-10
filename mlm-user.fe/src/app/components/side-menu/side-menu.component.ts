@@ -318,9 +318,6 @@ export class SideMenuComponent implements OnInit {
 
   ngOnInit(): void {
     this.merchantService.fetchProfile();
-    this.router.events
-      .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe(() => this.merchantService.fetchProfile());
   }
 
   private autoExpandActiveSubmenu(): void {

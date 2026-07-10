@@ -215,6 +215,23 @@ describe('MerchantService — category upgrade', () => {
       expect(service.needsPayment()).toBe(true);
     });
   });
+
+  describe('fetchProfile$', () => {
+    it('shares one in-flight profile request across concurrent callers', () => {
+      const results: Array<unknown> = [];
+
+      service.fetchProfile$().subscribe((result) => results.push(result));
+      service.fetchProfile$().subscribe((result) => results.push(result));
+
+      const req = httpMock.expectOne(`${baseUrl}/merchants/me`);
+      expect(req.request.method).toBe('GET');
+      httpMock.expectNone(`${baseUrl}/merchants/me`);
+
+      req.flush(mockProfile);
+
+      expect(results).toEqual([mockProfile, mockProfile]);
+    });
+  });
 });
 
 describe('MerchantService — inventory adjustment disputes', () => {
