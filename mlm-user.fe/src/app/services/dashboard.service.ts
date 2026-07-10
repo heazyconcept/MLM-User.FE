@@ -21,6 +21,7 @@ export type DashboardOverview = {
 };
 
 export type DashboardTransactionWalletType = 'REGISTRATION' | 'CASH' | 'VOUCHER' | 'AUTOSHIP';
+export type DashboardTransactionWalletTypeQuery = Lowercase<DashboardTransactionWalletType>;
 
 export type DashboardTransaction = {
   id: string;
@@ -48,6 +49,7 @@ export type DashboardTransactionsResponse = {
 
 export type DashboardTransactionsQuery = {
   category?: string;
+  walletType?: DashboardTransactionWalletTypeQuery;
   from?: string;
   to?: string;
   status?: DashboardTransaction['status'];
@@ -73,6 +75,7 @@ export class DashboardService {
     const params: Record<string, string | number> = { limit };
     if (cursor) params['cursor'] = cursor;
     if (query?.category) params['category'] = query.category;
+    if (query?.walletType) params['walletType'] = query.walletType;
     if (query?.from) params['from'] = query.from;
     if (query?.to) params['to'] = query.to;
     if (query?.status) params['status'] = query.status;
