@@ -1,104 +1,106 @@
 <div class="min-h-screen bg-mlm-background">
-  <main class="py-10">
-    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div class="mb-10">
+  <main class="py-6 sm:py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-3xl lg:max-w-5xl mx-auto">
+      <div class="mb-6 sm:mb-10">
         <a
           routerLink="/dashboard"
-          class="text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80 inline-flex items-center gap-2 mb-4"
+          class="text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80 inline-flex items-center gap-2 mb-3 sm:mb-4"
         >
           <span class="inline-block w-4 h-px bg-current"></span> Back to Dashboard
         </a>
-        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-mlm-text tracking-tight mb-2">
           Business Consultant Program
         </h1>
-        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
-        <p class="text-mlm-secondary text-sm">
+        <div class="h-px w-16 bg-mlm-primary/30 mb-3 sm:mb-4"></div>
+        <p class="text-mlm-secondary text-sm leading-relaxed">
           Apply to become a training centre owner and earn commissions from your sponsor team.
         </p>
       </div>
 
       @if (!isPaid()) {
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-8 text-center">
           <div
-            class="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-6"
+            class="w-14 h-14 sm:w-16 sm:h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-5 sm:mb-6"
           >
-            <i class="pi pi-lock text-2xl text-amber-500"></i>
+            <i class="pi pi-lock text-xl sm:text-2xl text-amber-500"></i>
           </div>
-          <h2 class="text-xl font-bold text-mlm-text mb-2">Registration Required</h2>
-          <p class="text-mlm-secondary text-sm mb-6">
+          <h2 class="text-lg sm:text-xl font-bold text-mlm-text mb-2">Registration Required</h2>
+          <p class="text-mlm-secondary text-sm mb-6 max-w-sm mx-auto">
             Complete your registration payment before applying to the Business Consultant program.
           </p>
           <a
             routerLink="/auth/activation"
-            class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors"
           >
             Complete Activation
           </a>
         </div>
       } @else if (loading()) {
-        <div class="flex items-center justify-center py-20">
+        <div class="flex items-center justify-center py-16 sm:py-20">
           <div
             class="w-8 h-8 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"
           ></div>
         </div>
       } @else {
         @if (error()) {
-          <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-5 sm:mb-6">
             <p class="text-red-700 text-sm">{{ error() }}</p>
           </div>
         }
 
         @switch (uiState()) {
           @case ('approved') {
-            <div class="space-y-6">
-              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-                <div class="flex items-start gap-4 mb-6">
+            <div class="space-y-4 sm:space-y-6">
+              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 lg:p-8">
+                <div class="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 mb-5 sm:mb-6">
                   <div
-                    class="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center shrink-0"
+                    class="w-12 h-12 sm:w-14 sm:h-14 bg-green-50 rounded-2xl flex items-center justify-center shrink-0"
                   >
-                    <i class="pi pi-check text-xl text-mlm-primary"></i>
+                    <i class="pi pi-check text-lg sm:text-xl text-mlm-primary"></i>
                   </div>
-                  <div>
-                    <h2 class="text-xl font-bold text-mlm-text mb-1">Active Business Consultant</h2>
-                    <p class="text-mlm-secondary text-sm">
+                  <div class="min-w-0">
+                    <h2 class="text-lg sm:text-xl font-bold text-mlm-text mb-1">
+                      Active Business Consultant
+                    </h2>
+                    <p class="text-mlm-secondary text-sm leading-relaxed">
                       You are approved and earning commissions from your sponsor team.
                     </p>
                   </div>
                 </div>
 
-                <div class="grid gap-4 sm:grid-cols-2 mb-6">
-                  <div class="rounded-xl bg-mlm-background p-4">
-                    <p class="text-xs uppercase tracking-widest text-mlm-secondary mb-1">
+                <div class="grid gap-3 sm:gap-4 sm:grid-cols-2 mb-5 sm:mb-6">
+                  <div class="rounded-xl bg-mlm-background p-3.5 sm:p-4">
+                    <p class="text-[10px] sm:text-xs uppercase tracking-widest text-mlm-secondary mb-1">
                       Registration / Upgrade
                     </p>
-                    <p class="text-2xl font-bold text-mlm-text">2%</p>
-                    <p class="text-xs text-mlm-secondary mt-1">
+                    <p class="text-xl sm:text-2xl font-bold text-mlm-text">2%</p>
+                    <p class="text-xs text-mlm-secondary mt-1 leading-relaxed">
                       Of distributable registration fee from sponsor team (up to 13 levels)
                     </p>
                   </div>
-                  <div class="rounded-xl bg-mlm-background p-4">
-                    <p class="text-xs uppercase tracking-widest text-mlm-secondary mb-1">
+                  <div class="rounded-xl bg-mlm-background p-3.5 sm:p-4">
+                    <p class="text-[10px] sm:text-xs uppercase tracking-widest text-mlm-secondary mb-1">
                       Product Purchase
                     </p>
-                    <p class="text-2xl font-bold text-mlm-text">1%</p>
-                    <p class="text-xs text-mlm-secondary mt-1">
+                    <p class="text-xl sm:text-2xl font-bold text-mlm-text">1%</p>
+                    <p class="text-xs text-mlm-secondary mt-1 leading-relaxed">
                       Of order base amount from sponsor team (up to 13 levels)
                     </p>
                   </div>
                 </div>
 
-                <div class="rounded-xl border border-gray-100 p-4 mb-6">
+                <div class="rounded-xl border border-gray-100 p-3.5 sm:p-4">
                   <h3 class="text-sm font-semibold text-mlm-text mb-2">Your seminar centre</h3>
-                  <p class="text-sm text-mlm-text font-medium">
+                  <p class="text-sm text-mlm-text font-medium break-words">
                     {{ application()?.seminarCentreName }}
                   </p>
                   @if (application()?.seminarCentreAddress) {
-                    <p class="text-sm text-mlm-secondary mt-1">
+                    <p class="text-sm text-mlm-secondary mt-1 break-words">
                       {{ application()?.seminarCentreAddress }}
                     </p>
                   }
                   @if (application()?.seminarCentreCity || application()?.seminarCentreState) {
-                    <p class="text-sm text-mlm-secondary">
+                    <p class="text-sm text-mlm-secondary break-words">
                       {{ application()?.seminarCentreCity
                       }}{{ application()?.seminarCentreCity && application()?.seminarCentreState
                         ? ', '
@@ -106,176 +108,217 @@
                     </p>
                   }
                 </div>
+              </div>
 
-                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div
+                  class="flex flex-col gap-4 border-b border-gray-100 px-4 py-4 sm:px-6 sm:py-5"
+                >
+                  <div class="min-w-0">
+                    <h3 class="text-base sm:text-lg font-bold text-mlm-text">
+                      Your Consultant Earnings
+                    </h3>
+                    <p class="text-sm text-mlm-secondary mt-1 leading-relaxed">
+                      Bonuses earned from your sponsor team activity.
+                    </p>
+                  </div>
                   <div
-                    class="flex flex-col gap-4 border-b border-gray-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between"
+                    class="grid grid-cols-2 gap-2 w-full sm:w-auto sm:inline-flex sm:rounded-xl sm:border sm:border-gray-200 sm:p-1 sm:bg-mlm-background"
                   >
-                    <div>
-                      <h3 class="text-lg font-bold text-mlm-text">Your Consultant Earnings</h3>
-                      <p class="text-sm text-mlm-secondary mt-1">
-                        Bonuses earned from your sponsor team activity.
-                      </p>
-                    </div>
-                    <div class="inline-flex rounded-xl border border-gray-200 p-1 bg-mlm-background">
-                      <button
-                        type="button"
-                        (click)="setEarningsTab('registration')"
-                        class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                        [class]="
-                          earningsTab() === 'registration'
-                            ? 'bg-white text-mlm-text shadow-sm'
-                            : 'text-mlm-secondary hover:text-mlm-text'
-                        "
-                      >
-                        Registration Bonuses
-                      </button>
-                      <button
-                        type="button"
-                        (click)="setEarningsTab('product')"
-                        class="px-4 py-2 text-sm font-semibold rounded-lg transition-colors"
-                        [class]="
-                          earningsTab() === 'product'
-                            ? 'bg-white text-mlm-text shadow-sm'
-                            : 'text-mlm-secondary hover:text-mlm-text'
-                        "
-                      >
-                        Product Bonuses
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      (click)="setEarningsTab('registration')"
+                      class="px-3 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-colors text-center leading-snug"
+                      [class]="
+                        earningsTab() === 'registration'
+                          ? 'bg-mlm-primary text-white sm:bg-white sm:text-mlm-text sm:shadow-sm'
+                          : 'bg-mlm-background text-mlm-secondary border border-gray-200 sm:border-0 hover:text-mlm-text'
+                      "
+                    >
+                      Registration Bonuses
+                    </button>
+                    <button
+                      type="button"
+                      (click)="setEarningsTab('product')"
+                      class="px-3 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition-colors text-center leading-snug"
+                      [class]="
+                        earningsTab() === 'product'
+                          ? 'bg-mlm-primary text-white sm:bg-white sm:text-mlm-text sm:shadow-sm'
+                          : 'bg-mlm-background text-mlm-secondary border border-gray-200 sm:border-0 hover:text-mlm-text'
+                      "
+                    >
+                      Product Bonuses
+                    </button>
                   </div>
-
-                  <div class="grid gap-4 border-b border-gray-100 px-6 py-5 sm:grid-cols-3">
-                    <div class="rounded-xl bg-mlm-background p-4">
-                      <p class="text-[11px] uppercase tracking-widest text-mlm-secondary mb-1">
-                        Active Tab Total
-                      </p>
-                      <p class="text-2xl font-bold text-mlm-text">
-                        {{ formatAmount(activeTabTotal()) }}
-                      </p>
-                    </div>
-                    <div class="rounded-xl bg-mlm-background p-4">
-                      <p class="text-[11px] uppercase tracking-widest text-mlm-secondary mb-1">
-                        Registration Bonuses
-                      </p>
-                      <p class="text-lg font-bold text-mlm-text">
-                        {{ formatAmount(registrationTabTotal()) }}
-                      </p>
-                    </div>
-                    <div class="rounded-xl bg-mlm-background p-4">
-                      <p class="text-[11px] uppercase tracking-widest text-mlm-secondary mb-1">
-                        Product Bonuses
-                      </p>
-                      <p class="text-lg font-bold text-mlm-text">
-                        {{ formatAmount(productTabTotal()) }}
-                      </p>
-                    </div>
-                  </div>
-
-                  @if (earningsLoading() && activeBonuses().length === 0) {
-                    <div class="flex items-center justify-center py-16">
-                      <div
-                        class="w-8 h-8 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"
-                      ></div>
-                    </div>
-                  } @else if (activeBonuses().length === 0) {
-                    <div class="px-6 py-16 text-center">
-                      <div
-                        class="w-16 h-16 bg-mlm-background rounded-2xl flex items-center justify-center mx-auto mb-4"
-                      >
-                        <i class="pi pi-chart-line text-2xl text-mlm-secondary"></i>
-                      </div>
-                      <p class="text-sm text-mlm-secondary">{{ earningsEmptyMessage() }}</p>
-                    </div>
-                  } @else {
-                    <div class="overflow-x-auto">
-                      <table class="min-w-full">
-                        <thead class="bg-mlm-background">
-                          <tr>
-                            <th
-                              class="px-4 py-3 text-left text-[11px] uppercase tracking-widest text-mlm-secondary font-semibold"
-                            >
-                              Source
-                            </th>
-                            <th
-                              class="px-4 py-3 text-left text-[11px] uppercase tracking-widest text-mlm-secondary font-semibold"
-                            >
-                              Type
-                            </th>
-                            <th
-                              class="px-4 py-3 text-left text-[11px] uppercase tracking-widest text-mlm-secondary font-semibold"
-                            >
-                              Date
-                            </th>
-                            <th
-                              class="px-4 py-3 text-right text-[11px] uppercase tracking-widest text-mlm-secondary font-semibold"
-                            >
-                              Amount
-                            </th>
-                            <th
-                              class="px-4 py-3 text-right text-[11px] uppercase tracking-widest text-mlm-secondary font-semibold"
-                            >
-                              Status
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                          @for (entry of activeBonuses(); track entry.id) {
-                            <tr class="hover:bg-gray-50/50 transition-colors">
-                              <td class="px-4 py-4">
-                                <div class="flex flex-col">
-                                  <span class="text-sm font-medium text-mlm-text">{{
-                                    entry.source
-                                  }}</span>
-                                  @if (entry.sourceDescription) {
-                                    <span class="text-xs text-mlm-secondary mt-0.5">{{
-                                      entry.sourceDescription
-                                    }}</span>
-                                  }
-                                </div>
-                              </td>
-                              <td class="px-4 py-4">
-                                <span class="text-sm text-mlm-secondary">{{
-                                  formatEarningType(entry.earningType || entry.type)
-                                }}</span>
-                              </td>
-                              <td class="px-4 py-4 whitespace-nowrap">
-                                <span class="text-sm text-mlm-secondary">{{
-                                  entry.date | date: 'MMM d, yyyy'
-                                }}</span>
-                              </td>
-                              <td class="px-4 py-4 text-right whitespace-nowrap">
-                                <span class="text-sm font-semibold text-mlm-text">
-                                  + {{ formatAmount(entry.amount, entry.currency) }}
-                                </span>
-                              </td>
-                              <td class="px-4 py-4 text-right whitespace-nowrap">
-                                <div class="flex justify-end">
-                                  <app-status-badge [status]="entry.status" size="sm" />
-                                </div>
-                              </td>
-                            </tr>
-                          }
-                        </tbody>
-                      </table>
-                    </div>
-                  }
                 </div>
+
+                <div
+                  class="grid grid-cols-1 gap-3 border-b border-gray-100 px-4 py-4 sm:grid-cols-3 sm:gap-4 sm:px-6 sm:py-5"
+                >
+                  <div class="rounded-xl bg-mlm-background p-3.5 sm:p-4">
+                    <p class="text-[10px] sm:text-[11px] uppercase tracking-widest text-mlm-secondary mb-1">
+                      Active Tab Total
+                    </p>
+                    <p class="text-xl sm:text-2xl font-bold text-mlm-text">
+                      {{ formatAmount(activeTabTotal()) }}
+                    </p>
+                  </div>
+                  <div class="rounded-xl bg-mlm-background p-3.5 sm:p-4">
+                    <p class="text-[10px] sm:text-[11px] uppercase tracking-widest text-mlm-secondary mb-1">
+                      Registration Bonuses
+                    </p>
+                    <p class="text-lg font-bold text-mlm-text">
+                      {{ formatAmount(registrationTabTotal()) }}
+                    </p>
+                  </div>
+                  <div class="rounded-xl bg-mlm-background p-3.5 sm:p-4">
+                    <p class="text-[10px] sm:text-[11px] uppercase tracking-widest text-mlm-secondary mb-1">
+                      Product Bonuses
+                    </p>
+                    <p class="text-lg font-bold text-mlm-text">
+                      {{ formatAmount(productTabTotal()) }}
+                    </p>
+                  </div>
+                </div>
+
+                @if (earningsLoading() && activeBonuses().length === 0) {
+                  <div class="flex items-center justify-center py-12 sm:py-16">
+                    <div
+                      class="w-8 h-8 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"
+                    ></div>
+                  </div>
+                } @else if (activeBonuses().length === 0) {
+                  <div class="px-4 py-12 sm:px-6 sm:py-16 text-center">
+                    <div
+                      class="w-14 h-14 sm:w-16 sm:h-16 bg-mlm-background rounded-2xl flex items-center justify-center mx-auto mb-4"
+                    >
+                      <i class="pi pi-chart-line text-xl sm:text-2xl text-mlm-secondary"></i>
+                    </div>
+                    <p class="text-sm text-mlm-secondary">{{ earningsEmptyMessage() }}</p>
+                  </div>
+                } @else {
+                  <div class="md:hidden divide-y divide-gray-100">
+                    @for (entry of activeBonuses(); track entry.id) {
+                      <div class="px-4 py-4 space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                          <div class="min-w-0 flex-1">
+                            <p class="text-sm font-medium text-mlm-text break-all">
+                              {{ entry.source }}
+                            </p>
+                            @if (entry.sourceDescription) {
+                              <p class="text-xs text-mlm-secondary mt-0.5 break-words">
+                                {{ entry.sourceDescription }}
+                              </p>
+                            }
+                          </div>
+                          <app-status-badge [status]="entry.status" size="sm" />
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                          <div class="min-w-0">
+                            <p class="text-xs text-mlm-secondary">
+                              {{ formatEarningType(entry.earningType || entry.type) }}
+                            </p>
+                            <p class="text-xs text-mlm-secondary mt-0.5">
+                              {{ entry.date | date: 'MMM d, yyyy' }}
+                            </p>
+                          </div>
+                          <p class="text-sm font-semibold text-mlm-text whitespace-nowrap shrink-0">
+                            + {{ formatAmount(entry.amount, entry.currency) }}
+                          </p>
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="hidden md:block overflow-x-auto">
+                    <table class="min-w-full">
+                      <thead class="bg-mlm-background">
+                        <tr>
+                          <th
+                            class="px-4 py-3 text-left text-[11px] uppercase tracking-widest text-mlm-secondary font-semibold"
+                          >
+                            Source
+                          </th>
+                          <th
+                            class="px-4 py-3 text-left text-[11px] uppercase tracking-widest text-mlm-secondary font-semibold"
+                          >
+                            Type
+                          </th>
+                          <th
+                            class="px-4 py-3 text-left text-[11px] uppercase tracking-widest text-mlm-secondary font-semibold"
+                          >
+                            Date
+                          </th>
+                          <th
+                            class="px-4 py-3 text-right text-[11px] uppercase tracking-widest text-mlm-secondary font-semibold"
+                          >
+                            Amount
+                          </th>
+                          <th
+                            class="px-4 py-3 text-right text-[11px] uppercase tracking-widest text-mlm-secondary font-semibold"
+                          >
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-gray-100">
+                        @for (entry of activeBonuses(); track entry.id) {
+                          <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="px-4 py-4">
+                              <div class="flex flex-col min-w-0">
+                                <span class="text-sm font-medium text-mlm-text break-all">{{
+                                  entry.source
+                                }}</span>
+                                @if (entry.sourceDescription) {
+                                  <span class="text-xs text-mlm-secondary mt-0.5 break-words">{{
+                                    entry.sourceDescription
+                                  }}</span>
+                                }
+                              </div>
+                            </td>
+                            <td class="px-4 py-4">
+                              <span class="text-sm text-mlm-secondary">{{
+                                formatEarningType(entry.earningType || entry.type)
+                              }}</span>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                              <span class="text-sm text-mlm-secondary">{{
+                                entry.date | date: 'MMM d, yyyy'
+                              }}</span>
+                            </td>
+                            <td class="px-4 py-4 text-right whitespace-nowrap">
+                              <span class="text-sm font-semibold text-mlm-text">
+                                + {{ formatAmount(entry.amount, entry.currency) }}
+                              </span>
+                            </td>
+                            <td class="px-4 py-4 text-right whitespace-nowrap">
+                              <div class="flex justify-end">
+                                <app-status-badge [status]="entry.status" size="sm" />
+                              </div>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
               </div>
             </div>
           }
 
           @case ('pending') {
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-              <div class="flex items-start gap-4 mb-6">
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 lg:p-8">
+              <div class="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 mb-5 sm:mb-6">
                 <div
-                  class="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center shrink-0"
+                  class="w-12 h-12 sm:w-14 sm:h-14 bg-amber-50 rounded-2xl flex items-center justify-center shrink-0"
                 >
-                  <i class="pi pi-clock text-xl text-amber-500"></i>
+                  <i class="pi pi-clock text-lg sm:text-xl text-amber-500"></i>
                 </div>
-                <div>
-                  <h2 class="text-xl font-bold text-mlm-text mb-1">Application Under Review</h2>
-                  <p class="text-mlm-secondary text-sm">
+                <div class="min-w-0">
+                  <h2 class="text-lg sm:text-xl font-bold text-mlm-text mb-1">
+                    Application Under Review
+                  </h2>
+                  <p class="text-mlm-secondary text-sm leading-relaxed">
                     Your application is pending admin review. You will be notified once a decision
                     is made.
                   </p>
@@ -283,47 +326,47 @@
               </div>
 
               <div class="rounded-xl border border-gray-100 divide-y divide-gray-100">
-                <div class="p-4 flex justify-between gap-4">
-                  <span class="text-sm text-mlm-secondary">Seminar centre</span>
-                  <span class="text-sm font-medium text-mlm-text text-right">{{
+                <div class="p-3.5 sm:p-4 flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
+                  <span class="text-sm text-mlm-secondary shrink-0">Seminar centre</span>
+                  <span class="text-sm font-medium text-mlm-text sm:text-right break-words">{{
                     application()?.seminarCentreName
                   }}</span>
                 </div>
                 @if (application()?.seminarCentreAddress) {
-                  <div class="p-4 flex justify-between gap-4">
-                    <span class="text-sm text-mlm-secondary">Address</span>
-                    <span class="text-sm font-medium text-mlm-text text-right">{{
+                  <div class="p-3.5 sm:p-4 flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
+                    <span class="text-sm text-mlm-secondary shrink-0">Address</span>
+                    <span class="text-sm font-medium text-mlm-text sm:text-right break-words">{{
                       application()?.seminarCentreAddress
                     }}</span>
                   </div>
                 }
                 @if (application()?.seminarCentreCity) {
-                  <div class="p-4 flex justify-between gap-4">
-                    <span class="text-sm text-mlm-secondary">City</span>
-                    <span class="text-sm font-medium text-mlm-text text-right">{{
+                  <div class="p-3.5 sm:p-4 flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
+                    <span class="text-sm text-mlm-secondary shrink-0">City</span>
+                    <span class="text-sm font-medium text-mlm-text sm:text-right break-words">{{
                       application()?.seminarCentreCity
                     }}</span>
                   </div>
                 }
                 @if (application()?.seminarCentreState) {
-                  <div class="p-4 flex justify-between gap-4">
-                    <span class="text-sm text-mlm-secondary">State</span>
-                    <span class="text-sm font-medium text-mlm-text text-right">{{
+                  <div class="p-3.5 sm:p-4 flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
+                    <span class="text-sm text-mlm-secondary shrink-0">State</span>
+                    <span class="text-sm font-medium text-mlm-text sm:text-right break-words">{{
                       application()?.seminarCentreState
                     }}</span>
                   </div>
                 }
                 @if (application()?.phoneNumber) {
-                  <div class="p-4 flex justify-between gap-4">
-                    <span class="text-sm text-mlm-secondary">Phone</span>
-                    <span class="text-sm font-medium text-mlm-text text-right">{{
+                  <div class="p-3.5 sm:p-4 flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
+                    <span class="text-sm text-mlm-secondary shrink-0">Phone</span>
+                    <span class="text-sm font-medium text-mlm-text sm:text-right break-words">{{
                       application()?.phoneNumber
                     }}</span>
                   </div>
                 }
-                <div class="p-4 flex justify-between gap-4">
-                  <span class="text-sm text-mlm-secondary">Submitted</span>
-                  <span class="text-sm font-medium text-mlm-text text-right">{{
+                <div class="p-3.5 sm:p-4 flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
+                  <span class="text-sm text-mlm-secondary shrink-0">Submitted</span>
+                  <span class="text-sm font-medium text-mlm-text sm:text-right">{{
                     formatDate(application()?.appliedAt)
                   }}</span>
                 </div>
@@ -332,32 +375,32 @@
           }
 
           @case ('revoked') {
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-8 text-center">
               <div
-                class="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                class="w-14 h-14 sm:w-16 sm:h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-5 sm:mb-6"
               >
-                <i class="pi pi-ban text-2xl text-red-500"></i>
+                <i class="pi pi-ban text-xl sm:text-2xl text-red-500"></i>
               </div>
-              <h2 class="text-xl font-bold text-mlm-text mb-2">Consultant Status Revoked</h2>
-              <p class="text-mlm-secondary text-sm mb-2">
+              <h2 class="text-lg sm:text-xl font-bold text-mlm-text mb-2">Consultant Status Revoked</h2>
+              <p class="text-mlm-secondary text-sm mb-2 leading-relaxed">
                 Your business consultant status has been revoked. You will not receive future
                 commissions.
               </p>
-              <p class="text-mlm-secondary text-sm">
+              <p class="text-mlm-secondary text-sm leading-relaxed">
                 Please contact support if you believe this is an error.
               </p>
             </div>
           }
 
           @case ('blocked') {
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-8 text-center">
               <div
-                class="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                class="w-14 h-14 sm:w-16 sm:h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-5 sm:mb-6"
               >
-                <i class="pi pi-info-circle text-2xl text-gray-400"></i>
+                <i class="pi pi-info-circle text-xl sm:text-2xl text-gray-400"></i>
               </div>
-              <h2 class="text-xl font-bold text-mlm-text mb-2">Application Unavailable</h2>
-              <p class="text-mlm-secondary text-sm">
+              <h2 class="text-lg sm:text-xl font-bold text-mlm-text mb-2">Application Unavailable</h2>
+              <p class="text-mlm-secondary text-sm leading-relaxed max-w-md mx-auto">
                 {{ eligibility()?.reason ?? 'You are not eligible to apply at this time.' }}
               </p>
             </div>
@@ -365,36 +408,38 @@
 
           @default {
             @if (showApplicationForm()) {
-              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
+              <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 lg:p-8">
                 @if (uiState() === 'reapply' && application()?.rejectionReason) {
                   <div
-                    class="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-3 mb-6"
+                    class="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 px-3.5 py-3 sm:px-4 mb-5 sm:mb-6"
                   >
-                    <i class="pi pi-times-circle text-red-500 mt-0.5"></i>
-                    <div>
+                    <i class="pi pi-times-circle text-red-500 mt-0.5 shrink-0"></i>
+                    <div class="min-w-0">
                       <p class="text-red-800 text-sm font-semibold mb-1">Application Rejected</p>
-                      <p class="text-red-700 text-sm">{{ application()?.rejectionReason }}</p>
+                      <p class="text-red-700 text-sm break-words">
+                        {{ application()?.rejectionReason }}
+                      </p>
                     </div>
                   </div>
                 }
 
                 @if (stage1Hint(); as hint) {
                   <div
-                    class="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 mb-6"
+                    class="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3.5 py-3 sm:px-4 mb-5 sm:mb-6"
                   >
-                    <i class="pi pi-info-circle text-amber-500 mt-0.5"></i>
-                    <p class="text-amber-800 text-xs leading-relaxed">{{ hint }}</p>
+                    <i class="pi pi-info-circle text-amber-500 mt-0.5 shrink-0"></i>
+                    <p class="text-amber-800 text-xs sm:text-sm leading-relaxed">{{ hint }}</p>
                   </div>
                 }
 
-                <h2 class="text-lg font-bold text-mlm-text mb-1">
+                <h2 class="text-base sm:text-lg font-bold text-mlm-text mb-1">
                   @if (uiState() === 'reapply') {
                     Re-apply as Business Consultant
                   } @else {
                     Apply as Business Consultant
                   }
                 </h2>
-                <p class="text-mlm-secondary text-sm mb-6">
+                <p class="text-mlm-secondary text-sm mb-5 sm:mb-6 leading-relaxed">
                   Tell us about your seminar centre. There is no application fee.
                 </p>
 
@@ -404,7 +449,7 @@
                   </div>
                 }
 
-                <form class="space-y-5" (ngSubmit)="submitApplication()">
+                <form class="space-y-4 sm:space-y-5" (ngSubmit)="submitApplication()">
                   <div>
                     <label
                       for="seminarCentreName"
@@ -419,7 +464,7 @@
                       (ngModelChange)="seminarCentreName.set($event)"
                       name="seminarCentreName"
                       required
-                      class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary"
+                      class="w-full rounded-xl border border-gray-200 px-4 py-3 sm:py-2.5 text-base sm:text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary"
                       placeholder="e.g. Segulah Training Centre Lagos"
                     />
                   </div>
@@ -437,12 +482,12 @@
                       [ngModel]="seminarCentreAddress()"
                       (ngModelChange)="seminarCentreAddress.set($event)"
                       name="seminarCentreAddress"
-                      class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary"
+                      class="w-full rounded-xl border border-gray-200 px-4 py-3 sm:py-2.5 text-base sm:text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary"
                       placeholder="Street address"
                     />
                   </div>
 
-                  <div class="grid gap-5 sm:grid-cols-2">
+                  <div class="grid gap-4 sm:gap-5 sm:grid-cols-2">
                     <div>
                       <label
                         for="seminarCentreCity"
@@ -456,7 +501,7 @@
                         [ngModel]="seminarCentreCity()"
                         (ngModelChange)="seminarCentreCity.set($event)"
                         name="seminarCentreCity"
-                        class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary"
+                        class="w-full rounded-xl border border-gray-200 px-4 py-3 sm:py-2.5 text-base sm:text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary"
                         placeholder="City"
                       />
                     </div>
@@ -472,7 +517,7 @@
                         [ngModel]="seminarCentreState()"
                         (ngModelChange)="seminarCentreState.set($event)"
                         name="seminarCentreState"
-                        class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary bg-white"
+                        class="w-full rounded-xl border border-gray-200 px-4 py-3 sm:py-2.5 text-base sm:text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary bg-white"
                       >
                         <option value="">Select state</option>
                         @for (state of allStates; track state) {
@@ -489,10 +534,12 @@
                     <input
                       id="phoneNumber"
                       type="tel"
+                      inputmode="tel"
+                      autocomplete="tel"
                       [ngModel]="phoneNumber()"
                       (ngModelChange)="phoneNumber.set($event)"
                       name="phoneNumber"
-                      class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary"
+                      class="w-full rounded-xl border border-gray-200 px-4 py-3 sm:py-2.5 text-base sm:text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary"
                       placeholder="+2348012345678"
                     />
                   </div>
@@ -510,7 +557,7 @@
                       (ngModelChange)="applicantNotes.set($event)"
                       name="applicantNotes"
                       rows="3"
-                      class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary resize-none"
+                      class="w-full rounded-xl border border-gray-200 px-4 py-3 sm:py-2.5 text-base sm:text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary resize-none min-h-24"
                       placeholder="e.g. Weekly seminars every Saturday 10am"
                     ></textarea>
                   </div>
@@ -518,7 +565,7 @@
                   <button
                     type="submit"
                     [disabled]="actionLoading() || !canSubmitApplication()"
-                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 sm:py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     @if (actionLoading()) {
                       <span
