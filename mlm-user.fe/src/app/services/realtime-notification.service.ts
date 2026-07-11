@@ -191,6 +191,7 @@ export class RealTimeNotificationService {
           const isEarnings = this.isEarningsNotification(notif);
           const isRankUpgrade = this.isRankUpgradeNotification(notif);
           const isCpvMilestone = this.isCpvMilestoneNotification(notif);
+          const isConsultant = this.isConsultantNotification(notif);
           const modalType: ModalType = isRankUpgrade
             ? 'rank-upgrade'
             : isCpvMilestone
@@ -207,7 +208,9 @@ export class RealTimeNotificationService {
               ? this.getCpvMilestoneAction(notif.actionUrl, notif.actionLabel)
               : isEarnings
                 ? this.getEarningsAction(notif.actionUrl, notif.actionLabel)
-                : undefined;
+                : isConsultant
+                  ? this.getConsultantAction(notif.actionUrl, notif.actionLabel)
+                  : undefined;
           const amount = carriesAmount
             ? notif.amount ?? this.getMetadataNumber(notif.metadata, 'amount')
             : undefined;
@@ -378,6 +381,7 @@ export class RealTimeNotificationService {
     const isRankUpgrade = this.isRankUpgradeNotification(payload);
     const isCpvMilestone = this.isCpvMilestoneNotification(payload);
     const isEarnings = this.isEarningsNotification(payload);
+    const isConsultant = this.isConsultantNotification(payload);
     const uiType = this.getUiType(payload);
     const modalType: ModalType = isRankUpgrade
       ? 'rank-upgrade'
@@ -403,7 +407,12 @@ export class RealTimeNotificationService {
               this.getMetadataString(payload.metadata, 'actionUrl'),
               this.getMetadataString(payload.metadata, 'actionLabel')
             )
-          : undefined;
+          : isConsultant
+            ? this.getConsultantAction(
+                this.getMetadataString(payload.metadata, 'actionUrl'),
+                this.getMetadataString(payload.metadata, 'actionLabel')
+              )
+            : undefined;
     const amount = carriesAmount
       ? payload.amount ?? this.getMetadataNumber(payload.metadata, 'amount')
       : undefined;
@@ -566,6 +575,13 @@ export class RealTimeNotificationService {
     return text.includes('CPV_MILESTONE_REACHED') || text.includes('CPV MILESTONE');
   }
 
+  private isConsultantNotification(
+    notification: Pick<ApiNotificationItem, 'type'>
+  ): boolean {
+    const type = String(notification.type ?? '').toUpperCase();
+    return type.startsWith('BUSINESS_CONSULTANT_');
+  }
+
   private notificationSearchText(
     notification: Pick<ApiNotificationItem, 'type' | 'title' | 'message' | 'body'>
   ): string {
@@ -614,6 +630,13 @@ export class RealTimeNotificationService {
     return {
       redirectTo: actionUrl ?? '/commissions',
       actionLabel: actionLabel ?? 'View Earnings',
+    };
+  }
+
+  private getConsultantAction(actionUrl?: string, actionLabel?: string) {
+    return {
+      redirectTo: actionUrl ?? '/consultant',
+      actionLabel: actionLabel ?? 'View Consultant Program',
     };
   }
 

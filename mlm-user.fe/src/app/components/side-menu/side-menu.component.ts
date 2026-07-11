@@ -7,6 +7,7 @@ import { UserService } from '../../services/user.service';
 import { AuthService } from '../../services/auth.service';
 import { LayoutService } from '../../services/layout.service';
 import { MerchantService } from '../../services/merchant.service';
+import { ConsultantService } from '../../services/consultant.service';
 import { CartService } from '../../services/cart.service';
 import { formatMerchantUsernameLabel } from '../../core/utils/merchant-display.util';
 
@@ -54,6 +55,7 @@ export class SideMenuComponent implements OnInit {
   private authService = inject(AuthService);
   private layoutService = inject(LayoutService);
   private merchantService = inject(MerchantService);
+  private consultantService = inject(ConsultantService);
   private cartService = inject(CartService);
 
   isPaid = this.userService.isPaid;
@@ -105,6 +107,24 @@ export class SideMenuComponent implements OnInit {
     return [];
   }
 
+  private consultantMenuItem(): MenuItem {
+    const status = this.consultantService.consultantStatus();
+    let label = 'Become a Business Consultant';
+
+    if (status === 'PENDING') {
+      label = 'Consultant Application';
+    } else if (status === 'APPROVED') {
+      label = 'Consultant Program';
+    }
+
+    return {
+      label,
+      icon: 'pi pi-briefcase',
+      route: '/consultant',
+      requiresPayment: true,
+    };
+  }
+
   menuSections = computed<MenuSection[]>(() => {
     const currency = this.displayCurrency();
     const cartCount = this.cartItemCount();
@@ -121,6 +141,7 @@ export class SideMenuComponent implements OnInit {
             requiresPayment: true,
           },
           ...this.merchantApplyMenuItems(),
+          this.consultantMenuItem(),
           {
             label: 'Marketplace',
             icon: 'pi pi-shopping-bag',
@@ -318,6 +339,9 @@ export class SideMenuComponent implements OnInit {
 
   ngOnInit(): void {
     this.merchantService.fetchProfile();
+    if (this.isPaid()) {
+      this.consultantService.fetchConsultantData();
+    }
   }
 
   private autoExpandActiveSubmenu(): void {
