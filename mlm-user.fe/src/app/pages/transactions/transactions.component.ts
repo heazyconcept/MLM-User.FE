@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DashboardService, DashboardTransaction, DashboardTransactionsQuery } from '../../services/dashboard.service';
 import { CommissionService } from '../../services/commission.service';
@@ -52,6 +53,7 @@ export class TransactionsComponent implements OnInit {
   private dashboardService = inject(DashboardService);
   private commissionService = inject(CommissionService);
   private earningsService = inject(EarningsService);
+  private route = inject(ActivatedRoute);
   userService = inject(UserService);
   invoiceService = inject(InvoiceService);
 
@@ -88,11 +90,34 @@ export class TransactionsComponent implements OnInit {
   // Pagination state for commissions (breakdown)
   commPage = signal(1);
   commPageSize = signal(10);
+
+  filteredCommissions = computed(() => {
+    const q = this.filters().searchQuery.trim().toLowerCase();
+    const commissions = this.allCommissions();
+    if (!q) return commissions;
+
+    return commissions.filter((entry) => {
+      const haystack = [
+        entry.earningType,
+        entry.type,
+        entry.source,
+        entry.sourceDescription,
+        entry.id,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  });
+
   displayedCommissions = computed(() => {
     const start = (this.commPage() - 1) * this.commPageSize();
-    return this.allCommissions().slice(start, start + this.commPageSize());
+    return this.filteredCommissions().slice(start, start + this.commPageSize());
   });
-  commTotalPages = computed(() => Math.max(1, Math.ceil(this.allCommissions().length / this.commPageSize())));
+  commTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredCommissions().length / this.commPageSize())),
+  );
   commCanGoPrevious = computed(() => this.commPage() > 1);
   commCanGoNext = computed(() => this.commPage() < this.commTotalPages());
 
@@ -222,11 +247,28 @@ export class TransactionsComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.applyRouteQueryParams();
+
     if (this.activeTab() !== 'breakdown') {
       this.loadInitialTransactions();
     }
     if (this.userService.isPaid()) {
       this.earningsService.fetchEarningsSectionData();
+    }
+  }
+
+  private applyRouteQueryParams(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const tab = params.get('tab');
+    const search = params.get('search');
+
+    if (tab === 'breakdown' || tab === 'earnings' || tab === 'wallet' || tab === 'withdrawals' || tab === 'payments' || tab === 'autoship' || tab === 'voucher' || tab === 'all') {
+      this.activeTab.set(tab);
+    }
+
+    if (search) {
+      this.searchInput.set(search);
+      this.filters.update((f) => ({ ...f, searchQuery: search }));
     }
   }
 
@@ -393,13 +435,13 @@ export class TransactionsComponent implements OnInit {
   }
   commShowingFrom(): number {
     const from = (this.commPage() - 1) * this.commPageSize() + 1;
-    return this.allCommissions().length === 0 ? 0 : from;
+    return this.filteredCommissions().length === 0 ? 0 : from;
   }
   commShowingTo(): number {
-    return Math.min(this.allCommissions().length, this.commPage() * this.commPageSize());
+    return Math.min(this.filteredCommissions().length, this.commPage() * this.commPageSize());
   }
   commTotalRecords(): number {
-    return this.allCommissions().length;
+    return this.filteredCommissions().length;
   }
 
   isCredit(transaction: DashboardTransaction): boolean {
@@ -506,6 +548,10 @@ export class TransactionsComponent implements OnInit {
       PERSONAL_PRODUCT_PURCHASE: 'Personal product purchase commission',
       DIRECT_REFERRAL_PRODUCT_PURCHASE: 'Direct referral product purchase commission',
       COMMUNITY_PRODUCT_PURCHASE: 'Community product purchase commission',
+      BUSINESS_CONSULTANT_REGISTRATION: 'Business consultant registration/upgrade bonus',
+      BUSINESS_CONSULTANT_PRODUCT: 'Business consultant product bonus',
+      BCR: 'Business consultant registration/upgrade bonus',
+      BCP: 'Business consultant product bonus',
     };
     if (labels[normalized]) {
       return labels[normalized];

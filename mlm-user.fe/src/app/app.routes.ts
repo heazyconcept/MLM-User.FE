@@ -608,4 +608,19 @@ export const routes: Routes = [
       },
     ],
   },
+  {
+    path: 'consultant',
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./pages/consultant/consultant.component').then((m) => m.ConsultantComponent),
+        data: { title: 'Business Consultant' },
+      },
+    ],
+  },
 ];
