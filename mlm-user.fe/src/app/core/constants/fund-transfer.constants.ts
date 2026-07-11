@@ -3,8 +3,8 @@ import type { WalletType } from '../../services/wallet.service';
 export type FundTransferSourceWallet = 'CASH' | 'REGISTRATION';
 
 export const FUND_TRANSFER_TARGETS: Record<FundTransferSourceWallet, WalletType[]> = {
-  CASH: ['REGISTRATION', 'VOUCHER', 'AUTOSHIP'],
-  REGISTRATION: ['CASH', 'VOUCHER', 'AUTOSHIP'],
+  CASH: ['CASH', 'REGISTRATION', 'VOUCHER', 'AUTOSHIP'],
+  REGISTRATION: ['REGISTRATION', 'CASH', 'VOUCHER', 'AUTOSHIP'],
 };
 
 export const FUND_TRANSFER_SOURCE_OPTIONS: { value: FundTransferSourceWallet; label: string }[] = [
@@ -22,10 +22,8 @@ export const WALLET_TYPE_LABELS: Record<WalletType, string> = {
 export function getFundTransferTargetOptions(
   fromWalletType: FundTransferSourceWallet,
 ): { value: WalletType; label: string }[] {
-  return (FUND_TRANSFER_TARGETS[fromWalletType] ?? [])
-    .filter((value) => value !== fromWalletType)
-    .map((value) => ({
-      value,
-      label: WALLET_TYPE_LABELS[value],
-    }));
+  return (FUND_TRANSFER_TARGETS[fromWalletType] ?? []).map((value) => ({
+    value,
+    label: WALLET_TYPE_LABELS[value],
+  }));
 }

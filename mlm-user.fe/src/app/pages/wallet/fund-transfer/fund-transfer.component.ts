@@ -292,16 +292,6 @@ export class FundTransferComponent implements OnInit {
       return;
     }
 
-    if (fromWalletType === toWalletType) {
-      this.recipientError.set(null);
-      this.modalService.open(
-        'error',
-        'Invalid Wallet Selection',
-        'Source and target wallet must differ. Choose a different recipient wallet.',
-      );
-      return;
-    }
-
     const request: FundTransferRequest = {
       recipientUsername,
       fromWalletType,
