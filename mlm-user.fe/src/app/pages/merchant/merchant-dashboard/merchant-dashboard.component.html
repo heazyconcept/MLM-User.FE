@@ -186,13 +186,13 @@
                 </p>
 
                 <div class="flex gap-2.5 mt-6">
-                  <button
+                  <!-- <button
                     type="button"
                     routerLink="/merchant/earnings"
                     class="px-5 py-2.5 rounded-xl font-bold text-mlm-primary bg-white text-sm transition-opacity hover:opacity-90"
                   >
                     Withdraw
-                  </button>
+                  </button> -->
                   <button
                     type="button"
                     routerLink="/merchant/orders"
@@ -277,6 +277,34 @@
                 >
                   {{ card.value }}
                 </p>
+                @if (card.subtitle) {
+                  <p class="text-white/70 text-xs mt-1">{{ card.subtitle }}</p>
+                }
+                @if (card.breakdown?.length) {
+                  <ul class="mt-2 space-y-1 max-h-20 overflow-hidden">
+                    @for (row of card.breakdown; track row.label) {
+                      <li class="text-white/80 text-[11px] leading-snug truncate">
+                        {{ row.label }} · {{ row.value }} pcs
+                      </li>
+                    }
+                    @if (card.breakdownOverflow) {
+                      <li class="text-[11px] leading-snug">
+                        @if (card.detailLink) {
+                          <a
+                            [routerLink]="card.detailLink"
+                            class="text-white/90 underline underline-offset-2 hover:text-white"
+                          >
+                            + {{ card.breakdownOverflow }} more — View inventory
+                          </a>
+                        } @else {
+                          <span class="text-white/60"
+                            >+ {{ card.breakdownOverflow }} more</span
+                          >
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
               </div>
             }
           </div>

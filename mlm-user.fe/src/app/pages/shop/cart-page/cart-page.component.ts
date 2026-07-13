@@ -3,6 +3,7 @@ import {
   inject,
   signal,
   computed,
+  OnInit,
   OnDestroy,
   ChangeDetectionStrategy,
   effect,
@@ -41,7 +42,7 @@ import { formatCatalogPrice, getUnavailableCartMessage } from '../../../core/uti
   templateUrl: './cart-page.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CartPageComponent implements OnDestroy {
+export class CartPageComponent implements OnInit, OnDestroy {
   private cartService = inject(CartService);
   private checkoutService = inject(CartCheckoutService);
   private dialogService = inject(DialogService);
@@ -73,6 +74,10 @@ export class CartPageComponent implements OnDestroy {
         document.body.style.overflow = this.bodyOverflowPrevious;
       }
     });
+  }
+
+  ngOnInit(): void {
+    this.cartService.refreshFromServer();
   }
 
   onQuantityChange(productId: string, value: number): void {
