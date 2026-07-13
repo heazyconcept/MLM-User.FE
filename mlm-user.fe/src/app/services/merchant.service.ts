@@ -304,6 +304,13 @@ export interface MerchantDashboardRecentActivity {
   metadata?: Record<string, unknown>;
 }
 
+export interface MerchantDashboardInventoryCategory {
+  categoryId: string;
+  categoryName: string;
+  productCount: number;
+  totalStockQuantity: number;
+}
+
 export interface MerchantDashboardSummary {
   currency: string;
   sales: {
@@ -322,9 +329,11 @@ export interface MerchantDashboardSummary {
   };
   inventory: {
     totalProducts: number;
+    totalStockQuantity?: number;
     lowStockCount: number;
     outOfStockCount: number;
     lowOrOutCount: number;
+    byCategory?: MerchantDashboardInventoryCategory[];
   };
   earnings: {
     totalEarnings: number;
@@ -1793,9 +1802,14 @@ export class MerchantService {
       },
       inventory: {
         totalProducts: Number(inventory['totalProducts'] ?? inventory['total_products'] ?? 0),
+        totalStockQuantity:
+          (inventory['totalStockQuantity'] ?? inventory['total_stock_quantity']) != null
+            ? Number(inventory['totalStockQuantity'] ?? inventory['total_stock_quantity'])
+            : undefined,
         lowStockCount: Number(inventory['lowStockCount'] ?? inventory['low_stock_count'] ?? 0),
         outOfStockCount: Number(inventory['outOfStockCount'] ?? inventory['out_of_stock_count'] ?? 0),
         lowOrOutCount: Number(inventory['lowOrOutCount'] ?? inventory['low_or_out_count'] ?? 0),
+        byCategory: this.mapDashboardInventoryCategories(inventory),
       },
       earnings: {
         totalEarnings: Number(earnings['totalEarnings'] ?? earnings['total_earnings'] ?? 0),
@@ -1810,6 +1824,27 @@ export class MerchantService {
         .map((item) => this.mapDashboardActivity(item))
         .filter((item): item is MerchantDashboardRecentActivity => item != null),
     };
+  }
+
+  private mapDashboardInventoryCategories(
+    inventory: Record<string, unknown>,
+  ): MerchantDashboardInventoryCategory[] | undefined {
+    const rawCategories = (inventory['byCategory'] ?? inventory['by_category'] ?? []) as unknown[];
+    if (!Array.isArray(rawCategories) || rawCategories.length === 0) {
+      return undefined;
+    }
+
+    return rawCategories.map((item) => {
+      const category = (item ?? {}) as Record<string, unknown>;
+      return {
+        categoryId: String(category['categoryId'] ?? category['category_id'] ?? ''),
+        categoryName: String(category['categoryName'] ?? category['category_name'] ?? 'Uncategorized'),
+        productCount: Number(category['productCount'] ?? category['product_count'] ?? 0),
+        totalStockQuantity: Number(
+          category['totalStockQuantity'] ?? category['total_stock_quantity'] ?? 0,
+        ),
+      };
+    });
   }
 
   private mapDashboardActivity(raw: unknown): MerchantDashboardRecentActivity | null {

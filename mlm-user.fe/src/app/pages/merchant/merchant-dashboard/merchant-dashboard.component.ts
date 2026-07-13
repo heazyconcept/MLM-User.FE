@@ -61,6 +61,16 @@ export class MerchantDashboardComponent implements OnInit {
 
   totalProducts = computed(() => this.dashboardSummary()?.inventory.totalProducts ?? 0);
 
+  totalStockQuantity = computed(() => {
+    const inventory = this.dashboardSummary()?.inventory;
+    if (!inventory) return 0;
+    return inventory.totalStockQuantity ?? inventory.totalProducts;
+  });
+
+  inventoryByCategory = computed(
+    () => this.dashboardSummary()?.inventory.byCategory ?? [],
+  );
+
   lowOrOutCount = computed(() => this.dashboardSummary()?.inventory.lowOrOutCount ?? 0);
 
   salesChangePct = computed(() => this.dashboardSummary()?.sales.salesChangePct ?? null);
@@ -93,10 +103,17 @@ export class MerchantDashboardComponent implements OnInit {
 
   sparklineArea = computed(() => this.buildSparklineArea(this.trendAmounts()));
 
+  private readonly inventoryBreakdownLimit = 3;
+
   statCardsData = computed(() => {
     const currency = this.summaryCurrency();
     const bgPrimary = 'linear-gradient(180deg,#49A321 0%,#3d8a1c 100%)';
     const bgMuted = 'linear-gradient(180deg,#64748b 0%,#475569 100%)';
+    const productCount = this.totalProducts();
+    const productLabel = productCount === 1 ? '1 product' : `${productCount} products`;
+    const categories = this.inventoryByCategory();
+    const visibleCategories = categories.slice(0, this.inventoryBreakdownLimit);
+    const hiddenCategoryCount = Math.max(0, categories.length - visibleCategories.length);
 
     return [
       {
@@ -113,7 +130,14 @@ export class MerchantDashboardComponent implements OnInit {
       },
       {
         label: 'Inventory Summary',
-        value: String(this.totalProducts()),
+        value: String(this.totalStockQuantity()),
+        subtitle: productLabel,
+        breakdown: visibleCategories.map((category) => ({
+          label: category.categoryName,
+          value: category.totalStockQuantity,
+        })),
+        breakdownOverflow: hiddenCategoryCount,
+        detailLink: '/merchant/inventory',
         icon: 'pi-box',
         gradient: bgMuted,
       },

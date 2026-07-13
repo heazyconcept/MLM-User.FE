@@ -297,9 +297,18 @@ describe('MerchantService — dashboard summary', () => {
       orders: { pendingFulfillments: 3 },
       inventory: {
         totalProducts: 5,
+        totalStockQuantity: 250,
         lowStockCount: 1,
         outOfStockCount: 0,
         lowOrOutCount: 1,
+        byCategory: [
+          {
+            categoryId: 'health',
+            categoryName: 'Health',
+            productCount: 3,
+            totalStockQuantity: 150,
+          },
+        ],
       },
       earnings: {
         totalEarnings: 7141.6,
@@ -329,6 +338,8 @@ describe('MerchantService — dashboard summary', () => {
     service.fetchDashboardSummary$().subscribe((result) => {
       expect(result).toEqual(mockResponse);
       expect(service.dashboardSummary()).toEqual(mockResponse);
+      expect(service.dashboardSummary()?.inventory.totalStockQuantity).toBe(250);
+      expect(service.dashboardSummary()?.inventory.byCategory?.[0].categoryName).toBe('Health');
     });
 
     const req = httpMock.expectOne(`${baseUrl}/merchants/dashboard/summary`);
