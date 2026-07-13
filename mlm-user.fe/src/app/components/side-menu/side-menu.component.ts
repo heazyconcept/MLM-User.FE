@@ -171,7 +171,7 @@ export class SideMenuComponent implements OnInit {
                 ? []
                 : [
                     {
-                      label: 'Fund Transfer',
+                      label: 'Fund Transfer User Wallet',
                       icon: 'pi pi-send',
                       route: '/wallet/fund-transfer',
                       requiresPayment: true,
