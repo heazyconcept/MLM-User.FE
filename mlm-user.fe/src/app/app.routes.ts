@@ -606,6 +606,14 @@ export const routes: Routes = [
           ),
         data: { title: 'Merchant Allocations' },
       },
+      {
+        path: 'handovers',
+        loadComponent: () =>
+          import('./pages/merchant/merchant-handovers/merchant-handovers.component').then(
+            (m) => m.MerchantHandoversComponent,
+          ),
+        data: { title: 'Stock Handovers' },
+      },
     ],
   },
   {

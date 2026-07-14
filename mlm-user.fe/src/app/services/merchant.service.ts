@@ -35,6 +35,15 @@ export type StockDisputeStatus =
   | 'MERCHANT_ACKNOWLEDGED'
   | 'CLOSED';
 
+export type MerchantHandoverStatus =
+  | 'NONE'
+  | 'REQUESTED'
+  | 'SUPPLIER_APPROVED'
+  | 'ADMIN_APPROVED'
+  | 'READY_FOR_PICKUP'
+  | 'COMPLETED'
+  | 'REJECTED';
+
 export type InventoryAdjustmentType = 'INCREASE' | 'DECREASE';
 
 export type InventoryAdjustmentDisputeStatus =
@@ -59,6 +68,16 @@ export function isMerchantUsdtSource(source: MerchantFeePaymentSource): boolean 
 
 /* ── Interfaces ────────────────────────────────────────────────── */
 
+export interface MerchantLocation {
+  id?: string;
+  country: string;
+  state: string;
+  address: string;
+  phoneNumber: string;
+  isPrimary: boolean;
+  detailsComplete?: boolean;
+}
+
 export interface MerchantProfile {
   id: string;
   userId: string;
@@ -68,6 +87,8 @@ export interface MerchantProfile {
   type: MerchantType;
   status: MerchantStatus;
   serviceAreas: string[];
+  locations?: MerchantLocation[];
+  locationsComplete?: boolean;
   createdAt: string;
 }
 
@@ -80,6 +101,8 @@ export interface MerchantProfileResponse {
   type?: MerchantType;
   status?: MerchantStatus;
   serviceAreas?: string[];
+  locations?: MerchantLocation[];
+  locationsComplete?: boolean;
   merchantFeePaidAt?: string | null;
   createdAt?: string;
   message?: string;
@@ -92,12 +115,16 @@ export interface UpdateMerchantProfileBody {
   phoneNumber?: string;
   address?: string;
   serviceAreas?: string[];
+  locations?: MerchantLocation[];
 }
 
 export interface ApplyMerchantBody {
   phoneNumber: string;
   type: MerchantType;
-  serviceAreas: string[];
+  locations: MerchantLocation[];
+  businessName?: string;
+  /** Legacy fallback — prefer `locations`. */
+  serviceAreas?: string[];
   address?: string;
 }
 
@@ -360,6 +387,19 @@ export interface MerchantAllocationDispute {
   claimedReceivedQuantity: number;
 }
 
+export interface MerchantHandoverParty {
+  id: string;
+  businessName?: string;
+  type?: MerchantType;
+  phoneNumber?: string;
+  address?: string;
+  serviceAreas?: string[];
+  locations?: MerchantLocation[];
+  stockQuantity?: number;
+}
+
+export type MerchantEligibleSupplier = MerchantHandoverParty;
+
 export interface MerchantAllocation {
   id: string;
   merchantId?: string;
@@ -377,6 +417,16 @@ export interface MerchantAllocation {
   dispute: MerchantAllocationDispute | null;
   product?: MerchantAllocationProduct;
   createdAt?: string;
+  handoverStatus: MerchantHandoverStatus;
+  sourceMerchantId: string | null;
+  sourceMerchant: MerchantHandoverParty | null;
+  receiverMerchant: MerchantHandoverParty | null;
+  supplierApprovedAt: string | null;
+  adminApprovedAt: string | null;
+  handoverReadyAt: string | null;
+  handoverRejectedAt: string | null;
+  handoverRejectedBy: string | null;
+  handoverRejectReason: string | null;
 }
 
 export interface MerchantStockDispute {
@@ -537,6 +587,7 @@ export class MerchantService {
   private deliveriesTotalSignal = signal(0);
   private earningsSignal = signal<MerchantEarningsSummary | null>(null);
   private allocationsSignal = signal<MerchantAllocation[]>([]);
+  private handoverRequestsSignal = signal<MerchantAllocation[]>([]);
   private stockDisputesSignal = signal<MerchantStockDispute[]>([]);
   private inventoryAdjustmentDisputesSignal = signal<MerchantInventoryAdjustmentDispute[]>([]);
   private inventorySignal = signal<MerchantInventoryItem[]>([]);
@@ -557,6 +608,7 @@ export class MerchantService {
   readonly deliveriesTotal = this.deliveriesTotalSignal.asReadonly();
   readonly earnings = this.earningsSignal.asReadonly();
   readonly allocations = this.allocationsSignal.asReadonly();
+  readonly handoverRequests = this.handoverRequestsSignal.asReadonly();
   readonly stockDisputes = this.stockDisputesSignal.asReadonly();
   readonly inventoryAdjustmentDisputes = this.inventoryAdjustmentDisputesSignal.asReadonly();
   readonly inventory = this.inventorySignal.asReadonly();
@@ -607,12 +659,24 @@ export class MerchantService {
   );
 
   readonly actionableAllocationCount = computed(() => {
+    const handoverActionable = this.allocationsSignal().filter(
+      (a) =>
+        MerchantService.canRequestHandover(a) || MerchantService.canConfirmHandoverReceipt(a),
+    ).length;
     const delivered = this.allocationsSignal().filter((a) => a.status === 'DELIVERED').length;
     const rejectedDisputes = this.stockDisputesSignal().filter(
       (d) => d.status === 'ADMIN_REJECTED',
     ).length;
-    return delivered + rejectedDisputes;
+    return handoverActionable + delivered + rejectedDisputes;
   });
+
+  /** Inbound supplier actions: approve requested or mark-ready after admin approval. */
+  readonly actionableHandoverRequestCount = computed(() =>
+    this.handoverRequestsSignal().filter(
+      (a) =>
+        a.handoverStatus === 'REQUESTED' || a.handoverStatus === 'ADMIN_APPROVED',
+    ).length,
+  );
 
   readonly totalMerchantSales = computed(() => {
     return this.ordersSignal().reduce((sum, o) => sum + o.totalAmount, 0);
@@ -663,19 +727,21 @@ export class MerchantService {
   /** POST /merchants/apply — creates DRAFT; returns observable so callers can chain payment */
   apply(
     type: MerchantType,
-    serviceAreas: string[],
     phoneNumber: string,
-    address: string,
+    locations: MerchantLocation[],
+    businessName?: string,
   ): Observable<MerchantProfile | null> {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
+    const trimmedName = businessName?.trim();
     const body: ApplyMerchantBody = {
       phoneNumber,
       type,
-      serviceAreas,
-      ...(address ? { address } : {}),
+      locations,
+      ...(trimmedName ? { businessName: trimmedName } : {}),
     };
     return this.api.post<MerchantProfile>('merchants/apply', body).pipe(
+      map((profile) => this.mapMerchantProfile(profile)),
       tap((profile) => {
         if (profile && profile.id) {
           const asResponse: MerchantProfileResponse = {
@@ -1006,12 +1072,16 @@ export class MerchantService {
       address: api.address ?? local.address,
       serviceAreas:
         api.serviceAreas && api.serviceAreas.length > 0 ? api.serviceAreas : local.serviceAreas,
+      locations:
+        api.locations && api.locations.length > 0 ? api.locations : local.locations,
+      locationsComplete: api.locationsComplete ?? local.locationsComplete,
     };
   }
 
   private applyProfile(api: MerchantProfileResponse): void {
+    const mapped = this.mapMerchantProfileResponse(api);
     const local = this.getLocalMerchantProfile();
-    const merged = this.mergeProfileWithLocal(api, local);
+    const merged = this.mergeProfileWithLocal(mapped, local);
     this.profileSignal.set(merged);
     this.saveLocalMerchantProfile(merged);
     if (merged.status === 'ACTIVE') {
@@ -1020,7 +1090,8 @@ export class MerchantService {
   }
 
   private refreshProfileFromApi(): Observable<MerchantProfileResponse | null> {
-    return this.api.get<MerchantProfileResponse>('merchants/me').pipe(
+    return this.api.get<unknown>('merchants/me').pipe(
+      map((res) => this.mapMerchantProfileResponse(res)),
       tap((res) => {
         if (res && res.id && !res.message) {
           this.applyProfile(res);
@@ -1029,6 +1100,102 @@ export class MerchantService {
         }
       }),
     );
+  }
+
+  private mapMerchantProfile(raw: unknown): MerchantProfile {
+    const data = (raw ?? {}) as Record<string, unknown>;
+    const locations = this.mapMerchantLocations(data);
+    const serviceAreas = this.deriveServiceAreas(data, locations);
+    return {
+      id: String(data['id'] ?? ''),
+      userId: String(data['userId'] ?? data['user_id'] ?? ''),
+      businessName: (data['businessName'] ?? data['business_name'] ?? undefined) as string | undefined,
+      phoneNumber: (data['phoneNumber'] ?? data['phone_number'] ?? undefined) as string | undefined,
+      address: (data['address'] ?? undefined) as string | undefined,
+      type: String(data['type'] ?? 'REGIONAL') as MerchantType,
+      status: String(data['status'] ?? 'DRAFT') as MerchantStatus,
+      serviceAreas,
+      locations,
+      locationsComplete: Boolean(
+        data['locationsComplete'] ?? data['locations_complete'] ?? false,
+      ),
+      createdAt: String(data['createdAt'] ?? data['created_at'] ?? ''),
+    };
+  }
+
+  private mapMerchantProfileResponse(raw: unknown): MerchantProfileResponse {
+    const data = (raw ?? {}) as Record<string, unknown>;
+    if (data['message'] && !data['id']) {
+      return { message: String(data['message']) };
+    }
+
+    const locations = this.mapMerchantLocations(data);
+    const serviceAreas = this.deriveServiceAreas(data, locations);
+
+    return {
+      id: data['id'] != null ? String(data['id']) : undefined,
+      userId: (data['userId'] ?? data['user_id'] ?? undefined) as string | undefined,
+      businessName: (data['businessName'] ?? data['business_name'] ?? undefined) as
+        | string
+        | undefined,
+      phoneNumber: (data['phoneNumber'] ?? data['phone_number'] ?? undefined) as string | undefined,
+      address: (data['address'] ?? undefined) as string | undefined,
+      type: (data['type'] ?? undefined) as MerchantType | undefined,
+      status: (data['status'] ?? undefined) as MerchantStatus | undefined,
+      serviceAreas,
+      locations,
+      locationsComplete:
+        data['locationsComplete'] != null || data['locations_complete'] != null
+          ? Boolean(data['locationsComplete'] ?? data['locations_complete'])
+          : locations.length === 0
+            ? undefined
+            : locations.every((loc) => loc.detailsComplete !== false),
+      merchantFeePaidAt: (data['merchantFeePaidAt'] ??
+        data['merchant_fee_paid_at'] ??
+        null) as string | null,
+      createdAt: (data['createdAt'] ?? data['created_at'] ?? undefined) as string | undefined,
+      message: (data['message'] ?? undefined) as string | undefined,
+    };
+  }
+
+  private mapMerchantLocations(data: Record<string, unknown>): MerchantLocation[] {
+    const rawLocations = (data['locations'] ?? []) as unknown[];
+    if (!Array.isArray(rawLocations) || rawLocations.length === 0) {
+      return [];
+    }
+
+    return rawLocations.map((item, index) => {
+      const loc = (item ?? {}) as Record<string, unknown>;
+      const address = String(loc['address'] ?? '');
+      const phoneNumber = String(loc['phoneNumber'] ?? loc['phone_number'] ?? '');
+      const isPrimary = Boolean(loc['isPrimary'] ?? loc['is_primary'] ?? index === 0);
+      const detailsCompleteRaw = loc['detailsComplete'] ?? loc['details_complete'];
+      return {
+        id: loc['id'] != null ? String(loc['id']) : undefined,
+        country: String(loc['country'] ?? ''),
+        state: String(loc['state'] ?? ''),
+        address,
+        phoneNumber,
+        isPrimary,
+        detailsComplete:
+          detailsCompleteRaw != null
+            ? Boolean(detailsCompleteRaw)
+            : address.trim().length > 0,
+      };
+    });
+  }
+
+  private deriveServiceAreas(
+    data: Record<string, unknown>,
+    locations: MerchantLocation[],
+  ): string[] {
+    if (Array.isArray(data['serviceAreas']) && data['serviceAreas'].length > 0) {
+      return (data['serviceAreas'] as unknown[]).map(String);
+    }
+    if (Array.isArray(data['service_areas']) && (data['service_areas'] as unknown[]).length > 0) {
+      return (data['service_areas'] as unknown[]).map(String);
+    }
+    return locations.map((loc) => loc.state).filter(Boolean);
   }
 
   isFeeAlreadyPaidError(message: string | null | undefined): boolean {
@@ -1070,7 +1237,8 @@ export class MerchantService {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
 
-    return this.api.patch<MerchantProfileResponse>('merchants/me', body).pipe(
+    return this.api.patch<unknown>('merchants/me', body).pipe(
+      map((updatedProfile) => this.mapMerchantProfileResponse(updatedProfile)),
       switchMap((updatedProfile) => {
         if (updatedProfile?.id && !updatedProfile.message) {
           this.applyProfile(updatedProfile);
@@ -1402,6 +1570,40 @@ export class MerchantService {
     return dispute.status === 'ADMIN_REJECTED';
   }
 
+  static canRequestHandover(allocation: MerchantAllocation): boolean {
+    return (
+      allocation.status === 'PENDING' &&
+      (allocation.handoverStatus === 'NONE' || allocation.handoverStatus === 'REJECTED')
+    );
+  }
+
+  static canConfirmHandoverReceipt(allocation: MerchantAllocation): boolean {
+    return allocation.handoverStatus === 'READY_FOR_PICKUP';
+  }
+
+  static isHandoverActive(allocation: MerchantAllocation): boolean {
+    const status = allocation.handoverStatus;
+    return (
+      status === 'REQUESTED' ||
+      status === 'SUPPLIER_APPROVED' ||
+      status === 'ADMIN_APPROVED' ||
+      status === 'READY_FOR_PICKUP'
+    );
+  }
+
+  static handoverStatusLabel(status: MerchantHandoverStatus): string {
+    const labels: Record<MerchantHandoverStatus, string> = {
+      NONE: 'No handover',
+      REQUESTED: 'Handover requested',
+      SUPPLIER_APPROVED: 'Supplier approved',
+      ADMIN_APPROVED: 'Admin approved',
+      READY_FOR_PICKUP: 'Ready for pickup',
+      COMPLETED: 'Handover completed',
+      REJECTED: 'Handover rejected',
+    };
+    return labels[status] ?? status;
+  }
+
   static allocationStatusLabel(status: AllocationStatus): string {
     const labels: Record<AllocationStatus, string> = {
       PENDING: 'Pending dispatch',
@@ -1413,6 +1615,153 @@ export class MerchantService {
       CANCELLED: 'Cancelled',
     };
     return labels[status] ?? status;
+  }
+
+  /* ── Merchant-to-merchant stock handover ─────────────────────── */
+
+  /** GET /merchants/me/allocations/:id/eligible-suppliers */
+  fetchEligibleHandoverSuppliers(
+    allocationId: string,
+  ): Observable<MerchantEligibleSupplier[]> {
+    this.errorSignal.set(null);
+    return this.api
+      .get<{ suppliers?: unknown[] } | unknown[]>(
+        `merchants/me/allocations/${allocationId}/eligible-suppliers`,
+      )
+      .pipe(
+        map((res) => this.normalizeEligibleSuppliersResponse(res)),
+        catchError((err) => {
+          console.error('[MerchantService] fetchEligibleHandoverSuppliers failed', err);
+          this.errorSignal.set(err?.error?.message || 'Failed to load eligible suppliers.');
+          return of([]);
+        }),
+      );
+  }
+
+  /** POST /merchants/me/allocations/:id/handover-request */
+  requestHandover(
+    allocationId: string,
+    supplierMerchantId: string,
+  ): Observable<MerchantAllocation | null> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+    return this.api
+      .post<unknown>(`merchants/me/allocations/${allocationId}/handover-request`, {
+        supplierMerchantId,
+      })
+      .pipe(
+        map((res) => this.mapAllocation((res ?? {}) as Record<string, unknown>)),
+        tap(() => this.fetchAllocations()),
+        catchError((err) => {
+          console.error('[MerchantService] requestHandover failed', err);
+          this.errorSignal.set(err?.error?.message || 'Failed to request handover.');
+          return of(null);
+        }),
+        finalize(() => this.actionLoadingSignal.set(false)),
+      );
+  }
+
+  /** POST /merchants/me/allocations/:id/confirm-handover-receipt */
+  confirmHandoverReceipt(allocationId: string): Observable<MerchantAllocation | null> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+    return this.api
+      .post<unknown>(`merchants/me/allocations/${allocationId}/confirm-handover-receipt`, {})
+      .pipe(
+        map((res) => this.mapAllocation((res ?? {}) as Record<string, unknown>)),
+        tap(() => {
+          this.fetchAllocations();
+          this.fetchInventory();
+        }),
+        catchError((err) => {
+          console.error('[MerchantService] confirmHandoverReceipt failed', err);
+          this.errorSignal.set(err?.error?.message || 'Failed to confirm handover receipt.');
+          return of(null);
+        }),
+        finalize(() => this.actionLoadingSignal.set(false)),
+      );
+  }
+
+  /** GET /merchants/me/handover-requests */
+  fetchHandoverRequests(): void {
+    this.loadingSignal.set(true);
+    this.errorSignal.set(null);
+    this.api
+      .get<
+        | MerchantAllocation[]
+        | { data?: unknown[]; requests?: unknown[]; items?: unknown[]; allocations?: unknown[] }
+      >('merchants/me/handover-requests')
+      .pipe(
+        map((res) => this.normalizeHandoverRequestsResponse(res)),
+        tap((res) => this.handoverRequestsSignal.set(res)),
+        catchError((err) => {
+          console.error('[MerchantService] fetchHandoverRequests failed', err);
+          return this.handleOperationalFetchError(err, 'Failed to load handover requests.');
+        }),
+        finalize(() => this.loadingSignal.set(false)),
+      )
+      .subscribe();
+  }
+
+  /** POST /merchants/me/handover-requests/:allocationId/approve */
+  approveHandoverRequest(allocationId: string): Observable<MerchantAllocation | null> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+    return this.api
+      .post<unknown>(`merchants/me/handover-requests/${allocationId}/approve`, {})
+      .pipe(
+        map((res) => this.mapAllocation((res ?? {}) as Record<string, unknown>)),
+        tap(() => this.fetchHandoverRequests()),
+        catchError((err) => {
+          console.error('[MerchantService] approveHandoverRequest failed', err);
+          this.errorSignal.set(err?.error?.message || 'Failed to approve handover request.');
+          return of(null);
+        }),
+        finalize(() => this.actionLoadingSignal.set(false)),
+      );
+  }
+
+  /** POST /merchants/me/handover-requests/:allocationId/reject */
+  rejectHandoverRequest(
+    allocationId: string,
+    reason?: string,
+  ): Observable<MerchantAllocation | null> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+    const body = reason?.trim() ? { reason: reason.trim() } : {};
+    return this.api
+      .post<unknown>(`merchants/me/handover-requests/${allocationId}/reject`, body)
+      .pipe(
+        map((res) => this.mapAllocation((res ?? {}) as Record<string, unknown>)),
+        tap(() => this.fetchHandoverRequests()),
+        catchError((err) => {
+          console.error('[MerchantService] rejectHandoverRequest failed', err);
+          this.errorSignal.set(err?.error?.message || 'Failed to reject handover request.');
+          return of(null);
+        }),
+        finalize(() => this.actionLoadingSignal.set(false)),
+      );
+  }
+
+  /** POST /merchants/me/handover-requests/:allocationId/mark-ready */
+  markHandoverReady(allocationId: string): Observable<MerchantAllocation | null> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+    return this.api
+      .post<unknown>(`merchants/me/handover-requests/${allocationId}/mark-ready`, {})
+      .pipe(
+        map((res) => this.mapAllocation((res ?? {}) as Record<string, unknown>)),
+        tap(() => {
+          this.fetchHandoverRequests();
+          this.fetchInventory();
+        }),
+        catchError((err) => {
+          console.error('[MerchantService] markHandoverReady failed', err);
+          this.errorSignal.set(err?.error?.message || 'Failed to mark handover ready.');
+          return of(null);
+        }),
+        finalize(() => this.actionLoadingSignal.set(false)),
+      );
   }
 
   /* ── Inventory ───────────────────────────────────────────────── */
@@ -1640,11 +1989,25 @@ export class MerchantService {
 
   private mapAllocation(raw: Record<string, unknown>): MerchantAllocation {
     const productRaw = (raw['product'] as Record<string, unknown> | undefined) ?? {};
+    const handoverRaw = ((raw['handover'] ??
+      raw['handoverRequest'] ??
+      raw['handover_request'] ??
+      {}) as Record<string, unknown>);
     const productId = String(raw['productId'] ?? productRaw['id'] ?? '');
     const productName = String(
       raw['productName'] ?? productRaw['name'] ?? productRaw['productName'] ?? '—',
     );
     const disputeRaw = raw['dispute'] as Record<string, unknown> | null | undefined;
+    const sourceMerchantRaw = (raw['sourceMerchant'] ??
+      raw['source_merchant'] ??
+      handoverRaw['sourceMerchant'] ??
+      handoverRaw['source_merchant'] ??
+      handoverRaw['supplierMerchant'] ??
+      handoverRaw['supplier_merchant']) as Record<string, unknown> | null | undefined;
+    const receiverMerchantRaw = (raw['receiverMerchant'] ??
+      raw['receiver_merchant'] ??
+      handoverRaw['receiverMerchant'] ??
+      handoverRaw['receiver_merchant']) as Record<string, unknown> | null | undefined;
 
     return {
       id: String(raw['id'] ?? ''),
@@ -1676,7 +2039,122 @@ export class MerchantService {
           }
         : undefined,
       createdAt: (raw['createdAt'] ?? raw['created_at']) as string | undefined,
+      handoverStatus: String(
+        raw['handoverStatus'] ??
+          raw['handover_status'] ??
+          handoverRaw['handoverStatus'] ??
+          handoverRaw['handover_status'] ??
+          handoverRaw['status'] ??
+          'NONE',
+      ) as MerchantHandoverStatus,
+      sourceMerchantId: (raw['sourceMerchantId'] ??
+        raw['source_merchant_id'] ??
+        handoverRaw['sourceMerchantId'] ??
+        handoverRaw['source_merchant_id'] ??
+        handoverRaw['supplierMerchantId'] ??
+        handoverRaw['supplier_merchant_id'] ??
+        null) as string | null,
+      sourceMerchant: sourceMerchantRaw ? this.mapHandoverParty(sourceMerchantRaw) : null,
+      receiverMerchant: receiverMerchantRaw ? this.mapHandoverParty(receiverMerchantRaw) : null,
+      supplierApprovedAt: (raw['supplierApprovedAt'] ??
+        raw['supplier_approved_at'] ??
+        handoverRaw['supplierApprovedAt'] ??
+        handoverRaw['supplier_approved_at'] ??
+        null) as string | null,
+      adminApprovedAt: (raw['adminApprovedAt'] ??
+        raw['admin_approved_at'] ??
+        handoverRaw['adminApprovedAt'] ??
+        handoverRaw['admin_approved_at'] ??
+        null) as string | null,
+      handoverReadyAt: (raw['handoverReadyAt'] ??
+        raw['handover_ready_at'] ??
+        handoverRaw['handoverReadyAt'] ??
+        handoverRaw['handover_ready_at'] ??
+        handoverRaw['readyAt'] ??
+        handoverRaw['ready_at'] ??
+        null) as string | null,
+      handoverRejectedAt: (raw['handoverRejectedAt'] ??
+        raw['handover_rejected_at'] ??
+        handoverRaw['handoverRejectedAt'] ??
+        handoverRaw['handover_rejected_at'] ??
+        handoverRaw['rejectedAt'] ??
+        handoverRaw['rejected_at'] ??
+        null) as string | null,
+      handoverRejectedBy: (raw['handoverRejectedBy'] ??
+        raw['handover_rejected_by'] ??
+        handoverRaw['handoverRejectedBy'] ??
+        handoverRaw['handover_rejected_by'] ??
+        handoverRaw['rejectedBy'] ??
+        handoverRaw['rejected_by'] ??
+        null) as string | null,
+      handoverRejectReason: (raw['handoverRejectReason'] ??
+        raw['handover_reject_reason'] ??
+        handoverRaw['handoverRejectReason'] ??
+        handoverRaw['handover_reject_reason'] ??
+        handoverRaw['rejectReason'] ??
+        handoverRaw['reject_reason'] ??
+        handoverRaw['reason'] ??
+        null) as string | null,
     };
+  }
+
+  private mapHandoverParty(raw: Record<string, unknown>): MerchantHandoverParty {
+    const locationsRaw = (raw['locations'] ?? []) as unknown[];
+    return {
+      id: String(raw['id'] ?? ''),
+      businessName: (raw['businessName'] ?? raw['business_name'] ?? undefined) as string | undefined,
+      type: (raw['type'] ?? undefined) as MerchantType | undefined,
+      phoneNumber: (raw['phoneNumber'] ?? raw['phone_number'] ?? undefined) as string | undefined,
+      address: (raw['address'] ?? undefined) as string | undefined,
+      serviceAreas: Array.isArray(raw['serviceAreas'] ?? raw['service_areas'])
+        ? ((raw['serviceAreas'] ?? raw['service_areas']) as unknown[]).map(String)
+        : undefined,
+      stockQuantity:
+        raw['stockQuantity'] != null || raw['stock_quantity'] != null
+          ? Number(raw['stockQuantity'] ?? raw['stock_quantity'])
+          : undefined,
+      locations: Array.isArray(locationsRaw)
+        ? locationsRaw.map((item) => {
+            const loc = (item ?? {}) as Record<string, unknown>;
+            return {
+              id: loc['id'] != null ? String(loc['id']) : undefined,
+              country: String(loc['country'] ?? 'Nigeria'),
+              state: String(loc['state'] ?? ''),
+              address: String(loc['address'] ?? ''),
+              phoneNumber: String(loc['phoneNumber'] ?? loc['phone_number'] ?? ''),
+              isPrimary: Boolean(loc['isPrimary'] ?? loc['is_primary']),
+              detailsComplete:
+                loc['detailsComplete'] != null || loc['details_complete'] != null
+                  ? Boolean(loc['detailsComplete'] ?? loc['details_complete'])
+                  : undefined,
+            };
+          })
+        : undefined,
+    };
+  }
+
+  private normalizeEligibleSuppliersResponse(
+    res: { suppliers?: unknown[] } | unknown[],
+  ): MerchantEligibleSupplier[] {
+    const source = (Array.isArray(res)
+      ? res
+      : ((res['suppliers'] ?? []) as unknown[])) as Record<string, unknown>[];
+    return source.map((raw) => this.mapHandoverParty(raw));
+  }
+
+  private normalizeHandoverRequestsResponse(
+    res:
+      | MerchantAllocation[]
+      | { data?: unknown[]; requests?: unknown[]; items?: unknown[]; allocations?: unknown[] },
+  ): MerchantAllocation[] {
+    const source = (Array.isArray(res)
+      ? res
+      : ((res['requests'] ??
+          res['data'] ??
+          res['allocations'] ??
+          res['items'] ??
+          []) as unknown[])) as Record<string, unknown>[];
+    return source.map((raw) => this.mapAllocation(raw));
   }
 
   private mapStockDispute(raw: Record<string, unknown>): MerchantStockDispute {

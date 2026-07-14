@@ -1,0 +1,212 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="mb-8">
+        <h1 class="mb-2 text-3xl font-extrabold tracking-tight text-mlm-text">Stock Handovers</h1>
+        <div class="mb-4 h-px w-16 bg-mlm-primary/30"></div>
+        <p class="text-sm text-mlm-secondary">
+          Inbound requests from lower-tier merchants who want to pick allocation stock from you.
+          Approve, wait for admin approval, then mark ready when stock can be collected.
+        </p>
+      </div>
+
+      @if (error(); as err) {
+        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
+          <p class="text-sm text-red-700">{{ err }}</p>
+        </div>
+      }
+
+      @if (formError() && !rejectDialogVisible()) {
+        <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <p class="text-sm text-amber-800">{{ formError() }}</p>
+        </div>
+      }
+
+      @if (actionableCount() > 0 && !loading()) {
+        <div class="mb-6 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          {{ actionableCount() }} handover
+          {{ actionableCount() === 1 ? 'request needs' : 'requests need' }} your action.
+        </div>
+      }
+
+      <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div class="merchant-handovers-table">
+          <app-ui-table
+            [value]="sortedRequests()"
+            [headers]="tableHeaders"
+            [loading]="loading()"
+            [paginator]="sortedRequests().length > 10"
+            [rows]="10"
+            responsiveLayout="stack"
+            breakpoint="1024px"
+            [tableStyle]="{ 'min-width': '52rem' }"
+          >
+            <ng-template #rowTemplate let-alloc>
+              <tr class="p-selectable-row">
+                <td data-label="Product">
+                  <div class="cell-value items-start!">
+                    <div class="flex w-full flex-col gap-1 text-left">
+                      <span class="text-sm font-semibold text-mlm-text">{{ productLabel(alloc) }}</span>
+                      <span class="text-xs text-mlm-secondary"
+                        >SKU: {{ alloc.product?.sku || '—' }}</span
+                      >
+                    </div>
+                  </div>
+                </td>
+
+                <td data-label="Qty">
+                  <div class="cell-value">
+                    <span class="text-sm font-bold tabular-nums text-mlm-text">{{ alloc.quantity }}</span>
+                  </div>
+                </td>
+
+                <td data-label="Receiver">
+                  <div class="cell-value items-start!">
+                    <div class="flex w-full flex-col gap-0.5 text-left">
+                      <span class="text-sm font-medium text-mlm-text">{{ receiverLabel(alloc) }}</span>
+                      @if (receiverDetail(alloc)) {
+                        <span class="text-xs text-mlm-secondary">{{ receiverDetail(alloc) }}</span>
+                      }
+                    </div>
+                  </div>
+                </td>
+
+                <td data-label="Status" class="table-cell-center">
+                  <div class="cell-value">
+                    <app-status-badge
+                      [status]="handoverStatusForBadge(alloc.handoverStatus)"
+                      [uppercase]="false"
+                      size="sm"
+                    />
+                  </div>
+                </td>
+
+                <td data-label="Action" class="table-cell-center table-cell-action">
+                  <div class="cell-value">
+                    @if (alloc.handoverStatus === 'REQUESTED') {
+                      <p-button
+                        label="Approve"
+                        icon="pi pi-check"
+                        size="small"
+                        [loading]="isPending(actionKey(alloc.id, 'approve'))"
+                        (onClick)="approve(alloc)"
+                        styleClass="!bg-mlm-primary !border-mlm-primary"
+                      ></p-button>
+                      <p-button
+                        label="Reject"
+                        icon="pi pi-times"
+                        size="small"
+                        severity="secondary"
+                        [outlined]="true"
+                        (onClick)="openReject(alloc)"
+                      ></p-button>
+                    } @else if (alloc.handoverStatus === 'ADMIN_APPROVED') {
+                      <p-button
+                        label="Mark ready"
+                        icon="pi pi-box"
+                        size="small"
+                        [loading]="isPending(actionKey(alloc.id, 'mark-ready'))"
+                        (onClick)="markReady(alloc)"
+                        styleClass="!bg-mlm-primary !border-mlm-primary"
+                      ></p-button>
+                    } @else if (alloc.handoverStatus === 'SUPPLIER_APPROVED') {
+                      <span class="text-center text-xs text-mlm-secondary">Waiting for admin approval</span>
+                    } @else if (alloc.handoverStatus === 'READY_FOR_PICKUP') {
+                      <span class="text-center text-xs text-mlm-secondary">Awaiting receiver pickup</span>
+                    } @else if (alloc.handoverStatus === 'COMPLETED') {
+                      <span class="text-center text-xs text-mlm-secondary">Completed</span>
+                    } @else if (alloc.handoverStatus === 'REJECTED') {
+                      <span class="text-center text-xs text-mlm-secondary">
+                        {{ alloc.handoverRejectReason || 'Rejected' }}
+                      </span>
+                    } @else {
+                      <span class="text-center text-xs text-mlm-secondary">—</span>
+                    }
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+
+            <ng-template #emptyTemplate>
+              <tr>
+                <td [attr.colspan]="tableHeaders.length" class="px-5 py-16 text-center">
+                  <i class="pi pi-share-alt mb-3 block text-3xl text-mlm-warm-400"></i>
+                  <h2 class="mb-2 text-xl font-bold text-mlm-text">No handover requests</h2>
+                  <p class="mx-auto mb-6 max-w-md text-sm text-mlm-secondary">
+                    Only higher-tier merchants receive inbound requests. When a Regional or National
+                    merchant asks to pick stock from you, it will appear here.
+                  </p>
+                  <a
+                    routerLink="/merchant/allocations"
+                    class="inline-flex items-center gap-2 rounded-xl bg-mlm-primary px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-green-dark"
+                  >
+                    View your allocations
+                  </a>
+                </td>
+              </tr>
+            </ng-template>
+          </app-ui-table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<p-dialog
+  [visible]="rejectDialogVisible()"
+  (visibleChange)="rejectDialogVisible.set($event)"
+  [modal]="true"
+  [closable]="!actionLoading()"
+  [draggable]="false"
+  [resizable]="false"
+  header="Reject handover request"
+  styleClass="w-full max-w-lg"
+  (onHide)="closeReject()"
+>
+  @if (selectedRequest(); as alloc) {
+    <div class="space-y-4">
+      <p class="text-sm text-mlm-secondary">
+        Reject the request for
+        <span class="font-semibold text-mlm-text">{{ alloc.quantity }}</span>
+        ×
+        <span class="font-semibold text-mlm-text">{{ productLabel(alloc) }}</span>
+        from {{ receiverLabel(alloc) }}.
+      </p>
+
+      <div>
+        <label for="reject-reason" class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Reason (optional)
+        </label>
+        <textarea
+          id="reject-reason"
+          rows="3"
+          [ngModel]="rejectReason()"
+          (ngModelChange)="rejectReason.set($event)"
+          class="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20"
+          placeholder="Optional note for the requesting merchant"
+        ></textarea>
+      </div>
+
+      @if (formError()) {
+        <p class="text-sm text-red-600">{{ formError() }}</p>
+      }
+
+      <div class="flex justify-end gap-2 pt-2">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [text]="true"
+          [disabled]="actionLoading()"
+          (onClick)="closeReject()"
+        ></p-button>
+        <p-button
+          label="Reject request"
+          icon="pi pi-times"
+          severity="danger"
+          [loading]="isPending(actionKey(selectedRequest()!.id, 'reject'))"
+          (onClick)="submitReject()"
+        ></p-button>
+      </div>
+    </div>
+  }
+</p-dialog>

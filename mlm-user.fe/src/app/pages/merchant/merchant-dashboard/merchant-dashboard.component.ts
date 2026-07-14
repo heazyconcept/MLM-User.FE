@@ -186,6 +186,8 @@ export class MerchantDashboardComponent implements OnInit {
     () => this.dashboardSummary()?.allocations.actionableCount ?? 0,
   );
 
+  actionableHandoversCount = this.merchantService.actionableHandoverRequestCount;
+
   totalEarnings = computed(() => this.dashboardSummary()?.earnings.totalEarnings ?? 0);
 
   ngOnInit(): void {
@@ -291,6 +293,7 @@ export class MerchantDashboardComponent implements OnInit {
         this.runEntranceAnimations();
         this.cdr.markForCheck();
       });
+      this.merchantService.fetchHandoverRequests();
       if (this.canUpgradeCategory()) {
         this.merchantService.fetchUpgradeOptions({ silent: true }).subscribe((opts) => {
           this.hasUpgradeOptions.set(!!opts && opts.eligibleUpgrades.length > 0);

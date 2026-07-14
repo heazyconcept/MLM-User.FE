@@ -263,6 +263,7 @@ export class SideMenuComponent implements OnInit {
               { label: 'Deliveries', icon: 'pi pi-truck', route: '/merchant/deliveries' },
               { label: 'Earnings', icon: 'pi pi-chart-line', route: '/merchant/earnings' },
               { label: 'Allocations', icon: 'pi pi-inbox', route: '/merchant/allocations' },
+              { label: 'Stock Handovers', icon: 'pi pi-share-alt', route: '/merchant/handovers' },
             ],
           },
         ],

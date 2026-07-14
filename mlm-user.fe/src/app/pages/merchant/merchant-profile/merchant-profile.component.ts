@@ -27,14 +27,22 @@ import {
 } from '../../../services/merchant.service';
 import { UserService } from '../../../services/user.service';
 import { EarningsService } from '../../../services/earnings.service';
-import { NIGERIAN_STATES } from '../../../core/constants/states.constants';
 import {
   GATEWAY_REFERENCE_QUERY_PARAMS,
   resolvePaymentReference,
 } from '../../../core/utils/payment-reference.util';
 import { getMerchantCallbackUrl, isPaymentProviderEnabled } from '../../../core/utils/payment-config.util';
 import { UsdtDepositComponent } from '../../../components/usdt-deposit/usdt-deposit.component';
+import { MerchantLocationsEditorComponent } from '../../../components/merchant-locations-editor/merchant-locations-editor.component';
 import type { InitiatePaymentResponse } from '../../../services/payment.service';
+import {
+  type MerchantLocationDraft,
+  buildMerchantLocationsPayload,
+  createEmptyLocationDraft,
+  draftsFromProfile,
+  enforceTierOnDrafts,
+  validateMerchantLocationDrafts,
+} from '../../../core/utils/merchant-locations.util';
 
 const TIER_STYLES: Record<MerchantType, { color: string; icon: string }> = {
   REGIONAL: { color: 'from-sky-400 to-sky-600', icon: 'pi-map-marker' },
@@ -54,6 +62,7 @@ const TIER_STYLES: Record<MerchantType, { color: string; icon: string }> = {
     InputTextModule,
     MessageModule,
     UsdtDepositComponent,
+    MerchantLocationsEditorComponent,
   ],
   templateUrl: './merchant-profile.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,12 +85,22 @@ export class MerchantProfileComponent implements OnInit {
 
   businessName = signal('');
   phoneNumber = signal('');
-  address = signal('');
-  selectedStates = signal<string[]>([]);
-  statesDropdownOpen = signal(false);
-  statesSearchQuery = signal('');
-  allStates = NIGERIAN_STATES;
+  locations = signal<MerchantLocationDraft[]>([createEmptyLocationDraft(true)]);
+  formError = signal('');
   successMessage = signal('');
+
+  locationsIncomplete = computed(() => this.profile()?.locationsComplete === false);
+
+  merchantType = computed(() => this.profile()?.type ?? 'REGIONAL');
+
+  formValid = computed(() => {
+    const business = this.businessName().trim();
+    if (business.length < 2) return false;
+    return (
+      validateMerchantLocationDrafts(this.merchantType(), this.locations(), this.phoneNumber()) ===
+      null
+    );
+  });
 
   upgradeOptions = signal<MerchantUpgradeOptionsResponse | null>(null);
   isLoadingUpgradeOptions = signal(false);
@@ -132,20 +151,24 @@ export class MerchantProfileComponent implements OnInit {
     return opts != null && opts.eligibleUpgrades.length > 0;
   });
 
-  filteredStates = computed(() => {
-    const query = this.statesSearchQuery().toLowerCase().trim();
-    if (!query) return this.allStates;
-    return this.allStates.filter((state) => state.toLowerCase().includes(query));
-  });
-
   constructor() {
     effect(() => {
       const p = this.profile();
       if (p && !p.message) {
         this.businessName.set(p.businessName || '');
         this.phoneNumber.set(p.phoneNumber || '');
-        this.address.set(p.address || '');
-        this.selectedStates.set(p.serviceAreas || []);
+        this.locations.set(
+          enforceTierOnDrafts(
+            p.type ?? 'REGIONAL',
+            draftsFromProfile({
+              type: p.type,
+              locations: p.locations,
+              serviceAreas: p.serviceAreas,
+              address: p.address,
+              phoneNumber: p.phoneNumber,
+            }),
+          ),
+        );
       }
     });
   }
@@ -374,40 +397,31 @@ export class MerchantProfileComponent implements OnInit {
     }, 100);
   }
 
-  toggleStateSelection(state: string): void {
-    const current = this.selectedStates();
-    if (current.includes(state)) {
-      this.selectedStates.set(current.filter((s) => s !== state));
-    } else {
-      this.selectedStates.set([...current, state]);
-    }
-  }
-
-  isStateSelected(state: string): boolean {
-    return this.selectedStates().includes(state);
-  }
-
-  removeState(state: string): void {
-    this.selectedStates.set(this.selectedStates().filter((s) => s !== state));
+  onLocationsChange(next: MerchantLocationDraft[]): void {
+    this.locations.set(enforceTierOnDrafts(this.merchantType(), next));
+    this.formError.set('');
   }
 
   onSubmit(): void {
     this.successMessage.set('');
+    this.formError.set('');
     const business = this.businessName().trim();
     const phone = this.phoneNumber().trim();
-    const addr = this.address().trim();
-    const areas = this.selectedStates();
+    const type = this.merchantType();
 
-    if (business.length < 2 || !phone || !addr || areas.length === 0) {
+    const validationError = validateMerchantLocationDrafts(type, this.locations(), phone);
+    if (business.length < 2 || validationError) {
+      this.formError.set(validationError || 'Business name must be at least 2 characters.');
       return;
     }
+
+    const locationsPayload = buildMerchantLocationsPayload(type, this.locations(), phone);
 
     this.merchantService
       .updateProfile({
         businessName: business,
         phoneNumber: phone,
-        address: addr,
-        serviceAreas: areas,
+        locations: locationsPayload,
       })
       .subscribe((res) => {
         if (res) {
@@ -423,9 +437,20 @@ export class MerchantProfileComponent implements OnInit {
     if (p) {
       this.businessName.set(p.businessName || '');
       this.phoneNumber.set(p.phoneNumber || '');
-      this.address.set(p.address || '');
-      this.selectedStates.set(p.serviceAreas || []);
+      this.locations.set(
+        enforceTierOnDrafts(
+          p.type ?? 'REGIONAL',
+          draftsFromProfile({
+            type: p.type,
+            locations: p.locations,
+            serviceAreas: p.serviceAreas,
+            address: p.address,
+            phoneNumber: p.phoneNumber,
+          }),
+        ),
+      );
     }
     this.successMessage.set('');
+    this.formError.set('');
   }
 }

@@ -5,8 +5,8 @@
         <h1 class="mb-2 text-3xl font-extrabold tracking-tight text-mlm-text">Allocations</h1>
         <div class="mb-4 h-px w-16 bg-mlm-primary/30"></div>
         <p class="text-sm text-mlm-secondary">
-          Stock allocations from onboarding and refills. Confirm receipt only after admin marks a
-          shipment as delivered.
+          Stock allocations from onboarding and refills. Confirm warehouse delivery, or pick stock from
+          a higher-tier merchant while an allocation is still pending.
         </p>
       </div>
 
@@ -34,9 +34,9 @@
               <p-button
                 label="Acknowledge dispute"
                 icon="pi pi-check"
-                [loading]="actionLoading()"
+                [loading]="isPending(actionKey(['dispute', dispute.id, 'acknowledge']))"
                 (onClick)="acknowledgeDispute(dispute)"
-                styleClass="!bg-mlm-primary !border-mlm-primary shrink-0"
+                styleClass="!bg-mlm-primary !border-mlm-primary shrink-0 w-full sm:w-auto"
               ></p-button>
             </div>
           }
@@ -101,6 +101,26 @@
                           Remainder allocation
                         </span>
                       }
+                      @if (alloc.handoverStatus && alloc.handoverStatus !== 'NONE') {
+                        <span
+                          class="inline-flex w-fit rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700"
+                        >
+                          {{ MerchantService.handoverStatusLabel(alloc.handoverStatus) }}
+                        </span>
+                      }
+                      @if (alloc.sourceMerchant; as supplier) {
+                        <span class="text-[11px] text-mlm-secondary">
+                          Supplier: {{ supplier.businessName || 'Merchant' }}
+                          @if (supplier.phoneNumber) {
+                            · {{ supplier.phoneNumber }}
+                          }
+                        </span>
+                      }
+                      @if (MerchantService.canConfirmHandoverReceipt(alloc) && supplierPickupLabel(alloc)) {
+                        <span class="text-[11px] font-medium text-mlm-text">
+                          Pickup: {{ supplierPickupLabel(alloc) }}
+                        </span>
+                      }
                       @if (disputeForAllocation(alloc); as dispute) {
                         <span class="text-[11px] text-mlm-secondary">
                           Dispute: {{ dispute.claimedReceivedQuantity }} / {{ dispute.dispatchedQuantity }}
@@ -117,9 +137,13 @@
                   </div>
                 </td>
 
-                <td data-label="Status">
+                <td data-label="Status" class="table-cell-center">
                   <div class="cell-value">
-                    <app-status-badge [status]="statusForBadge(alloc.status)" size="sm" />
+                    <app-status-badge
+                      [status]="allocationStatusForBadge(alloc)"
+                      [uppercase]="false"
+                      size="sm"
+                    />
                   </div>
                 </td>
 
@@ -135,14 +159,34 @@
                   </div>
                 </td>
 
-                <td data-label="Action">
+                <td data-label="Action" class="table-cell-center table-cell-action">
                   <div class="cell-value">
-                    @if (MerchantService.canConfirmReceipt(alloc)) {
+                    @if (MerchantService.canConfirmHandoverReceipt(alloc)) {
+                      <p-button
+                        label="Confirm handover"
+                        icon="pi pi-check"
+                        size="small"
+                        (onClick)="openConfirmHandoverReceipt(alloc)"
+                        styleClass="!bg-mlm-primary !border-mlm-primary"
+                      ></p-button>
+                    } @else if (MerchantService.canRequestHandover(alloc)) {
+                      <p-button
+                        label="Pick from merchant"
+                        icon="pi pi-users"
+                        size="small"
+                        (onClick)="openPickFromMerchant(alloc)"
+                        styleClass="!bg-mlm-primary !border-mlm-primary"
+                      ></p-button>
+                      @if (MerchantService.isHandoverActive(alloc) === false) {
+                        <span class="text-center text-[11px] text-mlm-secondary"
+                          >Or wait for warehouse dispatch</span
+                        >
+                      }
+                    } @else if (MerchantService.canConfirmReceipt(alloc)) {
                       <p-button
                         label="Confirm receipt"
                         icon="pi pi-check"
                         size="small"
-                        [loading]="actionLoading()"
                         (onClick)="openConfirmReceipt(alloc)"
                         styleClass="!bg-mlm-primary !border-mlm-primary"
                       ></p-button>
@@ -152,15 +196,19 @@
                           label="Acknowledge"
                           icon="pi pi-exclamation-circle"
                           size="small"
-                          [loading]="actionLoading()"
+                          [loading]="isPending(actionKey(['dispute', dispute.id, 'acknowledge']))"
                           (onClick)="acknowledgeDispute(dispute)"
                           styleClass="!bg-amber-600 !border-amber-600"
                         ></p-button>
                       } @else {
-                        <span class="text-xs text-mlm-secondary">{{ statusForBadge(dispute.status) }}</span>
+                        <span class="text-center text-xs text-mlm-secondary">{{
+                          statusForBadge(dispute.status)
+                        }}</span>
                       }
                     } @else {
-                      <span class="text-xs text-mlm-secondary">{{ waitingMessage(alloc) }}</span>
+                      <span class="text-center text-xs text-mlm-secondary">{{
+                        waitingMessage(alloc)
+                      }}</span>
                     }
                   </div>
                 </td>
@@ -178,7 +226,7 @@
                     <h2 class="mb-2 text-xl font-bold text-mlm-text">No allocations yet</h2>
                     <p class="mx-auto mb-6 max-w-md text-sm text-mlm-secondary">
                       When stock is allocated after approval or refill, it will appear here through
-                      dispatch and delivery.
+                      dispatch, handover, and delivery.
                     </p>
                     <a
                       routerLink="/merchant/inventory"
@@ -287,8 +335,145 @@
         <p-button
           label="Submit receipt"
           icon="pi pi-check"
-          [loading]="actionLoading()"
+          [loading]="isPending(actionKey(['dialog', selectedAllocation()!.id, 'confirm-receipt']))"
           (onClick)="submitConfirmReceipt()"
+          styleClass="!bg-mlm-primary !border-mlm-primary"
+        ></p-button>
+      </div>
+    </div>
+  }
+</p-dialog>
+
+<p-dialog
+  [visible]="supplierDialogVisible()"
+  (visibleChange)="supplierDialogVisible.set($event)"
+  [modal]="true"
+  [closable]="!actionLoading()"
+  [draggable]="false"
+  [resizable]="false"
+  header="Pick from merchant"
+  styleClass="w-full max-w-xl"
+  (onHide)="closeSupplierDialog()"
+>
+  @if (selectedAllocation(); as alloc) {
+    <div class="space-y-4">
+      <p class="text-sm text-mlm-secondary">
+        Request {{ alloc.quantity }} ×
+        <span class="font-semibold text-mlm-text">{{ productLabel(alloc) }}</span>
+        from a higher-tier merchant in your coverage area. Supplier and admin approval are both
+        required.
+      </p>
+
+      @if (suppliersLoading()) {
+        <div class="flex justify-center py-8">
+          <div
+            class="h-8 w-8 animate-spin rounded-full border-2 border-mlm-primary/20 border-t-mlm-primary"
+          ></div>
+        </div>
+      } @else if (eligibleSuppliers().length === 0) {
+        <p class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          {{ handoverFormError() || 'No eligible suppliers found.' }}
+        </p>
+      } @else {
+        <div class="max-h-80 space-y-2 overflow-y-auto">
+          @for (supplier of eligibleSuppliers(); track supplier.id) {
+            <div
+              class="flex flex-col gap-3 rounded-xl border border-gray-100 bg-gray-50/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div class="min-w-0 text-sm">
+                <p class="font-semibold text-mlm-text">
+                  {{ supplier.businessName || 'Merchant' }}
+                  @if (supplier.type) {
+                    <span class="ml-1 text-xs font-medium text-mlm-secondary">({{ supplier.type }})</span>
+                  }
+                </p>
+                @if (supplier.address || supplier.phoneNumber) {
+                  <p class="mt-1 text-xs text-mlm-secondary">
+                    {{ supplier.address }}
+                    @if (supplier.address && supplier.phoneNumber) {
+                      ·
+                    }
+                    {{ supplier.phoneNumber }}
+                  </p>
+                }
+                @if (supplier.stockQuantity != null) {
+                  <p class="mt-1 text-xs font-medium text-mlm-text">
+                    Available stock: {{ supplier.stockQuantity }}
+                  </p>
+                }
+              </div>
+              <p-button
+                label="Request"
+                icon="pi pi-send"
+                size="small"
+                [loading]="
+                  isPending(actionKey(['dialog', selectedAllocation()!.id, 'request', supplier.id]))
+                "
+                (onClick)="requestHandoverFrom(supplier)"
+                styleClass="!bg-mlm-primary !border-mlm-primary shrink-0 w-full sm:w-auto"
+              ></p-button>
+            </div>
+          }
+        </div>
+      }
+
+      @if (handoverFormError() && eligibleSuppliers().length > 0) {
+        <p class="text-sm text-red-600">{{ handoverFormError() }}</p>
+      }
+    </div>
+  }
+</p-dialog>
+
+<p-dialog
+  [visible]="confirmHandoverDialogVisible()"
+  (visibleChange)="confirmHandoverDialogVisible.set($event)"
+  [modal]="true"
+  [closable]="!actionLoading()"
+  [draggable]="false"
+  [resizable]="false"
+  header="Confirm handover receipt"
+  styleClass="w-full max-w-lg"
+  (onHide)="closeConfirmHandoverReceipt()"
+>
+  @if (selectedAllocation(); as alloc) {
+    <div class="space-y-4">
+      <p class="text-sm text-mlm-secondary">
+        Confirm you have collected the full
+        <span class="font-semibold text-mlm-text">{{ alloc.quantity }}</span>
+        units of
+        <span class="font-semibold text-mlm-text">{{ productLabel(alloc) }}</span>
+        from the supplying merchant. Partial receipt is not supported yet.
+      </p>
+
+      @if (alloc.sourceMerchant; as supplier) {
+        <div class="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm">
+          <p class="font-semibold text-mlm-text">{{ supplier.businessName || 'Supplier' }}</p>
+          @if (supplier.address) {
+            <p class="mt-1 text-mlm-secondary">{{ supplier.address }}</p>
+          }
+          @if (supplier.phoneNumber) {
+            <p class="mt-1 text-mlm-secondary">{{ supplier.phoneNumber }}</p>
+          }
+        </div>
+      }
+
+      @if (handoverFormError()) {
+        <p class="text-sm text-red-600">{{ handoverFormError() }}</p>
+      }
+
+      <div class="flex justify-end gap-2 pt-2">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [text]="true"
+          [disabled]="actionLoading()"
+          (onClick)="closeConfirmHandoverReceipt()"
+        ></p-button>
+        <p-button
+          label="Confirm full receipt"
+          icon="pi pi-check"
+          [loading]="isPending(actionKey(['dialog', selectedAllocation()!.id, 'confirm-handover']))"
+          (onClick)="submitConfirmHandoverReceipt()"
           styleClass="!bg-mlm-primary !border-mlm-primary"
         ></p-button>
       </div>

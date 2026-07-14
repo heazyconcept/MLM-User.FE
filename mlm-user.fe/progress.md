@@ -31,6 +31,7 @@
 | Transfer to Registration | `POST /registration/transfer-to-registration` | ✅ Completed | 2026-02-24 | amount, currency; RegistrationService.transferToRegistration(); CASH to REGISTRATION |
 | Registration Activate | `POST /registration/activate` | ✅ Completed | 2026-02-24 | RegistrationService.activate(); Debits REGISTRATION wallet, sets isRegistrationPaid |
 | Fund Transfer | `POST /wallets/fund-transfer` | ✅ Completed | 2026-07-08 | Cross-user wallet transfer by username; PIN required; page at /wallet/fund-transfer |
+| Receiver Handover State | `GET /merchants/me/allocations` | ❌ Blocked | 2026-07-14 | Response omits handover status and supplier pickup details; see `docs/BACKEND_REQUEST_RECEIVER_HANDOVER_STATUS.md` |
 
 ---
 
