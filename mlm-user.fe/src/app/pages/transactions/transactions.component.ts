@@ -1,9 +1,20 @@
-import { Component, inject, signal, computed, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  OnInit,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
-import { DashboardService, DashboardTransaction, DashboardTransactionsQuery } from '../../services/dashboard.service';
+import {
+  DashboardService,
+  DashboardTransaction,
+  DashboardTransactionsQuery,
+} from '../../services/dashboard.service';
 import { CommissionService } from '../../services/commission.service';
 import { EarningsService } from '../../services/earnings.service';
 import { UserService } from '../../services/user.service';
@@ -15,7 +26,9 @@ import { SkeletonModule } from 'primeng/skeleton';
 type DateRangePreset = 'all' | 'today' | 'last7days' | 'last30days' | 'thisMonth';
 type TransactionStatus = DashboardTransaction['status'];
 type TransactionType = DashboardTransaction['type'];
-type TransactionTab = 'all' | 'earnings' | 'breakdown' | 'wallet' | 'withdrawals' | 'payments' | 'autoship' | 'voucher';
+type TransactionTab =
+  'all' | 'earnings' | 'breakdown' | 'wallet' | 'withdrawals' | 'payments' | 'voucher';
+type ResolvedTransactionTab = TransactionTab | 'autoship';
 
 type TransactionFilters = {
   dateRange: DateRangePreset;
@@ -43,17 +56,18 @@ type TabSummary = {
     DatePipe,
     StatusBadgeComponent,
     InvoiceModalComponent,
-    SkeletonModule
+    SkeletonModule,
   ],
   templateUrl: './transactions.component.html',
-  
-  changeDetection: ChangeDetectionStrategy.OnPush
+
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TransactionsComponent implements OnInit {
   private dashboardService = inject(DashboardService);
   private commissionService = inject(CommissionService);
   private earningsService = inject(EarningsService);
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   userService = inject(UserService);
   invoiceService = inject(InvoiceService);
 
@@ -69,7 +83,7 @@ export class TransactionsComponent implements OnInit {
     dateRange: 'all',
     type: 'all',
     status: 'all',
-    searchQuery: ''
+    searchQuery: '',
   });
 
   // Local state
@@ -83,7 +97,9 @@ export class TransactionsComponent implements OnInit {
     const start = (this.txPage() - 1) * this.txPageSize();
     return this.transactions().slice(start, start + this.txPageSize());
   });
-  txTotalPages = computed(() => Math.max(1, Math.ceil(this.transactions().length / this.txPageSize())));
+  txTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.transactions().length / this.txPageSize())),
+  );
   txCanGoPrevious = computed(() => this.txPage() > 1);
   txCanGoNext = computed(() => this.txPage() < this.txTotalPages() || !!this.nextCursor());
 
@@ -128,7 +144,6 @@ export class TransactionsComponent implements OnInit {
     { label: 'Wallet', value: 'wallet' },
     { label: 'Withdrawals', value: 'withdrawals' },
     { label: 'Payments', value: 'payments' },
-    { label: 'Autoship', value: 'autoship' },
     { label: 'Product Voucher', value: 'voucher' },
   ];
 
@@ -154,7 +169,7 @@ export class TransactionsComponent implements OnInit {
     if (f.searchQuery.trim()) {
       const q = f.searchQuery.toLowerCase();
       result = result.filter(
-        (t) => t.description.toLowerCase().includes(q) || t.id.toLowerCase().includes(q)
+        (t) => t.description.toLowerCase().includes(q) || t.id.toLowerCase().includes(q),
       );
     }
 
@@ -197,7 +212,7 @@ export class TransactionsComponent implements OnInit {
         debitAmount: 0,
         pendingCount: 0,
         completedCount: 0,
-      }
+      },
     );
   });
 
@@ -208,7 +223,6 @@ export class TransactionsComponent implements OnInit {
     if (tab === 'wallet') return 'No wallet transactions available yet.';
     if (tab === 'withdrawals') return 'No withdrawal transactions available yet.';
     if (tab === 'payments') return 'No payment transactions available yet.';
-    if (tab === 'autoship') return 'No autoship transactions available yet.';
     if (tab === 'voucher') {
       return 'No product voucher transactions available yet.';
     }
@@ -221,29 +235,31 @@ export class TransactionsComponent implements OnInit {
     { label: 'Today', value: 'today' as DateRangePreset },
     { label: 'Last 7 Days', value: 'last7days' as DateRangePreset },
     { label: 'Last 30 Days', value: 'last30days' as DateRangePreset },
-    { label: 'This Month', value: 'thisMonth' as DateRangePreset }
+    { label: 'This Month', value: 'thisMonth' as DateRangePreset },
   ];
 
   typeOptions = [
     { label: 'All Types', value: 'all' },
     { label: 'Credit', value: 'Credit' as TransactionType },
-    { label: 'Debit', value: 'Debit' as TransactionType }
+    { label: 'Debit', value: 'Debit' as TransactionType },
   ];
 
   statusOptions = [
     { label: 'All Statuses', value: 'all' },
     { label: 'Completed', value: 'Completed' as TransactionStatus },
     { label: 'Pending', value: 'Pending' as TransactionStatus },
-    { label: 'Failed', value: 'Failed' as TransactionStatus }
+    { label: 'Failed', value: 'Failed' as TransactionStatus },
   ];
 
   // Check if any filter is active
   hasActiveFilters = computed(() => {
     const f = this.filters();
-    return f.dateRange !== 'all' || 
-           f.type !== 'all' || 
-           f.status !== 'all' || 
-           (f.searchQuery && f.searchQuery.length > 0);
+    return (
+      f.dateRange !== 'all' ||
+      f.type !== 'all' ||
+      f.status !== 'all' ||
+      (f.searchQuery && f.searchQuery.length > 0)
+    );
   });
 
   ngOnInit(): void {
@@ -262,7 +278,20 @@ export class TransactionsComponent implements OnInit {
     const tab = params.get('tab');
     const search = params.get('search');
 
-    if (tab === 'breakdown' || tab === 'earnings' || tab === 'wallet' || tab === 'withdrawals' || tab === 'payments' || tab === 'autoship' || tab === 'voucher' || tab === 'all') {
+    if (tab === 'autoship') {
+      void this.router.navigate(['/dashboard'], { fragment: 'autoship' });
+      return;
+    }
+
+    if (
+      tab === 'breakdown' ||
+      tab === 'earnings' ||
+      tab === 'wallet' ||
+      tab === 'withdrawals' ||
+      tab === 'payments' ||
+      tab === 'voucher' ||
+      tab === 'all'
+    ) {
       this.activeTab.set(tab);
     }
 
@@ -328,7 +357,7 @@ export class TransactionsComponent implements OnInit {
       dateRange: 'all',
       type: 'all',
       status: 'all',
-      searchQuery: ''
+      searchQuery: '',
     });
     this.txPage.set(1);
     this.commPage.set(1);
@@ -342,7 +371,7 @@ export class TransactionsComponent implements OnInit {
       this.formatTransactionCategory(tx),
       this.isCredit(tx) ? 'Credit' : 'Debit',
       this.formatTransactionAmount(tx),
-      tx.status
+      tx.status,
     ]);
 
     const escape = (value: string) => {
@@ -382,7 +411,7 @@ export class TransactionsComponent implements OnInit {
       },
       error: () => {
         this.isLoading.set(false);
-      }
+      },
     });
   }
 
@@ -412,7 +441,7 @@ export class TransactionsComponent implements OnInit {
       },
       error: () => {
         this.isLoading.set(false);
-      }
+      },
     });
   }
   txShowingFrom(): number {
@@ -524,16 +553,14 @@ export class TransactionsComponent implements OnInit {
     if (tab === 'payments') {
       return 'Inspect payment charges and processor-related transaction logs.';
     }
-    if (tab === 'autoship') {
-      return 'Track autoship subscriptions, renewals, and recurring product orders.';
-    }
     if (tab === 'voucher') {
       return 'Track product voucher credits, purchases, transfers, and wallet activity.';
     }
     return 'View and filter all your financial activities across earnings, wallet, withdrawals, payments, and vouchers.';
   }
 
-  getTabLabel(tab: TransactionTab): string {
+  getTabLabel(tab: ResolvedTransactionTab): string {
+    if (tab === 'autoship') return 'Autoship';
     return this.tabOptions.find((option) => option.value === tab)?.label ?? 'All';
   }
 
@@ -559,7 +586,7 @@ export class TransactionsComponent implements OnInit {
     return type
       .toLowerCase()
       .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   }
 
@@ -614,18 +641,20 @@ export class TransactionsComponent implements OnInit {
       return;
     }
     this.isLoading.set(true);
-    this.dashboardService.getTransactions(this.txPageSize(), undefined, this.getTabQuery()).subscribe({
-      next: (res) => {
-        this.allTransactions.set(res.items ?? []);
-        this.nextCursor.set(res.nextCursor ?? null);
-        this.isLoading.set(false);
-      },
-      error: () => {
-        this.allTransactions.set([]);
-        this.nextCursor.set(null);
-        this.isLoading.set(false);
-      }
-    });
+    this.dashboardService
+      .getTransactions(this.txPageSize(), undefined, this.getTabQuery())
+      .subscribe({
+        next: (res) => {
+          this.allTransactions.set(res.items ?? []);
+          this.nextCursor.set(res.nextCursor ?? null);
+          this.isLoading.set(false);
+        },
+        error: () => {
+          this.allTransactions.set([]);
+          this.nextCursor.set(null);
+          this.isLoading.set(false);
+        },
+      });
   }
 
   private resetAndLoadTransactions(): void {
@@ -645,18 +674,27 @@ export class TransactionsComponent implements OnInit {
     return { category: tab };
   }
 
-  private resolveTransactionTab(tx: DashboardTransaction): TransactionTab {
+  private resolveTransactionTab(tx: DashboardTransaction): ResolvedTransactionTab {
     if (this.isVoucherTransaction(tx)) {
       return 'voucher';
     }
 
-    const normalized = `${tx.categoryGroup ?? ''} ${tx.source ?? ''} ${tx.subType ?? ''} ${tx.description ?? ''}`.toLowerCase();
+    const normalized =
+      `${tx.categoryGroup ?? ''} ${tx.source ?? ''} ${tx.subType ?? ''} ${tx.description ?? ''}`.toLowerCase();
 
     if (this.matchesKeywords(normalized, ['withdrawal', 'cashout', 'payout'])) {
       return 'withdrawals';
     }
 
-    if (this.matchesKeywords(normalized, ['autoship', 'auto-ship', 'auto ship', 'subscription', 'recurring'])) {
+    if (
+      this.matchesKeywords(normalized, [
+        'autoship',
+        'auto-ship',
+        'auto ship',
+        'subscription',
+        'recurring',
+      ])
+    ) {
       return 'autoship';
     }
 
@@ -664,7 +702,15 @@ export class TransactionsComponent implements OnInit {
       return 'wallet';
     }
 
-    if (this.matchesKeywords(normalized, ['payment', 'charge', 'processor', 'gateway', 'bank transfer'])) {
+    if (
+      this.matchesKeywords(normalized, [
+        'payment',
+        'charge',
+        'processor',
+        'gateway',
+        'bank transfer',
+      ])
+    ) {
       return 'payments';
     }
 
@@ -686,7 +732,8 @@ export class TransactionsComponent implements OnInit {
   }
 
   private isVoucherTransaction(tx: DashboardTransaction): boolean {
-    const walletType = `${tx.walletType ?? tx.metadata?.['walletType'] ?? tx.metadata?.['wallet_type'] ?? ''}`.toUpperCase();
+    const walletType =
+      `${tx.walletType ?? tx.metadata?.['walletType'] ?? tx.metadata?.['wallet_type'] ?? ''}`.toUpperCase();
     if (walletType === 'VOUCHER') {
       return true;
     }
@@ -696,7 +743,8 @@ export class TransactionsComponent implements OnInit {
       return true;
     }
 
-    const normalized = `${tx.categoryGroup ?? ''} ${tx.source ?? ''} ${tx.subType ?? ''} ${tx.description ?? ''}`.toLowerCase();
+    const normalized =
+      `${tx.categoryGroup ?? ''} ${tx.source ?? ''} ${tx.subType ?? ''} ${tx.description ?? ''}`.toLowerCase();
     return this.matchesKeywords(normalized, [
       'product voucher',
       'voucher wallet',
@@ -717,7 +765,10 @@ export class TransactionsComponent implements OnInit {
     return first.currency === 'USD' ? '$' : '₦';
   }
 
-  private applyDateFilter(transactions: DashboardTransaction[], dateRange: DateRangePreset): DashboardTransaction[] {
+  private applyDateFilter(
+    transactions: DashboardTransaction[],
+    dateRange: DateRangePreset,
+  ): DashboardTransaction[] {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -743,4 +794,3 @@ export class TransactionsComponent implements OnInit {
     }
   }
 }
-
