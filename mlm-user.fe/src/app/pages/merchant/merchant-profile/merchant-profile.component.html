@@ -13,7 +13,7 @@
         <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Merchant Profile Settings</h1>
         <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
         <p class="text-mlm-secondary text-sm">
-          Update your business name, physical pickup address, contact number, and service areas.
+          Update your business name, contact number, and pickup address or service areas.
         </p>
       </div>
 
@@ -57,6 +57,25 @@
             </div>
           </div>
 
+          @if (locationsIncomplete()) {
+            <div class="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+              </svg>
+              <p class="text-amber-800 text-xs leading-relaxed">
+                @if (merchantType() === 'REGIONAL') {
+                  Complete your specific pickup address so distributors can find you.
+                } @else {
+                  Some service areas are incomplete. Fill in each service area address
+                  @if (merchantType() === 'GLOBAL') {
+                    and phone number
+                  }
+                  so distributors can locate the correct pickup point.
+                }
+              </p>
+            </div>
+          }
+
           <form (ngSubmit)="onSubmit()" #profileForm="ngForm" class="space-y-6">
 
             <!-- Business Name -->
@@ -92,125 +111,25 @@
                 placeholder="e.g. +2348012345678"
                 required
                 [ngModel]="phoneNumber()"
-                (ngModelChange)="phoneNumber.set($event)"
+                (ngModelChange)="phoneNumber.set($event); formError.set('')"
                 class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
               />
             </div>
 
-            <!-- Store Address (NEW field) -->
-            <div>
-              <label
-                for="store-address"
-                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
-              >Physical Store / Pickup Address</label>
-              <input
-                id="store-address"
-                type="text"
-                name="address"
-                placeholder="e.g. 12 Main Street, Lagos, Nigeria"
-                required
-                [ngModel]="address()"
-                (ngModelChange)="address.set($event)"
-                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
-              />
-              <p class="text-xs text-mlm-secondary mt-1">
-                The primary location where customers can pick up orders or deliveries are dispatched.
-              </p>
-            </div>
-
-            <!-- Service Areas -->
-            <div class="relative">
-              <label
-                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
-              >Service Areas</label>
-              
-              <!-- Dropdown Trigger Button -->
-              <button
-                type="button"
-                (click)="statesDropdownOpen.set(!statesDropdownOpen())"
-                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text bg-white text-left focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary flex items-center justify-between transition-all"
-              >
-                <span class="truncate">
-                  @if (selectedStates().length === 0) {
-                    Select service areas...
-                  } @else if (selectedStates().length <= 3) {
-                    {{ selectedStates().join(', ') }}
-                  } @else {
-                    {{ selectedStates().length }} states selected
-                  }
-                </span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-mlm-secondary transition-transform duration-200" [class.rotate-180]="statesDropdownOpen()" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              <!-- Dropdown Panel -->
-              @if (statesDropdownOpen()) {
-                <div class="absolute left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col transition-all duration-300">
-                  <!-- Search Box inside Dropdown -->
-                  <div class="p-2 border-b border-gray-50 bg-gray-50 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-mlm-secondary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder="Search states..."
-                      [ngModel]="statesSearchQuery()"
-                      (ngModelChange)="statesSearchQuery.set($event)"
-                      name="statesSearch"
-                      class="w-full bg-transparent border-none text-xs text-mlm-text focus:outline-none placeholder-gray-400"
-                      (click)="$event.stopPropagation()"
-                    />
-                  </div>
-
-                  <!-- State Items List -->
-                  <div class="max-h-48 overflow-y-auto py-1">
-                    @for (state of filteredStates(); track state) {
-                      <label
-                        class="flex items-center gap-3 px-4 py-2 hover:bg-mlm-primary/5 cursor-pointer transition-colors text-xs text-mlm-text font-medium"
-                        (click)="$event.stopPropagation()"
-                      >
-                        <input
-                          type="checkbox"
-                          [checked]="isStateSelected(state)"
-                          (change)="toggleStateSelection(state)"
-                          class="w-4 h-4 text-mlm-primary border-gray-300 rounded focus:ring-mlm-primary/20"
-                        />
-                        <span>{{ state }}</span>
-                      </label>
-                    } @empty {
-                      <div class="px-4 py-3 text-xs text-mlm-secondary text-center">No states found</div>
-                    }
-                  </div>
-                </div>
-
-                <!-- Click outside overlay to close dropdown -->
-                <div class="fixed inset-0 z-40 cursor-default" (click)="statesDropdownOpen.set(false)"></div>
-              }
-
-              <!-- Selected States Badges (Chips) -->
-              @if (selectedStates().length > 0) {
-                <div class="flex flex-wrap gap-1.5 mt-2">
-                  @for (state of selectedStates(); track state) {
-                    <span class="inline-flex items-center gap-1 bg-mlm-primary/10 text-mlm-primary text-[11px] font-bold px-2.5 py-1 rounded-full">
-                      {{ state }}
-                      <button
-                        type="button"
-                        (click)="removeState(state)"
-                        class="hover:text-mlm-green-700 focus:outline-none inline-flex items-center justify-center w-3 h-3 rounded-full hover:bg-mlm-primary/20"
-                      >
-                        &times;
-                      </button>
-                    </span>
-                  }
-                </div>
-              }
-              <p class="text-xs text-mlm-secondary mt-1">
-                Select one or more states in Nigeria you will serve as a merchant.
-              </p>
-            </div>
+            <app-merchant-locations-editor
+              [merchantType]="merchantType()"
+              [locations]="locations()"
+              [contactPhone]="phoneNumber()"
+              (locationsChange)="onLocationsChange($event)"
+            />
 
             <!-- Messages -->
+            @if (formError()) {
+              <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p class="text-amber-800 text-xs">{{ formError() }}</p>
+              </div>
+            }
+
             @if (successMessage()) {
               <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-2.5 transition-all duration-300">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -240,7 +159,7 @@
               <button
                 type="submit"
                 class="px-8 py-3 rounded-xl bg-mlm-primary text-white text-sm font-semibold tracking-wide transition-all hover:bg-mlm-green-600 active:scale-[.99] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-                [disabled]="!profileForm.valid || selectedStates().length === 0 || actionLoading()"
+                [disabled]="!formValid() || actionLoading()"
               >
                 @if (actionLoading()) {
                   <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>

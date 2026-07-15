@@ -52,10 +52,14 @@ export type StatusType =
 export class StatusBadgeComponent {
   status = input.required<string>();
   size = input<'sm' | 'md' | 'lg'>('md');
+  /** When false, shows title-case labels without forced uppercase (better for longer statuses). */
+  uppercase = input(true);
 
   getStatusClass(): string {
     const s = this.status().toLowerCase();
-    const baseClasses = 'px-3 py-1.5 rounded-full text-xs font-medium uppercase tracking-wide';
+    const baseClasses = this.uppercase()
+      ? 'inline-flex max-w-full items-center whitespace-nowrap px-3 py-1.5 text-xs font-medium uppercase tracking-wide rounded-full'
+      : 'inline-flex max-w-full items-center whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full';
     const sizeClasses = {
       sm: 'px-2 py-1 text-[10px]',
       md: 'px-3 py-1.5 text-xs',
@@ -91,8 +95,30 @@ export class StatusBadgeComponent {
       colorClasses = 'bg-green-50 text-green-600';
     }
     // Rejected/Failed states (including Cancelled)
-    else if (s === 'rejected' || s === 'unpaid' || s === 'not qualified' || s === 'cancelled') {
+    else if (
+      s === 'rejected' ||
+      s === 'unpaid' ||
+      s === 'not qualified' ||
+      s === 'cancelled' ||
+      s === 'handover rejected'
+    ) {
       colorClasses = 'bg-red-50 text-red-600';
+    }
+    // Merchant handover statuses
+    else if (s === 'handover requested') {
+      colorClasses = 'bg-yellow-50 text-yellow-700';
+    } else if (s === 'supplier approved' || s === 'admin approved') {
+      colorClasses = 'bg-green-50 text-green-600';
+    } else if (s === 'handover completed') {
+      colorClasses = 'bg-green-50 text-green-600';
+    } else if (s === 'no handover') {
+      colorClasses = 'bg-gray-100 text-gray-500';
+    }
+    // Allocation fulfilment statuses
+    else if (s === 'pending dispatch') {
+      colorClasses = 'bg-yellow-50 text-yellow-700';
+    } else if (s === 'received' || s === 'accepted') {
+      colorClasses = 'bg-green-50 text-green-600';
     }
     // Inventory statuses
     else if (s === 'in stock') {
@@ -116,8 +142,24 @@ export class StatusBadgeComponent {
     if (['UNPAID', 'PAID', 'PENDING', 'VERIFIED', 'REJECTED'].includes(s)) {
       return s;
     }
-    // Order statuses: preserve "Ready for Pickup", "Out for Delivery" etc.
+    // Order statuses: preserve display labels
     if (s === 'Ready for Pickup' || s === 'Out for Delivery' || s === 'Picked Up') {
+      return s;
+    }
+    // Merchant handover / allocation labels passed as display text
+    if (
+      s.includes('handover') ||
+      s === 'Ready for pickup' ||
+      s === 'Pending dispatch' ||
+      s === 'Dispatched' ||
+      s === 'Delivered' ||
+      s === 'Received' ||
+      s === 'Accepted' ||
+      s === 'Cancelled' ||
+      s === 'Supplier approved' ||
+      s === 'Admin approved' ||
+      s === 'No handover'
+    ) {
       return s;
     }
     // Inventory: "In Stock", "Low", "Out"

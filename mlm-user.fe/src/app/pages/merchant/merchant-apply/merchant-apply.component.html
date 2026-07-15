@@ -131,7 +131,7 @@
                       ? 'border-mlm-primary bg-mlm-primary/5 shadow-md'
                       : 'border-gray-200 bg-white hover:border-gray-300'
                   "
-                  (click)="selectedType.set(cfg.merchantType)"
+                  (click)="onTypeSelect(cfg.merchantType)"
                 >
                   <h3 class="font-bold text-mlm-text mb-2">{{ getTypeLabel(cfg.merchantType) }}</h3>
                   <div class="text-2xl font-black text-mlm-primary mb-4">
@@ -173,133 +173,44 @@
           <!-- Step 2 + 3: Details & payment — all in one card -->
           <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6 space-y-6">
 
-
+            <!-- Business Name -->
+            <div>
+              <label
+                for="business-name"
+                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
+              >Business Name</label>
+              <input
+                id="business-name"
+                type="text"
+                placeholder="e.g. Herb World Ventures"
+                [ngModel]="businessNameInput()"
+                (ngModelChange)="businessNameInput.set($event); formError.set('')"
+                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+              />
+            </div>
 
             <!-- Phone Number -->
             <div>
               <label
                 for="phone-number"
                 class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
-              >Phone Number</label>
+              >Contact Phone Number</label>
               <input
                 id="phone-number"
                 type="tel"
                 placeholder="e.g. +2348012345678"
                 [ngModel]="phoneNumberInput()"
-                (ngModelChange)="phoneNumberInput.set($event)"
+                (ngModelChange)="phoneNumberInput.set($event); formError.set('')"
                 class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
               />
             </div>
 
-            <!-- Physical Address -->
-            <div>
-              <label
-                for="store-address"
-                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
-              >Physical Store / Pickup Address</label>
-              <input
-                id="store-address"
-                type="text"
-                placeholder="e.g. 12 Main Street, Lagos, Nigeria"
-                [ngModel]="addressInput()"
-                (ngModelChange)="addressInput.set($event)"
-                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
-              />
-              <p class="text-xs text-mlm-secondary mt-1">
-                The physical location where customers can pick up orders
-              </p>
-            </div>
-
-            <!-- Service areas -->
-            <div class="relative">
-              <label
-                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
-              >Service Areas</label>
-              
-              <!-- Dropdown Trigger Button -->
-              <button
-                type="button"
-                (click)="statesDropdownOpen.set(!statesDropdownOpen())"
-                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text bg-white text-left focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary flex items-center justify-between transition-all"
-              >
-                <span class="truncate">
-                  @if (selectedStates().length === 0) {
-                    Select service areas...
-                  } @else if (selectedStates().length <= 3) {
-                    {{ selectedStates().join(', ') }}
-                  } @else {
-                    {{ selectedStates().length }} states selected
-                  }
-                </span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-mlm-secondary transition-transform duration-200" [class.rotate-180]="statesDropdownOpen()" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-
-              <!-- Dropdown Panel -->
-              @if (statesDropdownOpen()) {
-                <div class="absolute left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col transition-all duration-300">
-                  <!-- Search Box inside Dropdown -->
-                  <div class="p-2 border-b border-gray-50 bg-gray-50 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-mlm-secondary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder="Search states..."
-                      [ngModel]="statesSearchQuery()"
-                      (ngModelChange)="statesSearchQuery.set($event)"
-                      class="w-full bg-transparent border-none text-xs text-mlm-text focus:outline-none placeholder-gray-400"
-                      (click)="$event.stopPropagation()"
-                    />
-                  </div>
-
-                  <!-- State Items List -->
-                  <div class="max-h-48 overflow-y-auto py-1">
-                    @for (state of filteredStates(); track state) {
-                      <label
-                        class="flex items-center gap-3 px-4 py-2 hover:bg-mlm-primary/5 cursor-pointer transition-colors text-xs text-mlm-text font-medium"
-                        (click)="$event.stopPropagation()"
-                      >
-                        <input
-                          type="checkbox"
-                          [checked]="isStateSelected(state)"
-                          (change)="toggleStateSelection(state)"
-                          class="w-4 h-4 text-mlm-primary border-gray-300 rounded focus:ring-mlm-primary/20"
-                        />
-                        <span>{{ state }}</span>
-                      </label>
-                    } @empty {
-                      <div class="px-4 py-3 text-xs text-mlm-secondary text-center">No states found</div>
-                    }
-                  </div>
-                </div>
-
-                <!-- Click outside overlay to close dropdown -->
-                <div class="fixed inset-0 z-40 cursor-default" (click)="statesDropdownOpen.set(false)"></div>
-              }
-
-              <!-- Selected States Badges (Chips) -->
-              @if (selectedStates().length > 0) {
-                <div class="flex flex-wrap gap-1.5 mt-2">
-                  @for (state of selectedStates(); track state) {
-                    <span class="inline-flex items-center gap-1 bg-mlm-primary/10 text-mlm-primary text-[11px] font-bold px-2.5 py-1 rounded-full">
-                      {{ state }}
-                      <button
-                        type="button"
-                        (click)="removeState(state)"
-                        class="hover:text-mlm-green-700 focus:outline-none inline-flex items-center justify-center w-3 h-3 rounded-full hover:bg-mlm-primary/20"
-                      >
-                        &times;
-                      </button>
-                    </span>
-                  }
-                </div>
-              }
-              <p class="text-xs text-mlm-secondary mt-1">
-                Select one or more states in Nigeria you will serve as a merchant
-              </p>
-            </div>
+            <app-merchant-locations-editor
+              [merchantType]="selectedType()"
+              [locations]="locations()"
+              [contactPhone]="phoneNumberInput()"
+              (locationsChange)="onLocationsChange($event)"
+            />
 
             <!-- Payment source — chosen here so apply + pay happen atomically -->
             <div>
@@ -350,6 +261,16 @@
               </p>
             </div>
 
+            @if (formError()) {
+              <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p class="text-amber-800 text-xs">{{ formError() }}</p>
+              </div>
+            } @else if (!formValid()) {
+              <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <p class="text-amber-800 text-xs">{{ validationError() }}</p>
+              </div>
+            }
+
             @if (error()) {
               <div class="bg-red-50 border border-red-200 rounded-lg p-3">
                 <p class="text-red-700 text-xs">{{ error() }}</p>
@@ -357,8 +278,9 @@
             }
 
             <button
+              type="button"
               class="w-full px-8 py-3.5 rounded-xl bg-mlm-primary text-white text-sm font-semibold tracking-wide transition-all hover:bg-mlm-green-600 active:scale-[.99] disabled:opacity-40 disabled:cursor-not-allowed"
-              [disabled]="!phoneNumberInput().trim() || !addressInput().trim() || selectedStates().length === 0 || actionLoading()"
+              [disabled]="actionLoading()"
               (click)="onApplyAndPay()"
             >
               @if (actionLoading()) {

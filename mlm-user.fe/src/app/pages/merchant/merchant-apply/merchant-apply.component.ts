@@ -25,18 +25,33 @@ import {
 import { UserService } from '../../../services/user.service';
 import { RealTimeNotificationService } from '../../../services/realtime-notification.service';
 import { ButtonModule } from 'primeng/button';
-import { NIGERIAN_STATES } from '../../../core/constants/states.constants';
 import {
   GATEWAY_REFERENCE_QUERY_PARAMS,
   resolvePaymentReference,
 } from '../../../core/utils/payment-reference.util';
 import { getMerchantCallbackUrl, isPaymentProviderEnabled } from '../../../core/utils/payment-config.util';
 import { UsdtDepositComponent } from '../../../components/usdt-deposit/usdt-deposit.component';
+import { MerchantLocationsEditorComponent } from '../../../components/merchant-locations-editor/merchant-locations-editor.component';
 import type { InitiatePaymentResponse } from '../../../services/payment.service';
+import {
+  type MerchantLocationDraft,
+  buildMerchantLocationsPayload,
+  createEmptyLocationDraft,
+  draftsFromProfile,
+  enforceTierOnDrafts,
+  validateMerchantLocationDrafts,
+} from '../../../core/utils/merchant-locations.util';
 
 @Component({
   selector: 'app-merchant-apply',
-  imports: [CommonModule, RouterLink, FormsModule, ButtonModule, UsdtDepositComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    FormsModule,
+    ButtonModule,
+    UsdtDepositComponent,
+    MerchantLocationsEditorComponent,
+  ],
   templateUrl: './merchant-apply.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -60,23 +75,33 @@ export class MerchantApplyComponent implements OnInit {
   canReapplyAsMerchant = this.merchantService.canReapplyAsMerchant;
 
   selectedType = signal<MerchantType>('REGIONAL');
+  businessNameInput = signal('');
   phoneNumberInput = signal('');
-  addressInput = signal('');
-
-  selectedStates = signal<string[]>([]);
-  statesDropdownOpen = signal(false);
-  statesSearchQuery = signal('');
-  allStates = NIGERIAN_STATES;
+  locations = signal<MerchantLocationDraft[]>([createEmptyLocationDraft(true)]);
+  formError = signal('');
 
   private prefillApplied = false;
 
-  filteredStates = computed(() => {
-    const query = this.statesSearchQuery().toLowerCase().trim();
-    if (!query) return this.allStates;
-    return this.allStates.filter((state) => state.toLowerCase().includes(query));
+  formValid = computed(() => this.validationError() === null);
+
+  /** First blocking reason for the apply form, or null when ready. */
+  validationError = computed(() => {
+    if (this.businessNameInput().trim().length < 2) {
+      return 'Business name must be at least 2 characters.';
+    }
+    return validateMerchantLocationDrafts(
+      this.selectedType(),
+      this.locations(),
+      this.phoneNumberInput(),
+    );
   });
 
   constructor() {
+    effect(() => {
+      const type = this.selectedType();
+      this.locations.update((rows) => enforceTierOnDrafts(type, rows));
+    });
+
     effect(() => {
       if (this.loading() || this.prefillApplied) return;
       if (!this.needsPayment()) return;
@@ -85,34 +110,26 @@ export class MerchantApplyComponent implements OnInit {
       if (!p?.id) return;
 
       this.selectedType.set(p.type ?? 'REGIONAL');
+      if (p.businessName) {
+        this.businessNameInput.set(p.businessName);
+      }
       if (p.phoneNumber) {
         this.phoneNumberInput.set(p.phoneNumber);
       }
-      if (p.address) {
-        this.addressInput.set(p.address);
-      }
-      if (p.serviceAreas?.length) {
-        this.selectedStates.set([...p.serviceAreas]);
-      }
+      this.locations.set(
+        enforceTierOnDrafts(
+          p.type ?? 'REGIONAL',
+          draftsFromProfile({
+            type: p.type,
+            locations: p.locations,
+            serviceAreas: p.serviceAreas,
+            address: p.address,
+            phoneNumber: p.phoneNumber,
+          }),
+        ),
+      );
       this.prefillApplied = true;
     });
-  }
-
-  toggleStateSelection(state: string): void {
-    const current = this.selectedStates();
-    if (current.includes(state)) {
-      this.selectedStates.set(current.filter((s) => s !== state));
-    } else {
-      this.selectedStates.set([...current, state]);
-    }
-  }
-
-  isStateSelected(state: string): boolean {
-    return this.selectedStates().includes(state);
-  }
-
-  removeState(state: string): void {
-    this.selectedStates.set(this.selectedStates().filter((s) => s !== state));
   }
 
   selectedPaymentSource = signal<MerchantFeePaymentSource>('REGISTRATION_WALLET');
@@ -158,6 +175,16 @@ export class MerchantApplyComponent implements OnInit {
     this.merchantService.fetchCategoryConfig();
     this.merchantService.fetchProfile();
     this.handleGatewayVerification();
+  }
+
+  onTypeSelect(type: MerchantType): void {
+    this.selectedType.set(type);
+    this.formError.set('');
+  }
+
+  onLocationsChange(next: MerchantLocationDraft[]): void {
+    this.locations.set(enforceTierOnDrafts(this.selectedType(), next));
+    this.formError.set('');
   }
 
   private handleGatewayVerification(): void {
@@ -213,22 +240,36 @@ export class MerchantApplyComponent implements OnInit {
   }
 
   onApplyAndPay(): void {
-    const areas = this.selectedStates();
-    if (areas.length === 0) return;
+    this.merchantService.clearError();
+    this.formError.set('');
 
+    const businessName = this.businessNameInput().trim();
     const pNumber = this.phoneNumberInput().trim();
-    const addr = this.addressInput().trim();
-    if (!pNumber || !addr) return;
+    const validationError = this.validationError();
+    if (validationError) {
+      this.formError.set(validationError);
+      return;
+    }
 
+    const locationsPayload = buildMerchantLocationsPayload(
+      this.selectedType(),
+      this.locations(),
+      pNumber,
+    );
+
+    // Unpaid draft / reapply: update details then pay.
     if (this.needsPayment()) {
       const existing = this.profile();
-      if (!existing?.id) return;
+      if (!existing?.id) {
+        this.formError.set('Merchant application not found. Refresh the page and try again.');
+        return;
+      }
 
       const updateBody: UpdateMerchantProfileBody = {
         type: this.selectedType(),
+        businessName,
         phoneNumber: pNumber,
-        address: addr,
-        serviceAreas: areas,
+        locations: locationsPayload,
       };
 
       this.merchantService
@@ -236,7 +277,12 @@ export class MerchantApplyComponent implements OnInit {
         .pipe(
           switchMap((updated) => {
             const merchantId = updated?.id ?? existing.id;
-            if (!merchantId) return EMPTY;
+            if (!merchantId) {
+              this.formError.set(
+                this.error() || 'Could not update your application. Please try again.',
+              );
+              return EMPTY;
+            }
             return this.initiatePayment(merchantId);
           }),
         )
@@ -247,13 +293,20 @@ export class MerchantApplyComponent implements OnInit {
       return;
     }
 
-    if (this.isMerchant()) return;
+    // Already has a merchant record that does not need payment (should not reach form, but guard).
+    if (this.isMerchant()) {
+      this.formError.set('You already have a merchant application. Open your merchant dashboard.');
+      return;
+    }
 
     this.merchantService
-      .apply(this.selectedType(), areas, pNumber, addr)
+      .apply(this.selectedType(), pNumber, locationsPayload, businessName)
       .pipe(
         switchMap((profile: MerchantProfile | null) => {
           if (!profile?.id) {
+            this.formError.set(
+              this.error() || 'Application could not be submitted. Please try again.',
+            );
             return EMPTY;
           }
           return this.initiatePayment(profile.id);
