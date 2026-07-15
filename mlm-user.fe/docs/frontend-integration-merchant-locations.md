@@ -10,15 +10,16 @@
 
 Merchants now have structured **locations** (primary + optional coverage sites). Rules depend on merchant tier:
 
-| Type | Locations allowed | Geography | Required details |
-|------|-------------------|-----------|------------------|
-| **REGIONAL** | Exactly **1** | Nigeria, one state | Primary `address` |
-| **NATIONAL** | 1+ (one primary) | Nigeria only; distinct states | Each written location needs `address` |
-| **GLOBAL** | 1+ (one primary) | Any country; distinct `(country, state)` | Each written location needs `address` + `phoneNumber` |
+| Type         | Locations allowed                     | Geography                                                   | Required details                                      |
+| ------------ | ------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------- |
+| **REGIONAL** | Exactly **1**; no service-area picker | Primary subdivision in selected home country                | Primary `address`                                     |
+| **NATIONAL** | 1+ (one primary)                      | One selected home country; distinct subdivisions            | Each written location needs `address`                 |
+| **GLOBAL**   | 1+ (one primary)                      | HQ in home country; additional locations may span countries | Each written location needs `address` + `phoneNumber` |
 
 **Vocabulary**
 
-- **Primary location** = main business / HQ address (`isPrimary: true`). Mirrored on `Merchant.address` / `phoneNumber`.
+- **Home country** = required merchant residence/HQ country (`homeCountryCode`).
+- **Primary location** = main business / HQ address (`isPrimary: true`). It must be in the home country and is mirrored on `Merchant.address` / `phoneNumber`.
 - **Coverage locations** = other states/countries where the merchant can serve pickup. Each should have its own address (and phone for GLOBAL).
 
 Legacy `serviceAreas: string[]` remains on read responses as a **compat mirror** of location states. Prefer sending `locations` on write.
@@ -29,9 +30,11 @@ Legacy `serviceAreas: string[]` remains on read responses as a **compat mirror**
 
 ```ts
 type MerchantLocation = {
-  id?: string;           // present on reads
-  country: string;       // default "Nigeria" if omitted on write
-  state: string;         // pickup match key (case-insensitive)
+  id?: string; // present on reads
+  countryCode: string; // ISO alpha-2; e.g. "NG"
+  subdivisionCode: string; // code returned by the geography API; e.g. "LA"
+  country: string; // display/legacy mirror
+  state: string; // display/legacy mirror
   address: string;
   phoneNumber: string;
   isPrimary: boolean;
@@ -44,6 +47,13 @@ Profile / admin also expose:
 - `locationsComplete: boolean` — all locations have `detailsComplete === true`
 
 Wildcard `"*"` is **not** allowed on new writes. Existing `"*"` in `serviceAreas` still matches any state for discovery until the merchant replaces locations.
+
+Load canonical options from:
+
+- `GET /geography/countries`
+- `GET /geography/countries/:countryCode/subdivisions`
+
+Submit codes returned by these endpoints. Do not derive or invent subdivision codes in the frontend.
 
 ---
 
@@ -58,8 +68,11 @@ Wildcard `"*"` is **not** allowed on new writes. Existing `"*"` in `serviceAreas
   "businessName": "Herb World Ventures",
   "phoneNumber": "+2348012345678",
   "type": "NATIONAL",
+  "homeCountryCode": "NG",
   "locations": [
     {
+      "countryCode": "NG",
+      "subdivisionCode": "LA",
       "country": "Nigeria",
       "state": "Lagos",
       "address": "12 Market Road, Ikeja, Lagos",
@@ -67,6 +80,8 @@ Wildcard `"*"` is **not** allowed on new writes. Existing `"*"` in `serviceAreas
       "isPrimary": true
     },
     {
+      "countryCode": "NG",
+      "subdivisionCode": "FC",
       "country": "Nigeria",
       "state": "Abuja",
       "address": "15 Maitama Avenue, Abuja",
@@ -84,8 +99,11 @@ Wildcard `"*"` is **not** allowed on new writes. Existing `"*"` in `serviceAreas
   "businessName": "Ikeja Hub",
   "phoneNumber": "+2348011111111",
   "type": "REGIONAL",
+  "homeCountryCode": "NG",
   "locations": [
     {
+      "countryCode": "NG",
+      "subdivisionCode": "LA",
       "country": "Nigeria",
       "state": "Lagos",
       "address": "12 Market Road, Lagos",
@@ -102,8 +120,11 @@ Wildcard `"*"` is **not** allowed on new writes. Existing `"*"` in `serviceAreas
   "businessName": "West Africa Stockist",
   "phoneNumber": "+2348010000000",
   "type": "GLOBAL",
+  "homeCountryCode": "NG",
   "locations": [
     {
+      "countryCode": "NG",
+      "subdivisionCode": "LA",
       "country": "Nigeria",
       "state": "Lagos",
       "address": "HQ Lagos",
@@ -111,6 +132,8 @@ Wildcard `"*"` is **not** allowed on new writes. Existing `"*"` in `serviceAreas
       "isPrimary": true
     },
     {
+      "countryCode": "GH",
+      "subdivisionCode": "AA",
       "country": "Ghana",
       "state": "Accra",
       "address": "12 Independence Ave, Accra",
@@ -139,7 +162,9 @@ Behaviour:
 
 - First area → primary (gets `address` / phone)
 - Extra areas → coverage rows with **empty** address (incomplete until merchant fills them)
-- REGIONAL cannot submit more than one area
+- REGIONAL cannot submit `serviceAreas` or more than one location
+- NATIONAL locations must all use `homeCountryCode`
+- GLOBAL primary location must use `homeCountryCode`; additional locations may use other countries
 
 ### `PATCH /merchants/me`
 
@@ -192,10 +217,10 @@ When `locations` is sent, every row must satisfy category complete-detail rules 
 
 `GET /merchants/available?state=Ibadan` (and checkout availability) resolve contact for the **matched** location:
 
-| Case | `address` / `phoneNumber` returned | `usingPrimaryAddressFallback` |
-|------|--------------------------------------|-------------------------------|
-| Matched location has its own address | That location’s details | `false` |
-| Matched location incomplete (legacy) | **Primary** location details | `true` |
+| Case                                 | `address` / `phoneNumber` returned | `usingPrimaryAddressFallback` |
+| ------------------------------------ | ---------------------------------- | ----------------------------- |
+| Matched location has its own address | That location’s details            | `false`                       |
+| Matched location incomplete (legacy) | **Primary** location details       | `true`                        |
 
 Also returns `locations[]` and `locationsComplete` on each merchant.
 
@@ -208,9 +233,13 @@ Also returns `locations[]` and `locationsComplete` on each merchant.
 
 ## 6. Frontend checklist
 
-- [x] Apply / edit forms use `locations` by tier (REGIONAL = 1 site; NATIONAL multi-state Nigeria; GLOBAL multi-country with phone)
+- [x] Load country/subdivision options from `/geography`
+- [x] Apply / edit forms require `homeCountryCode`
+- [x] REGIONAL captures one primary business subdivision in the selected home country
+- [x] NATIONAL loads subdivisions only from the selected home country
+- [x] GLOBAL allows multiple service countries and subdivisions
 - [x] Reject wildcard `"*"` in the UI
 - [x] Profile shows `locationsComplete` and incomplete-locations banner when false
-- [ ] Pickup list uses API `address` for the chosen state; surface fallback flag *(out of scope for user app registration)*
-- [ ] Admin merchant detail shows full `locations` list *(admin app)*
+- [ ] Pickup list uses API `address` for the chosen state; surface fallback flag _(out of scope for user app registration)_
+- [ ] Admin merchant detail shows full `locations` list _(admin app)_
 - [x] Keep sending consistent state labels (same spelling as checkout `state`)

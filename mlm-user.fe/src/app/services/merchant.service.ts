@@ -16,24 +16,16 @@ export type OrderStatus =
   | 'PICKED_UP'
   | 'OFFLINE_DELIVERY_REQUESTED'
   | 'DELIVERED'
+  | 'COMPLETED'
+  | 'CANCELLED'
   | 'PAID'
   | 'SENT';
 export type FulfilmentMode = 'PICKUP' | 'OFFLINE_DELIVERY';
 export type StockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 export type AllocationStatus =
-  | 'PENDING'
-  | 'DISPATCHED'
-  | 'IN_TRANSIT'
-  | 'DELIVERED'
-  | 'RECEIVED'
-  | 'ACCEPTED'
-  | 'CANCELLED';
+  'PENDING' | 'DISPATCHED' | 'IN_TRANSIT' | 'DELIVERED' | 'RECEIVED' | 'ACCEPTED' | 'CANCELLED';
 export type StockDisputeStatus =
-  | 'OPEN'
-  | 'ADMIN_REJECTED'
-  | 'ADMIN_ACCEPTED'
-  | 'MERCHANT_ACKNOWLEDGED'
-  | 'CLOSED';
+  'OPEN' | 'ADMIN_REJECTED' | 'ADMIN_ACCEPTED' | 'MERCHANT_ACKNOWLEDGED' | 'CLOSED';
 
 export type MerchantHandoverStatus =
   | 'NONE'
@@ -47,16 +39,9 @@ export type MerchantHandoverStatus =
 export type InventoryAdjustmentType = 'INCREASE' | 'DECREASE';
 
 export type InventoryAdjustmentDisputeStatus =
-  | 'OPEN'
-  | 'ADMIN_APPROVED'
-  | 'ADMIN_REJECTED'
-  | 'CLOSED';
+  'OPEN' | 'ADMIN_APPROVED' | 'ADMIN_REJECTED' | 'CLOSED';
 export type MerchantFeePaymentSource =
-  | 'REGISTRATION_WALLET'
-  | 'CASH_WALLET'
-  | 'PAYSTACK'
-  | 'FLUTTERWAVE'
-  | 'USDT';
+  'REGISTRATION_WALLET' | 'CASH_WALLET' | 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT';
 
 export function isMerchantGatewaySource(source: MerchantFeePaymentSource): boolean {
   return source === 'PAYSTACK' || source === 'FLUTTERWAVE';
@@ -70,6 +55,8 @@ export function isMerchantUsdtSource(source: MerchantFeePaymentSource): boolean 
 
 export interface MerchantLocation {
   id?: string;
+  countryCode?: string;
+  subdivisionCode?: string;
   country: string;
   state: string;
   address: string;
@@ -84,6 +71,7 @@ export interface MerchantProfile {
   businessName?: string;
   phoneNumber?: string;
   address?: string;
+  homeCountryCode?: string;
   type: MerchantType;
   status: MerchantStatus;
   serviceAreas: string[];
@@ -98,6 +86,7 @@ export interface MerchantProfileResponse {
   businessName?: string;
   phoneNumber?: string;
   address?: string;
+  homeCountryCode?: string;
   type?: MerchantType;
   status?: MerchantStatus;
   serviceAreas?: string[];
@@ -113,6 +102,7 @@ export interface UpdateMerchantProfileBody {
   type?: MerchantType;
   businessName?: string;
   phoneNumber?: string;
+  homeCountryCode?: string;
   address?: string;
   serviceAreas?: string[];
   locations?: MerchantLocation[];
@@ -121,6 +111,7 @@ export interface UpdateMerchantProfileBody {
 export interface ApplyMerchantBody {
   phoneNumber: string;
   type: MerchantType;
+  homeCountryCode: string;
   locations: MerchantLocation[];
   businessName?: string;
   /** Legacy fallback — prefer `locations`. */
@@ -160,6 +151,9 @@ export interface AvailableMerchant {
   username?: string;
   phoneNumber: string;
   address?: string;
+  locations: MerchantLocation[];
+  locationsComplete: boolean;
+  usingPrimaryAddressFallback: boolean;
   serviceAreas: string[];
   coversState?: boolean;
   products: AvailableMerchantProduct[];
@@ -168,6 +162,8 @@ export interface AvailableMerchant {
 }
 
 export interface FetchPickupMerchantsParams {
+  countryCode: string;
+  subdivisionCode: string;
   state: string;
   productId?: string;
   quantity?: number;
@@ -179,6 +175,8 @@ export interface CheckoutAvailabilityItem {
 }
 
 export interface CheckoutAvailabilityBody {
+  countryCode: string;
+  subdivisionCode: string;
   state: string;
   items: CheckoutAvailabilityItem[];
   selectedMerchantId?: string;
@@ -632,14 +630,13 @@ export class MerchantService {
 
   readonly isActiveMerchant = computed(() => this.merchantStatus() === 'ACTIVE');
 
-  readonly isFeePaid = computed(() => MerchantService.isFeePaidValue(this.profileSignal()?.merchantFeePaidAt));
+  readonly isFeePaid = computed(() =>
+    MerchantService.isFeePaidValue(this.profileSignal()?.merchantFeePaidAt),
+  );
 
   /** Admin rejected application: SUSPENDED and registration fee refunded. */
   readonly canReapplyAsMerchant = computed(
-    () =>
-      this.isMerchant() &&
-      this.merchantStatus() === 'SUSPENDED' &&
-      !this.isFeePaid(),
+    () => this.isMerchant() && this.merchantStatus() === 'SUSPENDED' && !this.isFeePaid(),
   );
 
   readonly needsPayment = computed(() => {
@@ -660,8 +657,7 @@ export class MerchantService {
 
   readonly actionableAllocationCount = computed(() => {
     const handoverActionable = this.allocationsSignal().filter(
-      (a) =>
-        MerchantService.canRequestHandover(a) || MerchantService.canConfirmHandoverReceipt(a),
+      (a) => MerchantService.canRequestHandover(a) || MerchantService.canConfirmHandoverReceipt(a),
     ).length;
     const delivered = this.allocationsSignal().filter((a) => a.status === 'DELIVERED').length;
     const rejectedDisputes = this.stockDisputesSignal().filter(
@@ -671,11 +667,11 @@ export class MerchantService {
   });
 
   /** Inbound supplier actions: approve requested or mark-ready after admin approval. */
-  readonly actionableHandoverRequestCount = computed(() =>
-    this.handoverRequestsSignal().filter(
-      (a) =>
-        a.handoverStatus === 'REQUESTED' || a.handoverStatus === 'ADMIN_APPROVED',
-    ).length,
+  readonly actionableHandoverRequestCount = computed(
+    () =>
+      this.handoverRequestsSignal().filter(
+        (a) => a.handoverStatus === 'REQUESTED' || a.handoverStatus === 'ADMIN_APPROVED',
+      ).length,
   );
 
   readonly totalMerchantSales = computed(() => {
@@ -701,8 +697,7 @@ export class MerchantService {
   });
 
   readonly openInventoryAdjustmentDisputesCount = computed(
-    () =>
-      this.inventoryAdjustmentDisputesSignal().filter((d) => d.status === 'OPEN').length,
+    () => this.inventoryAdjustmentDisputesSignal().filter((d) => d.status === 'OPEN').length,
   );
 
   static resolveAdjustmentType(
@@ -728,6 +723,7 @@ export class MerchantService {
   apply(
     type: MerchantType,
     phoneNumber: string,
+    homeCountryCode: string,
     locations: MerchantLocation[],
     businessName?: string,
   ): Observable<MerchantProfile | null> {
@@ -737,6 +733,7 @@ export class MerchantService {
     const body: ApplyMerchantBody = {
       phoneNumber,
       type,
+      homeCountryCode,
       locations,
       ...(trimmedName ? { businessName: trimmedName } : {}),
     };
@@ -820,7 +817,9 @@ export class MerchantService {
   }
 
   /** GET /merchants/me/upgrade-options */
-  fetchUpgradeOptions(options?: { silent?: boolean }): Observable<MerchantUpgradeOptionsResponse | null> {
+  fetchUpgradeOptions(options?: {
+    silent?: boolean;
+  }): Observable<MerchantUpgradeOptionsResponse | null> {
     return this.api.get<Record<string, unknown>>('merchants/me/upgrade-options').pipe(
       map((res) => this.mapUpgradeOptionsResponse(res)),
       catchError((err) => {
@@ -839,22 +838,20 @@ export class MerchantService {
   ): Observable<InitiateMerchantUpgradeResponse | null> {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
-    return this.api
-      .post<Record<string, unknown>>('merchants/merchant-upgrade/initiate', body)
-      .pipe(
-        map((res) => this.mapMerchantUpgradeInitiateResponse(res)),
-        switchMap((res) => this.refreshProfileFromApi().pipe(map(() => res))),
-        catchError((err) => {
-          console.error('[MerchantService] initiateMerchantUpgrade failed', err);
-          const msg = err?.error?.message;
-          this.errorSignal.set(
-            (typeof msg === 'string' ? msg : Array.isArray(msg) ? msg[0] : null) ??
-              'Failed to initiate merchant upgrade.',
-          );
-          return of(null);
-        }),
-        finalize(() => this.actionLoadingSignal.set(false)),
-      );
+    return this.api.post<Record<string, unknown>>('merchants/merchant-upgrade/initiate', body).pipe(
+      map((res) => this.mapMerchantUpgradeInitiateResponse(res)),
+      switchMap((res) => this.refreshProfileFromApi().pipe(map(() => res))),
+      catchError((err) => {
+        console.error('[MerchantService] initiateMerchantUpgrade failed', err);
+        const msg = err?.error?.message;
+        this.errorSignal.set(
+          (typeof msg === 'string' ? msg : Array.isArray(msg) ? msg[0] : null) ??
+            'Failed to initiate merchant upgrade.',
+        );
+        return of(null);
+      }),
+      finalize(() => this.actionLoadingSignal.set(false)),
+    );
   }
 
   /** POST /merchants/merchant-upgrade/verify */
@@ -894,7 +891,11 @@ export class MerchantService {
   fetchAvailableMerchantsForPickup(
     params: FetchPickupMerchantsParams,
   ): Observable<AvailableMerchant[]> {
-    const qp: Record<string, string> = { state: params.state.trim() };
+    const qp: Record<string, string> = {
+      countryCode: params.countryCode.trim().toUpperCase(),
+      subdivisionCode: params.subdivisionCode.trim().toUpperCase(),
+      state: params.state.trim(),
+    };
     if (params.productId) {
       qp['productId'] = params.productId;
       qp['quantity'] = String(params.quantity ?? 1);
@@ -909,10 +910,10 @@ export class MerchantService {
 
   /** All active merchants in a state (never filtered by stock client-side). */
   fetchPickupMerchantsForCart(
-    state: string,
+    geography: Pick<FetchPickupMerchantsParams, 'countryCode' | 'subdivisionCode' | 'state'>,
     _cartItems?: { productId: string; quantity: number }[],
   ): Observable<AvailableMerchant[]> {
-    return this.fetchAvailableMerchantsForPickup({ state });
+    return this.fetchAvailableMerchantsForPickup(geography);
   }
 
   /** POST /merchants/checkout/availability */
@@ -930,9 +931,7 @@ export class MerchantService {
             this.mapAvailableMerchant(m as Record<string, unknown>),
           ),
           selectedMerchant: res.selectedMerchant
-            ? this.mapSelectedMerchantAvailability(
-                res.selectedMerchant as Record<string, unknown>,
-              )
+            ? this.mapSelectedMerchantAvailability(res.selectedMerchant as Record<string, unknown>)
             : null,
         })),
         catchError((err) => {
@@ -959,7 +958,7 @@ export class MerchantService {
       ),
       catchError((err) => {
         console.error('[MerchantService] fetchAvailableMerchants failed', err);
-        return of([]);
+        return throwError(() => err);
       }),
     );
   }
@@ -987,6 +986,11 @@ export class MerchantService {
       username: raw['username'] != null ? String(raw['username']) : undefined,
       phoneNumber: String(raw['phoneNumber'] ?? ''),
       address: raw['address'] != null ? String(raw['address']) : undefined,
+      locations: this.mapMerchantLocations(raw),
+      locationsComplete: Boolean(raw['locationsComplete'] ?? raw['locations_complete']),
+      usingPrimaryAddressFallback: Boolean(
+        raw['usingPrimaryAddressFallback'] ?? raw['using_primary_address_fallback'],
+      ),
       serviceAreas: Array.isArray(raw['serviceAreas'])
         ? (raw['serviceAreas'] as unknown[]).map(String)
         : [],
@@ -1070,10 +1074,10 @@ export class MerchantService {
       businessName: api.businessName ?? local.businessName,
       phoneNumber: api.phoneNumber ?? local.phoneNumber,
       address: api.address ?? local.address,
+      homeCountryCode: api.homeCountryCode ?? local.homeCountryCode,
       serviceAreas:
         api.serviceAreas && api.serviceAreas.length > 0 ? api.serviceAreas : local.serviceAreas,
-      locations:
-        api.locations && api.locations.length > 0 ? api.locations : local.locations,
+      locations: api.locations && api.locations.length > 0 ? api.locations : local.locations,
       locationsComplete: api.locationsComplete ?? local.locationsComplete,
     };
   }
@@ -1109,16 +1113,17 @@ export class MerchantService {
     return {
       id: String(data['id'] ?? ''),
       userId: String(data['userId'] ?? data['user_id'] ?? ''),
-      businessName: (data['businessName'] ?? data['business_name'] ?? undefined) as string | undefined,
+      businessName: (data['businessName'] ?? data['business_name'] ?? undefined) as
+        string | undefined,
       phoneNumber: (data['phoneNumber'] ?? data['phone_number'] ?? undefined) as string | undefined,
       address: (data['address'] ?? undefined) as string | undefined,
+      homeCountryCode: (data['homeCountryCode'] ?? data['home_country_code'] ?? undefined) as
+        string | undefined,
       type: String(data['type'] ?? 'REGIONAL') as MerchantType,
       status: String(data['status'] ?? 'DRAFT') as MerchantStatus,
       serviceAreas,
       locations,
-      locationsComplete: Boolean(
-        data['locationsComplete'] ?? data['locations_complete'] ?? false,
-      ),
+      locationsComplete: Boolean(data['locationsComplete'] ?? data['locations_complete'] ?? false),
       createdAt: String(data['createdAt'] ?? data['created_at'] ?? ''),
     };
   }
@@ -1136,10 +1141,11 @@ export class MerchantService {
       id: data['id'] != null ? String(data['id']) : undefined,
       userId: (data['userId'] ?? data['user_id'] ?? undefined) as string | undefined,
       businessName: (data['businessName'] ?? data['business_name'] ?? undefined) as
-        | string
-        | undefined,
+        string | undefined,
       phoneNumber: (data['phoneNumber'] ?? data['phone_number'] ?? undefined) as string | undefined,
       address: (data['address'] ?? undefined) as string | undefined,
+      homeCountryCode: (data['homeCountryCode'] ?? data['home_country_code'] ?? undefined) as
+        string | undefined,
       type: (data['type'] ?? undefined) as MerchantType | undefined,
       status: (data['status'] ?? undefined) as MerchantStatus | undefined,
       serviceAreas,
@@ -1150,9 +1156,8 @@ export class MerchantService {
           : locations.length === 0
             ? undefined
             : locations.every((loc) => loc.detailsComplete !== false),
-      merchantFeePaidAt: (data['merchantFeePaidAt'] ??
-        data['merchant_fee_paid_at'] ??
-        null) as string | null,
+      merchantFeePaidAt: (data['merchantFeePaidAt'] ?? data['merchant_fee_paid_at'] ?? null) as
+        string | null,
       createdAt: (data['createdAt'] ?? data['created_at'] ?? undefined) as string | undefined,
       message: (data['message'] ?? undefined) as string | undefined,
     };
@@ -1172,15 +1177,21 @@ export class MerchantService {
       const detailsCompleteRaw = loc['detailsComplete'] ?? loc['details_complete'];
       return {
         id: loc['id'] != null ? String(loc['id']) : undefined,
+        countryCode:
+          loc['countryCode'] != null || loc['country_code'] != null
+            ? String(loc['countryCode'] ?? loc['country_code'])
+            : undefined,
+        subdivisionCode:
+          loc['subdivisionCode'] != null || loc['subdivision_code'] != null
+            ? String(loc['subdivisionCode'] ?? loc['subdivision_code'])
+            : undefined,
         country: String(loc['country'] ?? ''),
         state: String(loc['state'] ?? ''),
         address,
         phoneNumber,
         isPrimary,
         detailsComplete:
-          detailsCompleteRaw != null
-            ? Boolean(detailsCompleteRaw)
-            : address.trim().length > 0,
+          detailsCompleteRaw != null ? Boolean(detailsCompleteRaw) : address.trim().length > 0,
       };
     });
   }
@@ -1479,9 +1490,9 @@ export class MerchantService {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
     this.api
-      .get<MerchantAllocation[] | { data?: MerchantAllocation[]; allocations?: MerchantAllocation[] }>(
-        'merchants/me/allocations',
-      )
+      .get<
+        MerchantAllocation[] | { data?: MerchantAllocation[]; allocations?: MerchantAllocation[] }
+      >('merchants/me/allocations')
       .pipe(
         map((res) => this.normalizeAllocationsResponse(res)),
         tap((res) => this.allocationsSignal.set(res)),
@@ -1498,7 +1509,8 @@ export class MerchantService {
   fetchStockDisputes(): void {
     this.api
       .get<
-        MerchantStockDispute[] | { data?: MerchantStockDispute[]; disputes?: MerchantStockDispute[] }
+        | MerchantStockDispute[]
+        | { data?: MerchantStockDispute[]; disputes?: MerchantStockDispute[] }
       >('merchants/me/stock-disputes')
       .pipe(
         map((res) => this.normalizeStockDisputesResponse(res)),
@@ -1512,7 +1524,10 @@ export class MerchantService {
   }
 
   /** POST /merchants/me/allocations/:id/confirm-receipt */
-  confirmAllocationReceipt(id: string, body: ConfirmAllocationReceiptBody): Observable<{ message?: string }> {
+  confirmAllocationReceipt(
+    id: string,
+    body: ConfirmAllocationReceiptBody,
+  ): Observable<{ message?: string }> {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
 
@@ -1525,19 +1540,21 @@ export class MerchantService {
       formData.append('evidence', file, file.name);
     }
 
-    return this.api.post<{ message?: string }>(`merchants/me/allocations/${id}/confirm-receipt`, formData).pipe(
-      tap(() => {
-        this.fetchAllocations();
-        this.fetchStockDisputes();
-        this.fetchInventory();
-      }),
-      catchError((err) => {
-        console.error('[MerchantService] confirmAllocationReceipt failed', err);
-        this.errorSignal.set(err?.error?.message || 'Failed to confirm receipt.');
-        return throwError(() => err);
-      }),
-      finalize(() => this.actionLoadingSignal.set(false)),
-    );
+    return this.api
+      .post<{ message?: string }>(`merchants/me/allocations/${id}/confirm-receipt`, formData)
+      .pipe(
+        tap(() => {
+          this.fetchAllocations();
+          this.fetchStockDisputes();
+          this.fetchInventory();
+        }),
+        catchError((err) => {
+          console.error('[MerchantService] confirmAllocationReceipt failed', err);
+          this.errorSignal.set(err?.error?.message || 'Failed to confirm receipt.');
+          return throwError(() => err);
+        }),
+        finalize(() => this.actionLoadingSignal.set(false)),
+      );
   }
 
   /** POST /merchants/me/stock-disputes/:id/acknowledge */
@@ -1566,7 +1583,9 @@ export class MerchantService {
     return allocation.status === 'DELIVERED';
   }
 
-  static needsDisputeAcknowledgement(dispute: MerchantAllocationDispute | MerchantStockDispute): boolean {
+  static needsDisputeAcknowledgement(
+    dispute: MerchantAllocationDispute | MerchantStockDispute,
+  ): boolean {
     return dispute.status === 'ADMIN_REJECTED';
   }
 
@@ -1620,9 +1639,7 @@ export class MerchantService {
   /* ── Merchant-to-merchant stock handover ─────────────────────── */
 
   /** GET /merchants/me/allocations/:id/eligible-suppliers */
-  fetchEligibleHandoverSuppliers(
-    allocationId: string,
-  ): Observable<MerchantEligibleSupplier[]> {
+  fetchEligibleHandoverSuppliers(allocationId: string): Observable<MerchantEligibleSupplier[]> {
     this.errorSignal.set(null);
     return this.api
       .get<{ suppliers?: unknown[] } | unknown[]>(
@@ -1773,7 +1790,9 @@ export class MerchantService {
     this.api
       .get<{ items: unknown[] }>('merchants/inventory')
       .pipe(
-        map((res) => (res.items ?? []).map((raw) => this.mapInventoryItem(raw as Record<string, unknown>))),
+        map((res) =>
+          (res.items ?? []).map((raw) => this.mapInventoryItem(raw as Record<string, unknown>)),
+        ),
         tap((items) => this.inventorySignal.set(items)),
         catchError((err) => {
           console.error('[MerchantService] fetchInventory failed', err);
@@ -1814,10 +1833,7 @@ export class MerchantService {
     this.errorSignal.set(null);
 
     return this.api
-      .post<Record<string, unknown>>(
-        `merchants/inventory/${productId}/adjustment-requests`,
-        body,
-      )
+      .post<Record<string, unknown>>(`merchants/inventory/${productId}/adjustment-requests`, body)
       .pipe(
         map((raw) => this.mapInventoryAdjustmentDispute(raw)),
         tap(() => {
@@ -1865,9 +1881,7 @@ export class MerchantService {
     return of(null);
   }
 
-  private mapUpgradeOptionsResponse(
-    raw: Record<string, unknown>,
-  ): MerchantUpgradeOptionsResponse {
+  private mapUpgradeOptionsResponse(raw: Record<string, unknown>): MerchantUpgradeOptionsResponse {
     const currentType = String(raw['currentType'] ?? '') as MerchantType;
     const rawUpgrades = (raw['eligibleUpgrades'] ?? []) as Record<string, unknown>[];
     const eligibleUpgrades: MerchantUpgradeOption[] = rawUpgrades.map((opt) => ({
@@ -1920,7 +1934,9 @@ export class MerchantService {
     this.errorSignal.set(null);
   }
 
-  private mapMerchantFeeInitiateResponse(res: Record<string, unknown>): InitiateMerchantFeeResponse {
+  private mapMerchantFeeInitiateResponse(
+    res: Record<string, unknown>,
+  ): InitiateMerchantFeeResponse {
     const mapped = mapInitiatePaymentResponse(res);
     return {
       message: String(res['message'] ?? ''),
@@ -1948,30 +1964,24 @@ export class MerchantService {
   }
 
   private normalizeAllocationsResponse(
-    res:
-      | MerchantAllocation[]
-      | { data?: unknown; allocations?: unknown; items?: unknown },
+    res: MerchantAllocation[] | { data?: unknown; allocations?: unknown; items?: unknown },
   ): MerchantAllocation[] {
-    const source = (Array.isArray(res)
-      ? res
-      : ((res['data'] ?? res['allocations'] ?? res['items'] ?? []) as unknown[])) as Record<
-      string,
-      unknown
-    >[];
+    const source = (
+      Array.isArray(res)
+        ? res
+        : ((res['data'] ?? res['allocations'] ?? res['items'] ?? []) as unknown[])
+    ) as Record<string, unknown>[];
     return source.map((raw) => this.mapAllocation(raw));
   }
 
   private normalizeStockDisputesResponse(
-    res:
-      | MerchantStockDispute[]
-      | { data?: unknown; disputes?: unknown; items?: unknown },
+    res: MerchantStockDispute[] | { data?: unknown; disputes?: unknown; items?: unknown },
   ): MerchantStockDispute[] {
-    const source = (Array.isArray(res)
-      ? res
-      : ((res['data'] ?? res['disputes'] ?? res['items'] ?? []) as unknown[])) as Record<
-      string,
-      unknown
-    >[];
+    const source = (
+      Array.isArray(res)
+        ? res
+        : ((res['data'] ?? res['disputes'] ?? res['items'] ?? []) as unknown[])
+    ) as Record<string, unknown>[];
     return source.map((raw) => this.mapStockDispute(raw));
   }
 
@@ -1989,10 +1999,10 @@ export class MerchantService {
 
   private mapAllocation(raw: Record<string, unknown>): MerchantAllocation {
     const productRaw = (raw['product'] as Record<string, unknown> | undefined) ?? {};
-    const handoverRaw = ((raw['handover'] ??
+    const handoverRaw = (raw['handover'] ??
       raw['handoverRequest'] ??
       raw['handover_request'] ??
-      {}) as Record<string, unknown>);
+      {}) as Record<string, unknown>;
     const productId = String(raw['productId'] ?? productRaw['id'] ?? '');
     const productName = String(
       raw['productName'] ?? productRaw['name'] ?? productRaw['productName'] ?? '—',
@@ -2025,11 +2035,9 @@ export class MerchantService {
       deliveredAt: (raw['deliveredAt'] ?? raw['delivered_at'] ?? null) as string | null,
       receivedAt: (raw['receivedAt'] ?? raw['received_at'] ?? null) as string | null,
       trackingReference: (raw['trackingReference'] ?? raw['tracking_reference'] ?? null) as
-        | string
-        | null,
+        string | null,
       parentAllocationId: (raw['parentAllocationId'] ?? raw['parent_allocation_id'] ?? null) as
-        | string
-        | null,
+        string | null,
       dispute: disputeRaw ? this.mapAllocationDispute(disputeRaw) : null,
       product: productId
         ? {
@@ -2102,7 +2110,8 @@ export class MerchantService {
     const locationsRaw = (raw['locations'] ?? []) as unknown[];
     return {
       id: String(raw['id'] ?? ''),
-      businessName: (raw['businessName'] ?? raw['business_name'] ?? undefined) as string | undefined,
+      businessName: (raw['businessName'] ?? raw['business_name'] ?? undefined) as
+        string | undefined,
       type: (raw['type'] ?? undefined) as MerchantType | undefined,
       phoneNumber: (raw['phoneNumber'] ?? raw['phone_number'] ?? undefined) as string | undefined,
       address: (raw['address'] ?? undefined) as string | undefined,
@@ -2136,9 +2145,10 @@ export class MerchantService {
   private normalizeEligibleSuppliersResponse(
     res: { suppliers?: unknown[] } | unknown[],
   ): MerchantEligibleSupplier[] {
-    const source = (Array.isArray(res)
-      ? res
-      : ((res['suppliers'] ?? []) as unknown[])) as Record<string, unknown>[];
+    const source = (Array.isArray(res) ? res : ((res['suppliers'] ?? []) as unknown[])) as Record<
+      string,
+      unknown
+    >[];
     return source.map((raw) => this.mapHandoverParty(raw));
   }
 
@@ -2147,13 +2157,15 @@ export class MerchantService {
       | MerchantAllocation[]
       | { data?: unknown[]; requests?: unknown[]; items?: unknown[]; allocations?: unknown[] },
   ): MerchantAllocation[] {
-    const source = (Array.isArray(res)
-      ? res
-      : ((res['requests'] ??
-          res['data'] ??
-          res['allocations'] ??
-          res['items'] ??
-          []) as unknown[])) as Record<string, unknown>[];
+    const source = (
+      Array.isArray(res)
+        ? res
+        : ((res['requests'] ??
+            res['data'] ??
+            res['allocations'] ??
+            res['items'] ??
+            []) as unknown[])
+    ) as Record<string, unknown>[];
     return source.map((raw) => this.mapAllocation(raw));
   }
 
@@ -2166,13 +2178,12 @@ export class MerchantService {
       claimedReceivedQuantity: Number(
         raw['claimedReceivedQuantity'] ?? raw['claimed_received_quantity'] ?? 0,
       ),
-      allocationId: String(
-        raw['allocationId'] ?? raw['allocation_id'] ?? allocation['id'] ?? '',
-      ) || undefined,
+      allocationId:
+        String(raw['allocationId'] ?? raw['allocation_id'] ?? allocation['id'] ?? '') || undefined,
       productId: String(raw['productId'] ?? allocation['productId'] ?? '') || undefined,
-      productName: String(
-        raw['productName'] ?? allocation['productName'] ?? allocation['product'] ?? '',
-      ) || undefined,
+      productName:
+        String(raw['productName'] ?? allocation['productName'] ?? allocation['product'] ?? '') ||
+        undefined,
       merchantNotes: (raw['merchantNotes'] ?? raw['merchant_notes'] ?? null) as string | null,
       createdAt: (raw['createdAt'] ?? raw['created_at']) as string | undefined,
     };
@@ -2181,11 +2192,12 @@ export class MerchantService {
   private mapInventoryItem(raw: Record<string, unknown>): MerchantInventoryItem {
     const stockQuantity = Number(raw['stockQuantity'] ?? raw['stock_quantity'] ?? 0);
     const authorizedRaw = raw['authorizedQuantity'] ?? raw['authorized_quantity'];
-    const authorizedQuantity =
-      authorizedRaw != null ? Number(authorizedRaw) : stockQuantity;
+    const authorizedQuantity = authorizedRaw != null ? Number(authorizedRaw) : stockQuantity;
 
     return {
-      merchantProductId: String(raw['merchantProductId'] ?? raw['merchant_product_id'] ?? raw['id'] ?? ''),
+      merchantProductId: String(
+        raw['merchantProductId'] ?? raw['merchant_product_id'] ?? raw['id'] ?? '',
+      ),
       productId: String(raw['productId'] ?? raw['product_id'] ?? ''),
       productName: String(raw['productName'] ?? raw['product_name'] ?? '—'),
       productSku: String(raw['productSku'] ?? raw['product_sku'] ?? raw['sku'] ?? '—'),
@@ -2208,12 +2220,11 @@ export class MerchantService {
       | MerchantInventoryAdjustmentDispute[]
       | { disputes?: unknown[]; data?: unknown[]; items?: unknown[] },
   ): MerchantInventoryAdjustmentDispute[] {
-    const source = (Array.isArray(res)
-      ? res
-      : ((res['disputes'] ?? res['data'] ?? res['items'] ?? []) as unknown[])) as Record<
-      string,
-      unknown
-    >[];
+    const source = (
+      Array.isArray(res)
+        ? res
+        : ((res['disputes'] ?? res['data'] ?? res['items'] ?? []) as unknown[])
+    ) as Record<string, unknown>[];
     return source.map((raw) => this.mapInventoryAdjustmentDispute(raw));
   }
 
@@ -2235,16 +2246,16 @@ export class MerchantService {
       };
     });
 
-    const monthlyOverview = ((sales['monthlyOverview'] ?? sales['monthly_overview'] ?? []) as unknown[]).map(
-      (month) => {
-        const m = (month ?? {}) as Record<string, unknown>;
-        return {
-          month: String(m['month'] ?? ''),
-          label: String(m['label'] ?? ''),
-          amount: Number(m['amount'] ?? 0),
-        };
-      },
-    );
+    const monthlyOverview = (
+      (sales['monthlyOverview'] ?? sales['monthly_overview'] ?? []) as unknown[]
+    ).map((month) => {
+      const m = (month ?? {}) as Record<string, unknown>;
+      return {
+        month: String(m['month'] ?? ''),
+        label: String(m['label'] ?? ''),
+        amount: Number(m['amount'] ?? 0),
+      };
+    });
 
     const byTypeRaw = (earnings['byType'] ?? earnings['by_type'] ?? {}) as Record<string, unknown>;
     const byType: MerchantEarningsByType = {
@@ -2252,7 +2263,9 @@ export class MerchantService {
       directReferralProduct: Number(
         byTypeRaw['directReferralProduct'] ?? byTypeRaw['direct_referral_product'] ?? 0,
       ),
-      communityProduct: Number(byTypeRaw['communityProduct'] ?? byTypeRaw['community_product'] ?? 0),
+      communityProduct: Number(
+        byTypeRaw['communityProduct'] ?? byTypeRaw['community_product'] ?? 0,
+      ),
       deliveryBonus: Number(byTypeRaw['deliveryBonus'] ?? byTypeRaw['delivery_bonus'] ?? 0),
     };
 
@@ -2260,7 +2273,9 @@ export class MerchantService {
       currency: String(data['currency'] ?? 'NGN'),
       sales: {
         totalSales: Number(sales['totalSales'] ?? sales['total_sales'] ?? 0),
-        salesChangePct: this.mapNullableNumber(sales['salesChangePct'] ?? sales['sales_change_pct']),
+        salesChangePct: this.mapNullableNumber(
+          sales['salesChangePct'] ?? sales['sales_change_pct'],
+        ),
         trend: {
           period: String(trend['period'] ?? '7d'),
           points: trendPoints,
@@ -2275,8 +2290,7 @@ export class MerchantService {
           orders['pendingFulfillments'] ?? orders['pending_fulfillments'] ?? 0,
         ),
         pendingByStatus: (orders['pendingByStatus'] ?? orders['pending_by_status']) as
-          | Record<string, number>
-          | undefined,
+          Record<string, number> | undefined,
       },
       inventory: {
         totalProducts: Number(inventory['totalProducts'] ?? inventory['total_products'] ?? 0),
@@ -2285,18 +2299,24 @@ export class MerchantService {
             ? Number(inventory['totalStockQuantity'] ?? inventory['total_stock_quantity'])
             : undefined,
         lowStockCount: Number(inventory['lowStockCount'] ?? inventory['low_stock_count'] ?? 0),
-        outOfStockCount: Number(inventory['outOfStockCount'] ?? inventory['out_of_stock_count'] ?? 0),
+        outOfStockCount: Number(
+          inventory['outOfStockCount'] ?? inventory['out_of_stock_count'] ?? 0,
+        ),
         lowOrOutCount: Number(inventory['lowOrOutCount'] ?? inventory['low_or_out_count'] ?? 0),
         byCategory: this.mapDashboardInventoryCategories(inventory),
       },
       earnings: {
         totalEarnings: Number(earnings['totalEarnings'] ?? earnings['total_earnings'] ?? 0),
-        availableEarnings: Number(earnings['availableEarnings'] ?? earnings['available_earnings'] ?? 0),
+        availableEarnings: Number(
+          earnings['availableEarnings'] ?? earnings['available_earnings'] ?? 0,
+        ),
         pendingEarnings: Number(earnings['pendingEarnings'] ?? earnings['pending_earnings'] ?? 0),
         byType,
       },
       allocations: {
-        actionableCount: Number(allocations['actionableCount'] ?? allocations['actionable_count'] ?? 0),
+        actionableCount: Number(
+          allocations['actionableCount'] ?? allocations['actionable_count'] ?? 0,
+        ),
       },
       recentActivity: rawActivity
         .map((item) => this.mapDashboardActivity(item))
@@ -2316,7 +2336,9 @@ export class MerchantService {
       const category = (item ?? {}) as Record<string, unknown>;
       return {
         categoryId: String(category['categoryId'] ?? category['category_id'] ?? ''),
-        categoryName: String(category['categoryName'] ?? category['category_name'] ?? 'Uncategorized'),
+        categoryName: String(
+          category['categoryName'] ?? category['category_name'] ?? 'Uncategorized',
+        ),
         productCount: Number(category['productCount'] ?? category['product_count'] ?? 0),
         totalStockQuantity: Number(
           category['totalStockQuantity'] ?? category['total_stock_quantity'] ?? 0,
@@ -2354,12 +2376,8 @@ export class MerchantService {
   private mapInventoryAdjustmentDispute(
     raw: Record<string, unknown>,
   ): MerchantInventoryAdjustmentDispute {
-    const authorizedQuantity = Number(
-      raw['authorizedQuantity'] ?? raw['authorized_quantity'] ?? 0,
-    );
-    const requestedQuantity = Number(
-      raw['requestedQuantity'] ?? raw['requested_quantity'] ?? 0,
-    );
+    const authorizedQuantity = Number(raw['authorizedQuantity'] ?? raw['authorized_quantity'] ?? 0);
+    const requestedQuantity = Number(raw['requestedQuantity'] ?? raw['requested_quantity'] ?? 0);
     const adjustmentTypeRaw = String(
       raw['adjustmentType'] ?? raw['adjustment_type'] ?? '',
     ).toUpperCase();
@@ -2401,6 +2419,8 @@ export class MerchantService {
       PICKED_UP: 'Picked Up',
       OFFLINE_DELIVERY_REQUESTED: 'Delivery Requested',
       DELIVERED: 'Delivered',
+      COMPLETED: 'Completed',
+      CANCELLED: 'Cancelled',
       PAID: 'Paid',
       SENT: 'Sent',
     };

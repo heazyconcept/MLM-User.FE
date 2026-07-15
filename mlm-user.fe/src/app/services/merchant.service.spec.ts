@@ -252,11 +252,14 @@ describe('MerchantService — category upgrade', () => {
         userId: 'user-1',
         type: 'NATIONAL',
         status: 'DRAFT',
+        home_country_code: 'NG',
         phoneNumber: '+2348012345678',
         locations_complete: false,
         locations: [
           {
             id: 'loc-1',
+            country_code: 'NG',
+            subdivision_code: 'LA',
             country: 'Nigeria',
             state: 'Lagos',
             address: '12 Market Road',
@@ -280,11 +283,14 @@ describe('MerchantService — category upgrade', () => {
       expect(mapped).toMatchObject({
         id: 'merchant-1',
         type: 'NATIONAL',
+        homeCountryCode: 'NG',
         locationsComplete: false,
         serviceAreas: ['Lagos', 'Abuja'],
         locations: [
           {
             id: 'loc-1',
+            countryCode: 'NG',
+            subdivisionCode: 'LA',
             country: 'Nigeria',
             state: 'Lagos',
             address: '12 Market Road',
@@ -319,7 +325,7 @@ describe('MerchantService — category upgrade', () => {
       ];
 
       service
-        .apply('REGIONAL', '+2348012345678', locations, 'Herb World Ventures')
+        .apply('REGIONAL', '+2348012345678', 'NG', locations, 'Herb World Ventures')
         .subscribe((profile) => {
           expect(profile).toMatchObject({
             id: 'merchant-1',
@@ -338,6 +344,7 @@ describe('MerchantService — category upgrade', () => {
       expect(req.request.body).toEqual({
         phoneNumber: '+2348012345678',
         type: 'REGIONAL',
+        homeCountryCode: 'NG',
         locations,
         businessName: 'Herb World Ventures',
       });
@@ -374,7 +381,7 @@ describe('MerchantService — category upgrade', () => {
         },
       ];
 
-      service.apply('NATIONAL', '+2348012345678', locations, 'National Mart').subscribe();
+      service.apply('NATIONAL', '+2348012345678', 'NG', locations, 'National Mart').subscribe();
 
       const req = httpMock.expectOne(`${baseUrl}/merchants/apply`);
       expect(req.request.body.type).toBe('NATIONAL');
@@ -410,14 +417,16 @@ describe('MerchantService — category upgrade', () => {
         },
       ];
 
-      service.apply('GLOBAL', '+2348012345678', locations, 'Global Mart').subscribe();
+      service.apply('GLOBAL', '+2348012345678', 'NG', locations, 'Global Mart').subscribe();
 
       const req = httpMock.expectOne(`${baseUrl}/merchants/apply`);
       expect(req.request.body.type).toBe('GLOBAL');
       expect(req.request.body.businessName).toBe('Global Mart');
-      expect(req.request.body.locations.every((l: { address: string; phoneNumber: string }) =>
-        Boolean(l.address && l.phoneNumber),
-      )).toBe(true);
+      expect(
+        req.request.body.locations.every((l: { address: string; phoneNumber: string }) =>
+          Boolean(l.address && l.phoneNumber),
+        ),
+      ).toBe(true);
       req.flush({
         id: 'merchant-1',
         userId: 'user-1',
@@ -427,6 +436,126 @@ describe('MerchantService — category upgrade', () => {
         locationsComplete: true,
         createdAt: '2026-07-14T00:00:00Z',
       });
+    });
+  });
+
+  describe('checkout merchant discovery', () => {
+    it('uses canonical geography and maps matched-location metadata', () => {
+      let result: unknown;
+      service
+        .fetchAvailableMerchantsForPickup({
+          countryCode: 'NG',
+          subdivisionCode: 'LA',
+          state: 'Lagos',
+          productId: 'product-1',
+          quantity: 2,
+        })
+        .subscribe((merchants) => (result = merchants));
+
+      const req = httpMock.expectOne((request) => {
+        return (
+          request.url === `${baseUrl}/merchants/available` &&
+          request.params.get('countryCode') === 'NG' &&
+          request.params.get('subdivisionCode') === 'LA' &&
+          request.params.get('state') === 'Lagos' &&
+          request.params.get('productId') === 'product-1' &&
+          request.params.get('quantity') === '2'
+        );
+      });
+      expect(req.request.method).toBe('GET');
+      req.flush({
+        merchants: [
+          {
+            id: 'merchant-1',
+            businessName: 'Lagos Hub',
+            phoneNumber: '+2348012345678',
+            address: '12 Pickup Road',
+            serviceAreas: ['Lagos'],
+            locationsComplete: false,
+            usingPrimaryAddressFallback: true,
+            locations: [
+              {
+                id: 'location-1',
+                countryCode: 'NG',
+                subdivisionCode: 'LA',
+                country: 'Nigeria',
+                state: 'Lagos',
+                address: '',
+                phoneNumber: '',
+                isPrimary: false,
+                detailsComplete: false,
+              },
+            ],
+            products: [
+              {
+                id: 'product-1',
+                name: 'Wine',
+                sku: 'W-1',
+                stockQuantity: 5,
+                inStock: true,
+              },
+            ],
+            requestedProductInStock: true,
+            pickupAvailable: true,
+          },
+        ],
+      });
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          id: 'merchant-1',
+          address: '12 Pickup Road',
+          locationsComplete: false,
+          usingPrimaryAddressFallback: true,
+          locations: [
+            expect.objectContaining({
+              countryCode: 'NG',
+              subdivisionCode: 'LA',
+              state: 'Lagos',
+            }),
+          ],
+        }),
+      ]);
+    });
+
+    it('posts canonical geography when checking whole-cart availability', () => {
+      service
+        .checkCheckoutAvailability({
+          countryCode: 'NG',
+          subdivisionCode: 'LA',
+          state: 'Lagos',
+          items: [{ productId: 'product-1', quantity: 2 }],
+          selectedMerchantId: 'merchant-1',
+        })
+        .subscribe();
+
+      const req = httpMock.expectOne(`${baseUrl}/merchants/checkout/availability`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({
+        countryCode: 'NG',
+        subdivisionCode: 'LA',
+        state: 'Lagos',
+        items: [{ productId: 'product-1', quantity: 2 }],
+        selectedMerchantId: 'merchant-1',
+      });
+      req.flush({ merchants: [], selectedMerchant: null });
+    });
+
+    it('propagates pickup discovery errors instead of returning an empty list', () => {
+      let status: number | undefined;
+      service
+        .fetchAvailableMerchantsForPickup({
+          countryCode: 'NG',
+          subdivisionCode: 'LA',
+          state: 'Lagos',
+        })
+        .subscribe({ error: (error) => (status = error.status) });
+
+      httpMock
+        .expectOne((request) => request.url === `${baseUrl}/merchants/available`)
+        .flush({ message: 'Unavailable' }, { status: 503, statusText: 'Unavailable' });
+
+      expect(status).toBe(503);
     });
   });
 });

@@ -50,32 +50,70 @@
         </button>
       </div>
 
-      @if (fulfilmentOption() === 'pickup') {
-        <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 space-y-5">
+      <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 mb-4 space-y-4">
+        <div>
+          <label
+            for="checkout-country"
+            class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-2"
+          >
+            Country
+          </label>
+          <select
+            id="checkout-country"
+            class="w-full px-4 py-3 bg-mlm-background border border-gray-200 rounded-xl text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+            [ngModel]="selectedCountryCode()"
+            (ngModelChange)="onCountryChange($event)"
+            [disabled]="geographyLoading() && countries().length === 0"
+          >
+            <option value="">Choose a country…</option>
+            @for (country of countries(); track country.code) {
+              <option [value]="country.code">{{ country.name }}</option>
+            }
+          </select>
+        </div>
+
+        @if (selectedCountryCode()) {
           <div>
             <label
-              for="pickup-state"
+              for="checkout-subdivision"
               class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-2"
             >
-              Select State
+              State or region
             </label>
             <select
-              id="pickup-state"
-              class="w-full px-4 py-3 bg-mlm-background border border-gray-200 rounded-xl text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
-              [ngModel]="selectedState()"
-              (ngModelChange)="onStateChange($event)"
+              id="checkout-subdivision"
+              class="w-full px-4 py-3 bg-mlm-background border border-gray-200 rounded-xl text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+              [ngModel]="checkoutGeography()?.subdivisionCode ?? ''"
+              (ngModelChange)="onSubdivisionChange($event)"
+              [disabled]="geographyLoading()"
             >
-              <option value="">Choose a state…</option>
-              @for (state of nigerianStates; track state) {
-                <option [value]="state">{{ state }}</option>
+              <option value="">Choose a state or region…</option>
+              @for (subdivision of subdivisions(); track subdivision.code) {
+                <option [value]="subdivision.code">{{ subdivision.name }}</option>
               }
             </select>
-            <p class="text-xs text-mlm-secondary mt-1.5">
-              All active merchants in your state are shown. Stock availability is indicated per merchant.
-            </p>
           </div>
+        }
 
-          @if (selectedState()) {
+        @if (geographyLoading()) {
+          <p class="text-sm text-mlm-secondary">Loading locations…</p>
+        } @else if (geographyError()) {
+          <div class="flex flex-wrap items-center justify-between gap-3 text-sm text-red-600">
+            <span>{{ geographyError() }}</span>
+            <button type="button" class="font-semibold text-mlm-primary" (click)="retryGeography()">
+              Try again
+            </button>
+          </div>
+        } @else if (selectedCountryCode() && subdivisions().length === 0) {
+          <p class="text-sm text-mlm-secondary">
+            No states or regions are available for this country yet.
+          </p>
+        }
+      </div>
+
+      @if (fulfilmentOption() === 'pickup') {
+        <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 space-y-5">
+          @if (checkoutGeography(); as geography) {
             <div>
               <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-4">
                 Select Pickup Merchant
@@ -86,10 +124,15 @@
                   <span
                     class="w-4 h-4 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"
                   ></span>
-                  <span class="text-sm text-mlm-secondary">Loading merchants in {{ selectedState() }}…</span>
+                  <span class="text-sm text-mlm-secondary">Loading merchants in {{ geography.subdivisionName }}…</span>
                 </div>
               } @else if (pickupLocationsError()) {
-                <p class="text-sm text-red-600 py-2">{{ pickupLocationsError() }}</p>
+                <div class="flex flex-wrap items-center justify-between gap-3 py-2">
+                  <p class="text-sm text-red-600">{{ pickupLocationsError() }}</p>
+                  <button type="button" class="text-sm font-semibold text-mlm-primary" (click)="retryPickupMerchants()">
+                    Try again
+                  </button>
+                </div>
               } @else if (emptyPickupMessage()) {
                 <p class="text-sm text-mlm-secondary py-2">{{ emptyPickupMessage() }}</p>
               } @else {
@@ -192,26 +235,11 @@
 
       @if (fulfilmentOption() === 'delivery') {
         <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 space-y-5">
-          <div>
-            <label
-              for="delivery-state"
-              class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-2"
-            >
-              Select State
-            </label>
-            <select
-              id="delivery-state"
-              class="w-full px-4 py-3 bg-mlm-background border border-gray-200 rounded-xl text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
-              [ngModel]="deliveryState()"
-              (ngModelChange)="onDeliveryStateChange($event)"
-            >
-              <option value="">Choose your state…</option>
-              @for (state of nigerianStates; track state) {
-                <option [value]="state">{{ state }}</option>
-              }
-            </select>
-            <p class="text-xs text-mlm-secondary mt-1.5">Delivery fee depends on your state.</p>
-          </div>
+          @if (checkoutGeography() && !deliveryAvailable()) {
+            <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              International home-delivery pricing is not available yet. Choose pickup or select Nigeria.
+            </p>
+          }
 
           <div>
             <label
@@ -231,7 +259,7 @@
             />
           </div>
 
-          @if (deliveryState()) {
+          @if (checkoutGeography() && deliveryAvailable()) {
             <div class="bg-gray-50 border border-gray-100 rounded-xl p-4">
               <div class="flex justify-between items-center text-sm">
                 <span class="text-mlm-secondary">Delivery Fee</span>

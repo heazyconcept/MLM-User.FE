@@ -31,7 +31,10 @@ import {
   GATEWAY_REFERENCE_QUERY_PARAMS,
   resolvePaymentReference,
 } from '../../../core/utils/payment-reference.util';
-import { getMerchantCallbackUrl, isPaymentProviderEnabled } from '../../../core/utils/payment-config.util';
+import {
+  getMerchantCallbackUrl,
+  isPaymentProviderEnabled,
+} from '../../../core/utils/payment-config.util';
 import { UsdtDepositComponent } from '../../../components/usdt-deposit/usdt-deposit.component';
 import { MerchantLocationsEditorComponent } from '../../../components/merchant-locations-editor/merchant-locations-editor.component';
 import type { InitiatePaymentResponse } from '../../../services/payment.service';
@@ -85,6 +88,7 @@ export class MerchantProfileComponent implements OnInit {
 
   businessName = signal('');
   phoneNumber = signal('');
+  homeCountryCode = signal('');
   locations = signal<MerchantLocationDraft[]>([createEmptyLocationDraft(true)]);
   formError = signal('');
   successMessage = signal('');
@@ -97,8 +101,12 @@ export class MerchantProfileComponent implements OnInit {
     const business = this.businessName().trim();
     if (business.length < 2) return false;
     return (
-      validateMerchantLocationDrafts(this.merchantType(), this.locations(), this.phoneNumber()) ===
-      null
+      validateMerchantLocationDrafts(
+        this.merchantType(),
+        this.locations(),
+        this.homeCountryCode(),
+        this.phoneNumber(),
+      ) === null
     );
   });
 
@@ -157,16 +165,19 @@ export class MerchantProfileComponent implements OnInit {
       if (p && !p.message) {
         this.businessName.set(p.businessName || '');
         this.phoneNumber.set(p.phoneNumber || '');
+        this.homeCountryCode.set(p.homeCountryCode || '');
         this.locations.set(
           enforceTierOnDrafts(
             p.type ?? 'REGIONAL',
             draftsFromProfile({
               type: p.type,
+              homeCountryCode: p.homeCountryCode,
               locations: p.locations,
               serviceAreas: p.serviceAreas,
               address: p.address,
               phoneNumber: p.phoneNumber,
             }),
+            p.homeCountryCode ?? '',
           ),
         );
       }
@@ -221,9 +232,7 @@ export class MerchantProfileComponent implements OnInit {
     this.merchantService.verifyMerchantUpgrade({ reference }).subscribe((res) => {
       if (res?.success) {
         this.verificationMessage.set('');
-        this.upgradeSuccessMessage.set(
-          res.message || 'Merchant category upgraded successfully.',
-        );
+        this.upgradeSuccessMessage.set(res.message || 'Merchant category upgraded successfully.');
         this.router.navigate([], {
           relativeTo: this.route,
           queryParams: GATEWAY_REFERENCE_QUERY_PARAMS,
@@ -238,9 +247,7 @@ export class MerchantProfileComponent implements OnInit {
       }
 
       this.verificationMessage.set('');
-      this.verificationError.set(
-        this.merchantService.error() || 'Payment could not be verified.',
-      );
+      this.verificationError.set(this.merchantService.error() || 'Payment could not be verified.');
       this.cdr.markForCheck();
     });
   }
@@ -398,7 +405,12 @@ export class MerchantProfileComponent implements OnInit {
   }
 
   onLocationsChange(next: MerchantLocationDraft[]): void {
-    this.locations.set(enforceTierOnDrafts(this.merchantType(), next));
+    this.locations.set(enforceTierOnDrafts(this.merchantType(), next, this.homeCountryCode()));
+    this.formError.set('');
+  }
+
+  onHomeCountryChange(countryCode: string): void {
+    this.homeCountryCode.set(countryCode);
     this.formError.set('');
   }
 
@@ -409,18 +421,29 @@ export class MerchantProfileComponent implements OnInit {
     const phone = this.phoneNumber().trim();
     const type = this.merchantType();
 
-    const validationError = validateMerchantLocationDrafts(type, this.locations(), phone);
+    const validationError = validateMerchantLocationDrafts(
+      type,
+      this.locations(),
+      this.homeCountryCode(),
+      phone,
+    );
     if (business.length < 2 || validationError) {
       this.formError.set(validationError || 'Business name must be at least 2 characters.');
       return;
     }
 
-    const locationsPayload = buildMerchantLocationsPayload(type, this.locations(), phone);
+    const locationsPayload = buildMerchantLocationsPayload(
+      type,
+      this.locations(),
+      this.homeCountryCode(),
+      phone,
+    );
 
     this.merchantService
       .updateProfile({
         businessName: business,
         phoneNumber: phone,
+        homeCountryCode: this.homeCountryCode(),
         locations: locationsPayload,
       })
       .subscribe((res) => {
@@ -437,16 +460,19 @@ export class MerchantProfileComponent implements OnInit {
     if (p) {
       this.businessName.set(p.businessName || '');
       this.phoneNumber.set(p.phoneNumber || '');
+      this.homeCountryCode.set(p.homeCountryCode || '');
       this.locations.set(
         enforceTierOnDrafts(
           p.type ?? 'REGIONAL',
           draftsFromProfile({
             type: p.type,
+            homeCountryCode: p.homeCountryCode,
             locations: p.locations,
             serviceAreas: p.serviceAreas,
             address: p.address,
             phoneNumber: p.phoneNumber,
           }),
+          p.homeCountryCode ?? '',
         ),
       );
     }

@@ -30,8 +30,11 @@ export class MerchantOrdersComponent implements OnInit {
   readonly orderStatuses: OrderStatus[] = [
     'ASSIGNED_TO_MERCHANT',
     'READY_FOR_PICKUP',
+    'PICKED_UP',
     'OFFLINE_DELIVERY_REQUESTED',
     'DELIVERED',
+    'COMPLETED',
+    'CANCELLED',
     'SENT',
     'PAID',
   ];

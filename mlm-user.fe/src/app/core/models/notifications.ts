@@ -30,6 +30,10 @@ export type NotificationType =
   | 'ORDER_FAILED'
   | 'ORDER_FULFILLED'
   | 'ORDER_READY_FOR_PICKUP'
+  | 'ORDER_PICKED_UP'
+  | 'ORDER_RECEIVED_CONFIRMED'
+  | 'ORDER_DISPUTE_OPENED'
+  | 'ORDER_DISPUTE_RESOLVED'
   | 'ORDER_DELIVERY_REQUESTED'
   | 'MERCHANT_APPLICATION_SUBMITTED'
   | 'MERCHANT_APPROVED'
@@ -91,6 +95,10 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   ORDER_FAILED: 'orders',
   ORDER_FULFILLED: 'orders',
   ORDER_READY_FOR_PICKUP: 'orders',
+  ORDER_PICKED_UP: 'orders',
+  ORDER_RECEIVED_CONFIRMED: 'orders',
+  ORDER_DISPUTE_OPENED: 'orders',
+  ORDER_DISPUTE_RESOLVED: 'orders',
   ORDER_DELIVERY_REQUESTED: 'orders',
   MERCHANT_APPLICATION_SUBMITTED: 'network',
   MERCHANT_APPROVED: 'network',
@@ -135,6 +143,10 @@ export const NOTIFICATION_TYPES_BY_CATEGORY: Record<NotificationCategory, Notifi
     'ORDER_FAILED',
     'ORDER_FULFILLED',
     'ORDER_READY_FOR_PICKUP',
+    'ORDER_PICKED_UP',
+    'ORDER_RECEIVED_CONFIRMED',
+    'ORDER_DISPUTE_OPENED',
+    'ORDER_DISPUTE_RESOLVED',
     'ORDER_DELIVERY_REQUESTED',
     'ORDER_ASSIGNED_TO_MERCHANT',
   ],
@@ -178,6 +190,8 @@ export interface NotificationWirePayload {
   category: BackendNotificationCategory;
   title: string;
   message: string;
+  actionUrl?: string;
+  actionLabel?: string;
   amount?: number;
   currency?: string;
   metadata?: Record<string, unknown>;
@@ -210,6 +224,9 @@ export function notificationTypeToUiType(
     'ORDER_COMPLETED',
     'ORDER_FULFILLED',
     'ORDER_READY_FOR_PICKUP',
+    'ORDER_PICKED_UP',
+    'ORDER_RECEIVED_CONFIRMED',
+    'ORDER_DISPUTE_RESOLVED',
     'ORDER_DELIVERY_REQUESTED',
     'MERCHANT_APPROVED',
     'MERCHANT_BONUS_CREDITED',
@@ -223,6 +240,7 @@ export function notificationTypeToUiType(
     'WITHDRAWAL_REQUESTED',
     'ORDER_CREATED',
     'ORDER_ASSIGNED_TO_MERCHANT',
+    'ORDER_DISPUTE_OPENED',
     'MERCHANT_APPLICATION_SUBMITTED',
     'BUSINESS_CONSULTANT_APPLICATION_SUBMITTED',
   ];

@@ -117,6 +117,21 @@
               Order Actions
             </h2>
 
+            @if (disputesLoading()) {
+              <p class="mb-4 text-sm text-mlm-secondary">Checking dispute status…</p>
+            } @else if (disputesLoadError()) {
+              <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm">
+                <p class="text-red-700">{{ disputesLoadError() }}</p>
+                <button
+                  type="button"
+                  class="mt-2 font-semibold text-mlm-primary"
+                  (click)="retryDisputes()"
+                >
+                  Try again
+                </button>
+              </div>
+            }
+
             @if (isAwaitingPickupCollection()) {
               <div
                 class="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900"
@@ -199,6 +214,37 @@
               }
             </div>
           </div>
+
+          @if (disputeHistory().length > 0) {
+            <div class="pb-6 border-b border-gray-200 mb-6">
+              <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">
+                Dispute history
+              </h2>
+              <div class="space-y-3">
+                @for (dispute of disputeHistory(); track dispute.id) {
+                  <div class="rounded-lg border border-gray-200 p-4 text-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <span class="font-semibold text-mlm-text">{{ dispute.reason }}</span>
+                      <span class="text-xs font-bold uppercase text-mlm-secondary">
+                        {{ dispute.status }}
+                      </span>
+                    </div>
+                    @if (dispute.outcome) {
+                      <p class="mt-2 text-mlm-text">Outcome: {{ dispute.outcome }}</p>
+                    }
+                    @if (dispute.adminNotes) {
+                      <p class="mt-1 text-mlm-secondary">{{ dispute.adminNotes }}</p>
+                    }
+                    @if (dispute.resolvedAt || dispute.closedAt) {
+                      <p class="mt-2 text-xs text-mlm-secondary">
+                        Updated {{ formatDate((dispute.resolvedAt || dispute.closedAt)!) }}
+                      </p>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
 
           <div class="pb-6">
             <h2 class="text-sm font-bold text-mlm-secondary uppercase tracking-widest mb-4">

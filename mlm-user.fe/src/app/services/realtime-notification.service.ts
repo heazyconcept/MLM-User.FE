@@ -210,7 +210,7 @@ export class RealTimeNotificationService {
                 ? this.getEarningsAction(notif.actionUrl, notif.actionLabel)
                 : isConsultant
                   ? this.getConsultantAction(notif.actionUrl, notif.actionLabel)
-                  : undefined;
+                  : this.getNotificationAction(notif.actionUrl, notif.actionLabel);
           const amount = carriesAmount
             ? notif.amount ?? this.getMetadataNumber(notif.metadata, 'amount')
             : undefined;
@@ -409,10 +409,13 @@ export class RealTimeNotificationService {
             )
           : isConsultant
             ? this.getConsultantAction(
-                this.getMetadataString(payload.metadata, 'actionUrl'),
-                this.getMetadataString(payload.metadata, 'actionLabel')
+                payload.actionUrl ?? this.getMetadataString(payload.metadata, 'actionUrl'),
+                payload.actionLabel ?? this.getMetadataString(payload.metadata, 'actionLabel')
               )
-            : undefined;
+            : this.getNotificationAction(
+                payload.actionUrl ?? this.getMetadataString(payload.metadata, 'actionUrl'),
+                payload.actionLabel ?? this.getMetadataString(payload.metadata, 'actionLabel')
+              );
     const amount = carriesAmount
       ? payload.amount ?? this.getMetadataNumber(payload.metadata, 'amount')
       : undefined;
@@ -637,6 +640,14 @@ export class RealTimeNotificationService {
     return {
       redirectTo: actionUrl ?? '/consultant',
       actionLabel: actionLabel ?? 'View Consultant Program',
+    };
+  }
+
+  private getNotificationAction(actionUrl?: string, actionLabel?: string) {
+    if (!actionUrl && !actionLabel) return undefined;
+    return {
+      redirectTo: actionUrl,
+      actionLabel: actionLabel ?? 'View details',
     };
   }
 

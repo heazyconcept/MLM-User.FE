@@ -6,6 +6,7 @@ import {
   input,
   output,
   ChangeDetectionStrategy,
+  OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -20,8 +21,8 @@ import {
 import {
   LocationSelectorComponent,
   PickupLocation,
+  PickupStockState,
 } from '../../../components/location-selector/location-selector.component';
-import { NIGERIAN_STATES } from '../../../core/constants/states.constants';
 import { getDeliveryFee } from '../../../core/constants/delivery.constants';
 import { formatMerchantUsernameLabel } from '../../../core/utils/merchant-display.util';
 import {
@@ -29,6 +30,11 @@ import {
   PendingCheckoutData,
 } from '../../../services/cart-checkout.service';
 import { CheckoutGroup } from '../../../services/order.service';
+import {
+  GeographyCountry,
+  GeographyService,
+  GeographySubdivision,
+} from '../../../services/geography.service';
 
 interface CartLine {
   productId: string;
@@ -40,15 +46,23 @@ type MissingItemAssignment =
   | { mode: 'pickup'; merchantId: string; merchantName: string }
   | { mode: 'delivery' };
 
+interface CheckoutGeography {
+  countryCode: string;
+  countryName: string;
+  subdivisionCode: string;
+  subdivisionName: string;
+}
+
 @Component({
   selector: 'app-order-preview',
   imports: [CommonModule, FormsModule, LocationSelectorComponent],
   templateUrl: './order-preview.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class OrderPreviewComponent {
+export class OrderPreviewComponent implements OnInit {
   private orderService = inject(OrderService);
   private merchantService = inject(MerchantService);
+  private geographyService = inject(GeographyService);
 
   pendingOrderData = input<any>(null);
   submitting = input<boolean>(false);
@@ -56,12 +70,14 @@ export class OrderPreviewComponent {
 
   fulfilmentOption = this.orderService.fulfilmentOption;
   selectedPickupId = signal<string | null>(null);
-  selectedState = signal<string>('');
+  selectedCountryCode = signal('');
+  checkoutGeography = signal<CheckoutGeography | null>(null);
+  countries = signal<GeographyCountry[]>([]);
+  subdivisions = signal<GeographySubdivision[]>([]);
+  geographyLoading = signal(false);
+  geographyError = signal<string | null>(null);
   deliveryAddress = signal<string>('');
-  deliveryState = signal<string>('');
   deliveryDisclaimerAccepted = signal(true);
-
-  readonly nigerianStates = NIGERIAN_STATES;
 
   merchants = signal<AvailableMerchant[]>([]);
   pickupLocationsLoading = signal(false);
@@ -75,7 +91,6 @@ export class OrderPreviewComponent {
 
   pickupLocations = computed<PickupLocation[]>(() =>
     this.merchants().map((m) => {
-      const hasStock = this.merchantHasStockForCart(m);
       return {
         id: m.id,
         name:
@@ -84,24 +99,28 @@ export class OrderPreviewComponent {
         address: m.address || undefined,
         phoneNumber: m.phoneNumber || undefined,
         pickupAvailable: m.pickupAvailable,
-        stockInStock: hasStock,
+        stockState: this.merchantStockState(m),
+        usingPrimaryAddressFallback: m.usingPrimaryAddressFallback,
       };
     }),
   );
 
   hasSelectablePickup = computed(() =>
-    this.pickupLocations().some((l) => l.pickupAvailable && l.stockInStock === true),
+    this.pickupLocations().some((l) => l.pickupAvailable && l.stockState !== 'none'),
   );
 
   deliveryFee = computed(() => {
-    const state = this.deliveryState();
-    if (!state || this.fulfilmentOption() !== 'delivery') return 0;
-    return getDeliveryFee(state);
+    const geography = this.checkoutGeography();
+    if (!geography || geography.countryCode !== 'NG' || this.fulfilmentOption() !== 'delivery') {
+      return 0;
+    }
+    return getDeliveryFee(geography.subdivisionName);
   });
 
   emptyPickupMessage = computed(() => {
-    if (!this.selectedState() || this.merchants().length > 0) return null;
-    return `No active merchants in ${this.selectedState()}.`;
+    const geography = this.checkoutGeography();
+    if (!geography || this.merchants().length > 0) return null;
+    return `No active merchants in ${geography.subdivisionName}.`;
   });
 
   showNoSelectableBanner = computed(() => {
@@ -133,33 +152,56 @@ export class OrderPreviewComponent {
     }));
   });
 
+  deliveryAvailable = computed(() => this.checkoutGeography()?.countryCode === 'NG');
+
+  ngOnInit(): void {
+    this.loadCountries();
+  }
+
   setOption(option: 'pickup' | 'delivery'): void {
     this.orderService.setFulfilmentOption(option);
     this.resetAvailability();
+    this.selectedPickupId.set(null);
     if (option === 'delivery') {
-      this.selectedPickupId.set(null);
-      this.selectedState.set('');
       this.merchants.set([]);
-    } else {
-      this.deliveryState.set('');
-      this.deliveryAddress.set('');
+    } else if (this.checkoutGeography()) {
+      this.loadMerchants();
     }
   }
 
-  onStateChange(state: string): void {
-    this.selectedState.set(state);
+  onCountryChange(countryCode: string): void {
+    this.selectedCountryCode.set(countryCode);
+    this.checkoutGeography.set(null);
+    this.subdivisions.set([]);
     this.selectedPickupId.set(null);
+    this.merchants.set([]);
     this.resetAvailability();
-    if (!state) {
-      this.merchants.set([]);
-      this.pickupLocationsError.set(null);
+    this.pickupLocationsError.set(null);
+    if (!countryCode) {
       return;
     }
-    this.loadMerchantsForState(state);
+    this.loadSubdivisions(countryCode);
   }
 
-  onDeliveryStateChange(state: string): void {
-    this.deliveryState.set(state);
+  onSubdivisionChange(subdivisionCode: string): void {
+    const country = this.countries().find((item) => item.code === this.selectedCountryCode());
+    const subdivision = this.subdivisions().find((item) => item.code === subdivisionCode);
+    this.selectedPickupId.set(null);
+    this.merchants.set([]);
+    this.resetAvailability();
+    if (!country || !subdivision) {
+      this.checkoutGeography.set(null);
+      return;
+    }
+    this.checkoutGeography.set({
+      countryCode: country.code,
+      countryName: country.name,
+      subdivisionCode: subdivision.code,
+      subdivisionName: subdivision.name,
+    });
+    if (this.fulfilmentOption() === 'pickup') {
+      this.loadMerchants();
+    }
   }
 
   onDeliveryAddressInput(event: Event): void {
@@ -168,7 +210,7 @@ export class OrderPreviewComponent {
 
   onLocationSelect(id: string): void {
     const loc = this.pickupLocations().find((l) => l.id === id);
-    if (!loc?.pickupAvailable || loc.stockInStock !== true) return;
+    if (!loc?.pickupAvailable || loc.stockState === 'none') return;
     this.selectedPickupId.set(id);
     this.checkMerchantAvailability(id);
   }
@@ -222,7 +264,7 @@ export class OrderPreviewComponent {
     if (this.submitting()) return false;
 
     if (this.fulfilmentOption() === 'pickup') {
-      if (!this.selectedState() || !this.selectedPickupId()) return false;
+      if (!this.checkoutGeography() || !this.selectedPickupId()) return false;
       if (this.availabilityLoading()) return false;
       if (this.needsSplitResolution() && this.unresolvedMissingCount() > 0) return false;
       const groups = this.checkoutGroups();
@@ -230,13 +272,13 @@ export class OrderPreviewComponent {
     }
 
     const address = this.deliveryAddress().trim();
-    return address.length >= 10 && !!this.deliveryState();
+    return address.length >= 10 && this.deliveryAvailable();
   }
 
   confirmButtonLabel(): string {
     if (this.submitting()) return 'Processing checkout…';
     if (this.fulfilmentOption() === 'pickup') {
-      if (!this.selectedState()) return 'Select a state';
+      if (!this.checkoutGeography()) return 'Select a location';
       if (this.pickupLocationsLoading()) return 'Loading merchants…';
       if (this.availabilityLoading()) return 'Checking stock…';
       if (!this.selectedPickupId()) return 'Select a pickup merchant';
@@ -246,7 +288,8 @@ export class OrderPreviewComponent {
       if (this.splitSummary().length > 1) return 'Confirm split order';
       return 'Confirm Order';
     }
-    if (!this.deliveryState()) return 'Select a state';
+    if (!this.checkoutGeography()) return 'Select a location';
+    if (!this.deliveryAvailable()) return 'Delivery unavailable for this country';
     if (this.deliveryAddress().trim().length < 10) return 'Enter full delivery address';
     return 'Confirm Order';
   }
@@ -254,17 +297,21 @@ export class OrderPreviewComponent {
   onConfirm(): void {
     if (!this.canConfirm()) return;
 
-    const state =
-      this.fulfilmentOption() === 'pickup' ? this.selectedState() : this.deliveryState();
+    const geography = this.checkoutGeography();
 
     const groups =
       this.fulfilmentOption() === 'delivery'
         ? this.buildDeliveryOnlyGroups()
         : this.checkoutGroups();
 
-    if (!state || groups.length === 0) return;
+    if (!geography || groups.length === 0) return;
 
-    this.orderConfirmed.emit({ state, groups });
+    this.orderConfirmed.emit({
+      countryCode: geography.countryCode,
+      subdivisionCode: geography.subdivisionCode,
+      state: geography.subdivisionName,
+      groups,
+    });
   }
 
   private resetAvailability(): void {
@@ -273,11 +320,49 @@ export class OrderPreviewComponent {
     this.availabilityError.set(null);
   }
 
-  private loadMerchantsForState(state: string): void {
+  retryGeography(): void {
+    if (this.selectedCountryCode()) {
+      this.loadSubdivisions(this.selectedCountryCode());
+    } else {
+      this.loadCountries();
+    }
+  }
+
+  retryPickupMerchants(): void {
+    this.loadMerchants();
+  }
+
+  private loadCountries(): void {
+    this.geographyLoading.set(true);
+    this.geographyError.set(null);
+    this.geographyService.fetchCountries().subscribe((countries) => {
+      this.countries.set(countries);
+      this.geographyLoading.set(false);
+      this.geographyError.set(this.geographyService.error());
+    });
+  }
+
+  private loadSubdivisions(countryCode: string): void {
+    this.geographyLoading.set(true);
+    this.geographyError.set(null);
+    this.geographyService.fetchSubdivisions(countryCode).subscribe((subdivisions) => {
+      this.subdivisions.set(subdivisions);
+      this.geographyLoading.set(false);
+      this.geographyError.set(this.geographyService.error());
+    });
+  }
+
+  private loadMerchants(): void {
+    const geography = this.checkoutGeography();
+    if (!geography) return;
     this.pickupLocationsLoading.set(true);
     this.pickupLocationsError.set(null);
 
-    this.merchantService.fetchPickupMerchantsForCart(state, this.cartLines()).subscribe({
+    this.merchantService.fetchPickupMerchantsForCart({
+      countryCode: geography.countryCode,
+      subdivisionCode: geography.subdivisionCode,
+      state: geography.subdivisionName,
+    }, this.cartLines()).subscribe({
       next: (merchants) => {
         this.merchants.set(merchants);
         this.pickupLocationsLoading.set(false);
@@ -286,7 +371,7 @@ export class OrderPreviewComponent {
         this.pickupLocationsError.set(
           MerchantService.extractApiErrorMessage(
             err,
-            'Could not load pickup merchants for this state. Try again or choose delivery.',
+            'Could not load pickup merchants for this location. Try again or choose delivery.',
           ),
         );
         this.merchants.set([]);
@@ -296,9 +381,9 @@ export class OrderPreviewComponent {
   }
 
   private checkMerchantAvailability(merchantId: string): void {
-    const state = this.selectedState();
+    const geography = this.checkoutGeography();
     const lines = this.cartLines();
-    if (!state || lines.length === 0) return;
+    if (!geography || lines.length === 0) return;
 
     this.availabilityLoading.set(true);
     this.availabilityError.set(null);
@@ -307,7 +392,9 @@ export class OrderPreviewComponent {
 
     this.merchantService
       .checkCheckoutAvailability({
-        state,
+        countryCode: geography.countryCode,
+        subdivisionCode: geography.subdivisionCode,
+        state: geography.subdivisionName,
         items: lines.map((l) => ({ productId: l.productId, quantity: l.quantity })),
         selectedMerchantId: merchantId,
       })
@@ -327,28 +414,23 @@ export class OrderPreviewComponent {
       });
   }
 
-  private merchantHasStockForCart(merchant: AvailableMerchant): boolean {
-    if (merchant.requestedProductInStock != null) {
-      return merchant.requestedProductInStock;
-    }
-    return this.merchantCanFulfillCart(merchant);
-  }
-
-  private merchantCanFulfillCart(merchant: AvailableMerchant): boolean {
+  private merchantStockState(merchant: AvailableMerchant): PickupStockState {
     const lines = this.cartLines();
     if (lines.length === 0) {
-      return merchant.requestedProductInStock === true;
+      return merchant.requestedProductInStock === true ? 'full' : 'none';
     }
-    return lines.every((line) => {
+    const availableQuantities = lines.map((line) => {
       const product = merchant.products.find((p) => p.id === line.productId);
-      if (!product) return false;
-      if (product.inStock === true) return true;
-      if (product.inStock === false) return false;
+      if (!product || product.inStock === false) return 0;
       if (product.stockQuantity != null) {
-        return product.stockQuantity >= line.quantity;
+        return Math.min(product.stockQuantity, line.quantity);
       }
-      return false;
+      return product.inStock === true ? line.quantity : 0;
     });
+    if (availableQuantities.every((quantity, index) => quantity >= lines[index].quantity)) {
+      return 'full';
+    }
+    return availableQuantities.some((quantity) => quantity > 0) ? 'partial' : 'none';
   }
 
   private buildDeliveryOnlyGroups(): CheckoutGroup[] {
@@ -430,8 +512,8 @@ export class OrderPreviewComponent {
   }
 
   private buildAdminDeliveryAddress(): string {
-    const state = this.selectedState();
-    return `Admin delivery — ${state} (fulfilled by Segulah)`;
+    const geography = this.checkoutGeography();
+    return `Admin delivery — ${geography?.subdivisionName ?? ''} (fulfilled by Segulah)`;
   }
 
   private groupLabel(group: CheckoutGroup): string {

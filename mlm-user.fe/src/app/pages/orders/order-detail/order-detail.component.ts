@@ -37,22 +37,27 @@ export class OrderDetailComponent implements OnInit {
   disputeNotes = signal('');
   disputeEvidence = signal<File[]>([]);
   disputeError = signal<string | null>(null);
+  disputesLoading = signal(true);
+  disputesLoadError = signal<string | null>(null);
 
   canConfirmPickup = computed(() => {
     const o = this.order();
-    if (!o) return false;
+    if (!o || this.disputesLoading() || this.disputesLoadError()) return false;
     return OrderService.canConfirmPickupReceived(o, this.disputes());
   });
 
   canOpenDispute = computed(() => {
     const o = this.order();
-    if (!o) return false;
+    if (!o || this.disputesLoading() || this.disputesLoadError()) return false;
     return OrderService.canOpenPickupDispute(o, this.disputes());
   });
 
-  hasOpenDispute = computed(() => OrderService.hasOpenDispute(this.disputes()));
+  hasOpenDispute = computed(
+    () => this.order()?.hasOpenDispute === true || OrderService.hasOpenDispute(this.disputes()),
+  );
 
   openDisputeRecord = computed(() => this.disputes().find((d) => d.status === 'OPEN') ?? null);
+  disputeHistory = computed(() => this.disputes().filter((d) => d.status !== 'OPEN'));
 
   isAwaitingPickupCollection = computed(() => {
     const o = this.order();
@@ -169,7 +174,7 @@ export class OrderDetailComponent implements OnInit {
   }
 
   private loadOrder(id: string): void {
-    this.orderService.getOrderById(id).subscribe((o) => {
+    this.orderService.getOrderById(id, true).subscribe((o) => {
       if (!o) {
         this.router.navigate(['/orders']);
         return;
@@ -181,9 +186,26 @@ export class OrderDetailComponent implements OnInit {
   }
 
   private loadDisputes(orderId: string): void {
-    this.orderService.getOrderDisputes(orderId).subscribe((rows) => {
-      this.disputes.set(rows);
+    this.disputesLoading.set(true);
+    this.disputesLoadError.set(null);
+    this.orderService.getOrderDisputes(orderId).subscribe({
+      next: (rows) => {
+        this.disputes.set(rows);
+        this.disputesLoading.set(false);
+      },
+      error: () => {
+        this.disputes.set([]);
+        this.disputesLoadError.set(
+          'Could not verify this order’s dispute status. Actions remain disabled.',
+        );
+        this.disputesLoading.set(false);
+      },
     });
+  }
+
+  retryDisputes(): void {
+    const orderId = this.order()?.id;
+    if (orderId) this.loadDisputes(orderId);
   }
 
   private refreshOrder(id: string): void {
