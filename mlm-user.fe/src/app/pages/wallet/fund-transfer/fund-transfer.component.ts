@@ -24,7 +24,6 @@ import {
 } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
 import { AuthService } from '../../../services/auth.service';
-import { ModalService } from '../../../services/modal.service';
 import {
   FUND_TRANSFER_SOURCE_OPTIONS,
   getFundTransferTargetOptions,
@@ -53,12 +52,9 @@ export class FundTransferComponent implements OnInit {
   private walletService = inject(WalletService);
   private userService = inject(UserService);
   private authService = inject(AuthService);
-  private modalService = inject(ModalService);
 
   isLoading = signal(true);
   isSubmitting = signal(false);
-  pinSetupSubmitting = signal(false);
-  formState = signal<'PIN_SETUP' | 'FORM'>('FORM');
   pinError = signal<string | null>(null);
   recipientError = signal<string | null>(null);
 
@@ -79,7 +75,6 @@ export class FundTransferComponent implements OnInit {
     toWalletType: ['REGISTRATION' as WalletType, Validators.required],
     amount: [null as number | null, [Validators.required, Validators.min(1)]],
     pin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
-    confirmPin: [''],
   });
 
   private fromWalletTypeValue = signal<FundTransferSourceWallet>('CASH');
@@ -145,7 +140,6 @@ export class FundTransferComponent implements OnInit {
     });
 
     effect(() => {
-      if (this.formState() !== 'FORM') return;
       const max = this.sourceBalance();
       const amountCtrl = this.transferForm.get('amount');
       if (amountCtrl) {
@@ -160,111 +154,14 @@ export class FundTransferComponent implements OnInit {
     const userCurrency = this.userService.displayCurrency();
     this.transferCurrency.set(userCurrency);
 
-    if (!this.hasPin()) {
-      this.setFormState('PIN_SETUP');
-    } else {
-      this.setFormState('FORM');
-    }
-
     this.walletService.fetchWallets().subscribe({
       next: () => this.isLoading.set(false),
       error: () => this.isLoading.set(false),
     });
   }
 
-  setFormState(state: 'PIN_SETUP' | 'FORM'): void {
-    this.formState.set(state);
-
-    const recipientCtrl = this.transferForm.get('recipientUsername')!;
-    const fromCtrl = this.transferForm.get('fromWalletType')!;
-    const toCtrl = this.transferForm.get('toWalletType')!;
-    const amountCtrl = this.transferForm.get('amount')!;
-    const pinCtrl = this.transferForm.get('pin')!;
-    const confirmPinCtrl = this.transferForm.get('confirmPin')!;
-
-    recipientCtrl.clearValidators();
-    fromCtrl.clearValidators();
-    toCtrl.clearValidators();
-    amountCtrl.clearValidators();
-    pinCtrl.clearValidators();
-    confirmPinCtrl.clearValidators();
-    this.transferForm.clearValidators();
-
-    if (state === 'PIN_SETUP') {
-      pinCtrl.setValidators([Validators.required, Validators.pattern(/^\d{4}$/)]);
-      confirmPinCtrl.setValidators([Validators.required, Validators.pattern(/^\d{4}$/)]);
-      this.transferForm.addValidators(this.pinMatchValidator);
-    } else {
-      recipientCtrl.setValidators([Validators.required, Validators.pattern(/\S+/)]);
-      fromCtrl.setValidators([Validators.required]);
-      toCtrl.setValidators([Validators.required]);
-      const max = this.sourceBalance();
-      amountCtrl.setValidators([Validators.required, Validators.min(1), Validators.max(max)]);
-      pinCtrl.setValidators([Validators.required, Validators.pattern(/^\d{4}$/)]);
-    }
-
-    recipientCtrl.updateValueAndValidity();
-    fromCtrl.updateValueAndValidity();
-    toCtrl.updateValueAndValidity();
-    amountCtrl.updateValueAndValidity();
-    pinCtrl.updateValueAndValidity();
-    confirmPinCtrl.updateValueAndValidity();
-    this.transferForm.updateValueAndValidity();
-  }
-
-  private pinMatchValidator = (control: {
-    get: (name: string) => {
-      value: string;
-      errors?: Record<string, unknown> | null;
-      setErrors: (e: Record<string, unknown> | null) => void;
-    } | null;
-  }) => {
-    const pin = control.get('pin')?.value;
-    const confirmPinCtrl = control.get('confirmPin');
-    const confirmPin = confirmPinCtrl?.value;
-    if (pin && confirmPin && pin !== confirmPin) {
-      confirmPinCtrl?.setErrors({ ...(confirmPinCtrl.errors ?? {}), pinMismatch: true });
-      return { pinMismatch: true };
-    }
-    if (confirmPinCtrl?.errors?.['pinMismatch']) {
-      const { pinMismatch: _removed, ...rest } = confirmPinCtrl.errors;
-      confirmPinCtrl.setErrors(Object.keys(rest).length ? rest : null);
-    }
-    return null;
-  };
-
-  onPinSetupSubmit(): void {
-    const pinCtrl = this.transferForm.get('pin');
-    const confirmPinCtrl = this.transferForm.get('confirmPin');
-    if (pinCtrl?.invalid || confirmPinCtrl?.invalid || this.isImpersonating()) return;
-
-    this.pinSetupSubmitting.set(true);
-    const pin = this.transferForm.value.pin ?? '';
-    const confirmPin = this.transferForm.value.confirmPin ?? '';
-
-    this.userService.setTransactionPin(pin, confirmPin).subscribe({
-      next: () => {
-        this.pinSetupSubmitting.set(false);
-        this.transferForm.patchValue({ pin: '', confirmPin: '' });
-        this.setFormState('FORM');
-      },
-      error: (err) => {
-        this.pinSetupSubmitting.set(false);
-        if (this.isImpersonationBlocked(err)) {
-          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
-          return;
-        }
-        const raw = err?.error?.message;
-        const msg = Array.isArray(raw)
-          ? raw.join(' ')
-          : (raw ?? 'Could not set your PIN. Please try again.');
-        this.modalService.open('error', 'PIN Setup Failed', msg);
-      },
-    });
-  }
-
   onSubmit(): void {
-    if (this.formState() !== 'FORM') return;
+    if (!this.hasPin()) return;
     if (this.transferForm.invalid || this.isFormDisabled()) {
       this.transferForm.markAllAsTouched();
       return;
@@ -284,10 +181,7 @@ export class FundTransferComponent implements OnInit {
     }
 
     const selfUsername = this.currentUsername();
-    if (
-      selfUsername &&
-      recipientUsername.toLowerCase() === selfUsername.toLowerCase()
-    ) {
+    if (selfUsername && recipientUsername.toLowerCase() === selfUsername.toLowerCase()) {
       this.recipientError.set('You cannot transfer funds to yourself.');
       return;
     }
@@ -323,14 +217,5 @@ export class FundTransferComponent implements OnInit {
         }
       },
     });
-  }
-
-  private isImpersonationBlocked(err: unknown): boolean {
-    const error = err as { status?: number; error?: { error?: string; code?: string } } | undefined;
-    return (
-      error?.status === 403 &&
-      (error?.error?.error === 'IMPERSONATION_ACTION_BLOCKED' ||
-        error?.error?.code === 'IMPERSONATION_ACTION_BLOCKED')
-    );
   }
 }

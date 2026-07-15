@@ -1,15 +1,15 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
-
     <div class="px-4 sm:px-6 lg:px-8">
       <div class="mb-6 flex items-center justify-between">
         <h1 class="text-3xl font-bold text-mlm-text">Profile</h1>
         @if (!isEditMode()) {
-          <p-button 
-            label="Edit Profile" 
-            icon="pi pi-pencil" 
+          <p-button
+            label="Edit Profile"
+            icon="pi pi-pencil"
             (onClick)="enterEditMode()"
-            [outlined]="true">
+            [outlined]="true"
+          >
           </p-button>
         }
       </div>
@@ -54,7 +54,9 @@
               <div class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-medium text-mlm-secondary mb-1">Full Name</label>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-1"
+                      >Full Name</label
+                    >
                     <p class="text-mlm-text">{{ user.firstName }} {{ user.lastName }}</p>
                   </div>
                   <div>
@@ -75,7 +77,9 @@
               <div class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-medium text-mlm-secondary mb-1">Phone Number</label>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-1"
+                      >Phone Number</label
+                    >
                     <p class="text-mlm-text">{{ user.phoneNumber || 'Not provided' }}</p>
                   </div>
                   <div>
@@ -96,15 +100,21 @@
               <div class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label class="block text-sm font-medium text-mlm-secondary mb-1">Bank Name</label>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-1"
+                      >Bank Name</label
+                    >
                     <p class="text-mlm-text">{{ user.bankName || 'Not provided' }}</p>
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-mlm-secondary mb-1">Account Number</label>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-1"
+                      >Account Number</label
+                    >
                     <p class="text-mlm-text">{{ user.accountNumber || 'Not provided' }}</p>
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-mlm-secondary mb-1">Account Name</label>
+                    <label class="block text-sm font-medium text-mlm-secondary mb-1"
+                      >Account Name</label
+                    >
                     <p class="text-mlm-text">{{ user.accountName || 'Not provided' }}</p>
                   </div>
                 </div>
@@ -120,7 +130,9 @@
               </ng-template>
               <div class="space-y-4">
                 <div>
-                  <label class="block text-sm font-medium text-mlm-secondary mb-2">Account Status</label>
+                  <label class="block text-sm font-medium text-mlm-secondary mb-2"
+                    >Account Status</label
+                  >
                   @if (user.paymentStatus === 'PAID') {
                     <p-badge value="PAID" severity="success"></p-badge>
                   } @else {
@@ -137,7 +149,9 @@
           <div class="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
             <div class="px-4 sm:px-0">
               <h2 class="text-base font-semibold text-mlm-text">Edit Profile</h2>
-              <p class="mt-1 text-sm text-mlm-secondary">Update your personal information and contact details.</p>
+              <p class="mt-1 text-sm text-mlm-secondary">
+                Update your personal information and contact details.
+              </p>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm md:col-span-2">
@@ -148,14 +162,20 @@
                     <label for="firstName" class="block text-sm font-medium text-mlm-text mb-2">
                       First Name <span class="text-red-500">*</span>
                     </label>
-                    <input 
-                      pInputText 
-                      id="firstName" 
-                      type="text" 
+                    <input
+                      pInputText
+                      id="firstName"
+                      type="text"
                       formControlName="firstName"
                       class="w-full"
-                      [class.ng-invalid]="profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched" />
-                    @if (profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched) {
+                      [class.ng-invalid]="
+                        profileForm.get('firstName')?.invalid &&
+                        profileForm.get('firstName')?.touched
+                      "
+                    />
+                    @if (
+                      profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched
+                    ) {
                       <small class="text-red-500 text-sm mt-1 block">First Name is required.</small>
                     }
                   </div>
@@ -165,28 +185,36 @@
                     <label for="lastName" class="block text-sm font-medium text-mlm-text mb-2">
                       Last Name <span class="text-red-500">*</span>
                     </label>
-                    <input 
-                      pInputText 
-                      id="lastName" 
-                      type="text" 
+                    <input
+                      pInputText
+                      id="lastName"
+                      type="text"
                       formControlName="lastName"
                       class="w-full"
-                      [class.ng-invalid]="profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched" />
-                    @if (profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched) {
+                      [class.ng-invalid]="
+                        profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched
+                      "
+                    />
+                    @if (
+                      profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched
+                    ) {
                       <small class="text-red-500 text-sm mt-1 block">Last Name is required.</small>
                     }
                   </div>
 
                   <!-- Email (Read-only) -->
                   <div class="sm:col-span-4">
-                    <label for="email" class="block text-sm font-medium text-mlm-text mb-2">Email</label>
-                    <input 
-                      pInputText 
-                      id="email" 
-                      type="email" 
+                    <label for="email" class="block text-sm font-medium text-mlm-text mb-2"
+                      >Email</label
+                    >
+                    <input
+                      pInputText
+                      id="email"
+                      type="email"
                       formControlName="email"
                       [disabled]="true"
-                      class="w-full" />
+                      class="w-full"
+                    />
                     <p class="mt-1 text-sm text-mlm-secondary">Email cannot be changed.</p>
                   </div>
 
@@ -195,111 +223,158 @@
                     <label for="phoneNumber" class="block text-sm font-medium text-mlm-text mb-2">
                       Phone Number <span class="text-red-500">*</span>
                     </label>
-                    <input 
-                      pInputText 
-                      id="phoneNumber" 
-                      type="text" 
+                    <input
+                      pInputText
+                      id="phoneNumber"
+                      type="text"
                       formControlName="phoneNumber"
                       maxlength="11"
                       inputmode="numeric"
                       class="w-full"
-                      (keypress)="$event.charCode >= 48 && $event.charCode <= 57 || $event.preventDefault()"
-                      [class.ng-invalid]="profileForm.get('phoneNumber')?.invalid && profileForm.get('phoneNumber')?.touched" />
-                    @if (profileForm.get('phoneNumber')?.invalid && profileForm.get('phoneNumber')?.touched) {
+                      (keypress)="
+                        ($event.charCode >= 48 && $event.charCode <= 57) || $event.preventDefault()
+                      "
+                      [class.ng-invalid]="
+                        profileForm.get('phoneNumber')?.invalid &&
+                        profileForm.get('phoneNumber')?.touched
+                      "
+                    />
+                    @if (
+                      profileForm.get('phoneNumber')?.invalid &&
+                      profileForm.get('phoneNumber')?.touched
+                    ) {
                       @if (profileForm.get('phoneNumber')?.hasError('required')) {
-                        <small class="text-red-500 text-sm mt-1 block">Phone Number is required.</small>
+                        <small class="text-red-500 text-sm mt-1 block"
+                          >Phone Number is required.</small
+                        >
                       } @else if (profileForm.get('phoneNumber')?.hasError('pattern')) {
-                        <small class="text-red-500 text-sm mt-1 block">Phone Number must be exactly 11 digits (numbers only).</small>
+                        <small class="text-red-500 text-sm mt-1 block"
+                          >Phone Number must be exactly 11 digits (numbers only).</small
+                        >
                       }
                     }
                   </div>
 
                   <!-- Address -->
                   <div class="col-span-full">
-                    <label for="address" class="block text-sm font-medium text-mlm-text mb-2">Address</label>
-                    <textarea 
-                      pTextarea 
-                      id="address" 
+                    <label for="address" class="block text-sm font-medium text-mlm-text mb-2"
+                      >Address</label
+                    >
+                    <textarea
+                      pTextarea
+                      id="address"
                       formControlName="address"
                       rows="3"
                       class="w-full"
-                      [autoResize]="true">
+                      [autoResize]="true"
+                    >
                     </textarea>
                   </div>
 
                   <!-- Bank Name -->
                   <div class="sm:col-span-3">
-                    <label for="bankName" class="block text-sm font-medium text-mlm-text mb-2">Bank Name</label>
-                    <input 
-                      pInputText 
-                      id="bankName" 
-                      type="text" 
+                    <label for="bankName" class="block text-sm font-medium text-mlm-text mb-2"
+                      >Bank Name</label
+                    >
+                    <input
+                      pInputText
+                      id="bankName"
+                      type="text"
                       formControlName="bankName"
                       class="w-full"
-                      [class.ng-invalid]="profileForm.get('bankName')?.invalid && profileForm.get('bankName')?.touched" />
-                    @if (profileForm.get('bankName')?.invalid && profileForm.get('bankName')?.touched) {
+                      [class.ng-invalid]="
+                        profileForm.get('bankName')?.invalid && profileForm.get('bankName')?.touched
+                      "
+                    />
+                    @if (
+                      profileForm.get('bankName')?.invalid && profileForm.get('bankName')?.touched
+                    ) {
                       <small class="text-red-500 text-sm mt-1 block">Bank Name is required.</small>
                     }
                   </div>
 
                   <!-- Account Number -->
                   <div class="sm:col-span-3">
-                    <label for="accountNumber" class="block text-sm font-medium text-mlm-text mb-2">Account Number</label>
-                    <input 
-                      pInputText 
-                      id="accountNumber" 
-                      type="text" 
+                    <label for="accountNumber" class="block text-sm font-medium text-mlm-text mb-2"
+                      >Account Number</label
+                    >
+                    <input
+                      pInputText
+                      id="accountNumber"
+                      type="text"
                       formControlName="accountNumber"
                       class="w-full"
-                      [class.ng-invalid]="profileForm.get('accountNumber')?.invalid && profileForm.get('accountNumber')?.touched" />
-                    @if (profileForm.get('accountNumber')?.invalid && profileForm.get('accountNumber')?.touched) {
+                      [class.ng-invalid]="
+                        profileForm.get('accountNumber')?.invalid &&
+                        profileForm.get('accountNumber')?.touched
+                      "
+                    />
+                    @if (
+                      profileForm.get('accountNumber')?.invalid &&
+                      profileForm.get('accountNumber')?.touched
+                    ) {
                       @if (profileForm.get('accountNumber')?.hasError('required')) {
-                        <small class="text-red-500 text-sm mt-1 block">Account Number is required.</small>
+                        <small class="text-red-500 text-sm mt-1 block"
+                          >Account Number is required.</small
+                        >
                       } @else if (profileForm.get('accountNumber')?.hasError('pattern')) {
-                        <small class="text-red-500 text-sm mt-1 block">Account Number must be 8 to 11 digits.</small>
+                        <small class="text-red-500 text-sm mt-1 block"
+                          >Account Number must be 8 to 11 digits.</small
+                        >
                       }
                     }
                   </div>
 
                   <!-- Account Name -->
                   <div class="sm:col-span-4">
-                    <label for="accountName" class="block text-sm font-medium text-mlm-text mb-2">Account Name</label>
-                    <input 
-                      pInputText 
-                      id="accountName" 
-                      type="text" 
+                    <label for="accountName" class="block text-sm font-medium text-mlm-text mb-2"
+                      >Account Name</label
+                    >
+                    <input
+                      pInputText
+                      id="accountName"
+                      type="text"
                       formControlName="accountName"
                       class="w-full"
-                      [class.ng-invalid]="profileForm.get('accountName')?.invalid && profileForm.get('accountName')?.touched" />
-                    @if (profileForm.get('accountName')?.invalid && profileForm.get('accountName')?.touched) {
-                      <small class="text-red-500 text-sm mt-1 block">Account Name is required.</small>
+                      [class.ng-invalid]="
+                        profileForm.get('accountName')?.invalid &&
+                        profileForm.get('accountName')?.touched
+                      "
+                    />
+                    @if (
+                      profileForm.get('accountName')?.invalid &&
+                      profileForm.get('accountName')?.touched
+                    ) {
+                      <small class="text-red-500 text-sm mt-1 block"
+                        >Account Name is required.</small
+                      >
                     }
                   </div>
                 </div>
               </div>
 
               <!-- Form Actions -->
-              <div class="flex items-center justify-end gap-x-6 border-t border-gray-200 px-4 py-4 sm:px-8">
-                <p-button 
-                  label="Cancel" 
-                  [outlined]="true"
-                  (onClick)="cancelEdit()"
-                  type="button">
+              <div
+                class="flex items-center justify-end gap-x-6 border-t border-gray-200 px-4 py-4 sm:px-8"
+              >
+                <p-button label="Cancel" [outlined]="true" (onClick)="cancelEdit()" type="button">
                 </p-button>
-                <p-button 
-                  label="Save Changes" 
-                  type="submit"
-                  [loading]="isSaving()">
-                </p-button>
+                <p-button label="Save Changes" type="submit" [loading]="isSaving()"> </p-button>
               </div>
             </div>
           </div>
         </form>
 
-        <div class="mt-8 grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
+        <div
+          #transactionPinSection
+          id="transaction-pin"
+          class="mt-8 grid grid-cols-1 gap-x-8 gap-y-8 scroll-mt-6 md:grid-cols-3"
+        >
           <div class="px-4 sm:px-0">
             <h2 class="text-base font-semibold text-mlm-text">Change Password</h2>
-            <p class="mt-1 text-sm text-mlm-secondary">Use a strong password you have not used before.</p>
+            <p class="mt-1 text-sm text-mlm-secondary">
+              Use a strong password you have not used before.
+            </p>
           </div>
 
           <div class="bg-white rounded-xl shadow-sm md:col-span-2">
@@ -307,7 +382,10 @@
               <div class="px-4 py-6 sm:p-8">
                 <div class="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
                   <div class="sm:col-span-4">
-                    <label for="profile-current" class="block text-sm font-medium text-mlm-text mb-2">
+                    <label
+                      for="profile-current"
+                      class="block text-sm font-medium text-mlm-text mb-2"
+                    >
                       Current Password <span class="text-red-500">*</span>
                     </label>
                     <input
@@ -316,9 +394,18 @@
                       type="password"
                       formControlName="currentPassword"
                       class="w-full"
-                      [class.ng-invalid]="passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched" />
-                    @if (passwordForm.get('currentPassword')?.invalid && passwordForm.get('currentPassword')?.touched) {
-                      <small class="text-red-500 text-sm mt-1 block">Current password is required.</small>
+                      [class.ng-invalid]="
+                        passwordForm.get('currentPassword')?.invalid &&
+                        passwordForm.get('currentPassword')?.touched
+                      "
+                    />
+                    @if (
+                      passwordForm.get('currentPassword')?.invalid &&
+                      passwordForm.get('currentPassword')?.touched
+                    ) {
+                      <small class="text-red-500 text-sm mt-1 block"
+                        >Current password is required.</small
+                      >
                     }
                   </div>
 
@@ -332,14 +419,26 @@
                       type="password"
                       formControlName="newPassword"
                       class="w-full"
-                      [class.ng-invalid]="passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched" />
-                    @if (passwordForm.get('newPassword')?.invalid && passwordForm.get('newPassword')?.touched) {
-                      <small class="text-red-500 text-sm mt-1 block">At least 6 characters required.</small>
+                      [class.ng-invalid]="
+                        passwordForm.get('newPassword')?.invalid &&
+                        passwordForm.get('newPassword')?.touched
+                      "
+                    />
+                    @if (
+                      passwordForm.get('newPassword')?.invalid &&
+                      passwordForm.get('newPassword')?.touched
+                    ) {
+                      <small class="text-red-500 text-sm mt-1 block"
+                        >At least 6 characters required.</small
+                      >
                     }
                   </div>
 
                   <div class="sm:col-span-3">
-                    <label for="profile-confirm" class="block text-sm font-medium text-mlm-text mb-2">
+                    <label
+                      for="profile-confirm"
+                      class="block text-sm font-medium text-mlm-text mb-2"
+                    >
                       Confirm Password <span class="text-red-500">*</span>
                     </label>
                     <input
@@ -348,20 +447,30 @@
                       type="password"
                       formControlName="confirmPassword"
                       class="w-full"
-                      [class.ng-invalid]="passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched" />
-                    @if (passwordForm.hasError('passwordMismatch') && passwordForm.get('confirmPassword')?.touched) {
+                      [class.ng-invalid]="
+                        passwordForm.hasError('passwordMismatch') &&
+                        passwordForm.get('confirmPassword')?.touched
+                      "
+                    />
+                    @if (
+                      passwordForm.hasError('passwordMismatch') &&
+                      passwordForm.get('confirmPassword')?.touched
+                    ) {
                       <small class="text-red-500 text-sm mt-1 block">Passwords do not match.</small>
                     }
                   </div>
                 </div>
               </div>
 
-              <div class="flex items-center justify-end gap-x-6 border-t border-gray-200 px-4 py-4 sm:px-8">
+              <div
+                class="flex items-center justify-end gap-x-6 border-t border-gray-200 px-4 py-4 sm:px-8"
+              >
                 <p-button
                   label="Update Password"
                   type="submit"
                   [loading]="isChangingPassword()"
-                  [disabled]="passwordForm.invalid || passwordForm.pristine || isChangingPassword()">
+                  [disabled]="passwordForm.invalid || passwordForm.pristine || isChangingPassword()"
+                >
                 </p-button>
               </div>
             </form>
@@ -374,18 +483,24 @@
             <div class="flex items-center gap-2">
               <h2 class="text-base font-semibold text-mlm-text">Transaction PIN</h2>
               @if (hasPin()) {
-                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-semibold">
+                <span
+                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs font-semibold"
+                >
                   <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                   Configured
                 </span>
               } @else {
-                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">
+                <span
+                  class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold"
+                >
                   <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                   Not Set
                 </span>
               }
             </div>
-            <p class="mt-1 text-sm text-mlm-secondary">Your 4-digit PIN is required to authorize withdrawals and other secure operations.</p>
+            <p class="mt-1 text-sm text-mlm-secondary">
+              Your 4-digit PIN is required to authorize withdrawals and other secure operations.
+            </p>
           </div>
 
           <div class="bg-white rounded-xl shadow-sm md:col-span-2 p-6 sm:p-8">
@@ -393,30 +508,28 @@
             @if (pinFormState() === 'IDLE') {
               @if (hasPin()) {
                 <div class="flex gap-3">
-                  <p-button
-                    label="Change PIN"
-                    type="button"
-                    (onClick)="showChangePin()">
+                  <p-button label="Change PIN" type="button" (onClick)="showChangePin()">
                   </p-button>
                   <p-button
                     label="Forgot PIN"
                     type="button"
                     [outlined]="true"
-                    (onClick)="showResetPin()">
+                    (onClick)="showResetPin()"
+                  >
                   </p-button>
                 </div>
               } @else {
                 <div class="space-y-4">
-                  <div class="flex items-start gap-3 p-4 bg-amber-50/50 rounded-xl border border-amber-100/50">
+                  <div
+                    class="flex items-start gap-3 p-4 bg-amber-50/50 rounded-xl border border-amber-100/50"
+                  >
                     <i class="pi pi-info-circle text-amber-500 mt-0.5"></i>
                     <p class="text-xs text-amber-700 leading-relaxed">
-                      You haven't set a transaction PIN yet. Set one up to authorize withdrawals and other secure operations.
+                      You haven't set a transaction PIN yet. Set one up to authorize withdrawals and
+                      other secure operations.
                     </p>
                   </div>
-                  <p-button
-                    label="Set Transaction PIN"
-                    type="button"
-                    (onClick)="showSetupPin()">
+                  <p-button label="Set Transaction PIN" type="button" (onClick)="showSetupPin()">
                   </p-button>
                 </div>
               }
@@ -426,7 +539,11 @@
             @if (pinFormState() === 'CHANGE') {
               <form [formGroup]="changePinForm" (ngSubmit)="submitChangePin()" class="space-y-4">
                 <div>
-                  <label for="profile-pin-old" class="block text-sm font-semibold text-mlm-text mb-2">Current PIN</label>
+                  <label
+                    for="profile-pin-old"
+                    class="block text-sm font-semibold text-mlm-text mb-2"
+                    >Current PIN</label
+                  >
                   <input
                     id="profile-pin-old"
                     type="password"
@@ -435,18 +552,30 @@
                     maxlength="4"
                     placeholder="••••"
                     class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
-                    [class.ng-invalid]="changePinForm.get('oldPin')?.invalid && changePinForm.get('oldPin')?.touched">
-                  @if (changePinForm.get('oldPin')?.invalid && changePinForm.get('oldPin')?.touched) {
+                    [class.ng-invalid]="
+                      changePinForm.get('oldPin')?.invalid && changePinForm.get('oldPin')?.touched
+                    "
+                  />
+                  @if (
+                    changePinForm.get('oldPin')?.invalid && changePinForm.get('oldPin')?.touched
+                  ) {
                     <p class="text-xs font-medium text-red-500 mt-1">
-                      @if (changePinForm.get('oldPin')?.errors?.['required']) { Current PIN is required. }
-                      @else { Must be exactly 4 digits. }
+                      @if (changePinForm.get('oldPin')?.errors?.['required']) {
+                        Current PIN is required.
+                      } @else {
+                        Must be exactly 4 digits.
+                      }
                     </p>
                   }
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label for="profile-pin-new" class="block text-sm font-semibold text-mlm-text mb-2">New PIN</label>
+                    <label
+                      for="profile-pin-new"
+                      class="block text-sm font-semibold text-mlm-text mb-2"
+                      >New PIN</label
+                    >
                     <input
                       id="profile-pin-new"
                       type="password"
@@ -455,13 +584,22 @@
                       maxlength="4"
                       placeholder="••••"
                       class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
-                      [class.ng-invalid]="changePinForm.get('newPin')?.invalid && changePinForm.get('newPin')?.touched">
-                    @if (changePinForm.get('newPin')?.invalid && changePinForm.get('newPin')?.touched) {
+                      [class.ng-invalid]="
+                        changePinForm.get('newPin')?.invalid && changePinForm.get('newPin')?.touched
+                      "
+                    />
+                    @if (
+                      changePinForm.get('newPin')?.invalid && changePinForm.get('newPin')?.touched
+                    ) {
                       <p class="text-xs font-medium text-red-500 mt-1">Must be 4 digits.</p>
                     }
                   </div>
                   <div>
-                    <label for="profile-pin-confirm" class="block text-sm font-semibold text-mlm-text mb-2">Confirm New PIN</label>
+                    <label
+                      for="profile-pin-confirm"
+                      class="block text-sm font-semibold text-mlm-text mb-2"
+                      >Confirm New PIN</label
+                    >
                     <input
                       id="profile-pin-confirm"
                       type="password"
@@ -470,8 +608,15 @@
                       maxlength="4"
                       placeholder="••••"
                       class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
-                      [class.ng-invalid]="changePinForm.hasError('pinMismatch') && changePinForm.get('confirmNewPin')?.touched">
-                    @if (changePinForm.hasError('pinMismatch') && changePinForm.get('confirmNewPin')?.touched) {
+                      [class.ng-invalid]="
+                        changePinForm.hasError('pinMismatch') &&
+                        changePinForm.get('confirmNewPin')?.touched
+                      "
+                    />
+                    @if (
+                      changePinForm.hasError('pinMismatch') &&
+                      changePinForm.get('confirmNewPin')?.touched
+                    ) {
                       <p class="text-xs font-medium text-red-500 mt-1">PINs do not match.</p>
                     }
                   </div>
@@ -482,14 +627,16 @@
                     label="Update PIN"
                     type="submit"
                     [loading]="isPinSaving()"
-                    [disabled]="changePinForm.invalid || isPinSaving()">
+                    [disabled]="changePinForm.invalid || isPinSaving()"
+                  >
                   </p-button>
                   <p-button
                     label="Cancel"
                     type="button"
                     [outlined]="true"
                     (onClick)="cancelPinAction()"
-                    [disabled]="isPinSaving()">
+                    [disabled]="isPinSaving()"
+                  >
                   </p-button>
                 </div>
               </form>
@@ -498,12 +645,15 @@
             <!-- RESET REQUEST (send OTP) -->
             @if (pinFormState() === 'RESET_REQUEST') {
               <div class="space-y-4">
-                <div class="flex items-start gap-3 p-4 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                <div
+                  class="flex items-start gap-3 p-4 bg-blue-50/50 rounded-xl border border-blue-100/50"
+                >
                   <i class="pi pi-envelope text-blue-500 mt-0.5"></i>
                   <div>
                     <p class="text-sm font-semibold text-mlm-text mb-1">Reset via Email OTP</p>
                     <p class="text-xs text-mlm-secondary leading-relaxed">
-                      We'll send a one-time verification code to your registered email. Use it to set a new transaction PIN.
+                      We'll send a one-time verification code to your registered email. Use it to
+                      set a new transaction PIN.
                     </p>
                   </div>
                 </div>
@@ -514,14 +664,16 @@
                     type="button"
                     (onClick)="requestPinResetOtp()"
                     [loading]="isPinSaving()"
-                    [disabled]="isPinSaving()">
+                    [disabled]="isPinSaving()"
+                  >
                   </p-button>
                   <p-button
                     label="Cancel"
                     type="button"
                     [outlined]="true"
                     (onClick)="cancelPinAction()"
-                    [disabled]="isPinSaving()">
+                    [disabled]="isPinSaving()"
+                  >
                   </p-button>
                 </div>
               </div>
@@ -531,7 +683,11 @@
             @if (pinFormState() === 'RESET') {
               <form [formGroup]="resetPinForm" (ngSubmit)="submitResetPin()" class="space-y-4">
                 <div>
-                  <label for="profile-reset-otp" class="block text-sm font-semibold text-mlm-text mb-2">Verification Code (OTP)</label>
+                  <label
+                    for="profile-reset-otp"
+                    class="block text-sm font-semibold text-mlm-text mb-2"
+                    >Verification Code (OTP)</label
+                  >
                   <input
                     id="profile-reset-otp"
                     type="text"
@@ -539,15 +695,24 @@
                     formControlName="otp"
                     placeholder="Enter code from email"
                     class="w-full"
-                    [class.ng-invalid]="resetPinForm.get('otp')?.invalid && resetPinForm.get('otp')?.touched">
+                    [class.ng-invalid]="
+                      resetPinForm.get('otp')?.invalid && resetPinForm.get('otp')?.touched
+                    "
+                  />
                   @if (resetPinForm.get('otp')?.invalid && resetPinForm.get('otp')?.touched) {
-                    <p class="text-xs font-medium text-red-500 mt-1">Verification code is required.</p>
+                    <p class="text-xs font-medium text-red-500 mt-1">
+                      Verification code is required.
+                    </p>
                   }
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label for="profile-reset-new-pin" class="block text-sm font-semibold text-mlm-text mb-2">New PIN</label>
+                    <label
+                      for="profile-reset-new-pin"
+                      class="block text-sm font-semibold text-mlm-text mb-2"
+                      >New PIN</label
+                    >
                     <input
                       id="profile-reset-new-pin"
                       type="password"
@@ -556,13 +721,22 @@
                       maxlength="4"
                       placeholder="••••"
                       class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
-                      [class.ng-invalid]="resetPinForm.get('newPin')?.invalid && resetPinForm.get('newPin')?.touched">
-                    @if (resetPinForm.get('newPin')?.invalid && resetPinForm.get('newPin')?.touched) {
+                      [class.ng-invalid]="
+                        resetPinForm.get('newPin')?.invalid && resetPinForm.get('newPin')?.touched
+                      "
+                    />
+                    @if (
+                      resetPinForm.get('newPin')?.invalid && resetPinForm.get('newPin')?.touched
+                    ) {
                       <p class="text-xs font-medium text-red-500 mt-1">Must be 4 digits.</p>
                     }
                   </div>
                   <div>
-                    <label for="profile-reset-confirm-pin" class="block text-sm font-semibold text-mlm-text mb-2">Confirm PIN</label>
+                    <label
+                      for="profile-reset-confirm-pin"
+                      class="block text-sm font-semibold text-mlm-text mb-2"
+                      >Confirm PIN</label
+                    >
                     <input
                       id="profile-reset-confirm-pin"
                       type="password"
@@ -571,8 +745,15 @@
                       maxlength="4"
                       placeholder="••••"
                       class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
-                      [class.ng-invalid]="resetPinForm.hasError('pinMismatch') && resetPinForm.get('confirmNewPin')?.touched">
-                    @if (resetPinForm.hasError('pinMismatch') && resetPinForm.get('confirmNewPin')?.touched) {
+                      [class.ng-invalid]="
+                        resetPinForm.hasError('pinMismatch') &&
+                        resetPinForm.get('confirmNewPin')?.touched
+                      "
+                    />
+                    @if (
+                      resetPinForm.hasError('pinMismatch') &&
+                      resetPinForm.get('confirmNewPin')?.touched
+                    ) {
                       <p class="text-xs font-medium text-red-500 mt-1">PINs do not match.</p>
                     }
                   </div>
@@ -583,14 +764,16 @@
                     label="Reset PIN"
                     type="submit"
                     [loading]="isPinSaving()"
-                    [disabled]="resetPinForm.invalid || isPinSaving()">
+                    [disabled]="resetPinForm.invalid || isPinSaving()"
+                  >
                   </p-button>
                   <p-button
                     label="Cancel"
                     type="button"
                     [outlined]="true"
                     (onClick)="cancelPinAction()"
-                    [disabled]="isPinSaving()">
+                    [disabled]="isPinSaving()"
+                  >
                   </p-button>
                 </div>
               </form>
@@ -599,9 +782,13 @@
             <!-- SETUP PIN form -->
             @if (pinFormState() === 'SETUP') {
               <form [formGroup]="setupPinForm" (ngSubmit)="submitSetupPin()" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label for="profile-setup-pin" class="block text-sm font-semibold text-mlm-text mb-2">New PIN</label>
+                    <label
+                      for="profile-setup-pin"
+                      class="block text-sm font-semibold text-mlm-text mb-2"
+                      >New PIN</label
+                    >
                     <input
                       id="profile-setup-pin"
                       type="password"
@@ -610,13 +797,20 @@
                       maxlength="4"
                       placeholder="••••"
                       class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
-                      [class.ng-invalid]="setupPinForm.get('pin')?.invalid && setupPinForm.get('pin')?.touched">
+                      [class.ng-invalid]="
+                        setupPinForm.get('pin')?.invalid && setupPinForm.get('pin')?.touched
+                      "
+                    />
                     @if (setupPinForm.get('pin')?.invalid && setupPinForm.get('pin')?.touched) {
                       <p class="text-xs font-medium text-red-500 mt-1">Must be exactly 4 digits.</p>
                     }
                   </div>
                   <div>
-                    <label for="profile-setup-confirm-pin" class="block text-sm font-semibold text-mlm-text mb-2">Confirm PIN</label>
+                    <label
+                      for="profile-setup-confirm-pin"
+                      class="block text-sm font-semibold text-mlm-text mb-2"
+                      >Confirm PIN</label
+                    >
                     <input
                       id="profile-setup-confirm-pin"
                       type="password"
@@ -625,8 +819,15 @@
                       maxlength="4"
                       placeholder="••••"
                       class="w-full text-center text-lg tracking-[0.8em] font-mono font-bold"
-                      [class.ng-invalid]="setupPinForm.hasError('pinMismatch') && setupPinForm.get('confirmPin')?.touched">
-                    @if (setupPinForm.hasError('pinMismatch') && setupPinForm.get('confirmPin')?.touched) {
+                      [class.ng-invalid]="
+                        setupPinForm.hasError('pinMismatch') &&
+                        setupPinForm.get('confirmPin')?.touched
+                      "
+                    />
+                    @if (
+                      setupPinForm.hasError('pinMismatch') &&
+                      setupPinForm.get('confirmPin')?.touched
+                    ) {
                       <p class="text-xs font-medium text-red-500 mt-1">PINs do not match.</p>
                     }
                   </div>
@@ -637,14 +838,16 @@
                     label="Set PIN"
                     type="submit"
                     [loading]="isPinSaving()"
-                    [disabled]="setupPinForm.invalid || isPinSaving()">
+                    [disabled]="setupPinForm.invalid || isPinSaving()"
+                  >
                   </p-button>
                   <p-button
                     label="Cancel"
                     type="button"
                     [outlined]="true"
                     (onClick)="cancelPinAction()"
-                    [disabled]="isPinSaving()">
+                    [disabled]="isPinSaving()"
+                  >
                   </p-button>
                 </div>
               </form>
@@ -655,4 +858,3 @@
     </div>
   </main>
 </div>
-

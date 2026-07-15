@@ -1,4 +1,12 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit, signal, computed, type Signal } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  OnInit,
+  signal,
+  computed,
+  type Signal,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -7,14 +15,18 @@ import { CardModule } from 'primeng/card';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
-import { DynamicDialogConfig, DynamicDialogRef, DynamicDialogModule, DialogService } from 'primeng/dynamicdialog';
+import {
+  DynamicDialogConfig,
+  DynamicDialogRef,
+  DynamicDialogModule,
+  DialogService,
+} from 'primeng/dynamicdialog';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Router } from '@angular/router';
 import { WalletService } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
 import { OnboardingService } from '../../../services/onboarding.service';
-import { ModalService } from '../../../services/modal.service';
 import { formatWithdrawalAmountInWords } from '../../../core/utils/amount-in-words';
 import { ProfileComponent } from '../../profile/profile.component';
 
@@ -30,10 +42,10 @@ import { ProfileComponent } from '../../profile/profile.component';
     ButtonModule,
     MessageModule,
     DecimalPipe,
-    ConfirmDialogModule
+    ConfirmDialogModule,
   ],
   templateUrl: './withdrawal.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WithdrawalComponent implements OnInit {
   private config = inject(DynamicDialogConfig);
@@ -45,8 +57,6 @@ export class WithdrawalComponent implements OnInit {
   private confirmationService = inject(ConfirmationService);
   private router = inject(Router);
   private dialogService = inject(DialogService);
-  private modalService = inject(ModalService);
-
 
   currency = signal<'NGN' | 'USD' | null>(null);
   wallet = computed(() => {
@@ -54,7 +64,7 @@ export class WithdrawalComponent implements OnInit {
     return curr ? this.walletService.getWallet(curr)() : null;
   });
   hasPin = computed(() => this.userService.currentUser()?.hasTransactionPin ?? false);
-  formState = signal<'PIN_SETUP' | 'AMOUNT' | 'PIN_VERIFY'>('AMOUNT');
+  formState = signal<'PIN_REQUIRED' | 'AMOUNT' | 'PIN_VERIFY'>('AMOUNT');
   amountToConfirm = signal<number | null>(null);
 
   private bankDetailsFromApi = signal<{
@@ -69,7 +79,7 @@ export class WithdrawalComponent implements OnInit {
     return {
       bankName: api.bankName || user?.bankName,
       accountNumber: api.accountNumber || user?.accountNumber,
-      accountName: api.accountName || user?.accountName
+      accountName: api.accountName || user?.accountName,
     };
   });
 
@@ -81,18 +91,17 @@ export class WithdrawalComponent implements OnInit {
   private amountValue!: Signal<number | null>;
   /** e.g. "ten thousand naira" */
   amountInWords = computed(() =>
-    formatWithdrawalAmountInWords(this.amountValue(), this.currency())
+    formatWithdrawalAmountInWords(this.amountValue(), this.currency()),
   );
 
   constructor() {
     this.withdrawalForm = this.fb.group({
       amount: [null, [Validators.required, Validators.min(0.01)]],
       pin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
-      confirmPin: ['']
     });
     const amountCtrl = this.withdrawalForm.get('amount')!;
     this.amountValue = toSignal(amountCtrl.valueChanges.pipe(startWith(amountCtrl.value)), {
-      initialValue: amountCtrl.value as number | null
+      initialValue: amountCtrl.value as number | null,
     });
   }
 
@@ -103,7 +112,7 @@ export class WithdrawalComponent implements OnInit {
     }
 
     if (!this.hasPin()) {
-      this.setFormState('PIN_SETUP');
+      this.setFormState('PIN_REQUIRED');
     } else {
       this.setFormState('AMOUNT');
     }
@@ -111,24 +120,17 @@ export class WithdrawalComponent implements OnInit {
     this.refreshBankDetails(true);
   }
 
-  setFormState(state: 'PIN_SETUP' | 'AMOUNT' | 'PIN_VERIFY') {
+  setFormState(state: 'PIN_REQUIRED' | 'AMOUNT' | 'PIN_VERIFY') {
     this.formState.set(state);
 
     const amountCtrl = this.withdrawalForm.get('amount')!;
     const pinCtrl = this.withdrawalForm.get('pin')!;
-    const confirmPinCtrl = this.withdrawalForm.get('confirmPin')!;
 
     // Clear all validators first
     amountCtrl.clearValidators();
     pinCtrl.clearValidators();
-    confirmPinCtrl.clearValidators();
-    this.withdrawalForm.clearValidators();
 
-    if (state === 'PIN_SETUP') {
-      pinCtrl.setValidators([Validators.required, Validators.pattern(/^\d{4}$/)]);
-      confirmPinCtrl.setValidators([Validators.required, Validators.pattern(/^\d{4}$/)]);
-      this.withdrawalForm.addValidators(this.pinMatchValidator);
-    } else if (state === 'AMOUNT') {
+    if (state === 'AMOUNT') {
       const maxVal = this.wallet()?.cashBalance ?? 0;
       amountCtrl.setValidators([Validators.required, Validators.min(0.01), Validators.max(maxVal)]);
     } else if (state === 'PIN_VERIFY') {
@@ -137,27 +139,7 @@ export class WithdrawalComponent implements OnInit {
 
     amountCtrl.updateValueAndValidity();
     pinCtrl.updateValueAndValidity();
-    confirmPinCtrl.updateValueAndValidity();
     this.withdrawalForm.updateValueAndValidity();
-  }
-
-  private pinMatchValidator = (control: any) => {
-    const pin = control.get('pin')?.value;
-    const confirmPin = control.get('confirmPin')?.value;
-    if (pin && confirmPin && pin !== confirmPin) {
-      control.get('confirmPin')?.setErrors({ pinMismatch: true });
-      return { pinMismatch: true };
-    }
-    return null;
-  };
-
-  private isImpersonationBlocked(err: unknown): boolean {
-    const error = err as { status?: number; error?: { error?: string; code?: string } } | undefined;
-    return (
-      error?.status === 403 &&
-      (error?.error?.error === 'IMPERSONATION_ACTION_BLOCKED' ||
-        error?.error?.code === 'IMPERSONATION_ACTION_BLOCKED')
-    );
   }
 
   onSubmit() {
@@ -165,29 +147,7 @@ export class WithdrawalComponent implements OnInit {
 
     const state = this.formState();
 
-    if (state === 'PIN_SETUP') {
-      this.isSubmitting.set(true);
-      const pin = this.withdrawalForm.value.pin;
-      const confirmPin = this.withdrawalForm.value.confirmPin;
-
-      this.userService.setTransactionPin(pin, confirmPin).subscribe({
-        next: () => {
-          this.isSubmitting.set(false);
-          this.withdrawalForm.patchValue({ pin: '', confirmPin: '' });
-          this.setFormState('AMOUNT');
-        },
-        error: (err) => {
-          this.isSubmitting.set(false);
-          if (this.isImpersonationBlocked(err)) {
-            this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
-            return;
-          }
-          const raw = err?.error?.message;
-          const msg = Array.isArray(raw) ? raw.join(' ') : (raw ?? 'Could not set your PIN. Please try again.');
-          this.modalService.open('error', 'PIN Setup Failed', msg);
-        }
-      });
-    } else if (state === 'AMOUNT') {
+    if (state === 'AMOUNT') {
       if (this.hasBankDetails()) {
         this.amountToConfirm.set(this.withdrawalForm.value.amount);
         this.withdrawalForm.patchValue({ pin: '' });
@@ -196,6 +156,14 @@ export class WithdrawalComponent implements OnInit {
     } else if (state === 'PIN_VERIFY') {
       this.processWithdrawal();
     }
+  }
+
+  goToTransactionPinSettings(): void {
+    this.ref.close();
+    void this.router.navigate(['/profile'], {
+      queryParams: { pinAction: 'setup' },
+      fragment: 'transaction-pin',
+    });
   }
 
   goBackToAmount() {
@@ -232,7 +200,7 @@ export class WithdrawalComponent implements OnInit {
         startInEdit: true,
         dialogMode: true,
         closeOnSave: true,
-      }
+      },
     });
 
     ref?.onClose.subscribe(() => {
@@ -244,10 +212,10 @@ export class WithdrawalComponent implements OnInit {
     this.onboardingService.getBankDetails().subscribe({
       next: (data: Record<string, unknown>) => {
         const bankName = (data['bankName'] ?? data['bank_name']) as string | undefined;
-        const accountNumber =
-          (data['accountNumber'] ?? data['account_number']) as string | undefined;
-        const accountNumberMasked =
-          (data['accountNumberMasked'] ?? data['account_number_masked']) as string | undefined;
+        const accountNumber = (data['accountNumber'] ?? data['account_number']) as
+          string | undefined;
+        const accountNumberMasked = (data['accountNumberMasked'] ??
+          data['account_number_masked']) as string | undefined;
         const accountName = (data['accountName'] ?? data['account_name']) as string | undefined;
         const displayAccountNumber = accountNumber ?? accountNumberMasked;
 
@@ -272,7 +240,7 @@ export class WithdrawalComponent implements OnInit {
         if (checkForPrompt) {
           this.maybePromptForMissingBankDetails();
         }
-      }
+      },
     });
   }
 
@@ -283,25 +251,27 @@ export class WithdrawalComponent implements OnInit {
     const curr = this.currency()!;
     const bank = this.bankDetails();
 
-    this.walletService.withdraw({
-      currency: curr,
-      amount,
-      bankName: bank.bankName!,
-      accountNumber: bank.accountNumber!,
-      accountName: bank.accountName!,
-      pin
-    }).subscribe({
-      next: (created) => {
-        this.walletService.fetchWallets().subscribe();
-        this.isSubmitting.set(false);
-        this.ref.close(true);
-        this.router.navigate(['/withdrawals', created.id]);
-      },
-      error: () => {
-        this.isSubmitting.set(false);
-        this.withdrawalForm.patchValue({ pin: '' });
-      }
-    });
+    this.walletService
+      .withdraw({
+        currency: curr,
+        amount,
+        bankName: bank.bankName!,
+        accountNumber: bank.accountNumber!,
+        accountName: bank.accountName!,
+        pin,
+      })
+      .subscribe({
+        next: (created) => {
+          this.walletService.fetchWallets().subscribe();
+          this.isSubmitting.set(false);
+          this.ref.close(true);
+          this.router.navigate(['/withdrawals', created.id]);
+        },
+        error: () => {
+          this.isSubmitting.set(false);
+          this.withdrawalForm.patchValue({ pin: '' });
+        },
+      });
   }
 
   cancel() {
@@ -312,7 +282,7 @@ export class WithdrawalComponent implements OnInit {
   private static formatAmountWithCommas(amount: number): string {
     return amount.toLocaleString('en-US', {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
     });
   }
 }

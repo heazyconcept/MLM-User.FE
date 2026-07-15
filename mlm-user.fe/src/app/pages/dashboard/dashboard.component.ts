@@ -794,24 +794,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.dashboardService
       .getTransactions(this.autoshipPageSize(), cursor, { category: 'autoship' })
       .subscribe({
-      next: (res) => {
-        const nextItems = res.items ?? [];
-        if (cursor) {
-          this.autoshipTransactions.update((items) => [...items, ...nextItems]);
-          this.autoshipPage.update((page) => page + 1);
-        } else {
-          this.autoshipTransactions.set(nextItems);
-        }
-        this.autoshipNextCursor.set(res.nextCursor ?? null);
-        this.autoshipTransactionsLoading.set(false);
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.autoshipTransactions.set([]);
-        this.autoshipNextCursor.set(null);
-        this.autoshipTransactionsLoading.set(false);
-        this.cdr.markForCheck();
-      },
+        next: (res) => {
+          const nextItems = res.items ?? [];
+          if (cursor) {
+            this.autoshipTransactions.update((items) => [...items, ...nextItems]);
+            this.autoshipPage.update((page) => page + 1);
+          } else {
+            this.autoshipTransactions.set(nextItems);
+          }
+          this.autoshipNextCursor.set(res.nextCursor ?? null);
+          this.autoshipTransactionsLoading.set(false);
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          if (!cursor) {
+            this.autoshipTransactions.set([]);
+            this.autoshipNextCursor.set(null);
+          }
+          this.autoshipTransactionsLoading.set(false);
+          this.cdr.markForCheck();
+        },
       });
   }
 
