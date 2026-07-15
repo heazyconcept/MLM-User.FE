@@ -1,7 +1,25 @@
-import { Component, inject, ChangeDetectionStrategy, ChangeDetectorRef, signal, computed, OnInit } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  OnInit,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import {
+  ReactiveFormsModule,
+  FormBuilder,
+  Validators,
+  AbstractControl,
+  ValidationErrors,
+  ValidatorFn,
+} from '@angular/forms';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -24,10 +42,10 @@ import { forkJoin, of } from 'rxjs';
     ButtonModule,
     InputTextModule,
     TextareaModule,
-    BadgeModule
+    BadgeModule,
   ],
   templateUrl: './profile.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfileComponent implements OnInit {
   private fb = inject(FormBuilder);
@@ -35,8 +53,11 @@ export class ProfileComponent implements OnInit {
   private onboardingService = inject(OnboardingService);
   private modalService = inject(ModalService);
   private cdr = inject(ChangeDetectorRef);
+  private route = inject(ActivatedRoute);
   private dialogConfig = inject(DynamicDialogConfig, { optional: true });
   private dialogRef = inject(DynamicDialogRef, { optional: true });
+  private transactionPinSection = viewChild<ElementRef<HTMLElement>>('transactionPinSection');
+  private shouldScrollToTransactionPin = signal(false);
 
   isEditMode = signal<boolean>(false);
   isSaving = signal<boolean>(false);
@@ -57,48 +78,57 @@ export class ProfileComponent implements OnInit {
     bankName: [''],
     accountNumber: [''],
     accountName: [''],
-    accountType: ['SAVINGS']
+    accountType: ['SAVINGS'],
   });
 
   passwordForm = this.fb.group(
     {
       currentPassword: ['', [Validators.required]],
       newPassword: ['', [Validators.required, Validators.minLength(6)]],
-      confirmPassword: ['', [Validators.required]]
+      confirmPassword: ['', [Validators.required]],
     },
-    { validators: this.confirmMatchValidator() }
+    { validators: this.confirmMatchValidator() },
   );
 
   changePinForm = this.fb.group(
     {
       oldPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
       newPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
-      confirmNewPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]]
+      confirmNewPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
     },
-    { validators: this.confirmPinMatchValidator('newPin', 'confirmNewPin') }
+    { validators: this.confirmPinMatchValidator('newPin', 'confirmNewPin') },
   );
 
   resetPinForm = this.fb.group(
     {
       otp: ['', [Validators.required, Validators.minLength(4)]],
       newPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
-      confirmNewPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]]
+      confirmNewPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
     },
-    { validators: this.confirmPinMatchValidator('newPin', 'confirmNewPin') }
+    { validators: this.confirmPinMatchValidator('newPin', 'confirmNewPin') },
   );
 
   setupPinForm = this.fb.group(
     {
       pin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
-      confirmPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]]
+      confirmPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
     },
-    { validators: this.confirmPinMatchValidator('pin', 'confirmPin') }
+    { validators: this.confirmPinMatchValidator('pin', 'confirmPin') },
   );
+
+  constructor() {
+    afterNextRender(() => {
+      if (!this.shouldScrollToTransactionPin()) return;
+      this.transactionPinSection()?.nativeElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  }
 
   ngOnInit(): void {
     const dialogData = this.dialogConfig?.data as
-      | { startInEdit?: boolean; dialogMode?: boolean; closeOnSave?: boolean }
-      | undefined;
+      { startInEdit?: boolean; dialogMode?: boolean; closeOnSave?: boolean } | undefined;
     if (dialogData?.dialogMode) {
       this.isDialogMode.set(true);
       this.closeOnSave = dialogData.closeOnSave !== false;
@@ -111,6 +141,11 @@ export class ProfileComponent implements OnInit {
 
     if (dialogData?.startInEdit) {
       this.isEditMode.set(true);
+    }
+
+    if (this.route.snapshot.queryParamMap.get('pinAction') === 'setup' && !this.hasPin()) {
+      this.showSetupPin();
+      this.shouldScrollToTransactionPin.set(true);
     }
 
     // Reactive bank validators: conditionally require bank fields only if any bank details are filled in
@@ -144,8 +179,10 @@ export class ProfileComponent implements OnInit {
     this.onboardingService.getBankDetails().subscribe({
       next: (data: Record<string, unknown>) => {
         const bankName = (data['bankName'] ?? data['bank_name']) as string | undefined;
-        const accountNumber = (data['accountNumber'] ?? data['account_number']) as string | undefined;
-        const accountNumberMasked = (data['accountNumberMasked'] ?? data['account_number_masked']) as string | undefined;
+        const accountNumber = (data['accountNumber'] ?? data['account_number']) as
+          string | undefined;
+        const accountNumberMasked = (data['accountNumberMasked'] ??
+          data['account_number_masked']) as string | undefined;
         const accountName = (data['accountName'] ?? data['account_name']) as string | undefined;
         const accountType = (data['accountType'] ?? data['account_type']) as string | undefined;
         const displayAccountNumber = accountNumber ?? accountNumberMasked;
@@ -153,18 +190,20 @@ export class ProfileComponent implements OnInit {
           this.userService.updateProfile({
             bankName: bankName ?? undefined,
             accountNumber: displayAccountNumber ?? undefined,
-            accountName: accountName ?? undefined
+            accountName: accountName ?? undefined,
           });
           this.profileForm.patchValue({
             bankName: bankName ?? '',
             accountNumber: displayAccountNumber ?? '',
             accountName: accountName ?? '',
-            accountType: accountType?.toUpperCase() === 'CURRENT' ? 'CURRENT' : 'SAVINGS'
+            accountType: accountType?.toUpperCase() === 'CURRENT' ? 'CURRENT' : 'SAVINGS',
           });
           this.cdr.markForCheck();
         }
       },
-      error: () => { /* silently ignore */ }
+      error: () => {
+        /* silently ignore */
+      },
     });
   }
 
@@ -177,7 +216,7 @@ export class ProfileComponent implements OnInit {
       address: user.address || '',
       bankName: user.bankName || '',
       accountNumber: user.accountNumber || '',
-      accountName: user.accountName || ''
+      accountName: user.accountName || '',
     });
     this.cdr.markForCheck();
   }
@@ -214,14 +253,19 @@ export class ProfileComponent implements OnInit {
         firstName: formValue.firstName?.trim() || undefined,
         lastName: formValue.lastName?.trim() || undefined,
         phone: formValue.phoneNumber?.trim() || undefined,
-        address: formValue.address?.trim() || undefined
+        address: formValue.address?.trim() || undefined,
       };
-      Object.keys(profilePayload).forEach(k => (profilePayload as Record<string, unknown>)[k] === undefined && delete (profilePayload as Record<string, unknown>)[k]);
+      Object.keys(profilePayload).forEach(
+        (k) =>
+          (profilePayload as Record<string, unknown>)[k] === undefined &&
+          delete (profilePayload as Record<string, unknown>)[k],
+      );
 
       const bankName = formValue.bankName?.trim() || '';
       const accountNumber = formValue.accountNumber?.trim() || '';
       const accountName = formValue.accountName?.trim() || '';
-      const accountType = (formValue.accountType === 'CURRENT' ? 'CURRENT' : 'SAVINGS') as 'SAVINGS' | 'CURRENT';
+      const accountType = (formValue.accountType === 'CURRENT' ? 'CURRENT' : 'SAVINGS') as
+        'SAVINGS' | 'CURRENT';
 
       const hasBankInfo = !!(bankName || accountNumber || accountName);
 
@@ -231,7 +275,7 @@ export class ProfileComponent implements OnInit {
             bankName,
             accountNumber,
             accountName,
-            accountType
+            accountType,
           })
         : of(null);
 
@@ -242,10 +286,12 @@ export class ProfileComponent implements OnInit {
         error: (err) => {
           this.isSaving.set(false);
           const raw = err?.error?.message;
-          const msg = Array.isArray(raw) ? raw.join(' ') : (raw ?? 'We couldn\'t save your profile and bank details. Please try again.');
+          const msg = Array.isArray(raw)
+            ? raw.join(' ')
+            : (raw ?? "We couldn't save your profile and bank details. Please try again.");
           this.modalService.open('error', 'Save Failed', msg);
           this.cdr.markForCheck();
-        }
+        },
       });
     } else {
       this.profileForm.markAllAsTouched();
@@ -278,7 +324,11 @@ export class ProfileComponent implements OnInit {
         this.passwordForm.reset();
         this.isChangingPassword.set(false);
         this.cdr.markForCheck();
-        this.modalService.open('success', 'Password Updated', 'Your password has been updated successfully.');
+        this.modalService.open(
+          'success',
+          'Password Updated',
+          'Your password has been updated successfully.',
+        );
       },
       error: (err) => {
         this.isChangingPassword.set(false);
@@ -286,7 +336,7 @@ export class ProfileComponent implements OnInit {
         const raw = err?.error?.message;
         const msg = Array.isArray(raw) ? raw.join(' ') : (raw ?? 'Please try again.');
         this.modalService.open('error', 'Password Update Failed', msg);
-      }
+      },
     });
   }
 
@@ -327,18 +377,26 @@ export class ProfileComponent implements OnInit {
         this.isPinSaving.set(false);
         this.pinFormState.set('IDLE');
         this.cdr.markForCheck();
-        this.modalService.open('success', 'PIN Set', 'Your transaction PIN has been set successfully.');
+        this.modalService.open(
+          'success',
+          'PIN Set',
+          'Your transaction PIN has been set successfully.',
+        );
       },
       error: (err) => {
         this.isPinSaving.set(false);
         this.cdr.markForCheck();
         if (this.isImpersonationBlocked(err)) {
-          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
+          this.modalService.open(
+            'error',
+            'Action Disabled',
+            'Action disabled during impersonation.',
+          );
           return;
         }
         const msg = err?.error?.message ?? 'Could not set transaction PIN. Please try again.';
         this.modalService.open('error', 'PIN Setup Failed', msg);
-      }
+      },
     });
   }
 
@@ -346,24 +404,36 @@ export class ProfileComponent implements OnInit {
     if (this.changePinForm.invalid) return;
     this.isPinSaving.set(true);
     const { oldPin, newPin, confirmNewPin } = this.changePinForm.getRawValue();
-    this.userService.changeTransactionPin(oldPin ?? '', newPin ?? '', confirmNewPin ?? '').subscribe({
-      next: () => {
-        this.isPinSaving.set(false);
-        this.pinFormState.set('IDLE');
-        this.cdr.markForCheck();
-        this.modalService.open('success', 'PIN Changed', 'Your transaction PIN has been updated successfully.');
-      },
-      error: (err) => {
-        this.isPinSaving.set(false);
-        this.cdr.markForCheck();
-        if (this.isImpersonationBlocked(err)) {
-          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
-          return;
-        }
-        const msg = err?.error?.message ?? 'Could not change PIN. Please check your current PIN and try again.';
-        this.modalService.open('error', 'PIN Change Failed', msg);
-      }
-    });
+    this.userService
+      .changeTransactionPin(oldPin ?? '', newPin ?? '', confirmNewPin ?? '')
+      .subscribe({
+        next: () => {
+          this.isPinSaving.set(false);
+          this.pinFormState.set('IDLE');
+          this.cdr.markForCheck();
+          this.modalService.open(
+            'success',
+            'PIN Changed',
+            'Your transaction PIN has been updated successfully.',
+          );
+        },
+        error: (err) => {
+          this.isPinSaving.set(false);
+          this.cdr.markForCheck();
+          if (this.isImpersonationBlocked(err)) {
+            this.modalService.open(
+              'error',
+              'Action Disabled',
+              'Action disabled during impersonation.',
+            );
+            return;
+          }
+          const msg =
+            err?.error?.message ??
+            'Could not change PIN. Please check your current PIN and try again.';
+          this.modalService.open('error', 'PIN Change Failed', msg);
+        },
+      });
   }
 
   requestPinResetOtp(): void {
@@ -374,19 +444,29 @@ export class ProfileComponent implements OnInit {
         this.resetPinForm.reset();
         this.pinFormState.set('RESET');
         this.cdr.markForCheck();
-        this.modalService.open('success', 'OTP Sent', 'A reset code has been sent to your registered email.');
+        this.modalService.open(
+          'success',
+          'OTP Sent',
+          'A reset code has been sent to your registered email.',
+        );
       },
       error: (err) => {
         this.isPinSaving.set(false);
         this.cdr.markForCheck();
         if (this.isImpersonationBlocked(err)) {
-          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
+          this.modalService.open(
+            'error',
+            'Action Disabled',
+            'Action disabled during impersonation.',
+          );
           return;
         }
         const raw = err?.error?.message;
-        const msg = Array.isArray(raw) ? raw.join(' ') : (raw ?? 'Could not send reset OTP. Please try again.');
+        const msg = Array.isArray(raw)
+          ? raw.join(' ')
+          : (raw ?? 'Could not send reset OTP. Please try again.');
         this.modalService.open('error', 'Request Failed', msg);
-      }
+      },
     });
   }
 
@@ -399,18 +479,27 @@ export class ProfileComponent implements OnInit {
         this.isPinSaving.set(false);
         this.pinFormState.set('IDLE');
         this.cdr.markForCheck();
-        this.modalService.open('success', 'PIN Reset', 'Your transaction PIN has been reset successfully.');
+        this.modalService.open(
+          'success',
+          'PIN Reset',
+          'Your transaction PIN has been reset successfully.',
+        );
       },
       error: (err) => {
         this.isPinSaving.set(false);
         this.cdr.markForCheck();
         if (this.isImpersonationBlocked(err)) {
-          this.modalService.open('error', 'Action Disabled', 'Action disabled during impersonation.');
+          this.modalService.open(
+            'error',
+            'Action Disabled',
+            'Action disabled during impersonation.',
+          );
           return;
         }
-        const msg = err?.error?.message ?? 'Could not reset PIN. Please check your OTP and try again.';
+        const msg =
+          err?.error?.message ?? 'Could not reset PIN. Please check your OTP and try again.';
         this.modalService.open('error', 'PIN Reset Failed', msg);
-      }
+      },
     });
   }
 
@@ -419,7 +508,11 @@ export class ProfileComponent implements OnInit {
     this.isSaving.set(false);
     this.isEditMode.set(false);
     this.cdr.markForCheck();
-    this.modalService.open('success', 'Profile Updated', 'Your profile has been updated successfully.');
+    this.modalService.open(
+      'success',
+      'Profile Updated',
+      'Your profile has been updated successfully.',
+    );
 
     if (this.isDialogMode() && this.closeOnSave) {
       this.dialogRef?.close(true);
