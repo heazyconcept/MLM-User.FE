@@ -1,7 +1,6 @@
 <div class="min-h-screen bg-mlm-background">
   <main class="py-10">
     <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      
       <!-- Page Header -->
       <div class="mb-10">
         <a
@@ -10,7 +9,9 @@
         >
           <span class="inline-block w-4 h-px bg-current"></span> Back to Dashboard
         </a>
-        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Merchant Profile Settings</h1>
+        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">
+          Merchant Profile Settings
+        </h1>
         <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
         <p class="text-mlm-secondary text-sm">
           Update your business name, contact number, and pickup address or service areas.
@@ -19,20 +20,38 @@
 
       @if (loading()) {
         <!-- Loading State -->
-        <div class="flex items-center justify-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          <div class="w-8 h-8 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"></div>
+        <div
+          class="flex items-center justify-center py-20 bg-white rounded-2xl border border-gray-100 shadow-sm"
+        >
+          <div
+            class="w-8 h-8 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"
+          ></div>
         </div>
       } @else if (profile()?.message) {
         <!-- No Merchant Profile Found -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 flex flex-col items-center text-center gap-4">
+        <div
+          class="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 flex flex-col items-center text-center gap-4"
+        >
           <div class="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mb-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="w-8 h-8 text-amber-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+              />
             </svg>
           </div>
           <h2 class="text-lg font-bold text-mlm-text">No Merchant Profile Found</h2>
           <p class="text-mlm-secondary text-sm max-w-sm">
-            You must apply and be approved as a merchant before you can update your merchant profile.
+            You must apply and be approved as a merchant before you can update your merchant
+            profile.
           </p>
           <a
             routerLink="/merchant/apply"
@@ -44,23 +63,41 @@
       } @else {
         <!-- Profile Form Card -->
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-6">
-          
           <!-- Profile Info Row -->
           <div class="grid grid-cols-2 gap-4 pb-4 border-b border-gray-50 text-xs">
             <div>
               <span class="text-mlm-secondary block mb-0.5">Merchant Type</span>
-              <span class="font-bold text-mlm-text capitalize bg-gray-50 px-2.5 py-1 rounded-md inline-block">{{ profile()?.type?.toLowerCase() }}</span>
+              <span
+                class="font-bold text-mlm-text capitalize bg-gray-50 px-2.5 py-1 rounded-md inline-block"
+                >{{ profile()?.type?.toLowerCase() }}</span
+              >
             </div>
             <div>
               <span class="text-mlm-secondary block mb-0.5">Account Status</span>
-              <span class="font-bold text-mlm-text capitalize bg-green-50 text-green-700 px-2.5 py-1 rounded-md inline-block">{{ profile()?.status?.toLowerCase() }}</span>
+              <span
+                class="font-bold text-mlm-text capitalize bg-green-50 text-green-700 px-2.5 py-1 rounded-md inline-block"
+                >{{ profile()?.status?.toLowerCase() }}</span
+              >
             </div>
           </div>
 
           @if (locationsIncomplete()) {
-            <div class="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            <div
+              class="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                />
               </svg>
               <p class="text-amber-800 text-xs leading-relaxed">
                 @if (merchantType() === 'REGIONAL') {
@@ -77,13 +114,13 @@
           }
 
           <form (ngSubmit)="onSubmit()" #profileForm="ngForm" class="space-y-6">
-
             <!-- Business Name -->
             <div>
               <label
                 for="business-name"
                 class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
-              >Business Name</label>
+                >Business Name</label
+              >
               <input
                 id="business-name"
                 type="text"
@@ -95,7 +132,6 @@
                 (ngModelChange)="businessName.set($event)"
                 class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
               />
-           
             </div>
 
             <!-- Phone Number -->
@@ -103,7 +139,8 @@
               <label
                 for="phone-number"
                 class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
-              >Store Phone Number</label>
+                >Store Phone Number</label
+              >
               <input
                 id="phone-number"
                 type="tel"
@@ -118,8 +155,10 @@
 
             <app-merchant-locations-editor
               [merchantType]="merchantType()"
+              [homeCountryCode]="homeCountryCode()"
               [locations]="locations()"
               [contactPhone]="phoneNumber()"
+              (homeCountryCodeChange)="onHomeCountryChange($event)"
               (locationsChange)="onLocationsChange($event)"
             />
 
@@ -131,9 +170,22 @@
             }
 
             @if (successMessage()) {
-              <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-2.5 transition-all duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <div
+                class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-2.5 transition-all duration-300"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-4 h-4 text-green-600 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <div>
                   <p class="text-green-700 text-xs font-bold">Success</p>
@@ -143,9 +195,22 @@
             }
 
             @if (error()) {
-              <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-2.5 transition-all duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <div
+                class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-2.5 transition-all duration-300"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-4 h-4 text-red-600 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <div>
                   <p class="text-red-700 text-xs font-bold">Error</p>
@@ -162,7 +227,9 @@
                 [disabled]="!formValid() || actionLoading()"
               >
                 @if (actionLoading()) {
-                  <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  <span
+                    class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                  ></span>
                   Saving...
                 } @else {
                   Save Changes
@@ -178,13 +245,13 @@
                 Cancel
               </button>
             </div>
-
           </form>
-
         </div>
 
         @if (verificationMessage()) {
-          <div class="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-2.5">
+          <div
+            class="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-2.5"
+          >
             <i class="pi pi-spin pi-spinner text-blue-600 mt-0.5"></i>
             <p class="text-blue-700 text-sm">{{ verificationMessage() }}</p>
           </div>
@@ -209,8 +276,12 @@
             </div>
 
             @if (upgradeOptions(); as opts) {
-              <div class="flex items-center gap-3 bg-mlm-primary/5 border border-mlm-primary/20 rounded-xl px-5 py-4">
-                <div class="w-10 h-10 rounded-lg bg-mlm-primary/10 flex items-center justify-center">
+              <div
+                class="flex items-center gap-3 bg-mlm-primary/5 border border-mlm-primary/20 rounded-xl px-5 py-4"
+              >
+                <div
+                  class="w-10 h-10 rounded-lg bg-mlm-primary/10 flex items-center justify-center"
+                >
                   <i class="pi pi-shop text-mlm-primary"></i>
                 </div>
                 <div>
@@ -223,7 +294,9 @@
             }
 
             @if (upgradeSuccessMessage()) {
-              <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-2.5">
+              <div
+                class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-2.5"
+              >
                 <i class="pi pi-check-circle text-green-600 mt-0.5"></i>
                 <p class="text-green-700 text-sm">{{ upgradeSuccessMessage() }}</p>
               </div>
@@ -238,7 +311,9 @@
             @if (isLoadingUpgradeOptions()) {
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 @for (i of [1, 2]; track i) {
-                  <div class="bg-gray-50 border border-gray-100 rounded-2xl p-6 animate-pulse h-48"></div>
+                  <div
+                    class="bg-gray-50 border border-gray-100 rounded-2xl p-6 animate-pulse h-48"
+                  ></div>
                 }
               </div>
             } @else if (showUpgradeSection()) {
@@ -309,7 +384,9 @@
 
                         @if (config && config.onboardingItems.length > 0) {
                           <div class="pt-2 border-t border-gray-50">
-                            <p class="text-xs font-bold text-mlm-secondary uppercase tracking-wide mb-2">
+                            <p
+                              class="text-xs font-bold text-mlm-secondary uppercase tracking-wide mb-2"
+                            >
                               Onboarding stock
                             </p>
                             <ul class="space-y-1 text-xs text-mlm-secondary">
@@ -338,7 +415,6 @@
           </section>
         }
       }
-
     </div>
   </main>
 </div>
@@ -363,7 +439,8 @@
         [payment]="payment"
         title="Complete merchant upgrade payment"
         (verified)="onUsdtVerified()"
-        (back)="onUsdtBack()">
+        (back)="onUsdtBack()"
+      >
       </app-usdt-deposit>
     </div>
   } @else if (selectedTarget(); as target) {
@@ -400,7 +477,12 @@
 
       <div class="space-y-2">
         <p-button
-          [label]="isGatewayPaymentSource(selectedPaymentSource()) || isUsdtPaymentSource(selectedPaymentSource()) ? 'Proceed to Payment' : 'Confirm Upgrade'"
+          [label]="
+            isGatewayPaymentSource(selectedPaymentSource()) ||
+            isUsdtPaymentSource(selectedPaymentSource())
+              ? 'Proceed to Payment'
+              : 'Confirm Upgrade'
+          "
           icon="pi pi-arrow-right"
           (onClick)="confirmUpgrade()"
           [disabled]="actionLoading()"

@@ -1,14 +1,16 @@
 import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
+export type PickupStockState = 'full' | 'partial' | 'none';
+
 export interface PickupLocation {
   id: string;
   name: string;
   address?: string;
   phoneNumber?: string;
   pickupAvailable: boolean;
-  /** When false, merchant is shown greyed out and cannot be selected. */
-  stockInStock?: boolean;
+  stockState: PickupStockState;
+  usingPrimaryAddressFallback: boolean;
 }
 
 @Component({
@@ -31,6 +33,6 @@ export class LocationSelectorComponent {
   }
 
   isSelectable(loc: PickupLocation | undefined): boolean {
-    return !!loc?.pickupAvailable && loc.stockInStock === true;
+    return !!loc?.pickupAvailable && loc.stockState !== 'none';
   }
 }

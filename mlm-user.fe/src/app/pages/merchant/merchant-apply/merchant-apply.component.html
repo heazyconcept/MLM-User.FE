@@ -39,271 +39,326 @@
             [payment]="payment"
             title="Pay merchant registration fee"
             (verified)="onUsdtVerified()"
-            (back)="onUsdtBack()">
+            (back)="onUsdtBack()"
+          >
           </app-usdt-deposit>
         </div>
       } @else {
-
-      @if (loading()) {
-        <div class="flex items-center justify-center py-20">
-          <div class="w-8 h-8 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"></div>
-        </div>
-
-      } @else if (isMerchant() && isFeePaid()) {
-        <!-- Paid & awaiting admin approval, or ACTIVE / SUSPENDED -->
-        <div class="bg-white rounded-lg border border-gray-100 shadow-sm">
-          <div class="p-8 flex flex-col items-center text-center">
-            <div class="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-6">
-              <span class="text-2xl font-black text-mlm-primary">✓</span>
+        @if (loading()) {
+          <div class="flex items-center justify-center py-20">
+            <div
+              class="w-8 h-8 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"
+            ></div>
+          </div>
+        } @else if (isMerchant() && isFeePaid()) {
+          <!-- Paid & awaiting admin approval, or ACTIVE / SUSPENDED -->
+          <div class="bg-white rounded-lg border border-gray-100 shadow-sm">
+            <div class="p-8 flex flex-col items-center text-center">
+              <div class="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-6">
+                <span class="text-2xl font-black text-mlm-primary">✓</span>
+              </div>
+              <h2 class="text-xl font-bold text-mlm-text mb-2">Application Submitted</h2>
+              <p class="text-mlm-secondary text-sm mb-2">
+                Status: <strong>{{ profile()?.status }}</strong>
+              </p>
+              <p class="text-mlm-secondary text-sm mb-6">
+                @if (profile()?.status === 'PENDING') {
+                  Your payment was received. Your application is now under admin review — you'll be
+                  notified once it's approved.
+                } @else {
+                  Your merchant account is now <strong>{{ profile()?.status }}</strong
+                  >.
+                }
+              </p>
+              <a
+                routerLink="/merchant/dashboard"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors"
+              >
+                Go to Dashboard
+              </a>
             </div>
-            <h2 class="text-xl font-bold text-mlm-text mb-2">Application Submitted</h2>
-            <p class="text-mlm-secondary text-sm mb-2">
-              Status: <strong>{{ profile()?.status }}</strong>
-            </p>
-            <p class="text-mlm-secondary text-sm mb-6">
-              @if (profile()?.status === 'PENDING') {
-                Your payment was received. Your application is now under admin review — you'll be notified once it's approved.
-              } @else {
-                Your merchant account is now <strong>{{ profile()?.status }}</strong>.
-              }
-            </p>
-            <a
-              routerLink="/merchant/dashboard"
-              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors"
-            >
-              Go to Dashboard
-            </a>
           </div>
-        </div>
-
-      } @else {
-        <!-- New application or unpaid returning user — full form with tier selection -->
-
-        @if (needsPayment()) {
-          <div class="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p class="text-amber-800 text-xs leading-relaxed">
-              @if (canReapplyAsMerchant()) {
-                Your previous application was not approved and your fee was refunded. Review your tier
-                and details below, then submit a new application with payment.
-              } @else {
-                Your application is saved. Review your tier and details below, then complete payment.
-                The admin will only be notified once your payment is confirmed.
-              }
-            </p>
-          </div>
-        }
-
-        @if (categoryConfig().length === 0) {
-          <!-- No tiers configured yet -->
-          <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-10 flex flex-col items-center text-center gap-4">
-            <div class="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              </svg>
-            </div>
-            <h2 class="text-lg font-bold text-mlm-text">Merchant Tiers Not Available</h2>
-            <p class="text-mlm-secondary text-sm max-w-sm">
-              The admin hasn't set up merchant tiers yet. Please check back later — merchant registration will open once the tiers are configured.
-            </p>
-            <a
-              routerLink="/merchant/dashboard"
-              class="mt-2 inline-flex items-center gap-2 px-6 py-2.5 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-mlm-green-600 transition-colors"
-            >
-              Back to Dashboard
-            </a>
-          </div>
-
         } @else {
-          <!-- Step 1: Choose tier -->
-          <div class="space-y-4 mb-8">
-            <label class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest">
-              Choose Your Merchant Tier
-            </label>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              @for (cfg of categoryConfig(); track cfg.merchantType) {
-                <button
-                  class="p-4 rounded-xl border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 flex flex-col h-full"
-                  [class]="
-                    selectedType() === cfg.merchantType
-                      ? 'border-mlm-primary bg-mlm-primary/5 shadow-md'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  "
-                  (click)="onTypeSelect(cfg.merchantType)"
+          <!-- New application or unpaid returning user — full form with tier selection -->
+
+          @if (needsPayment()) {
+            <div
+              class="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 mb-6"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <p class="text-amber-800 text-xs leading-relaxed">
+                @if (canReapplyAsMerchant()) {
+                  Your previous application was not approved and your fee was refunded. Review your
+                  tier and details below, then submit a new application with payment.
+                } @else {
+                  Your application is saved. Review your tier and details below, then complete
+                  payment. The admin will only be notified once your payment is confirmed.
+                }
+              </p>
+            </div>
+          }
+
+          @if (categoryConfig().length === 0) {
+            <!-- No tiers configured yet -->
+            <div
+              class="bg-white rounded-lg border border-gray-100 shadow-sm p-10 flex flex-col items-center text-center gap-4"
+            >
+              <div class="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mb-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-8 h-8 text-amber-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
                 >
-                  <h3 class="font-bold text-mlm-text mb-2">{{ getTypeLabel(cfg.merchantType) }}</h3>
-                  <div class="text-2xl font-black text-mlm-primary mb-4">
-                    {{ getRegistrationFee(cfg).symbol }}{{ getRegistrationFee(cfg).amount | number: '1.2-2' }}
-                  </div>
-                  <dl class="space-y-2 text-xs flex-1">
-                    <div class="flex justify-between border-b border-gray-50 pb-1">
-                      <dt class="text-mlm-secondary">Product Comm.</dt>
-                      <dd class="font-semibold text-mlm-text">{{ cfg.productCommissionPct }}%</dd>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                  />
+                </svg>
+              </div>
+              <h2 class="text-lg font-bold text-mlm-text">Merchant Tiers Not Available</h2>
+              <p class="text-mlm-secondary text-sm max-w-sm">
+                The admin hasn't set up merchant tiers yet. Please check back later — merchant
+                registration will open once the tiers are configured.
+              </p>
+              <a
+                routerLink="/merchant/dashboard"
+                class="mt-2 inline-flex items-center gap-2 px-6 py-2.5 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-mlm-green-600 transition-colors"
+              >
+                Back to Dashboard
+              </a>
+            </div>
+          } @else {
+            <!-- Step 1: Choose tier -->
+            <div class="space-y-4 mb-8">
+              <label class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest">
+                Choose Your Merchant Tier
+              </label>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                @for (cfg of categoryConfig(); track cfg.merchantType) {
+                  <button
+                    class="p-4 rounded-xl border-2 text-left transition-all focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 flex flex-col h-full"
+                    [class]="
+                      selectedType() === cfg.merchantType
+                        ? 'border-mlm-primary bg-mlm-primary/5 shadow-md'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    "
+                    (click)="onTypeSelect(cfg.merchantType)"
+                  >
+                    <h3 class="font-bold text-mlm-text mb-2">
+                      {{ getTypeLabel(cfg.merchantType) }}
+                    </h3>
+                    <div class="text-2xl font-black text-mlm-primary mb-4">
+                      {{ getRegistrationFee(cfg).symbol
+                      }}{{ getRegistrationFee(cfg).amount | number: '1.2-2' }}
                     </div>
-                    <div class="flex justify-between border-b border-gray-50 pb-1">
-                      <dt class="text-mlm-secondary">Delivery Comm.</dt>
-                      <dd class="font-semibold text-mlm-text">{{ cfg.deliveryCommissionPct }}%</dd>
-                    </div>
-                    @if (cfg.registrationPV > 0) {
+                    <dl class="space-y-2 text-xs flex-1">
                       <div class="flex justify-between border-b border-gray-50 pb-1">
-                        <dt class="text-mlm-secondary">Registration PV</dt>
-                        <dd class="font-semibold text-mlm-text tabular-nums">{{ cfg.registrationPV | number }} PV</dd>
+                        <dt class="text-mlm-secondary">Product Comm.</dt>
+                        <dd class="font-semibold text-mlm-text">{{ cfg.productCommissionPct }}%</dd>
                       </div>
-                    }
-                    @if (cfg.onboardingItems && cfg.onboardingItems.length > 0) {
-                      <div class="pt-2">
-                        <dt class="text-mlm-secondary font-bold mb-1 uppercase tracking-tight">
-                          Stock Bonus:
-                        </dt>
-                        <dd class="text-mlm-text space-y-0.5">
-                          @for (item of cfg.onboardingItems; track item.productId) {
-                            <div>{{ item.quantity }}x {{ item.productName || 'Product' }}</div>
-                          }
+                      <div class="flex justify-between border-b border-gray-50 pb-1">
+                        <dt class="text-mlm-secondary">Delivery Comm.</dt>
+                        <dd class="font-semibold text-mlm-text">
+                          {{ cfg.deliveryCommissionPct }}%
                         </dd>
                       </div>
-                    }
-                  </dl>
-                </button>
-              }
-            </div>
-          </div>
-
-          <!-- Step 2 + 3: Details & payment — all in one card -->
-          <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6 space-y-6">
-
-            <!-- Business Name -->
-            <div>
-              <label
-                for="business-name"
-                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
-              >Business Name</label>
-              <input
-                id="business-name"
-                type="text"
-                placeholder="e.g. Herb World Ventures"
-                [ngModel]="businessNameInput()"
-                (ngModelChange)="businessNameInput.set($event); formError.set('')"
-                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
-              />
-            </div>
-
-            <!-- Phone Number -->
-            <div>
-              <label
-                for="phone-number"
-                class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
-              >Contact Phone Number</label>
-              <input
-                id="phone-number"
-                type="tel"
-                placeholder="e.g. +2348012345678"
-                [ngModel]="phoneNumberInput()"
-                (ngModelChange)="phoneNumberInput.set($event); formError.set('')"
-                class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
-              />
-            </div>
-
-            <app-merchant-locations-editor
-              [merchantType]="selectedType()"
-              [locations]="locations()"
-              [contactPhone]="phoneNumberInput()"
-              (locationsChange)="onLocationsChange($event)"
-            />
-
-            <!-- Payment source — chosen here so apply + pay happen atomically -->
-            <div>
-              <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">
-                Payment Method
-              </p>
-              <div class="grid grid-cols-1 gap-2">
-                @for (source of paymentSources(); track source.value) {
-                  <button
-                    class="px-4 py-3.5 rounded-lg border text-left transition-all"
-                    [class]="
-                      selectedPaymentSource() === source.value
-                        ? 'border-mlm-primary bg-mlm-primary/5'
-                        : 'border-gray-200 hover:border-gray-300'
-                    "
-                    (click)="selectedPaymentSource.set(source.value)"
-                  >
-                    <div class="flex items-center gap-3">
-                      <span
-                        class="w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all"
-                        [class]="selectedPaymentSource() === source.value
-                          ? 'border-mlm-primary bg-mlm-primary'
-                          : 'border-gray-300'"
-                      ></span>
-                      <span class="text-sm font-medium text-mlm-text">{{ source.label }}</span>
-                    </div>
+                      @if (cfg.registrationPV > 0) {
+                        <div class="flex justify-between border-b border-gray-50 pb-1">
+                          <dt class="text-mlm-secondary">Registration PV</dt>
+                          <dd class="font-semibold text-mlm-text tabular-nums">
+                            {{ cfg.registrationPV | number }} PV
+                          </dd>
+                        </div>
+                      }
+                      @if (cfg.onboardingItems && cfg.onboardingItems.length > 0) {
+                        <div class="pt-2">
+                          <dt class="text-mlm-secondary font-bold mb-1 uppercase tracking-tight">
+                            Stock Bonus:
+                          </dt>
+                          <dd class="text-mlm-text space-y-0.5">
+                            @for (item of cfg.onboardingItems; track item.productId) {
+                              <div>{{ item.quantity }}x {{ item.productName || 'Product' }}</div>
+                            }
+                          </dd>
+                        </div>
+                      }
+                    </dl>
                   </button>
                 }
               </div>
             </div>
 
-            <!-- Info banner -->
-            <div class="flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-100 px-4 py-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p class="text-blue-600 text-xs leading-relaxed">
-              @if (needsPayment()) {
-                @if (canReapplyAsMerchant()) {
-                  Update your tier or details if needed, then pay the registration fee to submit a new
-                  application for admin review.
-                } @else {
-                  Update your tier or details if needed, then complete payment. Your application will only be submitted to the admin after payment is confirmed.
-                }
-              } @else {
-                  Your application will only be submitted to the admin after payment is confirmed. Clicking the button below applies and pays in one step.
-                }
-              </p>
-            </div>
-
-            @if (formError()) {
-              <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <p class="text-amber-800 text-xs">{{ formError() }}</p>
+            <!-- Step 2 + 3: Details & payment — all in one card -->
+            <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6 space-y-6">
+              <!-- Business Name -->
+              <div>
+                <label
+                  for="business-name"
+                  class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
+                  >Business Name</label
+                >
+                <input
+                  id="business-name"
+                  type="text"
+                  placeholder="e.g. Herb World Ventures"
+                  [ngModel]="businessNameInput()"
+                  (ngModelChange)="businessNameInput.set($event); formError.set('')"
+                  class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+                />
               </div>
-            } @else if (!formValid()) {
-              <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                <p class="text-amber-800 text-xs">{{ validationError() }}</p>
-              </div>
-            }
 
-            @if (error()) {
-              <div class="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p class="text-red-700 text-xs">{{ error() }}</p>
+              <!-- Phone Number -->
+              <div>
+                <label
+                  for="phone-number"
+                  class="block text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-2"
+                  >Contact Phone Number</label
+                >
+                <input
+                  id="phone-number"
+                  type="tel"
+                  placeholder="e.g. +2348012345678"
+                  [ngModel]="phoneNumberInput()"
+                  (ngModelChange)="phoneNumberInput.set($event); formError.set('')"
+                  class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+                />
               </div>
-            }
 
-            <button
-              type="button"
-              class="w-full px-8 py-3.5 rounded-xl bg-mlm-primary text-white text-sm font-semibold tracking-wide transition-all hover:bg-mlm-green-600 active:scale-[.99] disabled:opacity-40 disabled:cursor-not-allowed"
-              [disabled]="actionLoading()"
-              (click)="onApplyAndPay()"
-            >
-              @if (actionLoading()) {
-                <span class="flex items-center justify-center gap-2">
-                  <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  Processing…
-                </span>
-              } @else if (needsPayment()) {
-                @if (canReapplyAsMerchant()) {
-                  Reapply & Pay — {{ getTypeLabel(selectedType()) }}
-                } @else {
-                  Complete Payment — {{ getTypeLabel(selectedType()) }}
-                }
-              } @else {
-                Apply & Pay — {{ getTypeLabel(selectedType()) }}
+              <app-merchant-locations-editor
+                [merchantType]="selectedType()"
+                [homeCountryCode]="homeCountryCode()"
+                [locations]="locations()"
+                [contactPhone]="phoneNumberInput()"
+                (homeCountryCodeChange)="onHomeCountryChange($event)"
+                (locationsChange)="onLocationsChange($event)"
+              />
+
+              <!-- Payment source — chosen here so apply + pay happen atomically -->
+              <div>
+                <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">
+                  Payment Method
+                </p>
+                <div class="grid grid-cols-1 gap-2">
+                  @for (source of paymentSources(); track source.value) {
+                    <button
+                      class="px-4 py-3.5 rounded-lg border text-left transition-all"
+                      [class]="
+                        selectedPaymentSource() === source.value
+                          ? 'border-mlm-primary bg-mlm-primary/5'
+                          : 'border-gray-200 hover:border-gray-300'
+                      "
+                      (click)="selectedPaymentSource.set(source.value)"
+                    >
+                      <div class="flex items-center gap-3">
+                        <span
+                          class="w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all"
+                          [class]="
+                            selectedPaymentSource() === source.value
+                              ? 'border-mlm-primary bg-mlm-primary'
+                              : 'border-gray-300'
+                          "
+                        ></span>
+                        <span class="text-sm font-medium text-mlm-text">{{ source.label }}</span>
+                      </div>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Info banner -->
+              <div
+                class="flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-100 px-4 py-3"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <p class="text-blue-600 text-xs leading-relaxed">
+                  @if (needsPayment()) {
+                    @if (canReapplyAsMerchant()) {
+                      Update your tier or details if needed, then pay the registration fee to submit
+                      a new application for admin review.
+                    } @else {
+                      Update your tier or details if needed, then complete payment. Your application
+                      will only be submitted to the admin after payment is confirmed.
+                    }
+                  } @else {
+                    Your application will only be submitted to the admin after payment is confirmed.
+                    Clicking the button below applies and pays in one step.
+                  }
+                </p>
+              </div>
+
+              @if (formError()) {
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p class="text-amber-800 text-xs">{{ formError() }}</p>
+                </div>
+              } @else if (!formValid()) {
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p class="text-amber-800 text-xs">{{ validationError() }}</p>
+                </div>
               }
-            </button>
 
-          </div>
+              @if (error()) {
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p class="text-red-700 text-xs">{{ error() }}</p>
+                </div>
+              }
+
+              <button
+                type="button"
+                class="w-full px-8 py-3.5 rounded-xl bg-mlm-primary text-white text-sm font-semibold tracking-wide transition-all hover:bg-mlm-green-600 active:scale-[.99] disabled:opacity-40 disabled:cursor-not-allowed"
+                [disabled]="actionLoading()"
+                (click)="onApplyAndPay()"
+              >
+                @if (actionLoading()) {
+                  <span class="flex items-center justify-center gap-2">
+                    <span
+                      class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                    ></span>
+                    Processing…
+                  </span>
+                } @else if (needsPayment()) {
+                  @if (canReapplyAsMerchant()) {
+                    Reapply & Pay — {{ getTypeLabel(selectedType()) }}
+                  } @else {
+                    Complete Payment — {{ getTypeLabel(selectedType()) }}
+                  }
+                } @else {
+                  Apply & Pay — {{ getTypeLabel(selectedType()) }}
+                }
+              </button>
+            </div>
+          }
         }
       }
-      }
-
     </div>
   </main>
 </div>

@@ -13,6 +13,13 @@ import { MerchantService, type MerchantOrder } from '../../../services/merchant.
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import { ButtonModule } from 'primeng/button';
 
+export function canMarkMerchantOrderPickedUp(order: MerchantOrder | null): boolean {
+  return (
+    order?.fulfilmentMode === 'PICKUP' &&
+    (order.status === 'ASSIGNED_TO_MERCHANT' || order.status === 'READY_FOR_PICKUP')
+  );
+}
+
 @Component({
   selector: 'app-merchant-order-detail',
   imports: [CommonModule, RouterLink, FormsModule, StatusBadgeComponent, ButtonModule],
@@ -51,8 +58,7 @@ export class MerchantOrderDetailComponent implements OnInit {
   });
 
   canMarkPickedUp = computed(() => {
-    const o = this.order();
-    return o && o.fulfilmentMode === 'PICKUP' && o.status === 'READY_FOR_PICKUP';
+    return canMarkMerchantOrderPickedUp(this.order());
   });
 
   canConfirmDelivery = computed(() => {

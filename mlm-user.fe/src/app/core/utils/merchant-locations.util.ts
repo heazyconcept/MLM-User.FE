@@ -1,10 +1,11 @@
-import { NIGERIAN_STATES } from '../constants/states.constants';
 import type { MerchantLocation, MerchantType } from '../../services/merchant.service';
 
-/** Used only for Nigerian state-picker detection — not as a form default. */
 export const NIGERIA_COUNTRY = 'Nigeria';
+export const NIGERIA_COUNTRY_CODE = 'NG';
 
 export interface MerchantLocationDraft {
+  countryCode: string;
+  subdivisionCode: string;
   country: string;
   state: string;
   address: string;
@@ -14,9 +15,12 @@ export interface MerchantLocationDraft {
 
 export function createEmptyLocationDraft(
   isPrimary = false,
+  countryCode = '',
   country = '',
 ): MerchantLocationDraft {
   return {
+    countryCode,
+    subdivisionCode: '',
     country,
     state: '',
     address: '',
@@ -28,6 +32,7 @@ export function createEmptyLocationDraft(
 /** Build location drafts from profile locations, or migrate legacy serviceAreas + address. */
 export function draftsFromProfile(input: {
   type?: MerchantType;
+  homeCountryCode?: string | null;
   locations?: MerchantLocation[] | null;
   serviceAreas?: string[] | null;
   address?: string | null;
@@ -36,6 +41,8 @@ export function draftsFromProfile(input: {
   const locations = input.locations ?? [];
   if (locations.length > 0) {
     return locations.map((loc, index) => ({
+      countryCode: loc.countryCode?.trim().toUpperCase() ?? '',
+      subdivisionCode: loc.subdivisionCode?.trim() ?? '',
       country: loc.country?.trim() ?? '',
       state: loc.state?.trim() ?? '',
       address: loc.address?.trim() ?? '',
@@ -54,6 +61,8 @@ export function draftsFromProfile(input: {
 
   // Legacy serviceAreas were Nigeria state names without country.
   return areas.map((state, index) => ({
+    countryCode: input.homeCountryCode?.trim().toUpperCase() || NIGERIA_COUNTRY_CODE,
+    subdivisionCode: '',
     country: NIGERIA_COUNTRY,
     state,
     address: index === 0 ? primaryAddress : '',
@@ -65,21 +74,34 @@ export function draftsFromProfile(input: {
 export function enforceTierOnDrafts(
   type: MerchantType,
   drafts: MerchantLocationDraft[],
+  homeCountryCode: string,
+  homeCountryName = '',
 ): MerchantLocationDraft[] {
   let next = drafts.length > 0 ? drafts.map((d) => ({ ...d })) : [createEmptyLocationDraft(true)];
+  const homeCode = homeCountryCode.trim().toUpperCase();
+
+  const enforceHomeCountry = (draft: MerchantLocationDraft): MerchantLocationDraft => {
+    const countryChanged = Boolean(homeCode && draft.countryCode !== homeCode);
+    return {
+      ...draft,
+      countryCode: homeCode,
+      country: homeCountryName || (countryChanged ? '' : draft.country),
+      subdivisionCode: countryChanged ? '' : draft.subdivisionCode,
+      state: countryChanged ? '' : draft.state,
+    };
+  };
 
   if (type === 'REGIONAL') {
     const primary = next.find((d) => d.isPrimary) ?? next[0];
-    next = [{ ...primary, isPrimary: true }];
+    next = [{ ...enforceHomeCountry(primary), isPrimary: true }];
   }
 
-  // National service areas stay in the same country as the primary address.
   if (type === 'NATIONAL') {
-    const primary = next.find((d) => d.isPrimary) ?? next[0];
-    const country = primary.country.trim();
-    if (country) {
-      next = next.map((d) => ({ ...d, country }));
-    }
+    next = next.map(enforceHomeCountry);
+  }
+
+  if (type === 'GLOBAL') {
+    next = next.map((draft) => (draft.isPrimary ? enforceHomeCountry(draft) : draft));
   }
 
   if (!next.some((d) => d.isPrimary)) {
@@ -100,9 +122,23 @@ export function enforceTierOnDrafts(
 export function validateMerchantLocationDrafts(
   type: MerchantType,
   drafts: MerchantLocationDraft[],
+  homeCountryCode: string,
   contactPhone: string,
 ): string | null {
-  const normalized = enforceTierOnDrafts(type, drafts);
+  const homeCode = homeCountryCode.trim().toUpperCase();
+  if (!homeCode) {
+    return 'Select your home country.';
+  }
+
+  const submittedPrimary = drafts.find((draft) => draft.isPrimary) ?? drafts[0];
+  if (
+    submittedPrimary?.countryCode &&
+    submittedPrimary.countryCode.trim().toUpperCase() !== homeCode
+  ) {
+    return 'Primary address must be in your home country.';
+  }
+
+  const normalized = enforceTierOnDrafts(type, drafts, homeCode);
   const contact = contactPhone.trim();
 
   if (!contact) {
@@ -110,9 +146,7 @@ export function validateMerchantLocationDrafts(
   }
 
   if (normalized.length === 0) {
-    return type === 'REGIONAL'
-      ? 'Enter your specific pickup address.'
-      : 'Add a primary address.';
+    return type === 'REGIONAL' ? 'Enter your specific pickup address.' : 'Add a primary address.';
   }
 
   if (type === 'REGIONAL' && normalized.length !== 1) {
@@ -124,9 +158,14 @@ export function validateMerchantLocationDrafts(
   }
 
   const keys = new Set<string>();
-  const primaryCountry = (normalized.find((d) => d.isPrimary) ?? normalized[0]).country.trim();
+  const primary = normalized.find((draft) => draft.isPrimary) ?? normalized[0];
+  if (primary.countryCode !== homeCode) {
+    return 'Primary address must be in your home country.';
+  }
 
   for (const [index, draft] of normalized.entries()) {
+    const countryCode = draft.countryCode.trim().toUpperCase();
+    const subdivisionCode = draft.subdivisionCode.trim();
     const country = draft.country.trim();
     const state = draft.state.trim();
     const address = draft.address.trim();
@@ -138,14 +177,14 @@ export function validateMerchantLocationDrafts(
           ? 'Primary address'
           : `Service area ${index}`;
 
-    if (!country) {
+    if (!countryCode || !country) {
       return `${label}: select a country.`;
     }
-    if (!state) {
-      return `${label}: state / region is required.`;
+    if (!subdivisionCode || !state) {
+      return `${label}: select a state or region.`;
     }
-    if (state === '*') {
-      return 'Wildcard (*) service areas are not allowed. Pick a specific state.';
+    if (subdivisionCode === '*' || state === '*') {
+      return 'Wildcard (*) service areas are not allowed. Pick a specific state or region.';
     }
     if (!address) {
       return draft.isPrimary || type === 'REGIONAL'
@@ -155,18 +194,18 @@ export function validateMerchantLocationDrafts(
     if (type === 'GLOBAL' && !phone) {
       return `${label}: phone number is required for Global service areas.`;
     }
-    if (type === 'NATIONAL' && primaryCountry && country.toLowerCase() !== primaryCountry.toLowerCase()) {
-      return 'National service areas must be in the same country as your primary address.';
+    if (type === 'NATIONAL' && countryCode !== homeCode) {
+      return 'National service areas must be in your home country.';
     }
 
     const key =
       type === 'GLOBAL'
-        ? `${country.toLowerCase()}::${state.toLowerCase()}`
-        : state.toLowerCase();
+        ? `${countryCode}::${subdivisionCode.toLowerCase()}`
+        : subdivisionCode.toLowerCase();
     if (keys.has(key)) {
       return type === 'GLOBAL'
-        ? 'Each Global service area must use a distinct country and state.'
-        : 'Each National service area must use a distinct state / region.';
+        ? 'Each Global service area must use a distinct country and state or region.'
+        : 'Each National service area must use a distinct state or region.';
     }
     keys.add(key);
   }
@@ -182,14 +221,15 @@ export function validateMerchantLocationDrafts(
 export function buildMerchantLocationsPayload(
   type: MerchantType,
   drafts: MerchantLocationDraft[],
+  homeCountryCode: string,
   contactPhone: string,
 ): MerchantLocation[] {
   const contact = contactPhone.trim();
-  return enforceTierOnDrafts(type, drafts).map((draft) => {
-    const phone =
-      draft.phoneNumber.trim() ||
-      (type === 'GLOBAL' || draft.isPrimary ? contact : '');
+  return enforceTierOnDrafts(type, drafts, homeCountryCode).map((draft) => {
+    const phone = draft.phoneNumber.trim() || (type === 'GLOBAL' || draft.isPrimary ? contact : '');
     return {
+      countryCode: draft.countryCode.trim().toUpperCase(),
+      subdivisionCode: draft.subdivisionCode.trim(),
       country: draft.country.trim(),
       state: draft.state.trim(),
       address: draft.address.trim(),
@@ -197,14 +237,6 @@ export function buildMerchantLocationsPayload(
       isPrimary: draft.isPrimary,
     };
   });
-}
-
-export function isNigeriaCountry(country: string): boolean {
-  return country.trim().toLowerCase() === NIGERIA_COUNTRY.toLowerCase();
-}
-
-export function nigerianStateOptions(): string[] {
-  return NIGERIAN_STATES;
 }
 
 /** @deprecated Use NIGERIA_COUNTRY — kept for any older imports. */

@@ -29,7 +29,10 @@ import {
   GATEWAY_REFERENCE_QUERY_PARAMS,
   resolvePaymentReference,
 } from '../../../core/utils/payment-reference.util';
-import { getMerchantCallbackUrl, isPaymentProviderEnabled } from '../../../core/utils/payment-config.util';
+import {
+  getMerchantCallbackUrl,
+  isPaymentProviderEnabled,
+} from '../../../core/utils/payment-config.util';
 import { UsdtDepositComponent } from '../../../components/usdt-deposit/usdt-deposit.component';
 import { MerchantLocationsEditorComponent } from '../../../components/merchant-locations-editor/merchant-locations-editor.component';
 import type { InitiatePaymentResponse } from '../../../services/payment.service';
@@ -77,6 +80,7 @@ export class MerchantApplyComponent implements OnInit {
   selectedType = signal<MerchantType>('REGIONAL');
   businessNameInput = signal('');
   phoneNumberInput = signal('');
+  homeCountryCode = signal('');
   locations = signal<MerchantLocationDraft[]>([createEmptyLocationDraft(true)]);
   formError = signal('');
 
@@ -92,6 +96,7 @@ export class MerchantApplyComponent implements OnInit {
     return validateMerchantLocationDrafts(
       this.selectedType(),
       this.locations(),
+      this.homeCountryCode(),
       this.phoneNumberInput(),
     );
   });
@@ -99,7 +104,8 @@ export class MerchantApplyComponent implements OnInit {
   constructor() {
     effect(() => {
       const type = this.selectedType();
-      this.locations.update((rows) => enforceTierOnDrafts(type, rows));
+      const homeCountryCode = this.homeCountryCode();
+      this.locations.update((rows) => enforceTierOnDrafts(type, rows, homeCountryCode));
     });
 
     effect(() => {
@@ -116,16 +122,19 @@ export class MerchantApplyComponent implements OnInit {
       if (p.phoneNumber) {
         this.phoneNumberInput.set(p.phoneNumber);
       }
+      this.homeCountryCode.set(p.homeCountryCode ?? '');
       this.locations.set(
         enforceTierOnDrafts(
           p.type ?? 'REGIONAL',
           draftsFromProfile({
             type: p.type,
+            homeCountryCode: p.homeCountryCode,
             locations: p.locations,
             serviceAreas: p.serviceAreas,
             address: p.address,
             phoneNumber: p.phoneNumber,
           }),
+          p.homeCountryCode ?? '',
         ),
       );
       this.prefillApplied = true;
@@ -183,7 +192,12 @@ export class MerchantApplyComponent implements OnInit {
   }
 
   onLocationsChange(next: MerchantLocationDraft[]): void {
-    this.locations.set(enforceTierOnDrafts(this.selectedType(), next));
+    this.locations.set(enforceTierOnDrafts(this.selectedType(), next, this.homeCountryCode()));
+    this.formError.set('');
+  }
+
+  onHomeCountryChange(countryCode: string): void {
+    this.homeCountryCode.set(countryCode);
     this.formError.set('');
   }
 
@@ -195,23 +209,25 @@ export class MerchantApplyComponent implements OnInit {
     this.verificationMessage.set('Verifying your payment...');
     this.verificationError.set('');
 
-    this.merchantService.verifyMerchantFeePayment({ reference: paymentReference }).subscribe((res) => {
-      if (res?.success) {
-        this.verificationMessage.set(
-          res.message || 'Merchant fee verified. Your application is pending admin approval.',
-        );
-        this.router.navigate([], {
-          relativeTo: this.route,
-          queryParams: GATEWAY_REFERENCE_QUERY_PARAMS,
-          queryParamsHandling: 'merge',
-          replaceUrl: true,
-        });
-        return;
-      }
+    this.merchantService
+      .verifyMerchantFeePayment({ reference: paymentReference })
+      .subscribe((res) => {
+        if (res?.success) {
+          this.verificationMessage.set(
+            res.message || 'Merchant fee verified. Your application is pending admin approval.',
+          );
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: GATEWAY_REFERENCE_QUERY_PARAMS,
+            queryParamsHandling: 'merge',
+            replaceUrl: true,
+          });
+          return;
+        }
 
-      this.verificationMessage.set('');
-      this.verificationError.set(this.error() || 'Payment could not be verified.');
-    });
+        this.verificationMessage.set('');
+        this.verificationError.set(this.error() || 'Payment could not be verified.');
+      });
   }
 
   getTypeLabel(type: MerchantType): string {
@@ -254,6 +270,7 @@ export class MerchantApplyComponent implements OnInit {
     const locationsPayload = buildMerchantLocationsPayload(
       this.selectedType(),
       this.locations(),
+      this.homeCountryCode(),
       pNumber,
     );
 
@@ -269,6 +286,7 @@ export class MerchantApplyComponent implements OnInit {
         type: this.selectedType(),
         businessName,
         phoneNumber: pNumber,
+        homeCountryCode: this.homeCountryCode(),
         locations: locationsPayload,
       };
 
@@ -300,7 +318,7 @@ export class MerchantApplyComponent implements OnInit {
     }
 
     this.merchantService
-      .apply(this.selectedType(), pNumber, locationsPayload, businessName)
+      .apply(this.selectedType(), pNumber, this.homeCountryCode(), locationsPayload, businessName)
       .pipe(
         switchMap((profile: MerchantProfile | null) => {
           if (!profile?.id) {
@@ -320,10 +338,11 @@ export class MerchantApplyComponent implements OnInit {
 
   private initiatePayment(merchantId: string): Observable<InitiateMerchantFeeResponse | null> {
     const source = this.selectedPaymentSource();
-    const payload: { source: MerchantFeePaymentSource; merchantId: string; callbackUrl?: string } = {
-      source,
-      merchantId,
-    };
+    const payload: { source: MerchantFeePaymentSource; merchantId: string; callbackUrl?: string } =
+      {
+        source,
+        merchantId,
+      };
     if (isMerchantGatewaySource(source)) {
       payload.callbackUrl = getMerchantCallbackUrl('/merchant/apply');
     }

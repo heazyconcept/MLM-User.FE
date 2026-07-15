@@ -64,6 +64,8 @@ export interface CheckoutGroup {
 }
 
 export interface CheckoutBatchPayload {
+  countryCode: string;
+  subdivisionCode: string;
   state: string;
   paymentMethod: 'WALLET';
   idempotencyKey?: string;
@@ -99,6 +101,10 @@ export interface OrderDispute {
   customerNotes?: string | null;
   status: OrderDisputeStatus;
   createdAt: string;
+  outcome?: string | null;
+  adminNotes?: string | null;
+  resolvedAt?: string | null;
+  closedAt?: string | null;
 }
 
 const ORDER_STATUSES: OrderStatus[] = [
@@ -269,7 +275,6 @@ export class OrderService {
         const rows = Array.isArray(res) ? res : (res.disputes ?? res.data ?? []);
         return rows.map((d: any) => this.mapDispute(d));
       }),
-      catchError(() => of([])),
     );
   }
 
@@ -284,11 +289,21 @@ export class OrderService {
   }
 
   static canConfirmPickupReceived(order: Order, disputes: OrderDispute[]): boolean {
-    return order.rawStatus === 'PICKED_UP' && !OrderService.hasOpenDispute(disputes);
+    return (
+      order.fulfilmentMethod === 'pickup' &&
+      order.rawStatus === 'PICKED_UP' &&
+      order.hasOpenDispute !== true &&
+      !OrderService.hasOpenDispute(disputes)
+    );
   }
 
   static canOpenPickupDispute(order: Order, disputes: OrderDispute[]): boolean {
-    return order.rawStatus === 'PICKED_UP' && !OrderService.hasOpenDispute(disputes);
+    return (
+      order.fulfilmentMethod === 'pickup' &&
+      order.rawStatus === 'PICKED_UP' &&
+      order.hasOpenDispute !== true &&
+      !OrderService.hasOpenDispute(disputes)
+    );
   }
 
   static isAwaitingPickupCollection(order: Order): boolean {
@@ -312,6 +327,10 @@ export class OrderService {
       customerNotes: d.customerNotes ?? null,
       status: (String(d.status ?? 'OPEN').toUpperCase() as OrderDisputeStatus) || 'OPEN',
       createdAt: String(d.createdAt ?? new Date().toISOString()),
+      outcome: d.outcome ?? null,
+      adminNotes: d.adminNotes ?? d.admin_notes ?? null,
+      resolvedAt: d.resolvedAt ?? d.resolved_at ?? null,
+      closedAt: d.closedAt ?? d.closed_at ?? null,
     };
   }
 
@@ -357,6 +376,10 @@ export class OrderService {
       selectedMerchantName: merchantLabel || merchant?.name || undefined,
       checkoutBatchId: o.checkoutBatchId ? String(o.checkoutBatchId) : undefined,
       paymentId: o.paymentId ? String(o.paymentId) : undefined,
+      hasOpenDispute:
+        o.hasOpenDispute != null || o.has_open_dispute != null
+          ? Boolean(o.hasOpenDispute ?? o.has_open_dispute)
+          : undefined,
     };
   }
 

@@ -8,91 +8,121 @@ import {
 } from './merchant-locations.util';
 
 describe('merchant-locations.util', () => {
-  it('creates a primary empty draft without defaulting country', () => {
+  const ngLagos = {
+    countryCode: 'NG',
+    subdivisionCode: 'LA',
+    country: 'Nigeria',
+    state: 'Lagos',
+    address: '12 Market Road',
+    phoneNumber: '',
+    isPrimary: true,
+  };
+
+  it('creates a primary empty draft without defaulting geography', () => {
     const draft = createEmptyLocationDraft(true);
     expect(draft.isPrimary).toBe(true);
+    expect(draft.countryCode).toBe('');
+    expect(draft.subdivisionCode).toBe('');
     expect(draft.country).toBe('');
   });
 
-  it('migrates legacy serviceAreas into drafts', () => {
+  it('preserves location codes and leaves legacy subdivision codes unresolved', () => {
     const drafts = draftsFromProfile({
+      homeCountryCode: 'NG',
+      locations: [{ ...ngLagos, detailsComplete: true }],
+    });
+    expect(drafts[0]).toMatchObject({
+      countryCode: 'NG',
+      subdivisionCode: 'LA',
+      country: 'Nigeria',
+      state: 'Lagos',
+    });
+
+    const legacy = draftsFromProfile({
+      homeCountryCode: 'NG',
       serviceAreas: ['Lagos', 'Abuja'],
       address: '12 Market Road',
       phoneNumber: '+2348012345678',
     });
-    expect(drafts).toHaveLength(2);
-    expect(drafts[0]).toMatchObject({
+    expect(legacy).toHaveLength(2);
+    expect(legacy[0]).toMatchObject({
+      countryCode: 'NG',
+      subdivisionCode: '',
       country: 'Nigeria',
       state: 'Lagos',
       address: '12 Market Road',
       isPrimary: true,
     });
-    expect(drafts[1]).toMatchObject({
+    expect(legacy[1]).toMatchObject({
       state: 'Abuja',
       address: '',
       isPrimary: false,
     });
   });
 
-  it('collapses to one location for REGIONAL and keeps chosen country', () => {
-    const next = enforceTierOnDrafts('REGIONAL', [
-      { country: 'Ghana', state: 'Accra', address: 'A', phoneNumber: '', isPrimary: true },
-      { country: 'Ghana', state: 'Kumasi', address: 'B', phoneNumber: '', isPrimary: false },
-    ]);
+  it('forces REGIONAL and NATIONAL locations into the home country', () => {
+    const ghAccra = {
+      countryCode: 'GH',
+      subdivisionCode: 'AA',
+      country: 'Ghana',
+      state: 'Accra',
+      address: 'A',
+      phoneNumber: '',
+      isPrimary: true,
+    };
+    const next = enforceTierOnDrafts(
+      'REGIONAL',
+      [ghAccra, { ...ghAccra, isPrimary: false }],
+      'NG',
+      'Nigeria',
+    );
     expect(next).toHaveLength(1);
-    expect(next[0].country).toBe('Ghana');
-    expect(next[0].state).toBe('Accra');
+    expect(next[0].countryCode).toBe('NG');
+    expect(next[0].country).toBe('Nigeria');
+    expect(next[0].subdivisionCode).toBe('');
     expect(next[0].isPrimary).toBe(true);
+
+    const national = enforceTierOnDrafts('NATIONAL', [ngLagos, ghAccra], 'NG', 'Nigeria');
+    expect(national.every((draft) => draft.countryCode === 'NG')).toBe(true);
+    expect(national[1].subdivisionCode).toBe('');
   });
 
-  it('validates REGIONAL requires one complete address in any country', () => {
+  it('requires a home country and canonical subdivision code', () => {
     expect(
-      validateMerchantLocationDrafts(
-        'REGIONAL',
-        [{ country: 'Ghana', state: 'Accra', address: '12 Road', phoneNumber: '', isPrimary: true }],
-        '+233201111111',
-      ),
+      validateMerchantLocationDrafts('REGIONAL', [ngLagos], 'NG', '+2348011111111'),
     ).toBeNull();
 
+    expect(validateMerchantLocationDrafts('REGIONAL', [ngLagos], '', '+2348011111111')).toContain(
+      'home country',
+    );
     expect(
       validateMerchantLocationDrafts(
         'REGIONAL',
-        [{ country: '', state: 'Lagos', address: '12 Road', phoneNumber: '', isPrimary: true }],
+        [{ ...ngLagos, subdivisionCode: '' }],
+        'NG',
         '+2348011111111',
       ),
-    ).toContain('country');
+    ).toContain('state or region');
   });
 
-  it('rejects duplicate NATIONAL service area states and syncs country to primary', () => {
-    const synced = enforceTierOnDrafts('NATIONAL', [
-      { country: 'Kenya', state: 'Nairobi', address: 'A', phoneNumber: '', isPrimary: true },
-      { country: 'Ghana', state: 'Accra', address: 'B', phoneNumber: '', isPrimary: false },
-    ]);
-    expect(synced.every((d) => d.country === 'Kenya')).toBe(true);
-
+  it('rejects duplicate NATIONAL subdivision codes', () => {
     const error = validateMerchantLocationDrafts(
       'NATIONAL',
-      [
-        { country: 'Kenya', state: 'Nairobi', address: 'A', phoneNumber: '', isPrimary: true },
-        { country: 'Kenya', state: 'Nairobi', address: 'B', phoneNumber: '', isPrimary: false },
-      ],
-      '+254701111111',
+      [ngLagos, { ...ngLagos, address: 'Another address', isPrimary: false }],
+      'NG',
+      '+2348011111111',
     );
-    expect(error).toContain('distinct state');
+    expect(error).toContain('distinct state or region');
   });
 
-  it('requires phone for GLOBAL service areas', () => {
+  it('requires GLOBAL primary in the home country and a phone for each coverage site', () => {
     const error = validateMerchantLocationDrafts(
       'GLOBAL',
       [
+        ngLagos,
         {
-          country: 'Nigeria',
-          state: 'Lagos',
-          address: 'HQ',
-          phoneNumber: '',
-          isPrimary: true,
-        },
-        {
+          countryCode: 'GH',
+          subdivisionCode: 'AA',
           country: 'Ghana',
           state: 'Accra',
           address: 'Branch',
@@ -100,30 +130,52 @@ describe('merchant-locations.util', () => {
           isPrimary: false,
         },
       ],
+      'NG',
       '+2348010000000',
     );
     expect(error).toContain('phone');
+
+    const wrongPrimary = validateMerchantLocationDrafts(
+      'GLOBAL',
+      [{ ...ngLagos, countryCode: 'GH', country: 'Ghana' }],
+      'NG',
+      '+2348010000000',
+    );
+    expect(wrongPrimary).toContain('home country');
   });
 
-  it('builds payload using contact phone for primary when row phone omitted', () => {
+  it('builds canonical payload using contact phone for the primary location', () => {
     const payload = buildMerchantLocationsPayload(
       'NATIONAL',
       [
-        { country: 'Ghana', state: 'Accra', address: 'HQ', phoneNumber: '', isPrimary: true },
-        { country: 'Ghana', state: 'Kumasi', address: 'Branch', phoneNumber: '', isPrimary: false },
+        ngLagos,
+        {
+          ...ngLagos,
+          subdivisionCode: 'FC',
+          state: 'Federal Capital Territory',
+          address: 'Abuja branch',
+          isPrimary: false,
+        },
       ],
-      '+233201234567',
+      'NG',
+      '+2348012345678',
     );
-    expect(payload[0].country).toBe('Ghana');
-    expect(payload[0].phoneNumber).toBe('+233201234567');
-    expect(payload[0].isPrimary).toBe(true);
-    expect(payload[1].state).toBe('Kumasi');
+    expect(payload[0]).toMatchObject({
+      countryCode: 'NG',
+      subdivisionCode: 'LA',
+      country: 'Nigeria',
+      state: 'Lagos',
+      phoneNumber: '+2348012345678',
+      isPrimary: true,
+    });
+    expect(payload[1].subdivisionCode).toBe('FC');
   });
 
-  it('rejects wildcard state', () => {
+  it('rejects wildcard subdivision codes', () => {
     const error = validateMerchantLocationDrafts(
       'REGIONAL',
-      [{ country: 'Nigeria', state: '*', address: 'Anywhere', phoneNumber: '', isPrimary: true }],
+      [{ ...ngLagos, subdivisionCode: '*', state: '*' }],
+      'NG',
       '+2348011111111',
     );
     expect(error).toContain('Wildcard');

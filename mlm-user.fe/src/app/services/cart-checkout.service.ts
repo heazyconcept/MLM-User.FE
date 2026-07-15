@@ -32,6 +32,8 @@ export interface CartCheckoutData {
 export type PendingCheckoutData = SingleCheckoutData | CartCheckoutData;
 
 export interface CheckoutConfirmPayload {
+  countryCode: string;
+  subdivisionCode: string;
   state: string;
   groups: CheckoutGroup[];
 }
@@ -52,6 +54,8 @@ export class CartCheckoutService {
 
     return this.orderService
       .checkoutBatch({
+        countryCode: payload.countryCode,
+        subdivisionCode: payload.subdivisionCode,
         state: payload.state,
         paymentMethod: 'WALLET',
         idempotencyKey,
@@ -59,7 +63,7 @@ export class CartCheckoutService {
       })
       .pipe(
         switchMap((checkout) =>
-          this.orderService.payCheckoutWithWallet(checkout.checkoutId, wallet).pipe(
+          this.orderService.payCheckoutWithWallet(checkout.checkoutId, 'voucher').pipe(
             tap(() => {
               if (orderData.mode === 'cart') {
                 this.cartService.clear();

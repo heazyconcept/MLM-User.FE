@@ -16,9 +16,15 @@
         <span class="min-w-0 flex-1">
           <span class="flex flex-wrap items-center gap-2">
             <span class="font-semibold text-mlm-text">{{ loc.name }}</span>
-            <span class="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-green-50 text-green-700">
-              In stock
-            </span>
+            @if (loc.stockState === 'full') {
+              <span class="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-green-50 text-green-700">
+                In stock
+              </span>
+            } @else {
+              <span class="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                Partial stock
+              </span>
+            }
           </span>
           @if (loc.address) {
             <span class="block text-xs text-mlm-secondary mt-0.5 leading-relaxed">{{ loc.address }}</span>
@@ -29,6 +35,11 @@
               class="inline-block text-xs font-medium text-mlm-primary mt-1 hover:underline"
               (click)="$event.stopPropagation()"
             >{{ loc.phoneNumber }}</a>
+          }
+          @if (loc.usingPrimaryAddressFallback) {
+            <span class="block text-xs font-medium text-amber-700 mt-1.5">
+              Confirm address with merchant
+            </span>
           }
         </span>
       </button>
@@ -44,7 +55,7 @@
         <span class="min-w-0 flex-1">
           <span class="flex flex-wrap items-center gap-2">
             <span class="font-semibold text-gray-400">{{ loc.name }}</span>
-            @if (loc.stockInStock === false) {
+            @if (loc.stockState === 'none') {
               <span class="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-gray-200 text-gray-500">
                 Out of stock
               </span>
@@ -59,8 +70,10 @@
           <span class="block text-xs text-gray-500 mt-1.5 font-medium">
             @if (!loc.pickupAvailable) {
               Pickup contact details incomplete
-            } @else {
+            } @else if (loc.stockState === 'none') {
               Does not have stock for this order
+            } @else {
+              Pickup contact details incomplete
             }
           </span>
         </span>

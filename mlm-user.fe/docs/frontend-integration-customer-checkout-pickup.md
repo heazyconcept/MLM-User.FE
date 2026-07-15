@@ -16,7 +16,8 @@ Related:
 
 Customers now:
 
-1. Pick a **state at checkout** and see **all active merchants** in that state (never hidden by stock).
+1. Pick a canonical **country and state/region at checkout** and see all active merchants that
+   cover that location (never hidden by stock).
 2. Get a **per-product stock guidance** so the UI can grey out merchants that lack a product and suggest alternatives or admin delivery.
 3. **Split** a cart across multiple merchants and/or an admin delivery group in a single checkout.
 4. Track a PICKUP order through a **handoff** flow: merchant marks it picked up, customer confirms receipt (or opens a dispute).
@@ -41,7 +42,8 @@ stateDiagram-v2
 
 ### 2a. `GET /merchants/available`
 
-Bearer + registration paid. Query: `state` (or `location`), optional `productId`, optional `quantity` (default 1).
+Bearer + registration paid. Query: required `countryCode`, `subdivisionCode`, and canonical
+`state` display text; optional `productId` and `quantity` (default 1).
 
 **Breaking change:** merchants are **no longer hidden** when they lack the requested product. Every active merchant that serves the state is returned. Use the new per-product flags to render stock state.
 
@@ -55,6 +57,18 @@ Bearer + registration paid. Query: `state` (or `location`), optional `productId`
       "username": "Merchant A",
       "phoneNumber": "080...",
       "address": "...",
+      "locations": [
+        {
+          "countryCode": "NG",
+          "subdivisionCode": "LA",
+          "country": "Nigeria",
+          "state": "Lagos",
+          "address": "...",
+          "phoneNumber": "080..."
+        }
+      ],
+      "locationsComplete": true,
+      "usingPrimaryAddressFallback": false,
       "serviceAreas": ["Lagos"],
       "coversState": true,
       "products": [
@@ -78,6 +92,8 @@ Validates a whole cart against a state without creating orders. Bearer + registr
 
 ```json
 {
+  "countryCode": "NG",
+  "subdivisionCode": "LA",
   "state": "Lagos",
   "items": [
     { "productId": "uuid", "quantity": 2 },
@@ -125,6 +141,8 @@ Bearer + registration paid. Creates one order per group in a single transaction;
 
 ```json
 {
+  "countryCode": "NG",
+  "subdivisionCode": "LA",
   "state": "Lagos",
   "paymentMethod": "WALLET",
   "idempotencyKey": "optional",
@@ -247,9 +265,23 @@ All are category `ORDER` (except the admin one, `SYSTEM`).
 
 ## 7. Suggested screens
 
-1. **Checkout state picker** — pick state → `GET /merchants/available?state=`.
-2. **Merchant list** — show all merchants; badge stock via `products[].inStock` / `requestedProductInStock`.
+1. **Checkout geography picker** — country then state/region; pickup supports configured
+   countries, while home delivery is disabled outside Nigeria until pricing exists.
+2. **Merchant list** — show full, partial, and zero-stock states; partial merchants remain
+   selectable so availability can resolve a split. Show the matched address/phone and a
+   confirmation warning when the primary-address fallback is used.
 3. **Stock conflict modal** — from `POST /merchants/checkout/availability`; per missing line show `merchantsWithStock` or a "Ship via admin" option.
 4. **Split-order summary** — group items by merchant/delivery, show `grandTotal`, then `POST /orders/checkout` and `pay-wallet`.
 5. **Order tracking** — `PICKED_UP` → "Confirm received" + "Open dispute" CTAs.
 6. **Admin dispute inbox** — `GET /admin/orders/disputes` + resolve.
+
+## 8. User-app implementation status
+
+- [x] Canonical country/subdivision discovery and checkout payloads
+- [x] Explicit geography loading, empty, error, and retry states
+- [x] Nigeria-only home delivery with canonical Lagos/outside-Lagos fee calculation
+- [x] Full/partial/none merchant stock selection and fallback-address warning
+- [x] Split checkout with voucher batch payment
+- [x] Force-refreshed pickup handoff, fail-closed dispute gating, and resolved history
+- [x] Pickup/dispute notification types and order action links
+- [ ] Admin dispute inbox and resolution UI (separate admin application)
