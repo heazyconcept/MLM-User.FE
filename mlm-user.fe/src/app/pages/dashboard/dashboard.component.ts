@@ -218,6 +218,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
   recentActivities = this.activityService.getRecentActivities(5);
   overview = signal<DashboardOverview>(this.defaultOverview);
   dashboardTransactions = signal<DashboardTransaction[]>([]);
+  autoshipTransactions = signal<DashboardTransaction[]>([]);
+  autoshipTransactionsLoading = signal(false);
+  autoshipPage = signal(1);
+  autoshipPageSize = signal(10);
+  readonly autoshipPageSizeOptions = [10, 20, 50];
+  autoshipNextCursor = signal<string | null>(null);
+  displayedAutoshipTransactions = computed(() => {
+    const start = (this.autoshipPage() - 1) * this.autoshipPageSize();
+    return this.autoshipTransactions().slice(start, start + this.autoshipPageSize());
+  });
+  autoshipTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.autoshipTransactions().length / this.autoshipPageSize())),
+  );
+  autoshipCanGoPrevious = computed(() => this.autoshipPage() > 1);
+  autoshipCanGoNext = computed(
+    () => this.autoshipPage() < this.autoshipTotalPages() || !!this.autoshipNextCursor(),
+  );
   transactionsNextCursor = signal<string | null>(null);
   animatedStatValues = signal<number[]>([]);
 
@@ -302,8 +319,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   sinceLastLoginMessage = computed(() => {
     const unread = this.unreadCount();
     const activities = this.recentActivities();
-    if (unread > 0) return `You have ${unread} new notification${unread > 1 ? 's' : ''} since your last visit.`;
-    if (activities.length > 0) return `${activities.length} recent activit${activities.length > 1 ? 'ies' : 'y'} on your account.`;
+    if (unread > 0)
+      return `You have ${unread} new notification${unread > 1 ? 's' : ''} since your last visit.`;
+    if (activities.length > 0)
+      return `${activities.length} recent activit${activities.length > 1 ? 'ies' : 'y'} on your account.`;
     return 'No new updates since your last login. You are all caught up.';
   });
 
@@ -554,9 +573,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const n = new Intl.NumberFormat('en-NG', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(
-      Math.abs(activity.amount),
-    );
+    }).format(Math.abs(activity.amount));
     return activity.type === 'Withdrawal' ? `-${sym}${n}` : `+${sym}${n}`;
   }
 
@@ -669,6 +686,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
         },
       });
 
+      this.loadAutoshipTransactions();
+
       this.walletService.fetchWallets().subscribe({
         next: () => this.cdr.markForCheck(),
         error: () => {
@@ -728,6 +747,72 @@ export class DashboardComponent implements OnInit, OnDestroy {
       cancelAnimationFrame(this.statCountUpFrame);
       this.statCountUpFrame = null;
     }
+  }
+
+  loadNextAutoshipPage(): void {
+    if (this.autoshipPage() < this.autoshipTotalPages()) {
+      this.autoshipPage.update((page) => page + 1);
+      return;
+    }
+
+    const cursor = this.autoshipNextCursor();
+    if (!cursor || this.autoshipTransactionsLoading()) return;
+    this.loadAutoshipTransactions(cursor);
+  }
+
+  loadPreviousAutoshipPage(): void {
+    if (this.autoshipPage() > 1 && !this.autoshipTransactionsLoading()) {
+      this.autoshipPage.update((page) => page - 1);
+    }
+  }
+
+  onAutoshipPageSizeChange(event: Event): void {
+    const size = Number((event.target as HTMLSelectElement).value);
+    if (!Number.isFinite(size) || size <= 0 || size === this.autoshipPageSize()) return;
+
+    this.autoshipPageSize.set(size);
+    this.autoshipPage.set(1);
+    this.autoshipTransactions.set([]);
+    this.autoshipNextCursor.set(null);
+    this.loadAutoshipTransactions();
+  }
+
+  autoshipShowingFrom(): number {
+    if (this.autoshipTransactions().length === 0) return 0;
+    return (this.autoshipPage() - 1) * this.autoshipPageSize() + 1;
+  }
+
+  autoshipShowingTo(): number {
+    return Math.min(
+      this.autoshipTransactions().length,
+      this.autoshipPage() * this.autoshipPageSize(),
+    );
+  }
+
+  private loadAutoshipTransactions(cursor?: string): void {
+    this.autoshipTransactionsLoading.set(true);
+    this.dashboardService
+      .getTransactions(this.autoshipPageSize(), cursor, { category: 'autoship' })
+      .subscribe({
+      next: (res) => {
+        const nextItems = res.items ?? [];
+        if (cursor) {
+          this.autoshipTransactions.update((items) => [...items, ...nextItems]);
+          this.autoshipPage.update((page) => page + 1);
+        } else {
+          this.autoshipTransactions.set(nextItems);
+        }
+        this.autoshipNextCursor.set(res.nextCursor ?? null);
+        this.autoshipTransactionsLoading.set(false);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.autoshipTransactions.set([]);
+        this.autoshipNextCursor.set(null);
+        this.autoshipTransactionsLoading.set(false);
+        this.cdr.markForCheck();
+      },
+      });
   }
 
   private animateCards(): void {
@@ -883,8 +968,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       baseZIndex: 10000,
       data: {
         selectedPackage: this.currentUser()?.package ?? 'NICKEL',
-        returnAfterFundingUrl: '/dashboard'
-      }
+        returnAfterFundingUrl: '/dashboard',
+      },
     });
 
     dialogRef?.onClose.subscribe((funded: boolean) => {
@@ -893,7 +978,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           next: (wallet) => {
             this.registrationWallet.set(wallet);
             this.cdr.markForCheck();
-          }
+          },
         });
       }
     });
@@ -917,21 +1002,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   // Add this method to your dashboard component (.ts)
-// Maps each package tier to its accent color
+  // Maps each package tier to its accent color
 
-getPackageColor(): string {
-  const pkg = (this.userPackageLabel() ?? '').toUpperCase();
-  const colors: Record<string, string> = {
-    GOLD:      '#b8972a',
-    SILVER:    '#6b7280',
-    DIAMOND:   '#0ea5e9',
-    RUBY:      '#e11d48',
-    PLATINUM:  '#7c3aed',
-    NICKEL:    '#78716c',
-    BRONZE:    '#a16207',
-  };
-  return colors[pkg] ?? '#2d7a3a'; // fallback to brand green
-}
+  getPackageColor(): string {
+    const pkg = (this.userPackageLabel() ?? '').toUpperCase();
+    const colors: Record<string, string> = {
+      GOLD: '#b8972a',
+      SILVER: '#6b7280',
+      DIAMOND: '#0ea5e9',
+      RUBY: '#e11d48',
+      PLATINUM: '#7c3aed',
+      NICKEL: '#78716c',
+      BRONZE: '#a16207',
+    };
+    return colors[pkg] ?? '#2d7a3a'; // fallback to brand green
+  }
 
   getMerchantTypeLabel(type: MerchantType): string {
     const labels: Record<MerchantType, string> = {
