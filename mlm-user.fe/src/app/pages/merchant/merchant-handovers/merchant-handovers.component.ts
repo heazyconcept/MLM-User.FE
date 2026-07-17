@@ -56,8 +56,9 @@ import { UiTableComponent } from '../../../components/table/table-component';
         gap: 0.5rem;
       }
 
-      @media (max-width: 1023px) {
+      @media (max-width: 1024px) {
         :host ::ng-deep .merchant-handovers-table .table-cell-action .cell-value {
+          flex-direction: column;
           align-items: stretch;
           width: 100%;
         }
