@@ -40,13 +40,26 @@ import { CommonModule } from '@angular/common';
         padding: 0.75rem 1.25rem;
       }
 
-      @media (max-width: 1023px) {
-        :host ::ng-deep .ui-clean-table.p-datatable-stack .p-datatable-table {
+      /*
+       * Stacked (card) layout on mobile. PrimeNG no longer adds a
+       * "p-datatable-stack" class — it injects its own id-scoped media query —
+       * so we mark stacked tables with our own "ui-table-stack" class.
+       * !important is needed to beat PrimeNG's injected id-scoped rules and
+       * the inline min-width used for desktop horizontal scrolling.
+       */
+      @media (max-width: 1024px) {
+        :host ::ng-deep .ui-clean-table.ui-table-stack .p-datatable-table {
           border-collapse: separate;
           border-spacing: 0 0.75rem;
+          min-width: 0 !important;
+          width: 100%;
         }
 
-        :host ::ng-deep .ui-clean-table.p-datatable-stack .p-datatable-tbody > tr {
+        :host ::ng-deep .ui-clean-table.ui-table-stack .p-datatable-table-container {
+          overflow-x: hidden;
+        }
+
+        :host ::ng-deep .ui-clean-table.ui-table-stack .p-datatable-tbody > tr {
           display: block;
           background: white;
           border: 1px solid var(--color-mlm-warm-200, #e7e5e4);
@@ -55,21 +68,21 @@ import { CommonModule } from '@angular/common';
           box-shadow: 0 1px 2px rgb(0 0 0 / 0.04);
         }
 
-        :host ::ng-deep .ui-clean-table.p-datatable-stack .p-datatable-tbody > tr > td {
+        :host ::ng-deep .ui-clean-table.ui-table-stack .p-datatable-tbody > tr > td {
           display: flex;
-          align-items: flex-start;
+          align-items: flex-start !important;
           justify-content: space-between;
           gap: 1rem;
           padding: 0.75rem 1rem;
-          border-bottom: 1px solid var(--color-mlm-warm-100, #f5f5f4);
+          border-bottom: 1px solid var(--color-mlm-warm-100, #f5f5f4) !important;
           text-align: right;
         }
 
-        :host ::ng-deep .ui-clean-table.p-datatable-stack .p-datatable-tbody > tr > td:last-child {
-          border-bottom: none;
+        :host ::ng-deep .ui-clean-table.ui-table-stack .p-datatable-tbody > tr > td:last-child {
+          border-bottom: none !important;
         }
 
-        :host ::ng-deep .ui-clean-table.p-datatable-stack .p-datatable-tbody > tr > td::before {
+        :host ::ng-deep .ui-clean-table.ui-table-stack .p-datatable-tbody > tr > td::before {
           content: attr(data-label);
           flex: 0 0 38%;
           max-width: 38%;
@@ -82,17 +95,32 @@ import { CommonModule } from '@angular/common';
           padding-top: 0.125rem;
         }
 
-        :host ::ng-deep .ui-clean-table.p-datatable-stack .p-datatable-tbody > tr > td > * {
+        :host ::ng-deep .ui-clean-table.ui-table-stack .p-datatable-tbody > tr > td > * {
           flex: 1;
           min-width: 0;
         }
 
-        :host ::ng-deep .ui-clean-table.p-datatable-stack .p-datatable-tbody > tr > td .cell-value {
+        :host ::ng-deep .ui-clean-table.ui-table-stack .p-datatable-tbody > tr > td .cell-value {
           display: flex;
           flex-direction: column;
           align-items: flex-end;
           gap: 0.25rem;
           margin-left: auto;
+        }
+
+        /* Empty/message rows span all columns and must not become flex rows. */
+        :host ::ng-deep .ui-clean-table.ui-table-stack .p-datatable-tbody > tr > td[colspan] {
+          display: block !important;
+          text-align: center;
+        }
+
+        :host
+          ::ng-deep
+          .ui-clean-table.ui-table-stack
+          .p-datatable-tbody
+          > tr
+          > td[colspan]::before {
+          content: none;
         }
       }
     `,
@@ -117,6 +145,10 @@ export class UiTableComponent {
   resolvedTableStyle(): Record<string, string> {
     if (this.tableStyle) return this.tableStyle;
     return this.responsiveLayout === 'scroll' ? { 'min-width': '50rem' } : { 'min-width': '100%' };
+  }
+
+  resolvedStyleClass(): string {
+    return this.responsiveLayout === 'stack' ? 'ui-clean-table ui-table-stack' : 'ui-clean-table';
   }
 
   exportCSV(): void {

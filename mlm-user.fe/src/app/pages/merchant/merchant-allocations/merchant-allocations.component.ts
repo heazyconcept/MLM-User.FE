@@ -49,23 +49,33 @@ type AllocationFilter = 'all' | 'needs_action';
       }
 
       :host ::ng-deep .merchant-allocations-table .table-cell-center .cell-value {
+        display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
       }
 
       :host ::ng-deep .merchant-allocations-table .table-cell-action .cell-value {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         gap: 0.5rem;
+        max-width: 14rem;
+        margin-inline: auto;
       }
 
-      @media (max-width: 1023px) {
+      :host ::ng-deep .merchant-allocations-table .table-cell-action .p-button {
+        width: 100%;
+        justify-content: center;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 1024px) {
         :host ::ng-deep .merchant-allocations-table .table-cell-action .cell-value {
           align-items: stretch;
           width: 100%;
-        }
-
-        :host ::ng-deep .merchant-allocations-table .table-cell-action .p-button {
-          width: 100%;
-          justify-content: center;
+          max-width: none;
+          margin-inline: 0;
         }
       }
     `,
