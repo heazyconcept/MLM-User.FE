@@ -140,6 +140,15 @@ describe('ConsultantService', () => {
   });
 
   it('submits application via POST /consultants/apply', () => {
+    service.fetchEligibility$().subscribe();
+    httpMock.expectOne(`${baseUrl}/consultants/eligibility`).flush({
+      canApply: true,
+      status: null,
+      isRegistrationPaid: true,
+      isStage1Complete: true,
+      effectiveRankingLevel: 4,
+    });
+
     const body = {
       seminarCentreName: 'Segulah Training Centre Lagos',
       seminarCentreAddress: '12 Seminar Road, Ikeja',
@@ -147,17 +156,24 @@ describe('ConsultantService', () => {
       seminarCentreState: 'Lagos',
       phoneNumber: '+2348012345678',
       applicantNotes: 'Weekly seminars every Saturday 10am',
+      trainingSchedule: [
+        { dayOfWeek: 'SATURDAY' as const, startTime: '10:00', endTime: '14:00' },
+      ],
     };
 
     service.apply(body).subscribe((result) => {
       expect(result?.status).toBe('PENDING');
       expect(result?.seminarCentreName).toBe(body.seminarCentreName);
+      expect(result?.trainingSchedule).toEqual(body.trainingSchedule);
     });
 
     const req = httpMock.expectOne(`${baseUrl}/consultants/apply`);
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(body);
-    req.flush(mockApplication);
+    req.flush({
+      ...mockApplication,
+      trainingSchedule: body.trainingSchedule,
+    });
 
     expect(service.application()?.status).toBe('PENDING');
     expect(service.eligibility()?.canApply).toBe(false);
@@ -172,5 +188,83 @@ describe('ConsultantService', () => {
     req.flush({ message: 'Already approved' }, { status: 409, statusText: 'Conflict' });
 
     expect(service.error()).toBe('You are already an approved business consultant.');
+  });
+
+  it('maps trainingSchedule from GET /consultants/me and ignores malformed slots', () => {
+    service.fetchApplication$().subscribe((app) => {
+      expect(app?.trainingSchedule).toEqual([
+        { dayOfWeek: 'SATURDAY', startTime: '10:00', endTime: '14:00' },
+      ]);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/consultants/me`);
+    req.flush({
+      ...mockApplication,
+      status: 'APPROVED',
+      trainingSchedule: [
+        { dayOfWeek: 'SATURDAY', startTime: '10:00', endTime: '14:00' },
+        { dayOfWeek: 'MONDAY', startTime: 'bad', endTime: '12:00' },
+        { dayOfWeek: 'TUESDAY', startTime: '16:00', endTime: '15:00' },
+        { dayOfWeek: 'NOTADAY', startTime: '09:00', endTime: '10:00' },
+      ],
+    });
+  });
+
+  it('PATCHes /consultants/me when status is APPROVED', () => {
+    service.fetchEligibility$().subscribe();
+    httpMock.expectOne(`${baseUrl}/consultants/eligibility`).flush({
+      canApply: false,
+      status: 'APPROVED',
+      isRegistrationPaid: true,
+      isStage1Complete: true,
+      effectiveRankingLevel: 4,
+    });
+
+    service.fetchApplication$().subscribe();
+    httpMock.expectOne(`${baseUrl}/consultants/me`).flush({
+      ...mockApplication,
+      status: 'APPROVED',
+      trainingSchedule: [],
+    });
+
+    const body = {
+      seminarCentreName: 'Updated Centre',
+      phoneNumber: '+2348099999999',
+      trainingSchedule: [{ dayOfWeek: 'WEDNESDAY' as const, startTime: '16:00', endTime: '18:00' }],
+    };
+
+    service.updateMe(body).subscribe((result) => {
+      expect(result?.seminarCentreName).toBe('Updated Centre');
+      expect(result?.trainingSchedule).toEqual([
+        { dayOfWeek: 'WEDNESDAY', startTime: '16:00', endTime: '18:00' },
+      ]);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/consultants/me`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual(body);
+    req.flush({
+      ...mockApplication,
+      status: 'APPROVED',
+      seminarCentreName: 'Updated Centre',
+      phoneNumber: '+2348099999999',
+      trainingSchedule: [{ dayOfWeek: 'WEDNESDAY', startTime: '16:00', endTime: '18:00' }],
+    });
+
+    expect(service.application()?.seminarCentreName).toBe('Updated Centre');
+  });
+
+  it('does not call PATCH when consultant is not approved', () => {
+    service.fetchApplication$().subscribe();
+    httpMock.expectOne(`${baseUrl}/consultants/me`).flush(mockApplication);
+
+    let result: unknown = 'unset';
+    service.updateMe({ seminarCentreName: 'Nope' }).subscribe((res) => {
+      result = res;
+    });
+
+    httpMock.expectNone(`${baseUrl}/consultants/me`);
+    expect(result).toBeNull();
+    expect(service.error()).toBe('Only approved consultants can update seminar centre details.');
   });
 });
