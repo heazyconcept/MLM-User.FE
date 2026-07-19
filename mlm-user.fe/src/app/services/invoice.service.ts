@@ -14,7 +14,7 @@ export type InvoiceItemType =
 
 export type InvoiceStatus = 'PAID' | 'PENDING' | 'FAILED';
 
-export type ReceiptPaymentMethod = 'PAYSTACK' | 'WALLET' | 'USDT' | 'FLUTTERWAVE';
+export type ReceiptPaymentMethod = 'PAYSTACK' | 'WALLET' | 'USDT' | 'FLUTTERWAVE' | 'KORAPAY';
 
 export interface InvoiceInfo {
   invoiceNumber: string;

@@ -126,6 +126,30 @@ describe('PaymentService', () => {
         gatewayUrl: 'https://checkout.flutterwave.com/pay/abc',
       });
     });
+
+    it('should send KORAPAY provider in request body', () => {
+      const callbackUrl = 'https://dashboard.example.com/auth/payment/callback';
+
+      service
+        .initiateRegistrationPayment('SILVER', 'NGN', callbackUrl, 'KORAPAY')
+        .subscribe((res) => {
+          expect(res.reference).toBe('ref-kora');
+          expect(res.gatewayUrl).toBe('https://checkout.korapay.com/pay/abc');
+        });
+
+      const req = httpMock.expectOne(`${baseUrl}/payments/registration/initiate`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({
+        package: 'SILVER',
+        currency: 'NGN',
+        callbackUrl,
+        provider: 'KORAPAY',
+      });
+      req.flush({
+        reference: 'ref-kora',
+        gatewayUrl: 'https://checkout.korapay.com/pay/abc',
+      });
+    });
   });
 
   describe('initiateUpgradePayment', () => {

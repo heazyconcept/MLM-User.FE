@@ -45,7 +45,7 @@ export interface PaymentRecord {
   createdAt: Date;
 }
 
-export type PaymentGatewayProvider = 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT';
+export type PaymentGatewayProvider = 'PAYSTACK' | 'FLUTTERWAVE' | 'KORAPAY' | 'USDT';
 
 export interface UpgradeOption {
   package: string;

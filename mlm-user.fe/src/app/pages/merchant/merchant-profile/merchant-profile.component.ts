@@ -131,10 +131,11 @@ export class MerchantProfileComponent implements OnInit {
   private readonly gatewayPaymentSources: {
     label: string;
     value: MerchantFeePaymentSource;
-    configKey: 'paystack' | 'flutterwave';
+    configKey: 'paystack' | 'flutterwave' | 'korapay';
   }[] = [
     { label: 'Paystack', value: 'PAYSTACK', configKey: 'paystack' },
     { label: 'Flutterwave', value: 'FLUTTERWAVE', configKey: 'flutterwave' },
+    { label: 'Korapay', value: 'KORAPAY', configKey: 'korapay' },
   ];
 
   paymentSources = computed(() => {
