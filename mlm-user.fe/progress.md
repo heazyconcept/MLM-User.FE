@@ -39,6 +39,8 @@
 | Checkout Availability       | `POST /merchants/checkout/availability`                   | ✅ Completed | 2026-07-15 | Canonical geography with partial-stock merchant selection and split resolution                                      |
 | Split Checkout & Payment    | `POST /orders/checkout`, `POST /orders/checkout/:id/pay-wallet` | ✅ Completed | 2026-07-15 | Carries canonical geography through all groups and enforces Product Voucher payment                                |
 | Pickup Receipt & Disputes   | `POST /orders/:id/confirm-received`, `/orders/:id/disputes` | ✅ Completed | 2026-07-15 | Force refresh, fail-closed dispute loading, multipart evidence, and resolved/closed history                         |
+| Merchant Stock Top-up Create | `POST /merchants/me/stock-requests`                        | ✅ Completed | 2026-07-19 | Request stock dialog on inventory; handles 409 pending / 404 not-in-inventory                                      |
+| Merchant Stock Top-up List   | `GET /merchants/me/stock-requests`                         | ✅ Completed | 2026-07-19 | Top-ups tab; allocation `source` mapping; confirm receipt via existing allocations flow                            |
 
 ---
 

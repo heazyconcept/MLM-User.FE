@@ -101,6 +101,13 @@
                           Remainder allocation
                         </span>
                       }
+                      @if (alloc.source === 'MERCHANT_REQUEST') {
+                        <span
+                          class="inline-flex w-fit rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700"
+                        >
+                          Top-up
+                        </span>
+                      }
                       @if (alloc.handoverStatus && alloc.handoverStatus !== 'NONE') {
                         <span
                           class="inline-flex w-fit rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700"
@@ -371,9 +378,37 @@
           ></div>
         </div>
       } @else if (eligibleSuppliers().length === 0) {
-        <p class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-          {{ handoverFormError() || 'No eligible suppliers found.' }}
-        </p>
+        <div class="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <p>
+            {{
+              handoverFormError() ||
+                'No eligible higher-tier merchants with matching coverage and stock right now.'
+            }}
+          </p>
+          <p class="leading-relaxed">
+            If you need more warehouse stock first, request a top-up from admin, then try handover
+            again once inventory is updated.
+          </p>
+          @if (stockRequestSuccessMessage(); as success) {
+            <p class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              {{ success }}
+            </p>
+          } @else if (hasPendingStockRequest(alloc.productId)) {
+            <p
+              class="inline-flex min-h-10 items-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-amber-700 border border-amber-200"
+            >
+              Pending request already submitted for this product
+            </p>
+          } @else {
+            <button
+              type="button"
+              class="inline-flex min-h-10 items-center justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-mlm-primary border border-mlm-primary/20 hover:bg-mlm-primary/5"
+              (click)="openStockRequestFromHandover()"
+            >
+              Request stock from admin
+            </button>
+          }
+        </div>
       } @else {
         <div class="max-h-80 space-y-2 overflow-y-auto">
           @for (supplier of eligibleSuppliers(); track supplier.id) {
@@ -475,6 +510,83 @@
           [loading]="isPending(actionKey(['dialog', selectedAllocation()!.id, 'confirm-handover']))"
           (onClick)="submitConfirmHandoverReceipt()"
           styleClass="!bg-mlm-primary !border-mlm-primary"
+        ></p-button>
+      </div>
+    </div>
+  }
+</p-dialog>
+
+<p-dialog
+  [visible]="stockRequestModalVisible()"
+  (visibleChange)="stockRequestModalVisible.set($event)"
+  [modal]="true"
+  [closable]="!actionLoading()"
+  [draggable]="false"
+  [resizable]="false"
+  header="Request stock"
+  styleClass="w-full max-w-md"
+  appendTo="body"
+  (onHide)="closeStockRequestModal()"
+>
+  @if (selectedAllocation(); as alloc) {
+    <div class="space-y-4">
+      <p class="text-sm sm:text-base font-semibold text-mlm-text leading-snug break-words">
+        {{ productLabel(alloc) }}
+      </p>
+      <p class="text-sm text-mlm-secondary leading-relaxed">
+        Request additional units from the admin warehouse. This creates a pending allocation for
+        dispatch.
+      </p>
+
+      <div>
+        <label for="alloc-stock-request-qty" class="mb-2 block text-sm font-semibold text-mlm-text">
+          Quantity
+        </label>
+        <p-inputNumber
+          id="alloc-stock-request-qty"
+          [ngModel]="stockRequestQuantity()"
+          (ngModelChange)="stockRequestQuantity.set($event ?? 1)"
+          [min]="1"
+          [max]="10000"
+          [showButtons]="true"
+          inputId="alloc-stock-request-qty"
+          styleClass="w-full"
+        ></p-inputNumber>
+      </div>
+
+      <div>
+        <label for="alloc-stock-request-notes" class="mb-2 block text-sm font-semibold text-mlm-text">
+          Notes <span class="font-normal text-mlm-secondary">(optional)</span>
+        </label>
+        <textarea
+          id="alloc-stock-request-notes"
+          rows="3"
+          [ngModel]="stockRequestNotes()"
+          (ngModelChange)="stockRequestNotes.set($event)"
+          placeholder="For example: Need more units to fulfill an inbound handover…"
+          class="min-h-20 w-full resize-y rounded-lg border border-gray-200 px-3 py-2 text-sm"
+        ></textarea>
+      </div>
+
+      @if (stockRequestFormError(); as fe) {
+        <p class="text-sm leading-relaxed text-red-600">{{ fe }}</p>
+      }
+
+      <div class="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end sm:gap-3 sm:pt-2">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          styleClass="w-full sm:w-auto min-h-11"
+          [disabled]="actionLoading()"
+          (onClick)="closeStockRequestModal()"
+        ></p-button>
+        <p-button
+          label="Submit request"
+          icon="pi pi-send"
+          styleClass="w-full sm:w-auto min-h-11 !bg-mlm-primary !border-mlm-primary"
+          [loading]="isPending(actionKey(['dialog', alloc.id, 'stock-request']))"
+          [disabled]="!canSubmitStockRequest()"
+          (onClick)="submitStockRequest()"
         ></p-button>
       </div>
     </div>
