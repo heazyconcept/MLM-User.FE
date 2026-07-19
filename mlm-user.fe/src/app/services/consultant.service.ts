@@ -13,6 +13,23 @@ export type ConsultantUiState =
   | 'revoked'
   | 'blocked';
 
+export type DayOfWeek =
+  | 'MONDAY'
+  | 'TUESDAY'
+  | 'WEDNESDAY'
+  | 'THURSDAY'
+  | 'FRIDAY'
+  | 'SATURDAY'
+  | 'SUNDAY';
+
+export interface TrainingScheduleSlot {
+  dayOfWeek: DayOfWeek;
+  /** Local centre time, 24h `HH:mm`. */
+  startTime: string;
+  /** Local centre time, 24h `HH:mm`. Must be after `startTime`. */
+  endTime: string;
+}
+
 export interface ConsultantApplication {
   id: string;
   userId: string;
@@ -23,6 +40,7 @@ export interface ConsultantApplication {
   seminarCentreState?: string | null;
   phoneNumber?: string | null;
   applicantNotes?: string | null;
+  trainingSchedule?: TrainingScheduleSlot[];
   appliedAt: string;
   reviewedAt?: string | null;
   rejectionReason?: string | null;
@@ -49,7 +67,29 @@ export interface ApplyConsultantBody {
   seminarCentreState?: string;
   phoneNumber?: string;
   applicantNotes?: string;
+  trainingSchedule?: TrainingScheduleSlot[];
 }
+
+export interface UpdateConsultantBody {
+  seminarCentreName?: string;
+  seminarCentreAddress?: string;
+  seminarCentreCity?: string;
+  seminarCentreState?: string;
+  phoneNumber?: string;
+  trainingSchedule?: TrainingScheduleSlot[];
+}
+
+const DAY_OF_WEEK_VALUES: readonly DayOfWeek[] = [
+  'MONDAY',
+  'TUESDAY',
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+  'SUNDAY',
+] as const;
+
+const TIME_HH_MM = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 @Injectable({ providedIn: 'root' })
 export class ConsultantService {
@@ -148,8 +188,8 @@ export class ConsultantService {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
-    this.applicationRequest$ = this.api.get<ConsultantApplication | null>('consultants/me').pipe(
-      map((res) => (res && res.id ? res : null)),
+    this.applicationRequest$ = this.api.get<unknown>('consultants/me').pipe(
+      map((res) => this.mapApplication(res)),
       tap((res) => this.applicationSignal.set(res)),
       catchError((err) => {
         console.error('[ConsultantService] fetchApplication failed', err);
@@ -181,7 +221,8 @@ export class ConsultantService {
     this.actionLoadingSignal.set(true);
     this.errorSignal.set(null);
 
-    return this.api.post<ConsultantApplication>('consultants/apply', body).pipe(
+    return this.api.post<unknown>('consultants/apply', body).pipe(
+      map((res) => this.mapApplication(res)),
       tap((res) => {
         if (res?.id) {
           this.applicationSignal.set(res);
@@ -204,6 +245,103 @@ export class ConsultantService {
       }),
       finalize(() => this.actionLoadingSignal.set(false)),
     );
+  }
+
+  /**
+   * PATCH /consultants/me — update centre details for approved consultants only.
+   * Returns null without calling the API when status is not APPROVED.
+   */
+  updateMe(body: UpdateConsultantBody): Observable<ConsultantApplication | null> {
+    if (this.consultantStatus() !== 'APPROVED') {
+      this.errorSignal.set('Only approved consultants can update seminar centre details.');
+      return of(null);
+    }
+
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+
+    return this.api.patch<unknown>('consultants/me', body).pipe(
+      map((res) => this.mapApplication(res)),
+      tap((res) => {
+        if (res?.id) {
+          this.applicationSignal.set(res);
+        }
+      }),
+      catchError((err) => {
+        console.error('[ConsultantService] updateMe failed', err);
+        this.errorSignal.set(
+          this.extractErrorMessage(err, 'Failed to update seminar centre details.'),
+        );
+        return of(null);
+      }),
+      finalize(() => this.actionLoadingSignal.set(false)),
+    );
+  }
+
+  private mapApplication(raw: unknown): ConsultantApplication | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const data = raw as Record<string, unknown>;
+    if (!data['id']) return null;
+
+    return {
+      id: String(data['id']),
+      userId: String(data['userId'] ?? ''),
+      status: this.mapStatus(data['status']),
+      seminarCentreName: String(data['seminarCentreName'] ?? ''),
+      seminarCentreAddress: this.optionalString(data['seminarCentreAddress']),
+      seminarCentreCity: this.optionalString(data['seminarCentreCity']),
+      seminarCentreState: this.optionalString(data['seminarCentreState']),
+      phoneNumber: this.optionalString(data['phoneNumber']),
+      applicantNotes: this.optionalString(data['applicantNotes']),
+      trainingSchedule: this.mapTrainingSchedule(data['trainingSchedule']),
+      appliedAt: String(data['appliedAt'] ?? ''),
+      reviewedAt: this.optionalString(data['reviewedAt']),
+      rejectionReason: this.optionalString(data['rejectionReason']),
+      grantedByAdmin: data['grantedByAdmin'] === true,
+      isStage1Complete: data['isStage1Complete'] === true,
+      effectiveRankingLevel:
+        typeof data['effectiveRankingLevel'] === 'number' ? data['effectiveRankingLevel'] : undefined,
+      createdAt: String(data['createdAt'] ?? ''),
+      updatedAt: String(data['updatedAt'] ?? ''),
+    };
+  }
+
+  private mapStatus(raw: unknown): ConsultantStatus {
+    switch (raw) {
+      case 'PENDING':
+      case 'APPROVED':
+      case 'REJECTED':
+      case 'REVOKED':
+        return raw;
+      default:
+        return 'PENDING';
+    }
+  }
+
+  private mapTrainingSchedule(raw: unknown): TrainingScheduleSlot[] {
+    if (!Array.isArray(raw)) return [];
+    const slots: TrainingScheduleSlot[] = [];
+    for (const item of raw) {
+      if (!item || typeof item !== 'object') continue;
+      const row = item as Record<string, unknown>;
+      const dayOfWeek = row['dayOfWeek'];
+      const startTime = typeof row['startTime'] === 'string' ? row['startTime'].trim() : '';
+      const endTime = typeof row['endTime'] === 'string' ? row['endTime'].trim() : '';
+      if (!this.isDayOfWeek(dayOfWeek)) continue;
+      if (!TIME_HH_MM.test(startTime) || !TIME_HH_MM.test(endTime)) continue;
+      if (endTime <= startTime) continue;
+      slots.push({ dayOfWeek, startTime, endTime });
+    }
+    return slots;
+  }
+
+  private isDayOfWeek(value: unknown): value is DayOfWeek {
+    return typeof value === 'string' && (DAY_OF_WEEK_VALUES as readonly string[]).includes(value);
+  }
+
+  private optionalString(value: unknown): string | null {
+    if (value == null || value === '') return null;
+    return String(value);
   }
 
   private extractErrorMessage(err: unknown, fallback: string): string {

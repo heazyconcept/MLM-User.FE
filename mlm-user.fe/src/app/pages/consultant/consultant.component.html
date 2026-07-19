@@ -90,22 +90,272 @@
                 </div>
 
                 <div class="rounded-xl border border-gray-100 p-3.5 sm:p-4">
-                  <h3 class="text-sm font-semibold text-mlm-text mb-2">Your seminar centre</h3>
-                  <p class="text-sm text-mlm-text font-medium break-words">
-                    {{ application()?.seminarCentreName }}
-                  </p>
-                  @if (application()?.seminarCentreAddress) {
-                    <p class="text-sm text-mlm-secondary mt-1 break-words">
-                      {{ application()?.seminarCentreAddress }}
+                  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-mlm-text">Your seminar centre</h3>
+                    @if (!editingCentre()) {
+                      <button
+                        type="button"
+                        class="inline-flex min-h-10 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-mlm-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-green-dark transition-colors"
+                        (click)="startEditCentre()"
+                      >
+                        <i class="pi pi-pencil text-xs"></i>
+                        Update profile
+                      </button>
+                    }
+                  </div>
+
+                  @if (editingCentre()) {
+                    @if (editFormError()) {
+                      <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                        <p class="text-red-700 text-sm">{{ editFormError() }}</p>
+                      </div>
+                    }
+
+                    <form class="space-y-4" (ngSubmit)="saveCentreDetails()">
+                      <div>
+                        <label
+                          for="editSeminarCentreName"
+                          class="block text-sm font-medium text-mlm-text mb-1.5"
+                        >
+                          Seminar centre name <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                          id="editSeminarCentreName"
+                          type="text"
+                          [ngModel]="editSeminarCentreName()"
+                          (ngModelChange)="editSeminarCentreName.set($event)"
+                          name="editSeminarCentreName"
+                          required
+                          class="w-full rounded-xl border border-gray-200 px-4 py-3 sm:py-2.5 text-base sm:text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary"
+                        />
+                      </div>
+
+                      <div>
+                        <label
+                          for="editSeminarCentreAddress"
+                          class="block text-sm font-medium text-mlm-text mb-1.5"
+                        >
+                          Address
+                        </label>
+                        <input
+                          id="editSeminarCentreAddress"
+                          type="text"
+                          [ngModel]="editSeminarCentreAddress()"
+                          (ngModelChange)="editSeminarCentreAddress.set($event)"
+                          name="editSeminarCentreAddress"
+                          class="w-full rounded-xl border border-gray-200 px-4 py-3 sm:py-2.5 text-base sm:text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary"
+                        />
+                      </div>
+
+                      <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <label
+                            for="editSeminarCentreCity"
+                            class="block text-sm font-medium text-mlm-text mb-1.5"
+                          >
+                            City
+                          </label>
+                          <input
+                            id="editSeminarCentreCity"
+                            type="text"
+                            [ngModel]="editSeminarCentreCity()"
+                            (ngModelChange)="editSeminarCentreCity.set($event)"
+                            name="editSeminarCentreCity"
+                            class="w-full rounded-xl border border-gray-200 px-4 py-3 sm:py-2.5 text-base sm:text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            for="editSeminarCentreState"
+                            class="block text-sm font-medium text-mlm-text mb-1.5"
+                          >
+                            State
+                          </label>
+                          <select
+                            id="editSeminarCentreState"
+                            [ngModel]="editSeminarCentreState()"
+                            (ngModelChange)="editSeminarCentreState.set($event)"
+                            name="editSeminarCentreState"
+                            class="w-full rounded-xl border border-gray-200 px-4 py-3 sm:py-2.5 text-base sm:text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary bg-white"
+                          >
+                            <option value="">Select state</option>
+                            @for (state of allStates; track state) {
+                              <option [value]="state">{{ state }}</option>
+                            }
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label
+                          for="editPhoneNumber"
+                          class="block text-sm font-medium text-mlm-text mb-1.5"
+                        >
+                          Phone number
+                        </label>
+                        <input
+                          id="editPhoneNumber"
+                          type="tel"
+                          [ngModel]="editPhoneNumber()"
+                          (ngModelChange)="editPhoneNumber.set($event)"
+                          name="editPhoneNumber"
+                          class="w-full rounded-xl border border-gray-200 px-4 py-3 sm:py-2.5 text-base sm:text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary"
+                        />
+                      </div>
+
+                      <div class="space-y-3">
+                        <div class="flex items-center justify-between gap-3">
+                          <label class="block text-sm font-medium text-mlm-text">
+                            Training schedule
+                          </label>
+                          <button
+                            type="button"
+                            class="text-sm font-semibold text-mlm-primary disabled:text-gray-400"
+                            [disabled]="editScheduleSlots().length >= maxScheduleSlots"
+                            (click)="addScheduleSlot()"
+                          >
+                            Add day
+                          </button>
+                        </div>
+
+                        @if (editScheduleSlots().length === 0) {
+                          <p class="text-sm text-mlm-secondary">
+                            No training days yet. Add days and times for your centre.
+                          </p>
+                        }
+
+                        @for (slot of editScheduleSlots(); track $index; let i = $index) {
+                          <div
+                            class="grid gap-2 rounded-xl border border-gray-100 bg-mlm-background/60 p-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end"
+                          >
+                            <div>
+                              <label
+                                class="block text-xs font-medium text-mlm-secondary mb-1"
+                                [attr.for]="'editDay' + i"
+                              >
+                                Day
+                              </label>
+                              <select
+                                [id]="'editDay' + i"
+                                [ngModel]="slot.dayOfWeek"
+                                (ngModelChange)="
+                                updateScheduleSlot(i, { dayOfWeek: $event || '' })
+                              "
+                                [name]="'editDay' + i"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
+                              >
+                                <option value="">Select day</option>
+                                @for (day of dayOptions; track day.value) {
+                                  <option [value]="day.value">{{ day.label }}</option>
+                                }
+                              </select>
+                            </div>
+                            <div>
+                              <label
+                                class="block text-xs font-medium text-mlm-secondary mb-1"
+                                [attr.for]="'editStart' + i"
+                              >
+                                Start
+                              </label>
+                              <input
+                                [id]="'editStart' + i"
+                                type="time"
+                                [ngModel]="slot.startTime"
+                                (ngModelChange)="updateScheduleSlot(i, { startTime: $event })"
+                                [name]="'editStart' + i"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label
+                                class="block text-xs font-medium text-mlm-secondary mb-1"
+                                [attr.for]="'editEnd' + i"
+                              >
+                                End
+                              </label>
+                              <input
+                                [id]="'editEnd' + i"
+                                type="time"
+                                [ngModel]="slot.endTime"
+                                (ngModelChange)="updateScheduleSlot(i, { endTime: $event })"
+                                [name]="'editEnd' + i"
+                                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              class="inline-flex min-h-10 items-center justify-center rounded-lg px-3 text-sm font-semibold text-red-600 hover:bg-red-50"
+                              (click)="removeScheduleSlot(i)"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        }
+                      </div>
+
+                      <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-1">
+                        <p-button
+                          type="button"
+                          label="Cancel"
+                          severity="secondary"
+                          styleClass="w-full sm:w-auto min-h-11"
+                          [disabled]="actionLoading()"
+                          (onClick)="cancelEditCentre()"
+                        ></p-button>
+                        <p-button
+                          type="submit"
+                          label="Save changes"
+                          icon="pi pi-check"
+                          styleClass="w-full sm:w-auto min-h-11 !bg-mlm-primary !border-mlm-primary"
+                          [loading]="actionLoading()"
+                        ></p-button>
+                      </div>
+                    </form>
+                  } @else {
+                    <p class="text-sm text-mlm-text font-medium break-words">
+                      {{ application()?.seminarCentreName }}
                     </p>
-                  }
-                  @if (application()?.seminarCentreCity || application()?.seminarCentreState) {
-                    <p class="text-sm text-mlm-secondary break-words">
-                      {{ application()?.seminarCentreCity
-                      }}{{ application()?.seminarCentreCity && application()?.seminarCentreState
-                        ? ', '
-                        : '' }}{{ application()?.seminarCentreState }}
-                    </p>
+                    @if (application()?.seminarCentreAddress) {
+                      <p class="text-sm text-mlm-secondary mt-1 break-words">
+                        {{ application()?.seminarCentreAddress }}
+                      </p>
+                    }
+                    @if (application()?.seminarCentreCity || application()?.seminarCentreState) {
+                      <p class="text-sm text-mlm-secondary break-words">
+                        {{ application()?.seminarCentreCity
+                        }}{{ application()?.seminarCentreCity && application()?.seminarCentreState
+                          ? ', '
+                          : '' }}{{ application()?.seminarCentreState }}
+                      </p>
+                    }
+                    @if (application()?.phoneNumber) {
+                      <p class="text-sm text-mlm-secondary mt-2">
+                        {{ application()?.phoneNumber }}
+                      </p>
+                    }
+                    <div class="mt-3 pt-3 border-t border-gray-100">
+                      <p class="text-xs uppercase tracking-widest text-mlm-secondary mb-1.5">
+                        Training schedule
+                      </p>
+                      @if (formattedSchedule().length > 0) {
+                        <ul class="space-y-1">
+                          @for (line of formattedSchedule(); track $index) {
+                            <li class="text-sm text-mlm-text">{{ line }}</li>
+                          }
+                        </ul>
+                      } @else {
+                        <p class="text-sm text-mlm-secondary">No training schedule set</p>
+                      }
+                    </div>
+
+                    <button
+                      type="button"
+                      class="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-mlm-primary bg-white px-4 py-2.5 text-sm font-semibold text-mlm-primary hover:bg-mlm-primary/5 transition-colors"
+                      (click)="startEditCentre()"
+                    >
+                      <i class="pi pi-pencil text-xs"></i>
+                      Update profile
+                    </button>
                   }
                 </div>
               </div>
@@ -364,6 +614,16 @@
                     }}</span>
                   </div>
                 }
+                @if (formattedSchedule().length > 0) {
+                  <div class="p-3.5 sm:p-4 flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
+                    <span class="text-sm text-mlm-secondary shrink-0">Training schedule</span>
+                    <ul class="space-y-1 sm:text-right">
+                      @for (line of formattedSchedule(); track $index) {
+                        <li class="text-sm font-medium text-mlm-text break-words">{{ line }}</li>
+                      }
+                    </ul>
+                  </div>
+                }
                 <div class="p-3.5 sm:p-4 flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
                   <span class="text-sm text-mlm-secondary shrink-0">Submitted</span>
                   <span class="text-sm font-medium text-mlm-text sm:text-right">{{
@@ -544,6 +804,94 @@
                     />
                   </div>
 
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                      <label class="block text-sm font-medium text-mlm-text">
+                        Training days and times <span class="text-red-500">*</span>
+                      </label>
+                      <button
+                        type="button"
+                        class="text-sm font-semibold text-mlm-primary disabled:text-gray-400"
+                        [disabled]="applyScheduleSlots().length >= maxScheduleSlots"
+                        (click)="addApplyScheduleSlot()"
+                      >
+                        Add day
+                      </button>
+                    </div>
+                    <p class="text-xs text-mlm-secondary leading-relaxed">
+                      Add at least one day with start and end time (Africa/Lagos).
+                    </p>
+
+                    @for (slot of applyScheduleSlots(); track $index; let i = $index) {
+                      <div
+                        class="grid gap-2 rounded-xl border border-gray-100 bg-mlm-background/60 p-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end"
+                      >
+                        <div>
+                          <label
+                            class="block text-xs font-medium text-mlm-secondary mb-1"
+                            [attr.for]="'applyDay' + i"
+                          >
+                            Day
+                          </label>
+                          <select
+                            [id]="'applyDay' + i"
+                            [ngModel]="slot.dayOfWeek"
+                            (ngModelChange)="
+                              updateApplyScheduleSlot(i, { dayOfWeek: $event || '' })
+                            "
+                            [name]="'applyDay' + i"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
+                          >
+                            <option value="">Select day</option>
+                            @for (day of dayOptions; track day.value) {
+                              <option [value]="day.value">{{ day.label }}</option>
+                            }
+                          </select>
+                        </div>
+                        <div>
+                          <label
+                            class="block text-xs font-medium text-mlm-secondary mb-1"
+                            [attr.for]="'applyStart' + i"
+                          >
+                            Start
+                          </label>
+                          <input
+                            [id]="'applyStart' + i"
+                            type="time"
+                            [ngModel]="slot.startTime"
+                            (ngModelChange)="updateApplyScheduleSlot(i, { startTime: $event })"
+                            [name]="'applyStart' + i"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            class="block text-xs font-medium text-mlm-secondary mb-1"
+                            [attr.for]="'applyEnd' + i"
+                          >
+                            End
+                          </label>
+                          <input
+                            [id]="'applyEnd' + i"
+                            type="time"
+                            [ngModel]="slot.endTime"
+                            (ngModelChange)="updateApplyScheduleSlot(i, { endTime: $event })"
+                            [name]="'applyEnd' + i"
+                            class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          class="inline-flex min-h-10 items-center justify-center rounded-lg px-3 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:text-gray-400 disabled:hover:bg-transparent"
+                          [disabled]="applyScheduleSlots().length <= 1"
+                          (click)="removeApplyScheduleSlot(i)"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    }
+                  </div>
+
                   <div>
                     <label
                       for="applicantNotes"
@@ -558,7 +906,7 @@
                       name="applicantNotes"
                       rows="3"
                       class="w-full rounded-xl border border-gray-200 px-4 py-3 sm:py-2.5 text-base sm:text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:border-mlm-primary resize-none min-h-24"
-                      placeholder="e.g. Weekly seminars every Saturday 10am"
+                      placeholder="Optional notes for admin review"
                     ></textarea>
                   </div>
 
