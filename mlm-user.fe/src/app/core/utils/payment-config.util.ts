@@ -41,6 +41,7 @@ export const GATEWAY_PROVIDER_OPTIONS: {
 }[] = [
   { value: 'PAYSTACK', label: 'Paystack', configKey: 'paystack' },
   { value: 'FLUTTERWAVE', label: 'Flutterwave', configKey: 'flutterwave' },
+  { value: 'KORAPAY', label: 'Korapay', configKey: 'korapay' },
   { value: 'USDT', label: 'USDT (Crypto)', configKey: 'usdt' },
 ];
 

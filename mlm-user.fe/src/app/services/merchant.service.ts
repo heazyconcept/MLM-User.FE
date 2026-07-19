@@ -42,10 +42,15 @@ export type InventoryAdjustmentType = 'INCREASE' | 'DECREASE';
 export type InventoryAdjustmentDisputeStatus =
   'OPEN' | 'ADMIN_APPROVED' | 'ADMIN_REJECTED' | 'CLOSED';
 export type MerchantFeePaymentSource =
-  'REGISTRATION_WALLET' | 'CASH_WALLET' | 'PAYSTACK' | 'FLUTTERWAVE' | 'USDT';
+  | 'REGISTRATION_WALLET'
+  | 'CASH_WALLET'
+  | 'PAYSTACK'
+  | 'FLUTTERWAVE'
+  | 'KORAPAY'
+  | 'USDT';
 
 export function isMerchantGatewaySource(source: MerchantFeePaymentSource): boolean {
-  return source === 'PAYSTACK' || source === 'FLUTTERWAVE';
+  return source === 'PAYSTACK' || source === 'FLUTTERWAVE' || source === 'KORAPAY';
 }
 
 export function isMerchantUsdtSource(source: MerchantFeePaymentSource): boolean {

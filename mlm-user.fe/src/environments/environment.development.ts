@@ -10,6 +10,7 @@ export const environment = {
     providers: {
       paystack: false,
       flutterwave: true,
+      korapay: true,
       usdt: true,
     },
   },

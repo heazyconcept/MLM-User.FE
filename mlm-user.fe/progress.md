@@ -41,6 +41,7 @@
 | Pickup Receipt & Disputes   | `POST /orders/:id/confirm-received`, `/orders/:id/disputes` | ✅ Completed | 2026-07-15 | Force refresh, fail-closed dispute loading, multipart evidence, and resolved/closed history                         |
 | Merchant Stock Top-up Create | `POST /merchants/me/stock-requests`                        | ✅ Completed | 2026-07-19 | Request stock dialog on inventory; handles 409 pending / 404 not-in-inventory                                      |
 | Merchant Stock Top-up List   | `GET /merchants/me/stock-requests`                         | ✅ Completed | 2026-07-19 | Top-ups tab; allocation `source` mapping; confirm receipt via existing allocations flow                            |
+| Korapay NGN Gateway          | `provider: KORAPAY` on payment initiate endpoints           | ✅ Completed | 2026-07-19 | NGN picker option on registration, wallet funding, upgrade, merchant fee/upgrade; feature-flagged                  |
 
 ---
 
