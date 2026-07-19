@@ -12,6 +12,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { TextareaModule } from 'primeng/textarea';
 
 import {
   MerchantService,
@@ -32,6 +34,8 @@ type AllocationFilter = 'all' | 'needs_action';
     RouterLink,
     ButtonModule,
     DialogModule,
+    InputNumberModule,
+    TextareaModule,
     StatusBadgeComponent,
     UiTableComponent,
   ],
@@ -109,8 +113,15 @@ export class MerchantAllocationsComponent implements OnInit {
   confirmHandoverDialogVisible = signal(false);
   pendingActionKey = signal<string | null>(null);
 
+  stockRequestModalVisible = signal(false);
+  stockRequestQuantity = signal(1);
+  stockRequestNotes = signal('');
+  stockRequestFormError = signal<string | null>(null);
+  stockRequestSuccessMessage = signal<string | null>(null);
+
   readonly tableHeaders = ['Product', 'Qty', 'Status', 'Tracking', 'Timeline', 'Action'];
   readonly maxEvidenceFiles = 10;
+  readonly pendingStockRequestProductIds = this.merchantService.pendingStockRequestProductIds;
 
   constructor() {
     effect(() => {
@@ -144,9 +155,18 @@ export class MerchantAllocationsComponent implements OnInit {
     () => this.merchantService.actionableAllocationCount() > 0,
   );
 
+  readonly canSubmitStockRequest = computed(() => {
+    const alloc = this.selectedAllocation();
+    if (!alloc?.productId) return false;
+    if (this.hasPendingStockRequest(alloc.productId)) return false;
+    const qty = this.stockRequestQuantity();
+    return Number.isInteger(qty) && qty >= 1 && qty <= 10000;
+  });
+
   ngOnInit(): void {
     this.merchantService.fetchAllocations();
     this.merchantService.fetchStockDisputes();
+    this.merchantService.fetchStockRequests();
   }
 
   setFilter(value: AllocationFilter): void {
@@ -276,6 +296,7 @@ export class MerchantAllocationsComponent implements OnInit {
     this.selectedAllocation.set(alloc);
     this.eligibleSuppliers.set([]);
     this.handoverFormError.set(null);
+    this.stockRequestSuccessMessage.set(null);
     this.suppliersLoading.set(true);
     this.supplierDialogVisible.set(true);
     this.merchantService.fetchEligibleHandoverSuppliers(alloc.id).subscribe((suppliers) => {
@@ -294,6 +315,57 @@ export class MerchantAllocationsComponent implements OnInit {
     this.selectedAllocation.set(null);
     this.eligibleSuppliers.set([]);
     this.handoverFormError.set(null);
+    this.stockRequestSuccessMessage.set(null);
+    this.closeStockRequestModal();
+  }
+
+  hasPendingStockRequest(productId: string): boolean {
+    return this.pendingStockRequestProductIds().has(productId);
+  }
+
+  openStockRequestFromHandover(): void {
+    const alloc = this.selectedAllocation();
+    if (!alloc?.productId || this.hasPendingStockRequest(alloc.productId)) return;
+
+    this.stockRequestFormError.set(null);
+    this.stockRequestSuccessMessage.set(null);
+    this.merchantService.clearError();
+    this.stockRequestQuantity.set(Math.max(1, Math.min(10000, alloc.quantity || 1)));
+    this.stockRequestNotes.set('');
+    this.stockRequestModalVisible.set(true);
+  }
+
+  closeStockRequestModal(): void {
+    this.stockRequestModalVisible.set(false);
+    this.stockRequestFormError.set(null);
+  }
+
+  submitStockRequest(): void {
+    const alloc = this.selectedAllocation();
+    if (!alloc?.productId || !this.canSubmitStockRequest()) return;
+
+    this.stockRequestFormError.set(null);
+    this.merchantService.clearError();
+
+    const notes = this.stockRequestNotes().trim();
+    this.beginAction(this.actionKey(['dialog', alloc.id, 'stock-request']));
+    this.merchantService
+      .createStockRequest({
+        productId: alloc.productId,
+        quantity: Math.floor(this.stockRequestQuantity()),
+        ...(notes ? { notes } : {}),
+      })
+      .subscribe((allocation) => {
+        if (allocation) {
+          this.stockRequestSuccessMessage.set(
+            'Stock request submitted. Admin will dispatch when available.',
+          );
+          this.closeStockRequestModal();
+          this.merchantService.fetchStockRequests();
+          return;
+        }
+        this.stockRequestFormError.set(this.error() ?? 'Could not submit stock request.');
+      });
   }
 
   requestHandoverFrom(supplier: MerchantEligibleSupplier): void {

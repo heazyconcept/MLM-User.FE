@@ -24,7 +24,7 @@
 
       <div class="mb-4 sm:mb-6">
         <div
-          class="grid grid-cols-2 gap-2 sm:inline-flex sm:gap-0 rounded-xl border border-gray-200 bg-white p-1 w-full sm:w-auto">
+          class="grid grid-cols-3 gap-2 sm:inline-flex sm:gap-0 rounded-xl border border-gray-200 bg-white p-1 w-full sm:w-auto">
           <button
             type="button"
             class="min-h-11 px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors"
@@ -35,6 +35,26 @@
             "
             (click)="setTab('stock')">
             Stock
+          </button>
+          <button
+            type="button"
+            class="min-h-11 px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+            [class]="
+              activeTab() === 'topups'
+                ? 'bg-mlm-primary text-white shadow-sm'
+                : 'text-mlm-secondary hover:text-mlm-text hover:bg-gray-50'
+            "
+            (click)="setTab('topups')">
+            <span class="truncate">Top-ups</span>
+            @if (pendingTopupsCount() > 0) {
+              <span
+                class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full text-[10px] font-bold shrink-0"
+                [class]="
+                  activeTab() === 'topups' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+                ">
+                {{ pendingTopupsCount() }}
+              </span>
+            }
           </button>
           <button
             type="button"
@@ -149,18 +169,38 @@
                         </span>
                       </td>
                       <td class="py-4 px-4 text-right">
-                        <button
-                          type="button"
-                          class="text-sm font-semibold transition-colors min-h-10 px-2"
-                          [class]="
-                            item.hasOpenAdjustmentDispute
-                              ? 'text-gray-400 cursor-not-allowed'
-                              : 'text-mlm-primary hover:text-mlm-primary/80'
-                          "
-                          [disabled]="item.hasOpenAdjustmentDispute"
-                          (click)="onEditStock(item)">
-                          {{ item.hasOpenAdjustmentDispute ? 'Waiting for review' : 'Update count' }}
-                        </button>
+                        <div class="inline-flex flex-col items-end gap-1">
+                          <button
+                            type="button"
+                            class="text-sm font-semibold transition-colors min-h-10 px-2"
+                            [class]="
+                              !item.isActive || hasPendingStockRequest(item.productId)
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-mlm-primary hover:text-mlm-primary/80'
+                            "
+                            [disabled]="!item.isActive || hasPendingStockRequest(item.productId)"
+                            (click)="onRequestStock(item)">
+                            {{
+                              hasPendingStockRequest(item.productId)
+                                ? 'Pending request'
+                                : 'Request stock'
+                            }}
+                          </button>
+                          <button
+                            type="button"
+                            class="text-sm font-semibold transition-colors min-h-10 px-2"
+                            [class]="
+                              item.hasOpenAdjustmentDispute
+                                ? 'text-gray-400 cursor-not-allowed'
+                                : 'text-mlm-text hover:text-mlm-primary'
+                            "
+                            [disabled]="item.hasOpenAdjustmentDispute"
+                            (click)="onEditStock(item)">
+                            {{
+                              item.hasOpenAdjustmentDispute ? 'Waiting for review' : 'Update count'
+                            }}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   }
@@ -220,18 +260,163 @@
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    class="w-full min-h-11 text-sm font-semibold py-2.5 rounded-xl border transition-colors"
-                    [class]="
-                      item.hasOpenAdjustmentDispute
-                        ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-white'
-                        : 'border-mlm-primary/30 text-mlm-primary bg-white hover:bg-mlm-primary/5'
-                    "
-                    [disabled]="item.hasOpenAdjustmentDispute"
-                    (click)="onEditStock(item)">
-                    {{ item.hasOpenAdjustmentDispute ? 'Waiting for review' : 'Update count' }}
-                  </button>
+                  <div class="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      class="w-full min-h-11 text-sm font-semibold py-2.5 rounded-xl border transition-colors"
+                      [class]="
+                        !item.isActive || hasPendingStockRequest(item.productId)
+                          ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-white'
+                          : 'border-mlm-primary/30 text-mlm-primary bg-white hover:bg-mlm-primary/5'
+                      "
+                      [disabled]="!item.isActive || hasPendingStockRequest(item.productId)"
+                      (click)="onRequestStock(item)">
+                      {{
+                        hasPendingStockRequest(item.productId)
+                          ? 'Pending request'
+                          : 'Request stock'
+                      }}
+                    </button>
+                    <button
+                      type="button"
+                      class="w-full min-h-11 text-sm font-semibold py-2.5 rounded-xl border transition-colors"
+                      [class]="
+                        item.hasOpenAdjustmentDispute
+                          ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-white'
+                          : 'border-gray-200 text-mlm-text bg-white hover:bg-gray-50'
+                      "
+                      [disabled]="item.hasOpenAdjustmentDispute"
+                      (click)="onEditStock(item)">
+                      {{ item.hasOpenAdjustmentDispute ? 'Waiting for review' : 'Update count' }}
+                    </button>
+                  </div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      } @else if (activeTab() === 'topups') {
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-4 lg:p-6">
+          @if (loading() && sortedStockRequests().length === 0) {
+            <div class="flex items-center justify-center py-16 sm:py-20">
+              <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
+            </div>
+          } @else if (sortedStockRequests().length === 0) {
+            <div class="flex flex-col items-center justify-center py-12 sm:py-16 text-center px-2">
+              <div
+                class="w-14 h-14 sm:w-16 sm:h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                <i class="pi pi-truck text-xl sm:text-2xl text-gray-400"></i>
+              </div>
+              <h2 class="text-lg font-bold text-mlm-text mb-2">No stock top-ups yet</h2>
+              <p class="text-mlm-secondary text-sm max-w-md leading-relaxed">
+                Request extra units of an assigned product from the admin warehouse. Use
+                <span class="font-semibold text-mlm-text">Request stock</span> on the Stock tab.
+              </p>
+            </div>
+          } @else {
+            <div class="hidden lg:block overflow-x-auto -mx-3 sm:mx-0">
+              <table class="w-full text-left min-w-[760px]">
+                <thead>
+                  <tr class="border-b border-gray-200">
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest">
+                      Product
+                    </th>
+                    <th
+                      class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center">
+                      Qty
+                    </th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest">
+                      Notes
+                    </th>
+                    <th
+                      class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center">
+                      Status
+                    </th>
+                    <th
+                      class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-right">
+                      Submitted
+                    </th>
+                    <th
+                      class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-right">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  @for (request of sortedStockRequests(); track request.id) {
+                    <tr class="hover:bg-gray-50/50">
+                      <td class="py-4 px-4 font-semibold text-mlm-text">{{ request.productName }}</td>
+                      <td class="py-4 px-4 text-center font-semibold text-mlm-text">
+                        {{ request.quantity }}
+                      </td>
+                      <td class="py-4 px-4 text-sm text-mlm-secondary max-w-xs">
+                        @if (request.cancelReason) {
+                          <p class="text-red-600">Rejected: {{ request.cancelReason }}</p>
+                        } @else {
+                          {{ request.requestNotes || '—' }}
+                        }
+                      </td>
+                      <td class="py-4 px-4 text-center">
+                        <span
+                          class="inline-block text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap {{
+                            getAllocationStatusClass(request.status)
+                          }}">
+                          {{ allocationStatusLabel(request.status) }}
+                        </span>
+                      </td>
+                      <td class="py-4 px-4 text-right text-xs text-mlm-secondary whitespace-nowrap">
+                        {{ formatDate(request.createdAt) }}
+                      </td>
+                      <td class="py-4 px-4 text-right">
+                        @if (needsConfirmReceipt(request)) {
+                          <a
+                            routerLink="/merchant/allocations"
+                            class="text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80">
+                            Confirm receipt
+                          </a>
+                        } @else {
+                          <span class="text-xs text-mlm-secondary">—</span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <ul class="lg:hidden space-y-3" role="list">
+              @for (request of sortedStockRequests(); track request.id) {
+                <li class="rounded-xl border border-gray-100 bg-gray-50/40 p-4 space-y-3">
+                  <div class="flex items-start justify-between gap-3">
+                    <p class="font-semibold text-mlm-text leading-snug break-words flex-1 min-w-0">
+                      {{ request.productName }}
+                    </p>
+                    <span
+                      class="shrink-0 text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-full {{
+                        getAllocationStatusClass(request.status)
+                      }}">
+                      {{ allocationStatusLabel(request.status) }}
+                    </span>
+                  </div>
+                  <p class="text-sm text-mlm-text">
+                    Quantity: <span class="font-semibold">{{ request.quantity }}</span>
+                  </p>
+                  @if (request.requestNotes) {
+                    <p class="text-sm text-mlm-secondary leading-relaxed">{{ request.requestNotes }}</p>
+                  }
+                  @if (request.cancelReason) {
+                    <p class="text-sm text-red-600 leading-relaxed">
+                      Rejected: {{ request.cancelReason }}
+                    </p>
+                  }
+                  <p class="text-xs text-mlm-secondary">{{ formatDate(request.createdAt) }}</p>
+                  @if (needsConfirmReceipt(request)) {
+                    <a
+                      routerLink="/merchant/allocations"
+                      class="inline-flex w-full min-h-11 items-center justify-center rounded-xl border border-mlm-primary/30 text-sm font-semibold text-mlm-primary bg-white hover:bg-mlm-primary/5">
+                      Confirm receipt
+                    </a>
+                  }
                 </li>
               }
             </ul>
@@ -467,6 +652,84 @@
             [loading]="actionLoading()"
             [disabled]="!canSaveEdit()"
             (onClick)="onSaveStock()">
+          </p-button>
+        </div>
+      </div>
+    }
+  </p-dialog>
+
+  <p-dialog
+    [visible]="stockRequestModalVisible()"
+    (visibleChange)="stockRequestModalVisible.set($event)"
+    [modal]="true"
+    header="Request stock"
+    [style]="{ width: '100%', maxWidth: '480px' }"
+    [breakpoints]="{ '640px': '95vw', '480px': '100vw' }"
+    [draggable]="false"
+    [resizable]="false"
+    (onHide)="closeStockRequestModal()"
+    styleClass="inventory-edit-dialog rounded-xl"
+    contentStyleClass="!p-0">
+    @if (stockRequestItem(); as item) {
+      <div class="px-4 pb-4 sm:px-5 sm:pb-5 space-y-4">
+        <p class="text-sm sm:text-base font-semibold text-mlm-text leading-snug break-words">
+          {{ item.productName }}
+        </p>
+        <p class="text-sm text-mlm-secondary leading-relaxed">
+          Request additional units from the admin warehouse. This creates a pending allocation for
+          dispatch.
+        </p>
+
+        <div>
+          <label for="stock-request-qty" class="block text-sm font-semibold text-mlm-text mb-2">
+            Quantity
+          </label>
+          <p-inputNumber
+            id="stock-request-qty"
+            [ngModel]="stockRequestQuantity()"
+            (ngModelChange)="stockRequestQuantity.set($event ?? 1)"
+            [min]="1"
+            [max]="10000"
+            [showButtons]="true"
+            inputId="stock-request-qty"
+            styleClass="inventory-qty-input w-full">
+          </p-inputNumber>
+        </div>
+
+        <div>
+          <label for="stock-request-notes" class="block text-sm font-semibold text-mlm-text mb-2">
+            Notes <span class="font-normal text-mlm-secondary">(optional)</span>
+          </label>
+          <textarea
+            pTextarea
+            id="stock-request-notes"
+            rows="3"
+            [ngModel]="stockRequestNotes()"
+            (ngModelChange)="stockRequestNotes.set($event)"
+            placeholder="For example: Need more units to fulfill an inbound handover…"
+            class="w-full text-sm min-h-20 resize-y">
+          </textarea>
+        </div>
+
+        @if (stockRequestFormError(); as fe) {
+          <p class="text-sm text-red-600 leading-relaxed">{{ fe }}</p>
+        }
+
+        <div class="flex flex-col-reverse sm:flex-row gap-2 sm:gap-3 pt-1 sm:pt-2">
+          <p-button
+            label="Cancel"
+            severity="secondary"
+            styleClass="w-full sm:w-auto min-h-11"
+            (onClick)="closeStockRequestModal()"
+            [disabled]="actionLoading()">
+          </p-button>
+          <p-button
+            label="Submit request"
+            icon="pi pi-send"
+            styleClass="w-full sm:flex-1 min-h-11 !bg-mlm-primary !border-mlm-primary"
+            [loading]="actionLoading()"
+            [disabled]="!canSubmitStockRequest()"
+            (onClick)="onSubmitStockRequest()">
           </p-button>
         </div>
       </div>

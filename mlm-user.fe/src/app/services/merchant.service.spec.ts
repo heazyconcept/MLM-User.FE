@@ -869,6 +869,12 @@ describe('MerchantService — stock handover', () => {
         productName: 'Wine',
         quantity: 1,
         status: 'PENDING',
+        source: 'CATEGORY',
+        requestNotes: null,
+        requestedByUserId: null,
+        cancelledAt: null,
+        cancelReason: null,
+        cancelledByAdminId: null,
         quantityReceived: null,
         dispatchedAt: null,
         inTransitAt: null,
@@ -897,6 +903,12 @@ describe('MerchantService — stock handover', () => {
         productName: 'Wine',
         quantity: 1,
         status: 'PENDING',
+        source: 'CATEGORY',
+        requestNotes: null,
+        requestedByUserId: null,
+        cancelledAt: null,
+        cancelReason: null,
+        cancelledByAdminId: null,
         quantityReceived: null,
         dispatchedAt: null,
         inTransitAt: null,
@@ -917,5 +929,145 @@ describe('MerchantService — stock handover', () => {
         handoverRejectReason: null,
       }),
     ).toBe(true);
+  });
+});
+
+describe('MerchantService — stock top-up requests', () => {
+  let service: MerchantService;
+  let httpMock: HttpTestingController;
+  const baseUrl = environment.apiUrl;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        MerchantService,
+        ApiService,
+        {
+          provide: UserService,
+          useValue: {
+            displayCurrency: () => 'NGN',
+            markAsMerchant: () => undefined,
+          },
+        },
+      ],
+    });
+
+    service = TestBed.inject(MerchantService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+  });
+
+  it('posts stock request body and maps allocation with MERCHANT_REQUEST source', () => {
+    service
+      .createStockRequest({
+        productId: 'prod-1',
+        quantity: 5,
+        notes: 'Need 5 more for handover',
+      })
+      .subscribe((allocation) => {
+        expect(allocation?.source).toBe('MERCHANT_REQUEST');
+        expect(allocation?.requestNotes).toBe('Need 5 more for handover');
+        expect(allocation?.status).toBe('PENDING');
+      });
+
+    const req = httpMock.expectOne(`${baseUrl}/merchants/me/stock-requests`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      productId: 'prod-1',
+      quantity: 5,
+      notes: 'Need 5 more for handover',
+    });
+    req.flush({
+      message: 'Stock request submitted',
+      allocation: {
+        id: 'alloc-sr-1',
+        productId: 'prod-1',
+        productName: 'Wine',
+        quantity: 5,
+        status: 'PENDING',
+        source: 'MERCHANT_REQUEST',
+        requestNotes: 'Need 5 more for handover',
+        requestedByUserId: 'user-1',
+      },
+    });
+
+    const listRefresh = httpMock.expectOne(`${baseUrl}/merchants/me/allocations`);
+    listRefresh.flush([]);
+  });
+
+  it('lists stock requests and maps cancel fields', () => {
+    service.fetchStockRequests({ status: 'PENDING', limit: 20, offset: 0 });
+
+    const req = httpMock.expectOne(
+      (r) =>
+        r.url === `${baseUrl}/merchants/me/stock-requests` &&
+        r.params.get('status') === 'PENDING' &&
+        r.params.get('limit') === '20' &&
+        r.params.get('offset') === '0',
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      total: 1,
+      requests: [
+        {
+          id: 'alloc-sr-2',
+          productId: 'prod-2',
+          productName: 'Tea',
+          quantity: 3,
+          status: 'CANCELLED',
+          source: 'MERCHANT_REQUEST',
+          cancelReason: 'Warehouse short',
+          cancelledAt: '2026-07-18T12:00:00.000Z',
+          cancelledByAdminId: 'admin-1',
+        },
+      ],
+    });
+
+    expect(service.stockRequestsTotal()).toBe(1);
+    expect(service.stockRequests()[0]).toMatchObject({
+      id: 'alloc-sr-2',
+      source: 'MERCHANT_REQUEST',
+      status: 'CANCELLED',
+      cancelReason: 'Warehouse short',
+      cancelledByAdminId: 'admin-1',
+    });
+  });
+
+  it('surfaces a clear error when a pending request already exists', () => {
+    service.createStockRequest({ productId: 'prod-1', quantity: 2 }).subscribe((res) => {
+      expect(res).toBeNull();
+      expect(service.error()).toContain('pending stock request');
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/merchants/me/stock-requests`);
+    req.flush(
+      { message: 'A pending stock request already exists for this product.' },
+      { status: 409, statusText: 'Conflict' },
+    );
+  });
+
+  it('maps source on general allocations list', () => {
+    service.fetchAllocations();
+
+    const req = httpMock.expectOne(`${baseUrl}/merchants/me/allocations`);
+    req.flush([
+      {
+        id: 'alloc-1',
+        productId: 'prod-1',
+        productName: 'Wine',
+        quantity: 10,
+        status: 'PENDING',
+        source: 'MERCHANT_REQUEST',
+        request_notes: 'Top-up',
+      },
+    ]);
+
+    expect(service.allocations()[0].source).toBe('MERCHANT_REQUEST');
+    expect(service.allocations()[0].requestNotes).toBe('Top-up');
   });
 });

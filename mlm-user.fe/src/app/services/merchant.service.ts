@@ -24,6 +24,7 @@ export type FulfilmentMode = 'PICKUP' | 'OFFLINE_DELIVERY';
 export type StockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 export type AllocationStatus =
   'PENDING' | 'DISPATCHED' | 'IN_TRANSIT' | 'DELIVERED' | 'RECEIVED' | 'ACCEPTED' | 'CANCELLED';
+export type AllocationSource = 'CATEGORY' | 'MERCHANT_REQUEST' | 'DISPUTE_REMAINDER';
 export type StockDisputeStatus =
   'OPEN' | 'ADMIN_REJECTED' | 'ADMIN_ACCEPTED' | 'MERCHANT_ACKNOWLEDGED' | 'CLOSED';
 
@@ -405,6 +406,12 @@ export interface MerchantAllocation {
   productName: string;
   quantity: number;
   status: AllocationStatus;
+  source: AllocationSource;
+  requestNotes: string | null;
+  requestedByUserId: string | null;
+  cancelledAt: string | null;
+  cancelReason: string | null;
+  cancelledByAdminId: string | null;
   quantityReceived: number | null;
   dispatchedAt: string | null;
   inTransitAt: string | null;
@@ -425,6 +432,18 @@ export interface MerchantAllocation {
   handoverRejectedAt: string | null;
   handoverRejectedBy: string | null;
   handoverRejectReason: string | null;
+}
+
+export interface CreateStockRequestBody {
+  productId: string;
+  quantity: number;
+  notes?: string;
+}
+
+export interface StockRequestsListParams {
+  status?: AllocationStatus;
+  limit?: number;
+  offset?: number;
 }
 
 export interface MerchantStockDispute {
@@ -586,6 +605,8 @@ export class MerchantService {
   private earningsSignal = signal<MerchantEarningsSummary | null>(null);
   private allocationsSignal = signal<MerchantAllocation[]>([]);
   private handoverRequestsSignal = signal<MerchantAllocation[]>([]);
+  private stockRequestsSignal = signal<MerchantAllocation[]>([]);
+  private stockRequestsTotalSignal = signal(0);
   private stockDisputesSignal = signal<MerchantStockDispute[]>([]);
   private inventoryAdjustmentDisputesSignal = signal<MerchantInventoryAdjustmentDispute[]>([]);
   private inventorySignal = signal<MerchantInventoryItem[]>([]);
@@ -607,6 +628,8 @@ export class MerchantService {
   readonly earnings = this.earningsSignal.asReadonly();
   readonly allocations = this.allocationsSignal.asReadonly();
   readonly handoverRequests = this.handoverRequestsSignal.asReadonly();
+  readonly stockRequests = this.stockRequestsSignal.asReadonly();
+  readonly stockRequestsTotal = this.stockRequestsTotalSignal.asReadonly();
   readonly stockDisputes = this.stockDisputesSignal.asReadonly();
   readonly inventoryAdjustmentDisputes = this.inventoryAdjustmentDisputesSignal.asReadonly();
   readonly inventory = this.inventorySignal.asReadonly();
@@ -615,6 +638,17 @@ export class MerchantService {
   readonly loading = this.loadingSignal.asReadonly();
   readonly error = this.errorSignal.asReadonly();
   readonly actionLoading = this.actionLoadingSignal.asReadonly();
+
+  /** Product IDs that already have a PENDING merchant top-up request. */
+  readonly pendingStockRequestProductIds = computed(() => {
+    const ids = new Set<string>();
+    for (const req of this.stockRequestsSignal()) {
+      if (req.source === 'MERCHANT_REQUEST' && req.status === 'PENDING' && req.productId) {
+        ids.add(req.productId);
+      }
+    }
+    return ids;
+  });
 
   /* ── Computed helpers ────────────────────────────────────────── */
 
@@ -1505,6 +1539,86 @@ export class MerchantService {
       .subscribe();
   }
 
+  /** GET /merchants/me/stock-requests */
+  fetchStockRequests(params?: StockRequestsListParams): void {
+    this.loadingSignal.set(true);
+    this.errorSignal.set(null);
+    const query: Record<string, string | number> = {};
+    if (params?.status) query['status'] = params.status;
+    if (params?.limit != null) query['limit'] = params.limit;
+    if (params?.offset != null) query['offset'] = params.offset;
+
+    this.api
+      .get<{ total?: number; requests?: unknown[] } | unknown[]>('merchants/me/stock-requests', query)
+      .pipe(
+        map((res) => this.normalizeStockRequestsResponse(res)),
+        tap(({ total, requests }) => {
+          this.stockRequestsSignal.set(requests);
+          this.stockRequestsTotalSignal.set(total);
+        }),
+        catchError((err) => {
+          console.error('[MerchantService] fetchStockRequests failed', err);
+          return this.handleOperationalFetchError(err, 'Failed to load stock requests.');
+        }),
+        finalize(() => this.loadingSignal.set(false)),
+      )
+      .subscribe();
+  }
+
+  /** POST /merchants/me/stock-requests */
+  createStockRequest(body: CreateStockRequestBody): Observable<MerchantAllocation | null> {
+    this.actionLoadingSignal.set(true);
+    this.errorSignal.set(null);
+
+    const payload: Record<string, unknown> = {
+      productId: body.productId,
+      quantity: body.quantity,
+    };
+    if (body.notes?.trim()) {
+      payload['notes'] = body.notes.trim();
+    }
+
+    return this.api
+      .post<{ message?: string; allocation?: unknown } | unknown>(
+        'merchants/me/stock-requests',
+        payload,
+      )
+      .pipe(
+        map((res) => {
+          const raw = (res ?? {}) as Record<string, unknown>;
+          const allocationRaw = (raw['allocation'] ?? raw) as Record<string, unknown>;
+          return this.mapAllocation(allocationRaw);
+        }),
+        tap((allocation) => {
+          if (allocation?.id) {
+            this.stockRequestsSignal.update((items) => {
+              const without = items.filter((item) => item.id !== allocation.id);
+              return [allocation, ...without];
+            });
+            this.stockRequestsTotalSignal.update((total) => Math.max(total, 0) + 1);
+            this.fetchAllocations();
+          }
+        }),
+        catchError((err) => {
+          console.error('[MerchantService] createStockRequest failed', err);
+          const status = (err as { status?: number })?.status;
+          const rawMsg = (err as { error?: { message?: string | string[] } })?.error?.message;
+          const text = Array.isArray(rawMsg) ? rawMsg[0] : rawMsg;
+          if (status === 409) {
+            this.errorSignal.set(
+              text || 'A pending stock request already exists for this product.',
+            );
+          } else if (status === 404) {
+            this.errorSignal.set(text || 'Product not found in your inventory.');
+          } else {
+            this.errorSignal.set(text || 'Failed to submit stock request.');
+          }
+          return of(null);
+        }),
+        finalize(() => this.actionLoadingSignal.set(false)),
+      );
+  }
+
   /** GET /merchants/me/stock-disputes */
   fetchStockDisputes(): void {
     this.api
@@ -2026,6 +2140,16 @@ export class MerchantService {
       productName,
       quantity: Number(raw['quantity'] ?? 0),
       status: String(raw['status'] ?? 'PENDING') as AllocationStatus,
+      source: this.mapAllocationSource(raw['source']),
+      requestNotes: (raw['requestNotes'] ?? raw['request_notes'] ?? null) as string | null,
+      requestedByUserId: (raw['requestedByUserId'] ?? raw['requested_by_user_id'] ?? null) as
+        | string
+        | null,
+      cancelledAt: (raw['cancelledAt'] ?? raw['cancelled_at'] ?? null) as string | null,
+      cancelReason: (raw['cancelReason'] ?? raw['cancel_reason'] ?? null) as string | null,
+      cancelledByAdminId: (raw['cancelledByAdminId'] ?? raw['cancelled_by_admin_id'] ?? null) as
+        | string
+        | null,
       quantityReceived:
         raw['quantityReceived'] != null || raw['quantity_received'] != null
           ? Number(raw['quantityReceived'] ?? raw['quantity_received'])
@@ -2103,6 +2227,29 @@ export class MerchantService {
         handoverRaw['reject_reason'] ??
         handoverRaw['reason'] ??
         null) as string | null,
+    };
+  }
+
+  private mapAllocationSource(raw: unknown): AllocationSource {
+    const value = String(raw ?? 'CATEGORY').toUpperCase();
+    if (value === 'MERCHANT_REQUEST' || value === 'DISPUTE_REMAINDER' || value === 'CATEGORY') {
+      return value;
+    }
+    return 'CATEGORY';
+  }
+
+  private normalizeStockRequestsResponse(
+    res: { total?: number; requests?: unknown[] } | unknown[],
+  ): { total: number; requests: MerchantAllocation[] } {
+    if (Array.isArray(res)) {
+      const requests = res.map((raw) => this.mapAllocation(raw as Record<string, unknown>));
+      return { total: requests.length, requests };
+    }
+    const source = (res['requests'] ?? []) as unknown[];
+    const requests = source.map((raw) => this.mapAllocation(raw as Record<string, unknown>));
+    return {
+      total: Number(res['total'] ?? requests.length),
+      requests,
     };
   }
 

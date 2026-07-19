@@ -13,8 +13,10 @@ import {
   MerchantService,
   INVENTORY_ADJUSTMENT_REASON_MIN_LENGTH,
   type MerchantInventoryItem,
+  type MerchantAllocation,
   type StockStatus,
   type InventoryAdjustmentType,
+  type AllocationStatus,
 } from '../../../services/merchant.service';
 import { DialogModule } from 'primeng/dialog';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -22,7 +24,7 @@ import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { TextareaModule } from 'primeng/textarea';
 
-type InventoryTab = 'stock' | 'disputes';
+type InventoryTab = 'stock' | 'topups' | 'disputes';
 
 @Component({
   selector: 'app-merchant-inventory',
@@ -70,6 +72,8 @@ export class MerchantInventoryComponent implements OnInit {
 
   inventory = this.merchantService.inventory;
   inventoryDisputes = this.merchantService.inventoryAdjustmentDisputes;
+  stockRequests = this.merchantService.stockRequests;
+  pendingStockRequestProductIds = this.merchantService.pendingStockRequestProductIds;
   loading = this.merchantService.loading;
   actionLoading = this.merchantService.actionLoading;
   error = this.merchantService.error;
@@ -84,6 +88,12 @@ export class MerchantInventoryComponent implements OnInit {
   formError = signal<string | null>(null);
   successMessage = signal<string | null>(null);
 
+  stockRequestModalVisible = signal(false);
+  stockRequestItem = signal<MerchantInventoryItem | null>(null);
+  stockRequestQuantity = signal(1);
+  stockRequestNotes = signal('');
+  stockRequestFormError = signal<string | null>(null);
+
   readonly sortedDisputes = computed(() =>
     [...this.inventoryDisputes()].sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -92,9 +102,17 @@ export class MerchantInventoryComponent implements OnInit {
     }),
   );
 
-  readonly editAuthorizedQuantity = computed(
-    () => this.editItem()?.authorizedQuantity ?? 0,
+  readonly sortedStockRequests = computed(() =>
+    [...this.stockRequests()].sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    }),
   );
+
+  readonly pendingTopupsCount = computed(() => this.pendingStockRequestProductIds().size);
+
+  readonly editAuthorizedQuantity = computed(() => this.editItem()?.authorizedQuantity ?? 0);
 
   readonly editOriginalQuantity = computed(() => this.editItem()?.stockQuantity ?? 0);
 
@@ -126,9 +144,18 @@ export class MerchantInventoryComponent implements OnInit {
     return true;
   });
 
+  readonly canSubmitStockRequest = computed(() => {
+    const item = this.stockRequestItem();
+    if (!item || this.actionLoading()) return false;
+    if (this.hasPendingStockRequest(item.productId)) return false;
+    const qty = this.stockRequestQuantity();
+    return Number.isInteger(qty) && qty >= 1 && qty <= 10000;
+  });
+
   ngOnInit(): void {
     this.merchantService.fetchInventory();
     this.merchantService.fetchInventoryAdjustmentDisputes();
+    this.merchantService.fetchStockRequests();
   }
 
   setTab(tab: InventoryTab): void {
@@ -136,6 +163,13 @@ export class MerchantInventoryComponent implements OnInit {
     if (tab === 'disputes') {
       this.merchantService.fetchInventoryAdjustmentDisputes();
     }
+    if (tab === 'topups') {
+      this.merchantService.fetchStockRequests();
+    }
+  }
+
+  hasPendingStockRequest(productId: string): boolean {
+    return this.pendingStockRequestProductIds().has(productId);
   }
 
   onEditStock(item: MerchantInventoryItem): void {
@@ -147,6 +181,44 @@ export class MerchantInventoryComponent implements OnInit {
     this.editQuantity.set(item.stockQuantity);
     this.editReason.set('');
     this.editModalVisible.set(true);
+  }
+
+  onRequestStock(item: MerchantInventoryItem): void {
+    if (!item.isActive || this.hasPendingStockRequest(item.productId)) return;
+
+    this.stockRequestFormError.set(null);
+    this.successMessage.set(null);
+    this.merchantService.clearError();
+    this.stockRequestItem.set(item);
+    this.stockRequestQuantity.set(1);
+    this.stockRequestNotes.set('');
+    this.stockRequestModalVisible.set(true);
+  }
+
+  onSubmitStockRequest(): void {
+    const item = this.stockRequestItem();
+    if (!item || !this.canSubmitStockRequest()) return;
+
+    this.stockRequestFormError.set(null);
+    this.successMessage.set(null);
+
+    const notes = this.stockRequestNotes().trim();
+    this.merchantService
+      .createStockRequest({
+        productId: item.productId,
+        quantity: Math.floor(this.stockRequestQuantity()),
+        ...(notes ? { notes } : {}),
+      })
+      .subscribe((allocation) => {
+        if (allocation) {
+          this.successMessage.set('Stock request submitted. Admin will dispatch when available.');
+          this.closeStockRequestModal();
+          this.activeTab.set('topups');
+          this.merchantService.fetchStockRequests();
+        } else if (this.error()) {
+          this.stockRequestFormError.set(this.error());
+        }
+      });
   }
 
   onSaveStock(): void {
@@ -206,6 +278,12 @@ export class MerchantInventoryComponent implements OnInit {
     this.formError.set(null);
   }
 
+  closeStockRequestModal(): void {
+    this.stockRequestModalVisible.set(false);
+    this.stockRequestItem.set(null);
+    this.stockRequestFormError.set(null);
+  }
+
   getStockStatusLabel(status: StockStatus | null): string {
     return this.merchantService.getStockStatusLabel(status);
   }
@@ -224,6 +302,27 @@ export class MerchantInventoryComponent implements OnInit {
     return 'text-gray-600 bg-gray-50';
   }
 
+  getAllocationStatusClass(status: AllocationStatus): string {
+    switch (status) {
+      case 'PENDING':
+        return 'text-amber-700 bg-amber-50';
+      case 'DISPATCHED':
+      case 'IN_TRANSIT':
+        return 'text-blue-700 bg-blue-50';
+      case 'DELIVERED':
+        return 'text-purple-700 bg-purple-50';
+      case 'RECEIVED':
+      case 'ACCEPTED':
+        return 'text-green-700 bg-green-50';
+      case 'CANCELLED':
+        return 'text-red-700 bg-red-50';
+      default: {
+        const _exhaustive: never = status;
+        return _exhaustive;
+      }
+    }
+  }
+
   formatDate(value?: string | null): string {
     if (!value) return '—';
     return new Date(value).toLocaleString();
@@ -235,5 +334,32 @@ export class MerchantInventoryComponent implements OnInit {
 
   adjustmentTypeLabel(type: InventoryAdjustmentType): string {
     return type === 'INCREASE' ? 'Adding units' : 'Removing units';
+  }
+
+  allocationStatusLabel(status: AllocationStatus): string {
+    switch (status) {
+      case 'PENDING':
+        return 'Pending';
+      case 'DISPATCHED':
+        return 'Dispatched';
+      case 'IN_TRANSIT':
+        return 'In transit';
+      case 'DELIVERED':
+        return 'Delivered';
+      case 'RECEIVED':
+        return 'Received';
+      case 'ACCEPTED':
+        return 'Accepted';
+      case 'CANCELLED':
+        return 'Cancelled';
+      default: {
+        const _exhaustive: never = status;
+        return _exhaustive;
+      }
+    }
+  }
+
+  needsConfirmReceipt(request: MerchantAllocation): boolean {
+    return request.status === 'DELIVERED';
   }
 }
