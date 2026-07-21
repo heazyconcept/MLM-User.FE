@@ -5,8 +5,8 @@ export const environment = {
   defaultReferralUsername: 'default',
   payments: {
     /** Resolved at runtime via window.location.origin when callbackUrl is empty. */
-    appUrl: '',
-    callbackUrl: '',
+    appUrl: 'https://dashboard-test.segulahglobal-herbal.com',
+    callbackUrl: 'https://dashboard-test.segulahglobal-herbal.com/auth/payment/callback',
     providers: {
       paystack: false,
       flutterwave: true,
