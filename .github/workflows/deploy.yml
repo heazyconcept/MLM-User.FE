@@ -27,7 +27,7 @@ jobs:
 
       - name: Build application
         working-directory: ./mlm-user.fe
-        run: npm run build -- --configuration production
+        run: npm run build -- --configuration development
         env:
           CI: true
 
