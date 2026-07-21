@@ -3,7 +3,7 @@ name: Deploy to cPanel
 on:
   push:
     branches:
-      - main
+      - dev
   workflow_dispatch:
 
 jobs:
@@ -33,10 +33,10 @@ jobs:
 
       - name: Clear FTP target (keep .htaccess)
         env:
-          CPANEL_HOST: ${{ secrets.CPANEL_HOST }}
-          CPANEL_USERNAME: ${{ secrets.CPANEL_USERNAME }}
-          CPANEL_PASSWORD: ${{ secrets.CPANEL_PASSWORD }}
-          CPANEL_TARGET_DIR: ${{ secrets.CPANEL_TARGET_DIR }}
+          CPANEL_HOST: ${{ secrets.CPANEL_HOST_DEV }}
+          CPANEL_USERNAME: ${{ secrets.CPANEL_USERNAME_DEV }}
+          CPANEL_PASSWORD: ${{ secrets.CPANEL_PASSWORD_DEV }}
+          CPANEL_TARGET_DIR: ${{ secrets.CPANEL_TARGET_DIR_DEV }}
         run: |
           set -euo pipefail
           sudo apt-get update -qq
@@ -67,11 +67,11 @@ jobs:
       - name: Deploy to cPanel via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
-          server: ${{ secrets.CPANEL_HOST }}
-          username: ${{ secrets.CPANEL_USERNAME }}
-          password: ${{ secrets.CPANEL_PASSWORD }}
+          server: ${{ secrets.CPANEL_HOST_DEV }}
+          username: ${{ secrets.CPANEL_USERNAME_DEV }}
+          password: ${{ secrets.CPANEL_PASSWORD_DEV }}
           local-dir: mlm-user.fe/dist/mlm-user.fe/browser/
-          server-dir: ${{ secrets.CPANEL_TARGET_DIR }}/
+          server-dir: ${{ secrets.CPANEL_TARGET_DIR_DEV }}/
           exclude: |
             **/.git*
             **/.git*/**
