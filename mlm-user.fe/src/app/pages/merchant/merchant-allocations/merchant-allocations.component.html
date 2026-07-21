@@ -76,105 +76,99 @@
       </div>
 
       <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <div class="merchant-allocations-table">
+        <div class="merchant-allocations-table -mx-px overflow-x-auto">
           <app-ui-table
             [value]="filteredAllocations()"
             [headers]="tableHeaders"
             [loading]="loading()"
             [paginator]="filteredAllocations().length > 10"
             [rows]="10"
-            responsiveLayout="stack"
-            breakpoint="1024px"
+            responsiveLayout="scroll"
+            breakpoint="0px"
             [tableStyle]="{ 'min-width': '56rem' }"
           >
             <ng-template #rowTemplate let-alloc>
               <tr class="p-selectable-row">
-                <td data-label="Product">
-                  <div class="cell-value items-start!">
-                    <div class="flex w-full flex-col gap-1 text-left">
-                      <span class="text-sm font-semibold text-mlm-text">{{ productLabel(alloc) }}</span>
-                      <span class="text-xs text-mlm-secondary">SKU: {{ productSku(alloc) }}</span>
-                      @if (alloc.parentAllocationId) {
-                        <span
-                          class="inline-flex w-fit rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700"
-                        >
-                          Remainder allocation
-                        </span>
-                      }
-                      @if (alloc.source === 'MERCHANT_REQUEST') {
-                        <span
-                          class="inline-flex w-fit rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700"
-                        >
-                          Top-up
-                        </span>
-                      }
-                      @if (alloc.handoverStatus && alloc.handoverStatus !== 'NONE') {
-                        <span
-                          class="inline-flex w-fit rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700"
-                        >
-                          {{ MerchantService.handoverStatusLabel(alloc.handoverStatus) }}
-                        </span>
-                      }
-                      @if (alloc.sourceMerchant; as supplier) {
-                        <span class="text-[11px] text-mlm-secondary">
-                          Supplier: {{ supplier.businessName || 'Merchant' }}
-                          @if (supplier.phoneNumber) {
-                            · {{ supplier.phoneNumber }}
-                          }
-                        </span>
-                      }
-                      @if (MerchantService.canConfirmHandoverReceipt(alloc) && supplierPickupLabel(alloc)) {
-                        <span class="text-[11px] font-medium text-mlm-text">
-                          Pickup: {{ supplierPickupLabel(alloc) }}
-                        </span>
-                      }
-                      @if (disputeForAllocation(alloc); as dispute) {
-                        <span class="text-[11px] text-mlm-secondary">
-                          Dispute: {{ dispute.claimedReceivedQuantity }} / {{ dispute.dispatchedQuantity }}
-                          received
-                        </span>
-                      }
-                    </div>
+                <td>
+                  <div class="flex min-w-44 flex-col gap-1">
+                    <span class="text-sm font-semibold text-mlm-text">{{ productLabel(alloc) }}</span>
+                    <span class="text-xs text-mlm-secondary">SKU: {{ productSku(alloc) }}</span>
+                    @if (alloc.parentAllocationId) {
+                      <span
+                        class="inline-flex w-fit rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700"
+                      >
+                        Remainder allocation
+                      </span>
+                    }
+                    @if (alloc.source === 'MERCHANT_REQUEST') {
+                      <span
+                        class="inline-flex w-fit rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700"
+                      >
+                        Top-up
+                      </span>
+                    }
+                    @if (alloc.handoverStatus && alloc.handoverStatus !== 'NONE') {
+                      <span
+                        class="inline-flex w-fit rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700"
+                      >
+                        {{ MerchantService.handoverStatusLabel(alloc.handoverStatus) }}
+                      </span>
+                    }
+                    @if (alloc.sourceMerchant; as supplier) {
+                      <span class="text-[11px] text-mlm-secondary">
+                        Supplier: {{ supplier.businessName || 'Merchant' }}
+                        @if (supplier.phoneNumber) {
+                          · {{ supplier.phoneNumber }}
+                        }
+                      </span>
+                    }
+                    @if (MerchantService.canConfirmHandoverReceipt(alloc) && supplierPickupLabel(alloc)) {
+                      <span class="text-[11px] font-medium text-mlm-text">
+                        Pickup: {{ supplierPickupLabel(alloc) }}
+                      </span>
+                    }
+                    @if (disputeForAllocation(alloc); as dispute) {
+                      <span class="text-[11px] text-mlm-secondary">
+                        Dispute: {{ dispute.claimedReceivedQuantity }} / {{ dispute.dispatchedQuantity }}
+                        received
+                      </span>
+                    }
                   </div>
                 </td>
 
-                <td data-label="Qty">
-                  <div class="cell-value">
-                    <span class="text-sm font-bold tabular-nums text-mlm-text">{{ alloc.quantity }}</span>
-                  </div>
+                <td class="table-cell-center">
+                  <span class="text-sm font-bold tabular-nums text-mlm-text">{{ alloc.quantity }}</span>
                 </td>
 
-                <td data-label="Status" class="table-cell-center">
-                  <div class="cell-value">
-                    <app-status-badge
-                      [status]="allocationStatusForBadge(alloc)"
-                      [uppercase]="false"
-                      size="sm"
-                    />
-                  </div>
+                <td class="table-cell-center">
+                  <app-status-badge
+                    [status]="allocationStatusForBadge(alloc)"
+                    [uppercase]="false"
+                    size="sm"
+                  />
                 </td>
 
-                <td data-label="Tracking">
-                  <div class="cell-value">
-                    <span class="text-sm text-gray-700">{{ alloc.trackingReference || '—' }}</span>
-                  </div>
+                <td>
+                  <span class="whitespace-nowrap text-sm text-gray-700">{{
+                    alloc.trackingReference || '—'
+                  }}</span>
                 </td>
 
-                <td data-label="Timeline">
-                  <div class="cell-value">
-                    <span class="text-sm text-gray-700">{{ timelineLabel(alloc) }}</span>
-                  </div>
+                <td>
+                  <span class="whitespace-nowrap text-sm text-gray-700">{{
+                    timelineLabel(alloc)
+                  }}</span>
                 </td>
 
-                <td data-label="Action" class="table-cell-center table-cell-action">
-                  <div class="cell-value">
+                <td class="table-cell-center table-cell-action">
+                  <div class="flex flex-col items-center gap-2">
                     @if (MerchantService.canConfirmHandoverReceipt(alloc)) {
                       <p-button
                         label="Confirm handover"
                         icon="pi pi-check"
                         size="small"
                         (onClick)="openConfirmHandoverReceipt(alloc)"
-                        styleClass="!bg-mlm-primary !border-mlm-primary"
+                        styleClass="!bg-mlm-primary !border-mlm-primary whitespace-nowrap"
                       ></p-button>
                     } @else if (MerchantService.canRequestHandover(alloc)) {
                       <p-button
@@ -182,7 +176,7 @@
                         icon="pi pi-users"
                         size="small"
                         (onClick)="openPickFromMerchant(alloc)"
-                        styleClass="!bg-mlm-primary !border-mlm-primary"
+                        styleClass="!bg-mlm-primary !border-mlm-primary whitespace-nowrap"
                       ></p-button>
                       @if (MerchantService.isHandoverActive(alloc) === false) {
                         <span class="text-center text-[11px] text-mlm-secondary"
@@ -195,7 +189,7 @@
                         icon="pi pi-check"
                         size="small"
                         (onClick)="openConfirmReceipt(alloc)"
-                        styleClass="!bg-mlm-primary !border-mlm-primary"
+                        styleClass="!bg-mlm-primary !border-mlm-primary whitespace-nowrap"
                       ></p-button>
                     } @else if (disputeForAllocation(alloc); as dispute) {
                       @if (MerchantService.needsDisputeAcknowledgement(dispute)) {
@@ -205,7 +199,7 @@
                           size="small"
                           [loading]="isPending(actionKey(['dispute', dispute.id, 'acknowledge']))"
                           (onClick)="acknowledgeDispute(dispute)"
-                          styleClass="!bg-amber-600 !border-amber-600"
+                          styleClass="!bg-amber-600 !border-amber-600 whitespace-nowrap"
                         ></p-button>
                       } @else {
                         <span class="text-center text-xs text-mlm-secondary">{{

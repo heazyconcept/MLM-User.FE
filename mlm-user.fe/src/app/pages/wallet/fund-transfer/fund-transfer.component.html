@@ -72,30 +72,6 @@
 
               <form [formGroup]="transferForm" (ngSubmit)="onSubmit()" class="space-y-5">
                 <div class="flex flex-col gap-1.5">
-                  <label for="recipient" class="text-sm font-semibold text-gray-700">
-                    Recipient username
-                  </label>
-                  <input
-                    pInputText
-                    id="recipient"
-                    formControlName="recipientUsername"
-                    placeholder="janedoe"
-                    class="w-full"
-                    [disabled]="isFormDisabled()"
-                  />
-                  @if (recipientError()) {
-                    <small class="text-red-500 text-xs">{{ recipientError() }}</small>
-                  }
-                  @if (
-                    transferForm.get('recipientUsername')?.invalid &&
-                    (transferForm.get('recipientUsername')?.dirty ||
-                      transferForm.get('recipientUsername')?.touched)
-                  ) {
-                    <small class="text-red-500 text-xs">Recipient username is required.</small>
-                  }
-                </div>
-
-                <div class="flex flex-col gap-1.5">
                   <label for="source" class="text-sm font-semibold text-gray-700"
                     >Transfer from</label
                   >
@@ -113,8 +89,36 @@
                 </div>
 
                 <div class="flex flex-col gap-1.5">
+                  <label for="recipient" class="text-sm font-semibold text-gray-700">
+                    Transfer to
+                  </label>
+                  <input
+                    pInputText
+                    id="recipient"
+                    formControlName="recipientUsername"
+                    placeholder="janedoe"
+                    class="w-full"
+                    [disabled]="isFormDisabled()"
+                  />
+                  @if (recipientError()) {
+                    <small class="text-red-500 text-xs">{{ recipientError() }}</small>
+                  }
+                  @if (transferForm.get('recipientUsername')?.errors?.['selfTransfer']) {
+                    <small class="text-red-500 text-xs"
+                      >You cannot transfer funds to yourself.</small
+                    >
+                  } @else if (
+                    transferForm.get('recipientUsername')?.invalid &&
+                    (transferForm.get('recipientUsername')?.dirty ||
+                      transferForm.get('recipientUsername')?.touched)
+                  ) {
+                    <small class="text-red-500 text-xs">Recipient username is required.</small>
+                  }
+                </div>
+
+                <div class="flex flex-col gap-1.5">
                   <label for="target" class="text-sm font-semibold text-gray-700"
-                    >Transfer to</label
+                    >Transfer to recipient wallet</label
                   >
                   <p-select
                     formControlName="toWalletType"

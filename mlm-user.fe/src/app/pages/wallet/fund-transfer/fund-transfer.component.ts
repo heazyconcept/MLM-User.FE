@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators, type AbstractControl, type ValidationErrors } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -70,7 +70,10 @@ export class FundTransferComponent implements OnInit {
   sourceOptions = FUND_TRANSFER_SOURCE_OPTIONS;
 
   transferForm = this.fb.group({
-    recipientUsername: ['', [Validators.required, Validators.pattern(/\S+/)]],
+    recipientUsername: [
+      '',
+      [Validators.required, Validators.pattern(/\S+/), (c: AbstractControl) => this.selfTransferValidator(c)],
+    ],
     fromWalletType: ['CASH' as FundTransferSourceWallet, Validators.required],
     toWalletType: ['REGISTRATION' as WalletType, Validators.required],
     amount: [null as number | null, [Validators.required, Validators.min(1)]],
@@ -128,6 +131,14 @@ export class FundTransferComponent implements OnInit {
         if (val) this.toWalletTypeValue.set(val as WalletType);
       });
 
+    this.transferForm
+      .get('recipientUsername')!
+      .valueChanges.pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        // Clear API-only recipient errors as soon as the user edits the field.
+        this.recipientError.set(null);
+      });
+
     effect(() => {
       const source = this.fromWalletTypeValue();
       const target = this.toWalletTypeValue();
@@ -160,6 +171,17 @@ export class FundTransferComponent implements OnInit {
     });
   }
 
+  private selfTransferValidator(control: AbstractControl): ValidationErrors | null {
+    const selfUsername = this.currentUsername().trim().toLowerCase();
+    const recipient = String(control.value ?? '')
+      .trim()
+      .toLowerCase();
+    if (selfUsername && recipient && recipient === selfUsername) {
+      return { selfTransfer: true };
+    }
+    return null;
+  }
+
   onSubmit(): void {
     if (!this.hasPin()) return;
     if (this.transferForm.invalid || this.isFormDisabled()) {
@@ -177,12 +199,6 @@ export class FundTransferComponent implements OnInit {
     const pin = this.transferForm.value.pin ?? '';
 
     if (!recipientUsername || !fromWalletType || !toWalletType || !amount || amount <= 0) {
-      return;
-    }
-
-    const selfUsername = this.currentUsername();
-    if (selfUsername && recipientUsername.toLowerCase() === selfUsername.toLowerCase()) {
-      this.recipientError.set('You cannot transfer funds to yourself.');
       return;
     }
 

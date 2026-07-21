@@ -43,8 +43,41 @@ type AllocationFilter = 'all' | 'needs_action';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
-      :host ::ng-deep .merchant-allocations-table .p-datatable-wrapper {
+      :host ::ng-deep .merchant-allocations-table .p-datatable-wrapper,
+      :host ::ng-deep .merchant-allocations-table .p-datatable-table-container {
         border-radius: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* Keep a real table on all viewports (never stack into cards). */
+      :host ::ng-deep .merchant-allocations-table .p-datatable-table {
+        display: table !important;
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      :host ::ng-deep .merchant-allocations-table .p-datatable-thead {
+        display: table-header-group !important;
+      }
+
+      :host ::ng-deep .merchant-allocations-table .p-datatable-tbody {
+        display: table-row-group !important;
+      }
+
+      :host ::ng-deep .merchant-allocations-table .p-datatable-thead > tr,
+      :host ::ng-deep .merchant-allocations-table .p-datatable-tbody > tr {
+        display: table-row !important;
+      }
+
+      :host ::ng-deep .merchant-allocations-table .p-datatable-thead > tr > th,
+      :host ::ng-deep .merchant-allocations-table .p-datatable-tbody > tr > td {
+        display: table-cell !important;
+        vertical-align: middle;
+      }
+
+      :host ::ng-deep .merchant-allocations-table .p-datatable-tbody > tr > td::before {
+        content: none !important;
       }
 
       :host ::ng-deep .merchant-allocations-table .p-datatable-tbody > tr > td.table-cell-center {
@@ -52,35 +85,12 @@ type AllocationFilter = 'all' | 'needs_action';
         vertical-align: middle;
       }
 
-      :host ::ng-deep .merchant-allocations-table .table-cell-center .cell-value {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-
-      :host ::ng-deep .merchant-allocations-table .table-cell-action .cell-value {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.5rem;
-        max-width: 14rem;
-        margin-inline: auto;
+      :host ::ng-deep .merchant-allocations-table .table-cell-action {
+        min-width: 10rem;
       }
 
       :host ::ng-deep .merchant-allocations-table .table-cell-action .p-button {
-        width: 100%;
-        justify-content: center;
         white-space: nowrap;
-      }
-
-      @media (max-width: 1024px) {
-        :host ::ng-deep .merchant-allocations-table .table-cell-action .cell-value {
-          align-items: stretch;
-          width: 100%;
-          max-width: none;
-          margin-inline: 0;
-        }
       }
     `,
   ],

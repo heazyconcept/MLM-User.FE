@@ -144,31 +144,42 @@
               </div>
 
               <!-- Commissions Pagination -->
-              <div class="flex items-center justify-between px-4 py-4 bg-white">
-                <span class="text-xs text-mlm-warm-600 tabular-nums font-medium">
-                  Showing {{ commTotalRecords() === 0 ? 0 : commShowingFrom() }}–{{ commShowingTo() }} of {{ commTotalRecords() }} commissions
+              <div
+                class="flex flex-col gap-3 px-4 py-4 bg-white sm:flex-row sm:items-center sm:justify-between"
+              >
+                <span
+                  class="text-xs text-mlm-warm-600 tabular-nums font-medium leading-relaxed min-w-0"
+                >
+                  Showing {{ commTotalRecords() === 0 ? 0 : commShowingFrom() }}–{{
+                    commShowingTo()
+                  }}
+                  of {{ commTotalRecords() }} commissions
                 </span>
 
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                   <button
                     type="button"
+                    aria-label="Previous commissions page"
                     (click)="commPreviousPage()"
                     [disabled]="!commCanGoPrevious() || isLoading()"
-                    class="h-8 px-3 text-xs font-semibold text-mlm-warm-700 bg-white border border-mlm-warm-200 rounded-lg hover:bg-mlm-warm-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                    class="h-8 px-3 text-xs font-semibold text-mlm-warm-700 bg-white border border-mlm-warm-200 rounded-lg hover:bg-mlm-warm-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
                   >
                     <i class="pi pi-chevron-left text-[10px]"></i>
                     Prev
                   </button>
 
-                  <span class="h-8 px-3 flex items-center text-xs font-semibold text-mlm-warm-700 bg-mlm-background border border-mlm-warm-200 rounded-lg tabular-nums">
+                  <span
+                    class="h-8 min-w-[3.25rem] px-3 inline-flex items-center justify-center text-xs font-semibold text-mlm-warm-700 bg-mlm-background border border-mlm-warm-200 rounded-lg tabular-nums whitespace-nowrap shrink-0"
+                  >
                     {{ commPage() }} / {{ commTotalPages() }}
                   </span>
 
                   <button
                     type="button"
+                    aria-label="Next commissions page"
                     (click)="commNextPage()"
                     [disabled]="!commCanGoNext() || isLoading()"
-                    class="h-8 px-3 text-xs font-semibold text-mlm-warm-700 bg-white border border-mlm-warm-200 rounded-lg hover:bg-mlm-warm-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                    class="h-8 px-3 text-xs font-semibold text-mlm-warm-700 bg-white border border-mlm-warm-200 rounded-lg hover:bg-mlm-warm-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
                   >
                     Next
                     <i class="pi pi-chevron-right text-[10px]"></i>
@@ -250,13 +261,22 @@
             </div>
 
             <!-- Transactions Pagination -->
-            <div class="flex items-center justify-between px-4 py-4 bg-mlm-background/50">
-              <span class="text-xs text-mlm-warm-600 tabular-nums font-medium">
-                Showing {{ txTotalRecords() === 0 ? 0 : txShowingFrom() }}–{{ txShowingTo() }} of {{ txTotalRecords() }} transactions
+            <div
+              class="flex flex-col gap-3 px-4 py-4 bg-mlm-background/50 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <span
+                class="text-xs text-mlm-warm-600 tabular-nums font-medium leading-relaxed min-w-0"
+              >
+                Showing {{ txTotalRecords() === 0 ? 0 : txShowingFrom() }}–{{ txShowingTo() }} of
+                {{ txTotalRecords() }} transactions
               </span>
 
-              <div class="flex items-center gap-3">
-                <label class="flex items-center gap-2 text-xs font-semibold text-mlm-warm-700 whitespace-nowrap">
+              <div
+                class="flex w-full flex-wrap items-center justify-between gap-3 sm:w-auto sm:flex-nowrap sm:justify-end"
+              >
+                <label
+                  class="flex items-center gap-2 text-xs font-semibold text-mlm-warm-700 whitespace-nowrap shrink-0"
+                >
                   Rows
                   <select
                     class="h-8 rounded-lg border border-mlm-warm-200 bg-white px-2 text-xs font-semibold text-mlm-warm-700 focus:outline-none focus:ring-2 focus:ring-mlm-primary/30"
@@ -271,32 +291,36 @@
                   </select>
                 </label>
 
-                <div class="h-6 w-px bg-mlm-warm-200"></div>
+                <div class="hidden h-6 w-px bg-mlm-warm-200 sm:block"></div>
 
-                <div class="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  (click)="txPreviousPage()"
-                  [disabled]="!txCanGoPrevious() || isLoading()"
-                  class="h-8 px-3 text-xs font-semibold text-mlm-warm-700 bg-white border border-mlm-warm-200 rounded-lg hover:bg-mlm-warm-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-                >
-                  <i class="pi pi-chevron-left text-[10px]"></i>
-                  Prev
-                </button>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    aria-label="Previous transactions page"
+                    (click)="txPreviousPage()"
+                    [disabled]="!txCanGoPrevious() || isLoading()"
+                    class="h-8 px-3 text-xs font-semibold text-mlm-warm-700 bg-white border border-mlm-warm-200 rounded-lg hover:bg-mlm-warm-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                  >
+                    <i class="pi pi-chevron-left text-[10px]"></i>
+                    Prev
+                  </button>
 
-                <span class="h-8 px-3 flex items-center text-xs font-semibold text-mlm-warm-700 bg-white border border-mlm-warm-200 rounded-lg tabular-nums">
-                  {{ txPage() }} / {{ txTotalPages() }}
-                </span>
+                  <span
+                    class="h-8 min-w-[3.25rem] px-3 inline-flex items-center justify-center text-xs font-semibold text-mlm-warm-700 bg-white border border-mlm-warm-200 rounded-lg tabular-nums whitespace-nowrap shrink-0"
+                  >
+                    {{ txPage() }} / {{ txTotalPages() }}
+                  </span>
 
-                <button
-                  type="button"
-                  (click)="txNextPage()"
-                  [disabled]="!txCanGoNext() || isLoading()"
-                  class="h-8 px-3 text-xs font-semibold text-mlm-warm-700 bg-white border border-mlm-warm-200 rounded-lg hover:bg-mlm-warm-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-                >
-                  Next
-                  <i class="pi pi-chevron-right text-[10px]"></i>
-                </button>
+                  <button
+                    type="button"
+                    aria-label="Next transactions page"
+                    (click)="txNextPage()"
+                    [disabled]="!txCanGoNext() || isLoading()"
+                    class="h-8 px-3 text-xs font-semibold text-mlm-warm-700 bg-white border border-mlm-warm-200 rounded-lg hover:bg-mlm-warm-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                  >
+                    Next
+                    <i class="pi pi-chevron-right text-[10px]"></i>
+                  </button>
                 </div>
               </div>
             </div>
