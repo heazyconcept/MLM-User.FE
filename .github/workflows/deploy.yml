@@ -70,6 +70,7 @@ jobs:
           server: ${{ secrets.CPANEL_HOST_DEV }}
           username: ${{ secrets.CPANEL_USERNAME_DEV }}
           password: ${{ secrets.CPANEL_PASSWORD_DEV }}
+          protocol: ftps
           local-dir: mlm-user.fe/dist/mlm-user.fe/browser/
           server-dir: ${{ secrets.CPANEL_TARGET_DIR_DEV }}/
           exclude: |
