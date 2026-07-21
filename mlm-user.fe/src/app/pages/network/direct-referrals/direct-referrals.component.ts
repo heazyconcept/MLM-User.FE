@@ -28,14 +28,45 @@ import { UiTableComponent } from '../../../components/table/table-component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
-      :host ::ng-deep .direct-referrals-table .p-datatable-wrapper {
+      :host ::ng-deep .direct-referrals-table .p-datatable-wrapper,
+      :host ::ng-deep .direct-referrals-table .p-datatable-table-container {
         border-radius: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
       }
 
-      @media (min-width: 1024px) {
-        :host ::ng-deep .direct-referrals-table .p-datatable-tbody > tr > td:nth-child(4) {
-          min-width: 8rem;
-        }
+      /* Keep a real table on all viewports (never stack into cards). */
+      :host ::ng-deep .direct-referrals-table .p-datatable-table {
+        display: table !important;
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      :host ::ng-deep .direct-referrals-table .p-datatable-thead {
+        display: table-header-group !important;
+      }
+
+      :host ::ng-deep .direct-referrals-table .p-datatable-tbody {
+        display: table-row-group !important;
+      }
+
+      :host ::ng-deep .direct-referrals-table .p-datatable-thead > tr,
+      :host ::ng-deep .direct-referrals-table .p-datatable-tbody > tr {
+        display: table-row !important;
+      }
+
+      :host ::ng-deep .direct-referrals-table .p-datatable-thead > tr > th,
+      :host ::ng-deep .direct-referrals-table .p-datatable-tbody > tr > td {
+        display: table-cell !important;
+        vertical-align: middle;
+      }
+
+      :host ::ng-deep .direct-referrals-table .p-datatable-tbody > tr > td::before {
+        content: none !important;
+      }
+
+      :host ::ng-deep .direct-referrals-table .p-datatable-tbody > tr > td:nth-child(4) {
+        min-width: 8rem;
       }
     `,
   ],
@@ -57,7 +88,7 @@ export class DirectReferralsComponent implements OnInit {
   hasPreviousPage = signal(false);
 
   readonly pageSizeOptions = [10, 20, 50];
-  readonly tableHeaders = ['Member', 'Package', 'Status', 'Their DRs', 'Joined', 'Contact'];
+  readonly tableHeaders = ['Member', 'Package', 'Status', 'Their DRs', 'Joined'];
 
   readonly showingFrom = computed(() =>
     this.totalRecords() === 0 ? 0 : (this.page() - 1) * this.limit() + 1,
@@ -128,10 +159,6 @@ export class DirectReferralsComponent implements OnInit {
 
   memberName(row: DirectReferralRow): string {
     return [row.firstName, row.lastName].filter(Boolean).join(' ') || row.username;
-  }
-
-  contactLabel(row: DirectReferralRow): string {
-    return row.phone || row.email || '—';
   }
 
   drProgressLabel(row: DirectReferralRow): string {

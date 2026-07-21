@@ -102,85 +102,69 @@
             </span>
           </div>
 
-          <div class="direct-referrals-table">
+          <div class="direct-referrals-table -mx-px overflow-x-auto">
             <app-ui-table
               [value]="rows()"
               [headers]="tableHeaders"
               [loading]="isLoading()"
               [paginator]="false"
               [rows]="limit()"
-              responsiveLayout="stack"
-              breakpoint="1024px"
-              [tableStyle]="{ 'min-width': '56rem' }"
+              responsiveLayout="scroll"
+              breakpoint="0px"
+              [tableStyle]="{ 'min-width': '48rem' }"
             >
               <ng-template #rowTemplate let-row>
                 <tr class="p-selectable-row">
-                  <td data-label="Member">
-                    <div class="cell-value items-start!">
-                      <div class="flex w-full flex-col gap-1 text-left">
-                        <span class="text-sm font-semibold text-mlm-text">{{ row.username }}</span>
-                        <span class="text-xs text-mlm-secondary">{{ memberName(row) }}</span>
-                        @if (!row.isRegistrationPaid) {
-                          <span
-                            class="inline-flex w-fit rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600"
-                          >
-                            Not activated
-                          </span>
-                        }
+                  <td>
+                    <div class="flex flex-col gap-1">
+                      <span class="text-sm font-semibold text-mlm-text">{{ memberName(row) }}</span>
+                      <span class="text-xs text-mlm-secondary">{{ row.username }}</span>
+                      @if (!row.isRegistrationPaid) {
+                        <span
+                          class="inline-flex w-fit rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-600"
+                        >
+                          Not activated
+                        </span>
+                      }
+                    </div>
+                  </td>
+
+                  <td>
+                    <span
+                      [class]="
+                        'inline-flex whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium uppercase tracking-wide ' +
+                        getPackageClass(row.registrationPackage)
+                      "
+                    >
+                      {{ row.registrationPackage }}
+                    </span>
+                  </td>
+
+                  <td>
+                    <app-status-badge [status]="statusForBadge(row.status)" size="sm" />
+                  </td>
+
+                  <td>
+                    <div class="flex min-w-32 flex-col gap-2">
+                      <span class="text-sm font-bold text-mlm-text">{{ drProgressLabel(row) }}</span>
+                      <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                        <div
+                          class="h-full rounded-full bg-mlm-primary transition-all duration-500"
+                          [style.width.%]="drProgressPercent(row)"
+                        ></div>
                       </div>
+                      @if (row.drRemaining > 0) {
+                        <span class="text-[11px] font-medium text-mlm-secondary">
+                          {{ row.drRemaining }} to leader
+                        </span>
+                      }
                     </div>
                   </td>
 
-                  <td data-label="Package">
-                    <div class="cell-value">
-                      <span
-                        [class]="
-                          'inline-flex rounded-lg px-3 py-1.5 text-xs font-medium uppercase tracking-wide ' +
-                          getPackageClass(row.registrationPackage)
-                        "
-                      >
-                        {{ row.registrationPackage }}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td data-label="Status">
-                    <div class="cell-value">
-                      <app-status-badge [status]="statusForBadge(row.status)" size="sm" />
-                    </div>
-                  </td>
-
-                  <td data-label="Their DRs">
-                    <div class="cell-value">
-                      <div class="flex w-full flex-col gap-2">
-                        <span class="text-sm font-bold text-mlm-text">{{ drProgressLabel(row) }}</span>
-                        <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                          <div
-                            class="h-full rounded-full bg-mlm-primary transition-all duration-500"
-                            [style.width.%]="drProgressPercent(row)"
-                          ></div>
-                        </div>
-                        @if (row.drRemaining > 0) {
-                          <span class="text-[11px] font-medium text-mlm-secondary">
-                            {{ row.drRemaining }} to leader
-                          </span>
-                        }
-                      </div>
-                    </div>
-                  </td>
-
-                  <td data-label="Joined">
-                    <div class="cell-value">
-                      <span class="text-sm text-gray-700">
-                        {{ row.joinDate | date: 'mediumDate' }}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td data-label="Contact">
-                    <div class="cell-value">
-                      <span class="break-all text-sm text-gray-700">{{ contactLabel(row) }}</span>
-                    </div>
+                  <td>
+                    <span class="whitespace-nowrap text-sm text-gray-700">
+                      {{ row.joinDate | date: 'mediumDate' }}
+                    </span>
                   </td>
                 </tr>
               </ng-template>

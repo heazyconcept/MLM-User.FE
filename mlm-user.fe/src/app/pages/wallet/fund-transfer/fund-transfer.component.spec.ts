@@ -67,4 +67,23 @@ describe('FundTransferComponent transaction PIN gate', () => {
     expect(fixture.nativeElement.textContent).toContain('Transaction PIN');
     expect(fixture.nativeElement.querySelector('#transferPin')).not.toBeNull();
   }, 15_000);
+
+  it('flags self-transfer as the recipient username is typed', () => {
+    const fixture = create(true);
+    const component = fixture.componentInstance;
+
+    component.transferForm.get('recipientUsername')?.setValue('Member');
+    fixture.detectChanges();
+
+    expect(component.transferForm.get('recipientUsername')?.errors?.['selfTransfer']).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('You cannot transfer funds to yourself.');
+
+    component.transferForm.get('recipientUsername')?.setValue('someoneelse');
+    fixture.detectChanges();
+
+    expect(component.transferForm.get('recipientUsername')?.errors?.['selfTransfer']).toBeFalsy();
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'You cannot transfer funds to yourself.',
+    );
+  }, 15_000);
 });
