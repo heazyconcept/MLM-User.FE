@@ -45,15 +45,15 @@ export class RegisterComponent implements OnInit {
   ngOnInit(): void {
     this.applyPackageFromRoute();
 
-    // Prefill: query param (?ref=ABC123) or localStorage (from /ref/:code) overrides default
+    // Prefill real referrers only — never show/validate the env default in the UI
     const queryRef = this.route.snapshot.queryParamMap.get('ref')?.trim();
-    const storedUsername = localStorage.getItem('referralUsername');
-    const usernameToUse = queryRef || storedUsername || environment.defaultReferralUsername || '';
+    const storedUsername = localStorage.getItem('referralUsername')?.trim() || '';
     if (queryRef) {
       localStorage.setItem('referralUsername', queryRef);
     }
-    this.registerForm.patchValue({ referralUsername: usernameToUse });
-    if (usernameToUse) {
+    const usernameToUse = queryRef || storedUsername;
+    if (usernameToUse && !this.isDefaultReferralUsername(usernameToUse)) {
+      this.registerForm.patchValue({ referralUsername: usernameToUse });
       this.referralValidating.set(true);
       this.referralService.validateReferralUsername(usernameToUse).subscribe({
         next: (res) => {
@@ -66,6 +66,12 @@ export class RegisterComponent implements OnInit {
         }
       });
     }
+  }
+
+  /** True when value is the background-only default (must not be shown in the UI). */
+  private isDefaultReferralUsername(username: string): boolean {
+    const fallback = environment.defaultReferralUsername?.trim().toLowerCase() ?? '';
+    return !!fallback && username.trim().toLowerCase() === fallback;
   }
 
   /** Path segment from marketing site: /auth/register/RUBY (see mlm-app-package-query-handoff.md). */
@@ -86,7 +92,7 @@ export class RegisterComponent implements OnInit {
 
   onReferralBlur(): void {
     const username = this.registerForm.get('referralUsername')?.value?.trim();
-    if (!username) {
+    if (!username || this.isDefaultReferralUsername(username)) {
       this.referralValid.set(null);
       this.referralValidating.set(false);
       return;
@@ -131,7 +137,7 @@ export class RegisterComponent implements OnInit {
     // Step 2: Membership
     package: ['', [Validators.required]],
     currency: ['', [Validators.required]],
-    referralUsername: [environment.defaultReferralUsername ?? ''],
+    referralUsername: [''],
     placementParentUsername: [''],
     acceptTerms: [true, [Validators.requiredTrue]]
   }, { validators: this.passwordMatchValidator });
@@ -217,7 +223,7 @@ export class RegisterComponent implements OnInit {
 
   getReferralValidationMessage(): string | null {
     const referralUsername = this.registerForm.get('referralUsername')?.value?.trim();
-    if (!referralUsername) return null;
+    if (!referralUsername || this.isDefaultReferralUsername(referralUsername)) return null;
     if (this.referralValidating()) return 'Checking username...';
     if (this.referralValid() === false) return 'Referral username not found. Please check and try again.';
     if (this.referralValid() === true) return 'Referral username verified.';
@@ -285,7 +291,11 @@ export class RegisterComponent implements OnInit {
       this.loadingService.show();
 
       const formValue = this.registerForm.value;
-      const referralUsername = formValue.referralUsername?.trim();
+      const enteredReferral = formValue.referralUsername?.trim() ?? '';
+      const referralUsername =
+        enteredReferral && !this.isDefaultReferralUsername(enteredReferral)
+          ? enteredReferral
+          : (environment.defaultReferralUsername?.trim() || undefined);
       const placementUsername = formValue.placementParentUsername?.trim();
       const emailTrim = formValue.email?.trim() ?? '';
       const payload: RegisterRequest = {
