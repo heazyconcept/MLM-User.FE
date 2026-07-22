@@ -109,7 +109,7 @@ type ProviderOption = PaymentGatewayProvider;
             </div>
             <p-button
               type="button"
-              label="Pay via bank transfer"
+              label="Manual funding via admin approval"
               icon="pi pi-building"
               [outlined]="true"
               severity="secondary"
