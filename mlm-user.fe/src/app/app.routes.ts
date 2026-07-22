@@ -253,7 +253,7 @@ export const routes: Routes = [
           import('./pages/payments/manual-deposit/manual-deposit.component').then(
             (m) => m.ManualDepositComponent,
           ),
-        data: { title: 'Bank Transfer Deposit' },
+        data: { title: 'Manual Funding via Admin Approval' },
       },
     ],
   },
