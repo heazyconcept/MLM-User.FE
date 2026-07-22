@@ -25,7 +25,7 @@ describe('payment-config.util', () => {
 
   it('reports provider flags from production config', () => {
     expect(isPaymentProviderEnabled('flutterwave')).toBe(true);
-    expect(isPaymentProviderEnabled('korapay')).toBe(true);
+    expect(isPaymentProviderEnabled('korapay')).toBe(false);
     expect(isPaymentProviderEnabled('paystack')).toBe(false);
     expect(isPaymentProviderEnabled('usdt')).toBe(true);
   });
@@ -36,10 +36,9 @@ describe('payment-config.util', () => {
     expect(options.find((opt) => opt.value === 'USDT')?.label).toBe('USDT (Crypto)');
   });
 
-  it('includes Flutterwave and Korapay in NGN gateway options when paystack is disabled', () => {
+  it('includes only Flutterwave in NGN gateway options when paystack and korapay are disabled', () => {
     const options = getEnabledGatewayProviderOptions('NGN');
-    expect(options.map((opt) => opt.value)).toEqual(['FLUTTERWAVE', 'KORAPAY']);
-    expect(options.find((opt) => opt.value === 'KORAPAY')?.label).toBe('Korapay');
+    expect(options.map((opt) => opt.value)).toEqual(['FLUTTERWAVE']);
   });
 
   it('defaults NGN to Flutterwave and USD to USDT', () => {
