@@ -24,7 +24,7 @@ describe('payment-config.util', () => {
   });
 
   it('reports provider flags from production config', () => {
-    expect(isPaymentProviderEnabled('flutterwave')).toBe(true);
+    expect(isPaymentProviderEnabled('flutterwave')).toBe(false);
     expect(isPaymentProviderEnabled('korapay')).toBe(false);
     expect(isPaymentProviderEnabled('paystack')).toBe(false);
     expect(isPaymentProviderEnabled('usdt')).toBe(true);
@@ -36,12 +36,13 @@ describe('payment-config.util', () => {
     expect(options.find((opt) => opt.value === 'USDT')?.label).toBe('USDT (Crypto)');
   });
 
-  it('includes only Flutterwave in NGN gateway options when paystack and korapay are disabled', () => {
+  it('includes no NGN gateway options when all NGN providers are disabled', () => {
     const options = getEnabledGatewayProviderOptions('NGN');
-    expect(options.map((opt) => opt.value)).toEqual(['FLUTTERWAVE']);
+    expect(options.map((opt) => opt.value)).toEqual([]);
   });
 
-  it('defaults NGN to Flutterwave and USD to USDT', () => {
+  it('defaults NGN to Flutterwave fallback and USD to USDT', () => {
+    // NGN has no enabled providers; util still returns FLUTTERWAVE as typed fallback
     expect(getDefaultGatewayProvider('NGN')).toBe('FLUTTERWAVE');
     expect(getDefaultGatewayProvider('USD')).toBe('USDT');
   });
