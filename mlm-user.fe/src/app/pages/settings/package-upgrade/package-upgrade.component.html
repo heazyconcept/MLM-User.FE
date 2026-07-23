@@ -140,7 +140,7 @@
       (back)="onUsdtBack()">
     </app-usdt-deposit>
   } @else if (selectedPackage(); as pkg) {
-    <div class="space-y-6">
+      <div class="space-y-6">
       <div class="text-center py-2">
         <div class="w-16 h-16 rounded-2xl bg-gradient-to-br mx-auto flex items-center justify-center text-white mb-4" [ngClass]="pkg.color">
           <i class="pi text-2xl" [ngClass]="pkg.icon"></i>
@@ -153,48 +153,65 @@
             {{ formatPrice(pkg.price, pkg.currency) }}
           </p>
         }
-        <p class="text-sm text-mlm-secondary mt-2">
-          @if (selectedProvider() === 'USDT') {
-            Send USDT on the deposit screen after you proceed.
-          } @else {
-            You'll be redirected to our payment partner to complete the upgrade.
-          }
-        </p>
+        @if (providerOptions().length > 0) {
+          <p class="text-sm text-mlm-secondary mt-2">
+            @if (selectedProvider() === 'USDT') {
+              Send USDT on the deposit screen after you proceed.
+            } @else {
+              You'll be redirected to our payment partner to complete the upgrade.
+            }
+          </p>
+        } @else {
+          <p class="text-sm text-mlm-secondary mt-2">
+            Online payment is currently unavailable for your currency. Please contact support to upgrade.
+          </p>
+        }
       </div>
 
-      <div class="flex flex-col gap-1.5">
-        <label for="upgrade-provider" class="text-sm font-medium text-mlm-text">Payment method</label>
-        <p-select
-          inputId="upgrade-provider"
-          [options]="providerOptions()"
-          optionLabel="label"
-          optionValue="value"
-          [ngModel]="selectedProvider()"
-          (ngModelChange)="onProviderChange($event)"
-          placeholder="Select payment method"
-          styleClass="w-full"
-          appendTo="body">
-        </p-select>
-      </div>
+      @if (providerOptions().length > 0) {
+        <div class="flex flex-col gap-1.5">
+          <label for="upgrade-provider" class="text-sm font-medium text-mlm-text">Payment method</label>
+          <p-select
+            inputId="upgrade-provider"
+            [options]="providerOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="selectedProvider()"
+            (ngModelChange)="onProviderChange($event)"
+            placeholder="Select payment method"
+            styleClass="w-full"
+            appendTo="body">
+          </p-select>
+        </div>
 
-      <div class="space-y-2">
-        <p-button
-          label="Proceed to Payment"
-          icon="pi pi-arrow-right"
-          (onClick)="confirmUpgrade()"
-          [disabled]="isLoading()"
-          [loading]="isLoading()"
-          styleClass="w-full !bg-mlm-primary !border-mlm-primary !py-3 !rounded-xl !font-semibold !text-sm"
-        ></p-button>
+        <div class="space-y-2">
+          <p-button
+            label="Proceed to Payment"
+            icon="pi pi-arrow-right"
+            (onClick)="confirmUpgrade()"
+            [disabled]="isLoading()"
+            [loading]="isLoading()"
+            styleClass="w-full !bg-mlm-primary !border-mlm-primary !py-3 !rounded-xl !font-semibold !text-sm"
+          ></p-button>
+          <button
+            type="button"
+            (click)="cancelUpgrade()"
+            [disabled]="isLoading()"
+            class="w-full text-sm text-mlm-secondary hover:text-mlm-text py-2 cursor-pointer disabled:opacity-50"
+          >
+            Cancel
+          </button>
+        </div>
+      } @else {
         <button
           type="button"
           (click)="cancelUpgrade()"
           [disabled]="isLoading()"
           class="w-full text-sm text-mlm-secondary hover:text-mlm-text py-2 cursor-pointer disabled:opacity-50"
         >
-          Cancel
+          Close
         </button>
-      </div>
+      }
     </div>
   }
 </p-dialog>

@@ -45,44 +45,46 @@ type ProviderOption = PaymentGatewayProvider;
       @if (state() === 'form') {
         <form [formGroup]="fundForm" (ngSubmit)="onSubmit()" class="space-y-4">
 
-          <!-- Amount -->
-          <div class="flex flex-col gap-1.5">
-            <label for="reg-amount" class="text-sm font-semibold text-gray-700">Amount</label>
-            <p-inputNumber
-              formControlName="amount"
-              inputId="reg-amount"
-              [mode]="'currency'"
-              [currency]="currency()"
-              [currencyDisplay]="'symbol'"
-              [min]="1"
-              fluid="true"
-              placeholder="0.00">
-            </p-inputNumber>
-            @if (fundForm.get('amount')?.invalid && (fundForm.get('amount')?.dirty || fundForm.get('amount')?.touched)) {
-              <small class="text-red-500 text-xs">
-                @if (fundForm.get('amount')?.errors?.['required']) {
-                  Amount is required.
-                }
-                @if (fundForm.get('amount')?.errors?.['min']) {
-                  Minimum amount is {{ currencySymbol() }}1.
-                }
-              </small>
-            }
-          </div>
+          <!-- Amount (online funding only) -->
+          @if (hasOnlineProviders()) {
+            <div class="flex flex-col gap-1.5">
+              <label for="reg-amount" class="text-sm font-semibold text-gray-700">Amount</label>
+              <p-inputNumber
+                formControlName="amount"
+                inputId="reg-amount"
+                [mode]="'currency'"
+                [currency]="currency()"
+                [currencyDisplay]="'symbol'"
+                [min]="1"
+                fluid="true"
+                placeholder="0.00">
+              </p-inputNumber>
+              @if (fundForm.get('amount')?.invalid && (fundForm.get('amount')?.dirty || fundForm.get('amount')?.touched)) {
+                <small class="text-red-500 text-xs">
+                  @if (fundForm.get('amount')?.errors?.['required']) {
+                    Amount is required.
+                  }
+                  @if (fundForm.get('amount')?.errors?.['min']) {
+                    Minimum amount is {{ currencySymbol() }}1.
+                  }
+                </small>
+              }
+            </div>
 
-          <!-- Payment Method -->
-          <div class="flex flex-col gap-1.5">
-            <label for="reg-provider" class="text-sm font-semibold text-gray-700">Payment Method</label>
-            <p-select
-              formControlName="provider"
-              inputId="reg-provider"
-              [options]="providerOptions()"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Select payment method"
-              styleClass="w-full">
-            </p-select>
-          </div>
+            <!-- Payment Method -->
+            <div class="flex flex-col gap-1.5">
+              <label for="reg-provider" class="text-sm font-semibold text-gray-700">Payment Method</label>
+              <p-select
+                formControlName="provider"
+                inputId="reg-provider"
+                [options]="providerOptions()"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select payment method"
+                styleClass="w-full">
+              </p-select>
+            </div>
+          }
 
           @if (formError()) {
             <p-message severity="error" [text]="formError()" styleClass="w-full"></p-message>
@@ -90,33 +92,53 @@ type ProviderOption = PaymentGatewayProvider;
 
           <!-- Actions -->
           <div class="flex flex-col gap-3 pt-2">
-            <div class="flex gap-3">
+            @if (hasOnlineProviders()) {
+              <div class="flex gap-3">
+                <p-button
+                  type="button"
+                  label="Cancel"
+                  [outlined]="true"
+                  severity="secondary"
+                  (onClick)="cancel()"
+                  [disabled]="isSubmitting()">
+                </p-button>
+                <p-button
+                  type="submit"
+                  label="Continue to Payment"
+                  icon="pi pi-arrow-right"
+                  [loading]="isSubmitting()"
+                  [disabled]="fundForm.invalid || isSubmitting()">
+                </p-button>
+              </div>
+              <p-button
+                type="button"
+                label="Manual funding via admin approval"
+                icon="pi pi-building"
+                [outlined]="true"
+                severity="secondary"
+                styleClass="w-full"
+                (onClick)="goToBankTransfer()"
+                [disabled]="isSubmitting()">
+              </p-button>
+            } @else {
+              <p-button
+                type="button"
+                label="Manual funding via admin approval"
+                icon="pi pi-building"
+                styleClass="w-full"
+                (onClick)="goToBankTransfer()"
+                [disabled]="isSubmitting()">
+              </p-button>
               <p-button
                 type="button"
                 label="Cancel"
                 [outlined]="true"
                 severity="secondary"
+                styleClass="w-full"
                 (onClick)="cancel()"
                 [disabled]="isSubmitting()">
               </p-button>
-              <p-button
-                type="submit"
-                label="Continue to Payment"
-                icon="pi pi-arrow-right"
-                [loading]="isSubmitting()"
-                [disabled]="fundForm.invalid || isSubmitting()">
-              </p-button>
-            </div>
-            <p-button
-              type="button"
-              label="Manual funding via admin approval"
-              icon="pi pi-building"
-              [outlined]="true"
-              severity="secondary"
-              styleClass="w-full"
-              (onClick)="goToBankTransfer()"
-              [disabled]="isSubmitting()">
-            </p-button>
+            }
           </div>
         </form>
       }
@@ -175,6 +197,7 @@ export class RegistrationFundingComponent {
   providerOptions = computed(() =>
     getEnabledGatewayProviderOptions(this.currency() === 'NGN' ? 'NGN' : 'USD')
   );
+  hasOnlineProviders = computed(() => this.providerOptions().length > 0);
 
   fundForm: FormGroup;
 

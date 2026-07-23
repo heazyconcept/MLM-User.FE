@@ -51,6 +51,7 @@ export class FundWalletComponent implements OnInit {
   providerOptions = computed(() =>
     getEnabledGatewayProviderOptions(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD')
   );
+  hasOnlineProviders = computed(() => this.providerOptions().length > 0);
 
   fundForm = this.fb.group({
     amount: [null as number | null, [Validators.required, Validators.min(0.01)]],
@@ -86,7 +87,24 @@ export class FundWalletComponent implements OnInit {
       if (type === 'VOUCHER' || type === 'CASH') {
         this.fundForm.patchValue({ walletType: type });
       }
-      const method = type === 'CASH' ? 'online' : null;
+
+      const walletType = (type === 'VOUCHER' || type === 'CASH'
+        ? type
+        : this.fundForm.get('walletType')?.value) ?? 'CASH';
+
+      // NGN with no card gateways: send users to manual deposit instead of an empty online form
+      if (!this.hasOnlineProviders() && this.displayCurrency() === 'NGN' && walletType === 'CASH') {
+        void this.router.navigate(['/payments/manual-deposit']);
+        return;
+      }
+
+      if (walletType === 'VOUCHER' && !this.hasOnlineProviders()) {
+        // Skip online/manual picker — only manual is available
+        this.selectedFundingMethod.set(null);
+        return;
+      }
+
+      const method = walletType === 'CASH' ? 'online' : null;
       this.selectedFundingMethod.set(method);
     });
   }
