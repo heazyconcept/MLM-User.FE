@@ -43,6 +43,7 @@ describe('ManualDepositService', () => {
         currency: 'NGN',
         depositorName: 'Jane',
         status: 'PENDING',
+        purpose: 'WALLET_FUNDING',
         createdAt: '',
         updatedAt: '',
       },
@@ -54,6 +55,7 @@ describe('ManualDepositService', () => {
         currency: 'NGN',
         depositorName: 'Jane',
         status: 'APPROVED',
+        purpose: 'WALLET_FUNDING',
         createdAt: '',
         updatedAt: '',
       },
@@ -78,6 +80,8 @@ describe('ManualDepositService', () => {
             depositorName: 'Jane Doe',
             evidenceUrl: 'https://example.com/evidence.png',
             status: 'PENDING',
+            purpose: 'WALLET_FUNDING',
+            targetPackage: null,
             rejectionReason: null,
             paymentId: null,
             createdAt: '2026-07-09T08:00:00.000Z',
@@ -102,6 +106,8 @@ describe('ManualDepositService', () => {
           depositorName: 'Jane Doe',
           evidenceUrl: 'https://example.com/evidence.png',
           status: 'PENDING',
+          purpose: 'WALLET_FUNDING',
+          targetPackage: null,
           rejectionReason: null,
           paymentId: null,
           createdAt: '2026-07-09T08:00:00.000Z',
@@ -117,6 +123,37 @@ describe('ManualDepositService', () => {
       expect(req.request.params.get('offset')).toBe('0');
       req.flush(mockResponse);
     });
+
+    it('should map package upgrade purpose and targetPackage', () => {
+      service.listDeposits().subscribe((result) => {
+        expect(result.items[0].purpose).toBe('PACKAGE_UPGRADE');
+        expect(result.items[0].targetPackage).toBe('GOLD');
+      });
+
+      const req = httpMock.expectOne(
+        (r) => r.url === `${baseUrl}/payments/manual-deposit` && r.method === 'GET',
+      );
+      req.flush({
+        items: [
+          {
+            id: 'dep-upg',
+            userId: 'user-1',
+            walletType: 'REGISTRATION',
+            amount: 90000,
+            currency: 'NGN',
+            depositorName: 'Jane Doe',
+            status: 'PENDING',
+            purpose: 'PACKAGE_UPGRADE',
+            targetPackage: 'GOLD',
+            createdAt: '2026-07-23T08:00:00.000Z',
+            updatedAt: '2026-07-23T08:00:00.000Z',
+          },
+        ],
+        total: 1,
+        limit: 20,
+        offset: 0,
+      });
+    });
   });
 
   describe('submitDeposit', () => {
@@ -129,6 +166,7 @@ describe('ManualDepositService', () => {
           expect(deposit.walletType).toBe('REGISTRATION');
           expect(deposit.amount).toBe(25000);
           expect(deposit.status).toBe('PENDING');
+          expect(deposit.purpose).toBe('WALLET_FUNDING');
         });
 
       const req = httpMock.expectOne(`${baseUrl}/payments/manual-deposit`);
@@ -140,6 +178,7 @@ describe('ManualDepositService', () => {
       expect(formData.get('amount')).toBe('25000');
       expect(formData.get('depositorName')).toBe('Jane Doe');
       expect(formData.get('evidence')).toBeTruthy();
+      expect(formData.get('purpose')).toBeNull();
 
       req.flush({
         id: 'dep-2',
@@ -149,8 +188,42 @@ describe('ManualDepositService', () => {
         currency: 'NGN',
         depositorName: 'Jane Doe',
         status: 'PENDING',
+        purpose: 'WALLET_FUNDING',
         createdAt: '2026-07-09T08:00:00.000Z',
         updatedAt: '2026-07-09T08:00:00.000Z',
+      });
+    });
+
+    it('should POST purpose and targetPackage for package upgrades', () => {
+      const file = new File(['receipt'], 'receipt.png', { type: 'image/png' });
+
+      service
+        .submitDeposit('REGISTRATION', 90000, 'Jane Doe', file, {
+          purpose: 'PACKAGE_UPGRADE',
+          targetPackage: 'GOLD',
+        })
+        .subscribe((deposit) => {
+          expect(deposit.purpose).toBe('PACKAGE_UPGRADE');
+          expect(deposit.targetPackage).toBe('GOLD');
+        });
+
+      const req = httpMock.expectOne(`${baseUrl}/payments/manual-deposit`);
+      const formData = req.request.body as FormData;
+      expect(formData.get('purpose')).toBe('PACKAGE_UPGRADE');
+      expect(formData.get('targetPackage')).toBe('GOLD');
+
+      req.flush({
+        id: 'dep-3',
+        userId: 'user-1',
+        walletType: 'REGISTRATION',
+        amount: 90000,
+        currency: 'NGN',
+        depositorName: 'Jane Doe',
+        status: 'PENDING',
+        purpose: 'PACKAGE_UPGRADE',
+        targetPackage: 'GOLD',
+        createdAt: '2026-07-23T08:00:00.000Z',
+        updatedAt: '2026-07-23T08:00:00.000Z',
       });
     });
   });

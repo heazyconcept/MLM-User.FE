@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
@@ -59,6 +60,7 @@ export class PackageUpgradeComponent implements OnInit {
   private paymentService = inject(PaymentService);
   private loadingService = inject(LoadingService);
   private modalService = inject(ModalService);
+  private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 
   currentUser = this.userService.currentUser;
@@ -79,6 +81,8 @@ export class PackageUpgradeComponent implements OnInit {
   providerOptions = computed(() =>
     getEnabledGatewayProviderOptions(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD')
   );
+  /** NGN upgrades can always use manual bank transfer when gateways are off. */
+  showManualFunding = computed(() => this.displayCurrency() === 'NGN');
 
   ngOnInit(): void {
     this.selectedProvider.set(
@@ -210,6 +214,34 @@ export class PackageUpgradeComponent implements OnInit {
     this.selectedPackage.set(null);
     this.selectedProvider.set(getDefaultGatewayProvider(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD'));
     this.usdtPayment.set(null);
+  }
+
+  goToManualFunding(): void {
+    const pkg = this.selectedPackage();
+    if (!pkg) return;
+
+    this.showConfirmDialog.set(false);
+    this.selectedPackage.set(null);
+    this.unlockBodyScroll();
+
+    const queryParams: Record<string, string | number> = {
+      walletType: 'REGISTRATION',
+      purpose: 'PACKAGE_UPGRADE',
+      targetPackage: pkg.name,
+    };
+    if (pkg.price > 0) {
+      queryParams['amount'] = pkg.price;
+    }
+    void this.router.navigate(['/payments/manual-deposit'], { queryParams });
+  }
+
+  /** PrimeNG dialog can leave body scroll locked after navigate-away. */
+  private unlockBodyScroll(): void {
+    if (typeof document === 'undefined') return;
+    document.body.classList.remove('p-overflow-hidden');
+    document.documentElement.classList.remove('p-overflow-hidden');
+    document.body.style.removeProperty('overflow');
+    document.documentElement.style.removeProperty('overflow');
   }
 
   onUsdtVerified(): void {
