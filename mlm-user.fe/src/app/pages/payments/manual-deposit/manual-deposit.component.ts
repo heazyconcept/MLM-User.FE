@@ -22,7 +22,10 @@ import { MessageService } from 'primeng/api';
 import {
   ManualDepositService,
   hasPendingDeposit,
+  depositPurposeLabel,
+  formatPackageLabel,
   type ManualDeposit,
+  type ManualDepositPurpose,
   type ManualDepositWalletType,
 } from '../../../services/manual-deposit.service';
 import {
@@ -55,6 +58,14 @@ type PageState = 'loading' | 'ready';
   ],
   templateUrl: './manual-deposit.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: [
+    `
+      :host {
+        display: block;
+        overflow-x: clip;
+      }
+    `,
+  ],
 })
 export class ManualDepositComponent implements OnInit, OnDestroy {
   private router = inject(Router);
@@ -119,12 +130,38 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
     () => this.deposits().length < this.totalDeposits(),
   );
 
+  /** Upgrade intent from query params (sent on submit). */
+  depositPurpose = signal<ManualDepositPurpose>('WALLET_FUNDING');
+  targetPackage = signal<string | null>(null);
+
+  isPackageUpgrade = computed(() => this.depositPurpose() === 'PACKAGE_UPGRADE');
+
   ngOnInit(): void {
+    this.unlockBodyScroll();
+
     this.route.queryParamMap.subscribe((params) => {
-      const walletType = params.get('walletType');
-      if (walletType === 'REGISTRATION' || walletType === 'VOUCHER') {
-        this.submitForm.patchValue({ walletType });
+      const purpose = this.normalizePurpose(params.get('purpose'));
+      const targetPackage = params.get('targetPackage')?.trim()?.toUpperCase() || null;
+      this.depositPurpose.set(purpose);
+      this.targetPackage.set(targetPackage);
+
+      if (purpose === 'PACKAGE_UPGRADE') {
+        this.submitForm.patchValue({ walletType: 'REGISTRATION' });
+      } else {
+        const walletType = params.get('walletType');
+        if (walletType === 'REGISTRATION' || walletType === 'VOUCHER') {
+          this.submitForm.patchValue({ walletType });
+        }
       }
+
+      const amountRaw = params.get('amount');
+      if (amountRaw) {
+        const amount = Number(amountRaw);
+        if (Number.isFinite(amount) && amount > 0) {
+          this.submitForm.patchValue({ amount });
+        }
+      }
+
       this.loadPageData();
     });
   }
@@ -132,6 +169,15 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.stopPolling();
     this.revokeEvidencePreview();
+  }
+
+  /** Clears scroll lock left by dialogs (e.g. package upgrade → this page). */
+  private unlockBodyScroll(): void {
+    if (typeof document === 'undefined') return;
+    document.body.classList.remove('p-overflow-hidden');
+    document.documentElement.classList.remove('p-overflow-hidden');
+    document.body.style.removeProperty('overflow');
+    document.documentElement.style.removeProperty('overflow');
   }
 
   loadPageData(): void {
@@ -219,26 +265,45 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
     const { walletType, amount, depositorName } = this.submitForm.value;
     if (!walletType || amount == null || amount <= 0) return;
 
+    const resolvedWalletType: ManualDepositWalletType = this.isPackageUpgrade()
+      ? 'REGISTRATION'
+      : walletType;
+    const targetPkg = this.targetPackage();
+
     this.submitting.set(true);
     this.cdr.markForCheck();
 
     this.manualDepositService
-      .submitDeposit(walletType, amount, String(depositorName ?? '').trim(), evidence)
+      .submitDeposit(
+        resolvedWalletType,
+        amount,
+        String(depositorName ?? '').trim(),
+        evidence,
+        this.isPackageUpgrade() && targetPkg
+          ? { purpose: 'PACKAGE_UPGRADE', targetPackage: targetPkg }
+          : undefined,
+      )
       .subscribe({
         next: (deposit) => {
           this.submitting.set(false);
           this.deposits.update((items) => [deposit, ...items]);
           this.totalDeposits.update((total) => total + 1);
           this.historyOffset.update((offset) => offset + 1);
-          this.submitForm.patchValue({ amount: null, depositorName: '' });
+          this.submitForm.patchValue({
+            amount: null,
+            depositorName: '',
+            walletType: this.isPackageUpgrade() ? 'REGISTRATION' : resolvedWalletType,
+          });
           this.evidenceFile.set(null);
           this.revokeEvidencePreview();
           this.syncPolling();
           this.messageService.add({
             severity: 'success',
             summary: 'Submitted',
-            detail: 'Your deposit proof was submitted and is pending review.',
-            life: 4000,
+            detail: this.isPackageUpgrade()
+              ? 'Upgrade payment submitted. Your package will update when admin approves.'
+              : 'Your deposit proof was submitted and is pending review.',
+            life: 5000,
           });
           this.cdr.markForCheck();
         },
@@ -288,13 +353,36 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
     return walletType === 'VOUCHER' ? 'Product Voucher' : 'Registration';
   }
 
+  purposeBannerLabel(): string | null {
+    if (!this.isPackageUpgrade()) return null;
+    const pkg = this.targetPackage();
+    if (!pkg) return 'Package upgrade';
+    return `Package upgrade to ${formatPackageLabel(pkg)}`;
+  }
+
+  historyPurposeLabel(deposit: ManualDeposit): string | null {
+    return depositPurposeLabel(deposit);
+  }
+
   goBack(): void {
+    if (this.isPackageUpgrade()) {
+      this.router.navigate(['/settings/upgrade']);
+      return;
+    }
     const walletType = this.submitForm.get('walletType')?.value;
     if (walletType === 'VOUCHER') {
       this.router.navigate(['/payments/fund'], { queryParams: { walletType: 'VOUCHER' } });
       return;
     }
     this.router.navigate(['/wallet']);
+  }
+
+  private normalizePurpose(raw: string | null): ManualDepositPurpose {
+    const value = raw?.trim().toUpperCase() ?? '';
+    if (value === 'PACKAGE_UPGRADE' || value === 'UPGRADE') {
+      return 'PACKAGE_UPGRADE';
+    }
+    return 'WALLET_FUNDING';
   }
 
   private handleSubmitError(err: unknown): void {
@@ -350,7 +438,7 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (history) => {
           const previous = this.deposits();
-          const hadApproved = history.items.some(
+          const newlyApproved = history.items.filter(
             (item) =>
               item.status === 'APPROVED' &&
               !previous.some((p) => p.id === item.id && p.status === 'APPROVED'),
@@ -360,8 +448,28 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
           this.totalDeposits.set(history.total);
           this.historyOffset.set(history.items.length);
 
-          if (hadApproved) {
+          if (newlyApproved.length > 0) {
             this.walletService.fetchWallets().subscribe();
+
+            const upgradeApproved = newlyApproved.find(
+              (item) => item.purpose === 'PACKAGE_UPGRADE',
+            );
+            if (upgradeApproved) {
+              this.userService.fetchProfile().subscribe({
+                next: () => {
+                  const pkg = upgradeApproved.targetPackage
+                    ? formatPackageLabel(upgradeApproved.targetPackage)
+                    : 'your new package';
+                  this.messageService.add({
+                    severity: 'success',
+                    summary: 'Package upgraded',
+                    detail: `Your package has been upgraded to ${pkg}.`,
+                    life: 6000,
+                  });
+                  this.cdr.markForCheck();
+                },
+              });
+            }
           }
 
           if (!history.items.some((d) => d.status === 'PENDING')) {

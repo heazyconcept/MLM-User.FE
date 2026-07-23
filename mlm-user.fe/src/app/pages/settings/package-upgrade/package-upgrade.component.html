@@ -153,19 +153,15 @@
             {{ formatPrice(pkg.price, pkg.currency) }}
           </p>
         }
-        @if (providerOptions().length > 0) {
-          <p class="text-sm text-mlm-secondary mt-2">
-            @if (selectedProvider() === 'USDT') {
-              Send USDT on the deposit screen after you proceed.
-            } @else {
-              You'll be redirected to our payment partner to complete the upgrade.
-            }
-          </p>
-        } @else {
-          <p class="text-sm text-mlm-secondary mt-2">
-            Online payment is currently unavailable for your currency. Please contact support to upgrade.
-          </p>
-        }
+        <p class="text-sm text-mlm-secondary mt-2">
+          @if (providerOptions().length > 0 && selectedProvider() === 'USDT') {
+            Send USDT on the deposit screen after you proceed.
+          } @else if (providerOptions().length > 0) {
+            You'll be redirected to our payment partner to complete the upgrade.
+          } @else {
+            Pay via bank transfer. Funds are credited after admin approval, then your package is upgraded.
+          }
+        </p>
       </div>
 
       @if (providerOptions().length > 0) {
@@ -183,8 +179,10 @@
             appendTo="body">
           </p-select>
         </div>
+      }
 
-        <div class="space-y-2">
+      <div class="space-y-2">
+        @if (providerOptions().length > 0) {
           <p-button
             label="Proceed to Payment"
             icon="pi pi-arrow-right"
@@ -193,25 +191,26 @@
             [loading]="isLoading()"
             styleClass="w-full !bg-mlm-primary !border-mlm-primary !py-3 !rounded-xl !font-semibold !text-sm"
           ></p-button>
-          <button
-            type="button"
-            (click)="cancelUpgrade()"
+        }
+        @if (showManualFunding()) {
+          <p-button
+            label="Manual funding via admin approval"
+            icon="pi pi-building"
+            [outlined]="providerOptions().length > 0"
+            (onClick)="goToManualFunding()"
             [disabled]="isLoading()"
-            class="w-full text-sm text-mlm-secondary hover:text-mlm-text py-2 cursor-pointer disabled:opacity-50"
-          >
-            Cancel
-          </button>
-        </div>
-      } @else {
+            styleClass="w-full !py-3 !rounded-xl !font-semibold !text-sm"
+          ></p-button>
+        }
         <button
           type="button"
           (click)="cancelUpgrade()"
           [disabled]="isLoading()"
           class="w-full text-sm text-mlm-secondary hover:text-mlm-text py-2 cursor-pointer disabled:opacity-50"
         >
-          Close
+          Cancel
         </button>
-      }
+      </div>
     </div>
   }
 </p-dialog>
