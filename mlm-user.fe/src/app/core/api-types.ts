@@ -1704,6 +1704,8 @@ export interface components {
             newPassword: string;
         };
         UpdateProfileDto: {
+            /** @example user@example.com */
+            email?: string;
             /** @example 08012345678 */
             phone?: string;
             /** @example John */

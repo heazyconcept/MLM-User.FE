@@ -202,20 +202,31 @@
                     }
                   </div>
 
-                  <!-- Email (Read-only) -->
+                  <!-- Email -->
                   <div class="sm:col-span-4">
-                    <label for="email" class="block text-sm font-medium text-mlm-text mb-2"
-                      >Email</label
-                    >
+                    <label for="email" class="block text-sm font-medium text-mlm-text mb-2">
+                      Email <span class="text-red-500">*</span>
+                    </label>
                     <input
                       pInputText
                       id="email"
                       type="email"
                       formControlName="email"
-                      [disabled]="true"
+                      autocomplete="email"
                       class="w-full"
+                      [class.ng-invalid]="
+                        profileForm.get('email')?.invalid && profileForm.get('email')?.touched
+                      "
                     />
-                    <p class="mt-1 text-sm text-mlm-secondary">Email cannot be changed.</p>
+                    @if (profileForm.get('email')?.invalid && profileForm.get('email')?.touched) {
+                      @if (profileForm.get('email')?.errors?.['required']) {
+                        <small class="text-red-500 text-sm mt-1 block">Email is required.</small>
+                      } @else if (profileForm.get('email')?.errors?.['email']) {
+                        <small class="text-red-500 text-sm mt-1 block"
+                          >Enter a valid email address.</small
+                        >
+                      }
+                    }
                   </div>
 
                   <!-- Phone Number -->
@@ -269,86 +280,6 @@
                       [autoResize]="true"
                     >
                     </textarea>
-                  </div>
-
-                  <!-- Bank Name -->
-                  <div class="sm:col-span-3">
-                    <label for="bankName" class="block text-sm font-medium text-mlm-text mb-2"
-                      >Bank Name</label
-                    >
-                    <input
-                      pInputText
-                      id="bankName"
-                      type="text"
-                      formControlName="bankName"
-                      class="w-full"
-                      [class.ng-invalid]="
-                        profileForm.get('bankName')?.invalid && profileForm.get('bankName')?.touched
-                      "
-                    />
-                    @if (
-                      profileForm.get('bankName')?.invalid && profileForm.get('bankName')?.touched
-                    ) {
-                      <small class="text-red-500 text-sm mt-1 block">Bank Name is required.</small>
-                    }
-                  </div>
-
-                  <!-- Account Number -->
-                  <div class="sm:col-span-3">
-                    <label for="accountNumber" class="block text-sm font-medium text-mlm-text mb-2"
-                      >Account Number</label
-                    >
-                    <input
-                      pInputText
-                      id="accountNumber"
-                      type="text"
-                      formControlName="accountNumber"
-                      class="w-full"
-                      [class.ng-invalid]="
-                        profileForm.get('accountNumber')?.invalid &&
-                        profileForm.get('accountNumber')?.touched
-                      "
-                    />
-                    @if (
-                      profileForm.get('accountNumber')?.invalid &&
-                      profileForm.get('accountNumber')?.touched
-                    ) {
-                      @if (profileForm.get('accountNumber')?.hasError('required')) {
-                        <small class="text-red-500 text-sm mt-1 block"
-                          >Account Number is required.</small
-                        >
-                      } @else if (profileForm.get('accountNumber')?.hasError('pattern')) {
-                        <small class="text-red-500 text-sm mt-1 block"
-                          >Account Number must be 8 to 11 digits.</small
-                        >
-                      }
-                    }
-                  </div>
-
-                  <!-- Account Name -->
-                  <div class="sm:col-span-4">
-                    <label for="accountName" class="block text-sm font-medium text-mlm-text mb-2"
-                      >Account Name</label
-                    >
-                    <input
-                      pInputText
-                      id="accountName"
-                      type="text"
-                      formControlName="accountName"
-                      class="w-full"
-                      [class.ng-invalid]="
-                        profileForm.get('accountName')?.invalid &&
-                        profileForm.get('accountName')?.touched
-                      "
-                    />
-                    @if (
-                      profileForm.get('accountName')?.invalid &&
-                      profileForm.get('accountName')?.touched
-                    ) {
-                      <small class="text-red-500 text-sm mt-1 block"
-                        >Account Name is required.</small
-                      >
-                    }
                   </div>
                 </div>
               </div>
