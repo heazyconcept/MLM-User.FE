@@ -29,6 +29,7 @@ import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { UserService } from '../../services/user.service';
 import { OnboardingService } from '../../services/onboarding.service';
 import { ModalService } from '../../services/modal.service';
+import { forkJoin, of } from 'rxjs';
 
 @Component({
   selector: 'app-profile',
@@ -65,6 +66,10 @@ export class ProfileComponent implements OnInit {
   pinFormState = signal<'IDLE' | 'CHANGE' | 'RESET_REQUEST' | 'RESET' | 'SETUP'>('IDLE');
   isPinSaving = signal(false);
   currentUser = this.userService.currentUser;
+  hasBankDetails = computed(() => {
+    const user = this.currentUser();
+    return !!(user?.bankName?.trim() && user?.accountNumber?.trim() && user?.accountName?.trim());
+  });
   isDialogMode = signal<boolean>(false);
   private closeOnSave = true;
 
@@ -74,6 +79,10 @@ export class ProfileComponent implements OnInit {
     email: ['', [Validators.required, Validators.email]],
     phoneNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{11}$/)]],
     address: [''],
+    bankName: [''],
+    accountNumber: [''],
+    accountName: [''],
+    accountType: ['SAVINGS'],
   });
 
   passwordForm = this.fb.group(
@@ -143,7 +152,11 @@ export class ProfileComponent implements OnInit {
       this.shouldScrollToTransactionPin.set(true);
     }
 
-    // Load bank details for read-only display in view mode
+    if (this.route.snapshot.queryParamMap.get('setup') === 'bank' && !this.hasBankDetails()) {
+      this.enterEditMode();
+    }
+
+    this.configureBankFieldValidators();
     this.onboardingService.getBankDetails().subscribe({
       next: (data: Record<string, unknown>) => {
         const bankName = (data['bankName'] ?? data['bank_name']) as string | undefined;
@@ -160,6 +173,7 @@ export class ProfileComponent implements OnInit {
             accountNumber: displayAccountNumber ?? undefined,
             accountName: accountName ?? undefined,
           });
+          this.configureBankFieldValidators();
           this.cdr.markForCheck();
         }
       },
@@ -176,8 +190,35 @@ export class ProfileComponent implements OnInit {
       email: user.email || '',
       phoneNumber: user.phoneNumber || '',
       address: user.address || '',
+      bankName: '',
+      accountNumber: '',
+      accountName: '',
+      accountType: 'SAVINGS',
     });
     this.cdr.markForCheck();
+  }
+
+  private configureBankFieldValidators(): void {
+    const bankNameCtrl = this.profileForm.get('bankName');
+    const accountNumberCtrl = this.profileForm.get('accountNumber');
+    const accountNameCtrl = this.profileForm.get('accountName');
+
+    if (this.hasBankDetails()) {
+      bankNameCtrl?.clearValidators();
+      accountNumberCtrl?.clearValidators();
+      accountNameCtrl?.clearValidators();
+    } else {
+      bankNameCtrl?.setValidators([Validators.required]);
+      accountNumberCtrl?.setValidators([
+        Validators.required,
+        Validators.pattern(/^\d{8,11}$/),
+      ]);
+      accountNameCtrl?.setValidators([Validators.required]);
+    }
+
+    bankNameCtrl?.updateValueAndValidity({ emitEvent: false });
+    accountNumberCtrl?.updateValueAndValidity({ emitEvent: false });
+    accountNameCtrl?.updateValueAndValidity({ emitEvent: false });
   }
 
   enterEditMode(): void {
@@ -185,6 +226,7 @@ export class ProfileComponent implements OnInit {
     if (user) {
       this.populateForm(user);
     }
+    this.configureBankFieldValidators();
     this.isEditMode.set(true);
     this.cdr.markForCheck();
   }
@@ -198,6 +240,7 @@ export class ProfileComponent implements OnInit {
     if (user) {
       this.populateForm(user);
     }
+    this.configureBankFieldValidators();
     this.isEditMode.set(false);
     this.profileForm.markAsUntouched();
     this.cdr.markForCheck();
@@ -221,9 +264,23 @@ export class ProfileComponent implements OnInit {
           delete (profilePayload as Record<string, unknown>)[k],
       );
 
-      const profile$ = this.onboardingService.updateProfile(profilePayload);
+      const bankName = formValue.bankName?.trim() || '';
+      const accountNumber = formValue.accountNumber?.trim() || '';
+      const accountName = formValue.accountName?.trim() || '';
+      const accountType = (formValue.accountType === 'CURRENT' ? 'CURRENT' : 'SAVINGS') as
+        'SAVINGS' | 'CURRENT';
 
-      profile$.subscribe({
+      const profile$ = this.onboardingService.updateProfile(profilePayload);
+      const bank$ = !this.hasBankDetails()
+        ? this.onboardingService.updateBankDetails({
+            bankName,
+            accountNumber,
+            accountName,
+            accountType,
+          })
+        : of(null);
+
+      forkJoin({ profile: profile$, bank: bank$ }).subscribe({
         next: () => {
           this.handleSaveSuccess();
         },
@@ -232,7 +289,10 @@ export class ProfileComponent implements OnInit {
           const raw = err?.error?.message;
           const msg = Array.isArray(raw)
             ? raw.join(' ')
-            : (raw ?? "We couldn't save your profile. Please try again.");
+            : (raw ??
+              (!this.hasBankDetails()
+                ? "We couldn't save your profile and bank details. Please try again."
+                : "We couldn't save your profile. Please try again."));
           this.modalService.open('error', 'Save Failed', msg);
           this.cdr.markForCheck();
         },
@@ -449,6 +509,30 @@ export class ProfileComponent implements OnInit {
 
   private handleSaveSuccess(): void {
     this.userService.fetchProfile().subscribe();
+    this.onboardingService.getBankDetails().subscribe({
+      next: (data: Record<string, unknown>) => {
+        const bankName = (data['bankName'] ?? data['bank_name']) as string | undefined;
+        const accountNumber = (data['accountNumber'] ?? data['account_number']) as
+          | string
+          | undefined;
+        const accountNumberMasked = (data['accountNumberMasked'] ??
+          data['account_number_masked']) as string | undefined;
+        const accountName = (data['accountName'] ?? data['account_name']) as string | undefined;
+        const displayAccountNumber = accountNumber ?? accountNumberMasked;
+        if (bankName || displayAccountNumber || accountName) {
+          this.userService.updateProfile({
+            bankName: bankName ?? undefined,
+            accountNumber: displayAccountNumber ?? undefined,
+            accountName: accountName ?? undefined,
+          });
+        }
+        this.configureBankFieldValidators();
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        /* silently ignore */
+      },
+    });
     this.isSaving.set(false);
     this.isEditMode.set(false);
     this.cdr.markForCheck();

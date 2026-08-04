@@ -301,7 +301,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         description: 'Add payout account details to withdraw without delays.',
         done: hasBankDetails,
         ctaLabel: 'Add bank details',
-        route: '/profile',
+        route: '/profile?setup=bank',
       },
       {
         id: 'first-referral',
