@@ -74,10 +74,22 @@ export class UserService {
     return this.api.get<Record<string, unknown>>('users/me').pipe(
       map((response) => this.mapApiUserToUser(response)),
       tap((user) => {
-        this.user.set(user);
-        this.persistUserData(user);
+        // GET /users/me does not include bank fields (those live on GET /users/me/bank).
+        // Preserve any bank details already loaded so a profile refresh does not wipe them.
+        const previous = this.user();
+        const merged: User = {
+          ...user,
+          bankName: user.bankName || previous?.bankName,
+          accountNumber: user.accountNumber || previous?.accountNumber,
+          accountName: user.accountName || previous?.accountName,
+        };
+        this.user.set(merged);
+        this.persistUserData(merged);
       }),
-      switchMap((user) => this.fetchPreferences().pipe(map(() => user))),
+      switchMap((user) => {
+        const current = this.user() ?? user;
+        return this.fetchPreferences().pipe(map(() => current));
+      }),
       catchError((err) => {
         const persisted = this.getPersistedUserData();
         if (persisted) {

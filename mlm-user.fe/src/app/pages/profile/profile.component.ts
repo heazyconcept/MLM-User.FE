@@ -270,8 +270,9 @@ export class ProfileComponent implements OnInit {
       const accountType = (formValue.accountType === 'CURRENT' ? 'CURRENT' : 'SAVINGS') as
         'SAVINGS' | 'CURRENT';
 
+      const isFirstBankSetup = !this.hasBankDetails();
       const profile$ = this.onboardingService.updateProfile(profilePayload);
-      const bank$ = !this.hasBankDetails()
+      const bank$ = isFirstBankSetup
         ? this.onboardingService.updateBankDetails({
             bankName,
             accountNumber,
@@ -282,7 +283,11 @@ export class ProfileComponent implements OnInit {
 
       forkJoin({ profile: profile$, bank: bank$ }).subscribe({
         next: () => {
-          this.handleSaveSuccess();
+          this.handleSaveSuccess(
+            isFirstBankSetup
+              ? { bankName, accountNumber, accountName }
+              : undefined,
+          );
         },
         error: (err) => {
           this.isSaving.set(false);
@@ -290,7 +295,7 @@ export class ProfileComponent implements OnInit {
           const msg = Array.isArray(raw)
             ? raw.join(' ')
             : (raw ??
-              (!this.hasBankDetails()
+              (isFirstBankSetup
                 ? "We couldn't save your profile and bank details. Please try again."
                 : "We couldn't save your profile. Please try again."));
           this.modalService.open('error', 'Save Failed', msg);
@@ -507,34 +512,33 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  private handleSaveSuccess(): void {
-    this.userService.fetchProfile().subscribe();
-    this.onboardingService.getBankDetails().subscribe({
-      next: (data: Record<string, unknown>) => {
-        const bankName = (data['bankName'] ?? data['bank_name']) as string | undefined;
-        const accountNumber = (data['accountNumber'] ?? data['account_number']) as
-          | string
-          | undefined;
-        const accountNumberMasked = (data['accountNumberMasked'] ??
-          data['account_number_masked']) as string | undefined;
-        const accountName = (data['accountName'] ?? data['account_name']) as string | undefined;
-        const displayAccountNumber = accountNumber ?? accountNumberMasked;
-        if (bankName || displayAccountNumber || accountName) {
-          this.userService.updateProfile({
-            bankName: bankName ?? undefined,
-            accountNumber: displayAccountNumber ?? undefined,
-            accountName: accountName ?? undefined,
-          });
-        }
+  private handleSaveSuccess(
+    savedBank?: { bankName: string; accountNumber: string; accountName: string },
+  ): void {
+    // Apply bank details immediately so the view exits "Add Bank Details" without a refresh.
+    // GET /users/me does not return bank fields, so waiting on fetch alone leaves an empty state.
+    if (savedBank) {
+      this.userService.updateProfile({
+        bankName: savedBank.bankName,
+        accountNumber: savedBank.accountNumber,
+        accountName: savedBank.accountName,
+      });
+    }
+
+    this.userService.fetchProfile().subscribe({
+      next: () => {
         this.configureBankFieldValidators();
         this.cdr.markForCheck();
       },
       error: () => {
-        /* silently ignore */
+        this.configureBankFieldValidators();
+        this.cdr.markForCheck();
       },
     });
+
     this.isSaving.set(false);
     this.isEditMode.set(false);
+    this.configureBankFieldValidators();
     this.cdr.markForCheck();
     this.modalService.open(
       'success',
