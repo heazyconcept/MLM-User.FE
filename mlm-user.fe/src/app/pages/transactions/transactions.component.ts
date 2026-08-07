@@ -27,7 +27,14 @@ type DateRangePreset = 'all' | 'today' | 'last7days' | 'last30days' | 'thisMonth
 type TransactionStatus = DashboardTransaction['status'];
 type TransactionType = DashboardTransaction['type'];
 type TransactionTab =
-  'all' | 'earnings' | 'breakdown' | 'wallet' | 'withdrawals' | 'payments' | 'voucher';
+  | 'all'
+  | 'earnings'
+  | 'breakdown'
+  | 'wallet'
+  | 'transfers'
+  | 'withdrawals'
+  | 'payments'
+  | 'voucher';
 type ResolvedTransactionTab = TransactionTab | 'autoship';
 
 type TransactionFilters = {
@@ -142,6 +149,7 @@ export class TransactionsComponent implements OnInit {
     { label: 'Earnings', value: 'earnings' },
     { label: 'Earning Breakdown', value: 'breakdown' },
     { label: 'Wallet', value: 'wallet' },
+    { label: 'Transfers', value: 'transfers' },
     { label: 'Withdrawals', value: 'withdrawals' },
     { label: 'Payments', value: 'payments' },
     { label: 'Product Voucher', value: 'voucher' },
@@ -221,6 +229,7 @@ export class TransactionsComponent implements OnInit {
     if (tab === 'earnings') return 'No earnings transactions available yet.';
     if (tab === 'breakdown') return 'No commission breakdown available yet.';
     if (tab === 'wallet') return 'No wallet transactions available yet.';
+    if (tab === 'transfers') return 'No Cashout transfer transactions available yet.';
     if (tab === 'withdrawals') return 'No withdrawal transactions available yet.';
     if (tab === 'payments') return 'No payment transactions available yet.';
     if (tab === 'voucher') {
@@ -287,6 +296,7 @@ export class TransactionsComponent implements OnInit {
       tab === 'breakdown' ||
       tab === 'earnings' ||
       tab === 'wallet' ||
+      tab === 'transfers' ||
       tab === 'withdrawals' ||
       tab === 'payments' ||
       tab === 'voucher' ||
@@ -513,6 +523,8 @@ export class TransactionsComponent implements OnInit {
     WALLET_FUNDING: 'Cash wallet funding',
     REFERRAL_CREATION: 'Referral creation',
     TRANSFER: 'Wallet transfer',
+    WALLET_TRANSFER: 'Wallet transfer',
+    FUND_TRANSFER: 'Fund transfer',
     ACTIVATION_IPV: 'Product voucher credit',
     REGISTRATION_ACTIVATION: 'Registration activation',
     PRODUCT_PURCHASE: 'Product purchase',
@@ -533,6 +545,9 @@ export class TransactionsComponent implements OnInit {
     if (tab === 'wallet') {
       return (tx.categoryGroup ?? '').toUpperCase() === 'WALLET';
     }
+    if (tab === 'transfers') {
+      return this.isTransferTransaction(tx);
+    }
     if (tab === 'voucher') {
       return this.isVoucherTransaction(tx);
     }
@@ -545,7 +560,10 @@ export class TransactionsComponent implements OnInit {
       return 'Track commissions and bonus drops from registration, product, and voucher activity.';
     }
     if (tab === 'wallet') {
-      return 'Monitor wallet funding, transfers, and wallet adjustments.';
+      return 'Monitor wallet funding and wallet adjustments.';
+    }
+    if (tab === 'transfers') {
+      return 'Review Cashout wallet transfers and fund transfers to other members.';
     }
     if (tab === 'withdrawals') {
       return 'Review withdrawal requests, approvals, and settlement progress.';
@@ -679,6 +697,10 @@ export class TransactionsComponent implements OnInit {
       return 'voucher';
     }
 
+    if (this.isTransferTransaction(tx)) {
+      return 'transfers';
+    }
+
     const normalized =
       `${tx.categoryGroup ?? ''} ${tx.source ?? ''} ${tx.subType ?? ''} ${tx.description ?? ''}`.toLowerCase();
 
@@ -698,7 +720,7 @@ export class TransactionsComponent implements OnInit {
       return 'autoship';
     }
 
-    if (this.matchesKeywords(normalized, ['wallet', 'funding', 'top up', 'topup', 'transfer'])) {
+    if (this.matchesKeywords(normalized, ['wallet', 'funding', 'top up', 'topup'])) {
       return 'wallet';
     }
 
@@ -729,6 +751,16 @@ export class TransactionsComponent implements OnInit {
     }
 
     return 'all';
+  }
+
+  private isTransferTransaction(tx: DashboardTransaction): boolean {
+    const group = (tx.categoryGroup ?? '').toUpperCase();
+    if (group === 'TRANSFERS') {
+      return true;
+    }
+
+    const category = (tx.category ?? '').toUpperCase();
+    return category === 'WALLET_TRANSFER' || category === 'FUND_TRANSFER';
   }
 
   private isVoucherTransaction(tx: DashboardTransaction): boolean {

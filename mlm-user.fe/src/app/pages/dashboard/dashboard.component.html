@@ -267,7 +267,12 @@
                       <i [class]="'pi ' + card.icon + ' text-sm'"></i>
                     </div>
                     <div class="min-w-0">
-                      <p class="text-xs xl:text-[13px] font-bold text-gray-800 truncate">
+                      <p
+                        class="text-xs xl:text-[13px] font-bold text-gray-800 truncate"
+                        [pTooltip]="card.tooltip ?? ''"
+                        [tooltipDisabled]="!card.tooltip"
+                        tooltipPosition="top"
+                      >
                         {{ card.label }}
                       </p>
                     </div>
