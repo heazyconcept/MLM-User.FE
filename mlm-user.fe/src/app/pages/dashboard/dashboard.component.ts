@@ -20,6 +20,7 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 import { UserService } from '../../services/user.service';
 import { PaymentService } from '../../services/payment.service';
 import { CommissionService } from '../../services/commission.service';
@@ -75,6 +76,7 @@ type QuickAction = {
     ReactiveFormsModule,
     SelectModule,
     InputTextModule,
+    TooltipModule,
   ],
   templateUrl: './dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -352,7 +354,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }));
   }
 
-  get statCardsData(): { label: string; value: string; icon: string; gradient: string }[] {
+  get statCardsData(): {
+    label: string;
+    value: string;
+    icon: string;
+    gradient: string;
+    tooltip?: string;
+  }[] {
     const configs = this.buildStatCardConfigs();
     const values = this.animatedStatValues();
     return configs.map((config, index) => ({
@@ -360,6 +368,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       value: this.formatStatValue(config, values[index] ?? 0),
       icon: config.icon,
       gradient: config.gradient,
+      tooltip: config.tooltip,
     }));
   }
 
@@ -370,6 +379,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     gradient: string;
     format: 'currency' | 'number' | 'decimal';
     currencySymbol?: string;
+    tooltip?: string;
   }> {
     const hero = this.overview().hero;
     const stats = this.overview().stats;
@@ -426,6 +436,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         gradient: bgPrimary,
         format: 'currency',
         currencySymbol: sym,
+        tooltip: 'Includes bank withdrawals and transfers from your Cashout wallet.',
       },
       {
         label: 'Total Downlines',
