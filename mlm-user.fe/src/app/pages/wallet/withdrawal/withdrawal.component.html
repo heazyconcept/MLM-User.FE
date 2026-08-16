@@ -97,8 +97,7 @@
               [mode]="'currency'"
               [currency]="currency() === 'NGN' ? 'NGN' : 'USD'"
               [currencyDisplay]="'symbol'"
-              [min]="0.01"
-              [max]="wallet()?.cashBalance ?? 0"
+              [min]="minWithdrawalAmount()"
               fluid="true"
               placeholder="0.00"
             >
@@ -129,10 +128,10 @@
               }
               @if (withdrawalForm.get('amount')?.errors?.['min']) {
                 <small class="text-mlm-error text-[10px] font-bold"
-                  >Minimum withdrawal amount is 0.01.</small
+                  >Minimum withdrawal amount is {{ minWithdrawalLabel() }}.</small
                 >
               }
-              @if (withdrawalForm.get('amount')?.errors?.['max']) {
+              @if (withdrawalForm.get('amount')?.errors?.['exceedsBalance']) {
                 <small class="text-mlm-error text-[10px] font-bold"
                   >Amount exceeds available balance.</small
                 >
@@ -165,8 +164,9 @@
         >
           <i class="pi pi-info-circle text-mlm-blue-500 mt-0.5 text-xs"></i>
           <p class="text-[15px] text-mlm-blue-800 leading-normal font-medium">
-            Withdrawals take up to 48 hours to process. Ensure your bank details are correct in your
-            profile.
+            Minimum withdrawal is {{ minWithdrawalLabel() }}. There is no maximum withdrawal limit.
+            Withdrawals take up to 48 hours to process. Ensure your bank details are correct in
+            your profile.
           </p>
         </div>
       </form>

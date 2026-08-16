@@ -28,6 +28,7 @@ import { WalletService } from '../../../services/wallet.service';
 import { UserService } from '../../../services/user.service';
 import { OnboardingService } from '../../../services/onboarding.service';
 import { formatWithdrawalAmountInWords } from '../../../core/utils/amount-in-words';
+import { MIN_WITHDRAWAL_AMOUNT } from '../../../core/constants/withdrawal.constants';
 import { ProfileComponent } from '../../profile/profile.component';
 
 @Component({
@@ -94,6 +95,18 @@ export class WithdrawalComponent implements OnInit {
     formatWithdrawalAmountInWords(this.amountValue(), this.currency()),
   );
 
+  minWithdrawalAmount = computed(() => {
+    const curr = this.currency();
+    return curr ? MIN_WITHDRAWAL_AMOUNT[curr] : MIN_WITHDRAWAL_AMOUNT.NGN;
+  });
+
+  minWithdrawalLabel = computed(() => {
+    const curr = this.currency();
+    const amount = this.minWithdrawalAmount();
+    const formatted = amount.toLocaleString('en-US');
+    return curr === 'USD' ? `$${formatted}` : `₦${formatted}`;
+  });
+
   constructor() {
     this.withdrawalForm = this.fb.group({
       amount: [null, [Validators.required, Validators.min(0.01)]],
@@ -131,8 +144,10 @@ export class WithdrawalComponent implements OnInit {
     pinCtrl.clearValidators();
 
     if (state === 'AMOUNT') {
-      const maxVal = this.wallet()?.cashBalance ?? 0;
-      amountCtrl.setValidators([Validators.required, Validators.min(0.01), Validators.max(maxVal)]);
+      amountCtrl.setValidators([
+        Validators.required,
+        Validators.min(this.minWithdrawalAmount()),
+      ]);
     } else if (state === 'PIN_VERIFY') {
       pinCtrl.setValidators([Validators.required, Validators.pattern(/^\d{4}$/)]);
     }
@@ -149,7 +164,13 @@ export class WithdrawalComponent implements OnInit {
 
     if (state === 'AMOUNT') {
       if (this.hasBankDetails()) {
-        this.amountToConfirm.set(this.withdrawalForm.value.amount);
+        const amount = Number(this.withdrawalForm.value.amount);
+        const balance = this.wallet()?.cashBalance ?? 0;
+        if (amount > balance) {
+          this.withdrawalForm.get('amount')?.setErrors({ exceedsBalance: true });
+          return;
+        }
+        this.amountToConfirm.set(amount);
         this.withdrawalForm.patchValue({ pin: '' });
         this.setFormState('PIN_VERIFY');
       }

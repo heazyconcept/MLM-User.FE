@@ -152,6 +152,39 @@ describe('WalletService', () => {
     );
   });
 
+  it('should show the API message for pending withdrawal 403 errors', () => {
+    service
+      .withdraw({
+        currency: 'NGN',
+        amount: 5000,
+        bankName: 'GTBank',
+        accountNumber: '0123456789',
+        accountName: 'Test User',
+        pin: '1234',
+      })
+      .subscribe({
+        next: () => expect.unreachable('should have failed'),
+        error: () => {},
+      });
+
+    const req = httpMock.expectOne(`${baseUrl}/withdrawals/request`);
+    req.flush(
+      {
+        statusCode: 403,
+        error: 'Forbidden',
+        message: ['You have a pending withdrawal request. Please wait for it to be processed.'],
+        path: '/withdrawals/request',
+      },
+      { status: 403, statusText: 'Forbidden' },
+    );
+
+    expect(modalService.open).toHaveBeenCalledWith(
+      'error',
+      'Withdrawal Failed',
+      'You have a pending withdrawal request. Please wait for it to be processed.',
+    );
+  });
+
   it('should detect locked cash wallets from GET /wallets', () => {
     service.fetchWallets().subscribe();
 
