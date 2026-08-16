@@ -378,12 +378,16 @@ export class WalletService {
         this.fetchWithdrawals().subscribe();
       }),
       catchError(err => {
+        const hasApiMessage =
+          typeof err?.error?.message === 'string'
+            ? err.error.message.trim().length > 0
+            : Array.isArray(err?.error?.message) && err.error.message.length > 0;
+
         const msg = this.isImpersonationBlocked(err)
           ? 'Action disabled during impersonation.'
-          : err?.status === 403
-            ? "You're not yet eligible to withdraw."
-            : (err?.error?.message ?? (Array.isArray(err?.error?.message) ? err.error.message[0] : null)
-              ?? 'Could not submit withdrawal. Please try again or contact support.');
+          : hasApiMessage
+            ? resolveWalletErrorMessage(err.error.message, currency)
+            : 'Could not submit withdrawal. Please try again or contact support.';
         this.modalService.open('error', 'Withdrawal Failed', msg);
         throw err;
       })
