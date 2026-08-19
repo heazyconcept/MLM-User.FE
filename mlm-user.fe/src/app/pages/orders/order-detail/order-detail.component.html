@@ -212,6 +212,16 @@
                   Open Dispute
                 </button>
               }
+              @if (canCancelOrder()) {
+                <button
+                  type="button"
+                  (click)="onCancel()"
+                  [disabled]="isProcessing()"
+                  class="px-6 py-2 bg-mlm-error text-white font-bold rounded hover:bg-opacity-90 disabled:opacity-50 transition-colors"
+                >
+                  Cancel Order
+                </button>
+              }
             </div>
           </div>
 
@@ -263,6 +273,7 @@
 
 <!-- Invoice Modal -->
 <app-invoice-modal></app-invoice-modal>
+<p-confirmDialog />
 
 @if (disputeDialogOpen()) {
   <div class="fixed inset-0 z-[9999] flex items-center justify-center p-4" role="dialog" aria-modal="true">

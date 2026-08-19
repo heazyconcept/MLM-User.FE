@@ -312,6 +312,19 @@ export class OrderService {
     return status === 'READY_FOR_PICKUP' || status === 'ASSIGNED_TO_MERCHANT';
   }
 
+  /** Customer may cancel after checkout until handoff/delivery is complete. */
+  static canCancelOrder(order: Order): boolean {
+    if (order.status === 'Cancelled' || order.status === 'Delivered') return false;
+    if (order.hasOpenDispute === true) return false;
+
+    const rawStatus = (order.rawStatus ?? '').toUpperCase();
+    if (rawStatus === 'PICKED_UP' || rawStatus === 'COMPLETED' || rawStatus === 'DELIVERED') {
+      return false;
+    }
+
+    return true;
+  }
+
   static pickupHandoffMessage(order: Order): string {
     if (order.rawStatus === 'READY_FOR_PICKUP') {
       return 'Your order is ready for pickup. Visit the merchant below to collect your items. After the merchant confirms handoff, you can confirm receipt on this page.';
