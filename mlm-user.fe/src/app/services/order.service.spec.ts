@@ -139,37 +139,4 @@ describe('OrderService checkout contracts', () => {
     ).toBe(false);
   });
 
-  it('allows cancel after placement until handoff or delivery completes', () => {
-    const placed = {
-      status: 'Processing',
-      rawStatus: 'PAID',
-      hasOpenDispute: false,
-    } as Order;
-
-    expect(OrderService.canCancelOrder(placed)).toBe(true);
-    expect(
-      OrderService.canCancelOrder({ ...placed, status: 'Ready for Pickup', rawStatus: 'READY_FOR_PICKUP' }),
-    ).toBe(true);
-    expect(
-      OrderService.canCancelOrder({ ...placed, status: 'Picked Up', rawStatus: 'PICKED_UP' }),
-    ).toBe(false);
-    expect(
-      OrderService.canCancelOrder({ ...placed, status: 'Delivered', rawStatus: 'COMPLETED' }),
-    ).toBe(false);
-    expect(
-      OrderService.canCancelOrder({ ...placed, status: 'Cancelled', rawStatus: 'CANCELLED' }),
-    ).toBe(false);
-    expect(
-      OrderService.canCancelOrder({ ...placed, hasOpenDispute: true }),
-    ).toBe(false);
-  });
-
-  it('posts cancel to the order endpoint', () => {
-    service.cancelOrder('order-1').subscribe();
-
-    const req = httpMock.expectOne(`${environment.apiUrl}/orders/order-1/cancel`);
-    expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({});
-    req.flush({ id: 'order-1', status: 'CANCELLED' });
-  });
 });

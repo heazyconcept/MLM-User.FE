@@ -4,8 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OrderService, Order, OrderDispute } from '../../../services/order.service';
 import { InvoiceService } from '../../../services/invoice.service';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService } from 'primeng/api';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import { InvoiceModalComponent } from '../../../components/invoice-modal/invoice-modal.component';
 import { OrderTimelineComponent } from '../../../components/order-timeline/order-timeline.component';
@@ -19,9 +18,7 @@ import { OrderTimelineComponent } from '../../../components/order-timeline/order
     StatusBadgeComponent,
     InvoiceModalComponent,
     OrderTimelineComponent,
-    ConfirmDialogModule,
   ],
-  providers: [ConfirmationService],
   templateUrl: './order-detail.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -31,7 +28,6 @@ export class OrderDetailComponent implements OnInit {
   private orderService = inject(OrderService);
   invoiceService = inject(InvoiceService);
   private messageService = inject(MessageService);
-  private confirmationService = inject(ConfirmationService);
 
   order = signal<Order | null>(null);
   disputes = signal<OrderDispute[]>([]);
@@ -69,12 +65,6 @@ export class OrderDetailComponent implements OnInit {
     return OrderService.isAwaitingPickupCollection(o);
   });
 
-  canCancelOrder = computed(() => {
-    const o = this.order();
-    if (!o) return false;
-    return OrderService.canCancelOrder(o);
-  });
-
   pickupHandoffMessage = computed(() => {
     const o = this.order();
     if (!o) return '';
@@ -97,49 +87,6 @@ export class OrderDetailComponent implements OnInit {
     this.orderService.payOrderWithWallet(o.id).subscribe({
       next: () => this.refreshOrder(o.id),
       error: () => this.isProcessing.set(false),
-    });
-  }
-
-  onCancel(): void {
-    const o = this.order();
-    if (!o || !this.canCancelOrder()) return;
-
-    this.confirmationService.confirm({
-      header: 'Cancel order',
-      message: `Cancel order ${o.reference}? Your payment will be refunded to your Product Voucher wallet. This cannot be undone.`,
-      icon: 'pi pi-exclamation-triangle',
-      acceptButtonProps: { label: 'Cancel order', severity: 'danger' },
-      rejectButtonProps: { label: 'Keep order', severity: 'secondary', outlined: true },
-      accept: () => this.cancelOrder(o.id),
-    });
-  }
-
-  private cancelOrder(orderId: string): void {
-    this.isProcessing.set(true);
-    this.orderService.cancelOrder(orderId).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Order cancelled',
-          detail: 'Your order has been cancelled and refunded to your Product Voucher wallet.',
-          life: 5000,
-        });
-        this.refreshOrder(orderId);
-      },
-      error: (err) => {
-        this.isProcessing.set(false);
-        const backendMessage = err?.error?.message;
-        const detail = Array.isArray(backendMessage)
-          ? backendMessage.join(' ')
-          : (backendMessage ?? 'This order cannot be cancelled. Please try again.');
-
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Could not cancel order',
-          detail,
-          life: 6000,
-        });
-      },
     });
   }
 

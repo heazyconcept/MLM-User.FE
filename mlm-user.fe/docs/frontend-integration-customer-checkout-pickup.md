@@ -196,19 +196,11 @@ If any child order fails, that order is marked `FAILED`; the endpoint stops at t
 
 ### Cancelling
 
-`POST /orders/:id/cancel` — customer may cancel **paid or unpaid** orders in pre-fulfilment states (e.g. `PAID`, `PROCESSING`, `ASSIGNED_TO_MERCHANT`, `READY_FOR_PICKUP`, delivery in progress).
+Customer app: **no self-service cancel** after checkout. Placed orders cannot be cancelled from the user dashboard.
 
-**Not allowed:** `PICKED_UP`, `COMPLETED`, `DELIVERED`, `CANCELLED`, or while a dispute is open.
+`POST /orders/:id/cancel` remains a backend/admin capability (e.g. unpaid checkout failures, admin dispute resolution). Orders may also show status **Cancelled** when checkout payment fails (`FAILED` maps to the same UI badge).
 
-**On success:**
-
-- Order → `CANCELLED`
-- Refund to **Product Voucher** wallet
-- CPV / earnings allocations reversed
-- Merchant or warehouse stock restored (pickup / inventory as applicable)
-- `ORDER_CANCELLED` notification
-
-See [BACKEND_REQUEST_PAID_ORDER_CANCELLATION.md](./BACKEND_REQUEST_PAID_ORDER_CANCELLATION.md) for full eligibility matrix.
+Admin dispute resolution (`outcome: "CUSTOMER"`) can still set an order to `CANCELLED`.
 
 ---
 

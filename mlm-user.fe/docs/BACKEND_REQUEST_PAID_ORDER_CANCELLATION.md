@@ -6,7 +6,7 @@
 
 **From:** User FE (`mlm-user.fe`)  
 
-**Status:** Backend shipped — FE integrated (2026-08-20)  
+**Status:** Backend shipped — **customer FE does not expose cancel** (2026-08-20)  
 
 **Severity:** High  
 
@@ -32,9 +32,7 @@
 
 - Checkout: `cart-checkout.service.ts` — `checkoutBatch` then `payCheckoutWithWallet` (order is **paid on placement**)
 
-- Order detail cancel: `order-detail.component.ts` → `POST /orders/:id/cancel`
-
-- Cancel eligibility (UI): `OrderService.canCancelOrder()` — pre-fulfilment, not completed/picked up
+- Order detail: no customer cancel action (confirm received / open dispute only)
 
 
 
@@ -46,7 +44,7 @@
 
 
 
-The customer app exposes **Cancel Order** on the order detail page for orders that are placed but not yet fulfilled (Processing, Ready for Pickup, Out for Delivery, etc.).
+The customer app does **not** expose cancel after checkout. Backend may still cancel via admin/dispute paths or mark orders failed when payment is insufficient.
 
 
 
@@ -164,11 +162,9 @@ The customer app exposes **Cancel Order** on the order detail page for orders th
 
 
 
-- Calls `POST /orders/:id/cancel` from order detail with confirmation dialog.
-
-- Success toast: refund to Product Voucher wallet.
-
-- `OrderService.canCancelOrder()` mirrors pre-fulfilment rules; terminal / picked-up / disputed orders hide the button.
+- Customer app does **not** call `POST /orders/:id/cancel`.
+- Order detail actions: view receipt, confirm received (pickup), open dispute (pickup).
+- Orders showing **Cancelled** may be failed checkout (`FAILED`) or admin/dispute cancellation — not user-initiated cancel.
 
 
 

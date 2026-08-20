@@ -261,10 +261,6 @@ export class OrderService {
     });
   }
 
-  cancelOrder(id: string): Observable<Order> {
-    return this.api.post<any>(`orders/${id}/cancel`, {}).pipe(map((res) => this.mapOrder(res)));
-  }
-
   confirmOrderReceived(id: string): Observable<void> {
     return this.api.post<void>(`orders/${id}/confirm-received`, {});
   }
@@ -310,19 +306,6 @@ export class OrderService {
     if (order.fulfilmentMethod !== 'pickup') return false;
     const status = order.rawStatus ?? '';
     return status === 'READY_FOR_PICKUP' || status === 'ASSIGNED_TO_MERCHANT';
-  }
-
-  /** Customer may cancel paid/unpaid orders before handoff or delivery completes. */
-  static canCancelOrder(order: Order): boolean {
-    if (order.status === 'Cancelled' || order.status === 'Delivered') return false;
-    if (order.hasOpenDispute === true) return false;
-
-    const rawStatus = (order.rawStatus ?? '').toUpperCase();
-    if (rawStatus === 'PICKED_UP' || rawStatus === 'COMPLETED' || rawStatus === 'DELIVERED') {
-      return false;
-    }
-
-    return true;
   }
 
   static pickupHandoffMessage(order: Order): string {
