@@ -196,7 +196,11 @@ If any child order fails, that order is marked `FAILED`; the endpoint stops at t
 
 ### Cancelling
 
-`POST /orders/:id/cancel` — unpaid PICKUP orders now **restore** the reserved merchant stock.
+Customer app: **no self-service cancel** after checkout. Placed orders cannot be cancelled from the user dashboard.
+
+`POST /orders/:id/cancel` remains a backend/admin capability (e.g. unpaid checkout failures, admin dispute resolution). Orders may also show status **Cancelled** when checkout payment fails (`FAILED` maps to the same UI badge).
+
+Admin dispute resolution (`outcome: "CUSTOMER"`) can still set an order to `CANCELLED`.
 
 ---
 

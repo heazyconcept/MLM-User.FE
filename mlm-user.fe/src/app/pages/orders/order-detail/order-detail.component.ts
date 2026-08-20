@@ -90,16 +90,6 @@ export class OrderDetailComponent implements OnInit {
     });
   }
 
-  onCancel(): void {
-    const o = this.order();
-    if (!o) return;
-    this.isProcessing.set(true);
-    this.orderService.cancelOrder(o.id).subscribe({
-      next: () => this.refreshOrder(o.id),
-      error: () => this.isProcessing.set(false),
-    });
-  }
-
   onConfirmReceived(): void {
     const o = this.order();
     if (!o || !this.canConfirmPickup()) return;

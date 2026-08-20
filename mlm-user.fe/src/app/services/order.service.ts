@@ -261,10 +261,6 @@ export class OrderService {
     });
   }
 
-  cancelOrder(id: string): Observable<Order> {
-    return this.api.post<any>(`orders/${id}/cancel`, {}).pipe(map((res) => this.mapOrder(res)));
-  }
-
   confirmOrderReceived(id: string): Observable<void> {
     return this.api.post<void>(`orders/${id}/confirm-received`, {});
   }
