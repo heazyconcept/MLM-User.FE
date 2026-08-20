@@ -206,7 +206,7 @@ Date filters (when present) use ISO 8601 strings, e.g. **fromDate** / **toDate**
 | POST | /orders/:id/pay-wallet | Bearer | Pay order with wallet |
 | GET | /orders | Bearer | My orders; query: status?, fromDate?, toDate?, limit?, offset? |
 | GET | /orders/:id | Bearer | Order by id |
-| POST | /orders/:id/cancel | Bearer | Cancel unpaid order |
+| POST | /orders/:id/cancel | Bearer | Cancel pre-fulfilment order (paid or unpaid); refunds Product Voucher wallet |
 
 ### Merchants
 

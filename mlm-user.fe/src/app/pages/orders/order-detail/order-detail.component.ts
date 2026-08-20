@@ -106,7 +106,7 @@ export class OrderDetailComponent implements OnInit {
 
     this.confirmationService.confirm({
       header: 'Cancel order',
-      message: `Cancel order ${o.reference}? This cannot be undone.`,
+      message: `Cancel order ${o.reference}? Your payment will be refunded to your Product Voucher wallet. This cannot be undone.`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonProps: { label: 'Cancel order', severity: 'danger' },
       rejectButtonProps: { label: 'Keep order', severity: 'secondary', outlined: true },
@@ -121,17 +121,22 @@ export class OrderDetailComponent implements OnInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Order cancelled',
-          detail: 'Your order has been cancelled.',
+          detail: 'Your order has been cancelled and refunded to your Product Voucher wallet.',
           life: 5000,
         });
         this.refreshOrder(orderId);
       },
       error: (err) => {
         this.isProcessing.set(false);
+        const backendMessage = err?.error?.message;
+        const detail = Array.isArray(backendMessage)
+          ? backendMessage.join(' ')
+          : (backendMessage ?? 'This order cannot be cancelled. Please try again.');
+
         this.messageService.add({
           severity: 'error',
           summary: 'Could not cancel order',
-          detail: err?.error?.message ?? 'This order cannot be cancelled. Please try again.',
+          detail,
           life: 6000,
         });
       },

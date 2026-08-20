@@ -27,7 +27,7 @@
 | 1 | **Wallets** | GET /wallets, GET /wallets/:type | Requires RegistrationPaid |
 | 2 | **Withdrawals** | POST /withdrawals/request, GET /withdrawals, GET /withdrawals/:id | Requires RegistrationPaid |
 | 3 | **Products** | GET /products, GET /products/:id | Bearer only |
-| 4 | **Orders** | POST /orders, GET /orders, GET /orders/:id, POST /orders/:id/pay-wallet | Requires RegistrationPaid |
+| 4 | **Orders** | POST /orders, GET /orders, GET /orders/:id, POST /orders/:id/pay-wallet, POST /orders/:id/cancel | Requires RegistrationPaid; cancel for pre-fulfilment paid/unpaid orders |
 | 5 | **Notifications** | GET /notifications, GET /notifications/unread-count, PUT /notifications/:id/read | Bearer only |
 | 6 | **Settings Sessions** | GET /users/me/sessions, DELETE /users/me/sessions/:id | Bearer only |
 | 7 | **Notification Preferences** | GET /notifications/preferences, PUT /notifications/preferences | Bearer only |

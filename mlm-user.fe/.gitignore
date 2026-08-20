@@ -2,9 +2,15 @@
 
 # Compiled output
 /dist
+/dist-*
 /tmp
 /out-tsc
 /bazel-out
+/.build-*
+/.tmp-build-*
+
+# Angular CLI cache
+/.angular
 
 # Node
 /node_modules
@@ -29,7 +35,6 @@ yarn-error.log
 .history/*
 
 # Miscellaneous
-/.angular/cache
 .sass-cache/
 /connect.lock
 /coverage

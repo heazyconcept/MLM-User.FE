@@ -312,7 +312,7 @@ export class OrderService {
     return status === 'READY_FOR_PICKUP' || status === 'ASSIGNED_TO_MERCHANT';
   }
 
-  /** Customer may cancel after checkout until handoff/delivery is complete. */
+  /** Customer may cancel paid/unpaid orders before handoff or delivery completes. */
   static canCancelOrder(order: Order): boolean {
     if (order.status === 'Cancelled' || order.status === 'Delivered') return false;
     if (order.hasOpenDispute === true) return false;

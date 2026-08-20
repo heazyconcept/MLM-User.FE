@@ -196,7 +196,19 @@ If any child order fails, that order is marked `FAILED`; the endpoint stops at t
 
 ### Cancelling
 
-`POST /orders/:id/cancel` — unpaid PICKUP orders now **restore** the reserved merchant stock.
+`POST /orders/:id/cancel` — customer may cancel **paid or unpaid** orders in pre-fulfilment states (e.g. `PAID`, `PROCESSING`, `ASSIGNED_TO_MERCHANT`, `READY_FOR_PICKUP`, delivery in progress).
+
+**Not allowed:** `PICKED_UP`, `COMPLETED`, `DELIVERED`, `CANCELLED`, or while a dispute is open.
+
+**On success:**
+
+- Order → `CANCELLED`
+- Refund to **Product Voucher** wallet
+- CPV / earnings allocations reversed
+- Merchant or warehouse stock restored (pickup / inventory as applicable)
+- `ORDER_CANCELLED` notification
+
+See [BACKEND_REQUEST_PAID_ORDER_CANCELLATION.md](./BACKEND_REQUEST_PAID_ORDER_CANCELLATION.md) for full eligibility matrix.
 
 ---
 
