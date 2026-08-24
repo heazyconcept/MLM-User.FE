@@ -7,7 +7,7 @@ import { MerchantService } from '../../../services/merchant.service';
 import { OrderService } from '../../../services/order.service';
 import { OrderPreviewComponent } from './order-preview.component';
 
-describe('OrderPreviewComponent canonical geography', () => {
+describe('OrderPreviewComponent pickup geography', () => {
   const fulfilmentOption = signal<'pickup' | 'delivery'>('pickup');
   const merchantService = {
     fetchPickupMerchantsForCart: vi.fn().mockReturnValue(
@@ -36,7 +36,28 @@ describe('OrderPreviewComponent canonical geography', () => {
     ),
     checkCheckoutAvailability: vi.fn().mockReturnValue(
       of({
-        merchants: [],
+        merchants: [
+          {
+            id: 'merchant-1',
+            businessName: 'Lagos Hub',
+            phoneNumber: '+2348012345678',
+            address: '12 Pickup Road',
+            serviceAreas: ['Lagos'],
+            locations: [],
+            locationsComplete: true,
+            usingPrimaryAddressFallback: true,
+            products: [
+              {
+                id: 'product-1',
+                name: 'Wine',
+                sku: 'W-1',
+                stockQuantity: 2,
+                inStock: true,
+              },
+            ],
+            pickupAvailable: true,
+          },
+        ],
         selectedMerchant: {
           merchantId: 'merchant-1',
           canFulfillAll: true,
@@ -94,31 +115,18 @@ describe('OrderPreviewComponent canonical geography', () => {
     return fixture.componentInstance;
   }
 
-  it('blocks home delivery outside Nigeria', () => {
-    const component = create();
-    component.setOption('delivery');
-    component.onCountryChange('GH');
-    component.onSubdivisionChange('AA');
-    component.deliveryAddress.set('12 Complete Delivery Road');
-
-    expect(component.checkoutGeography()).toEqual({
-      countryCode: 'GH',
-      countryName: 'Ghana',
-      subdivisionCode: 'AA',
-      subdivisionName: 'Greater Accra',
-    });
-    expect(component.deliveryAvailable()).toBe(false);
-    expect(component.canConfirm()).toBe(false);
+  it('forces pickup fulfilment on init', () => {
+    create();
+    expect(fulfilmentOption()).toBe('pickup');
   });
 
-  it('emits canonical Nigerian geography for delivery', () => {
+  it('emits canonical geography and pickup groups on confirm', () => {
     const component = create();
     const emitted = vi.fn();
     component.orderConfirmed.subscribe(emitted);
-    component.setOption('delivery');
     component.onCountryChange('NG');
     component.onSubdivisionChange('LA');
-    component.deliveryAddress.set('12 Complete Delivery Road');
+    component.onLocationSelect('merchant-1');
 
     component.onConfirm();
 
@@ -127,8 +135,22 @@ describe('OrderPreviewComponent canonical geography', () => {
         countryCode: 'NG',
         subdivisionCode: 'LA',
         state: 'Lagos',
+        groups: [
+          expect.objectContaining({
+            fulfilmentMode: 'PICKUP',
+            selectedMerchantId: 'merchant-1',
+          }),
+        ],
       }),
     );
+  });
+
+  it('blocks confirm until a pickup merchant is selected', () => {
+    const component = create();
+    component.onCountryChange('NG');
+    component.onSubdivisionChange('LA');
+
+    expect(component.canConfirm()).toBe(false);
   });
 
   it('keeps partial-stock merchants selectable for split resolution', () => {

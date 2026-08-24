@@ -23,7 +23,6 @@ import {
   PickupLocation,
   PickupStockState,
 } from '../../../components/location-selector/location-selector.component';
-import { getDeliveryFee } from '../../../core/constants/delivery.constants';
 import { formatMerchantUsernameLabel } from '../../../core/utils/merchant-display.util';
 import {
   CheckoutConfirmPayload,
@@ -42,9 +41,7 @@ interface CartLine {
   quantity: number;
 }
 
-type MissingItemAssignment =
-  | { mode: 'pickup'; merchantId: string; merchantName: string }
-  | { mode: 'delivery' };
+type MissingItemAssignment = { mode: 'pickup'; merchantId: string; merchantName: string };
 
 interface CheckoutGeography {
   countryCode: string;
@@ -68,7 +65,6 @@ export class OrderPreviewComponent implements OnInit {
   submitting = input<boolean>(false);
   orderConfirmed = output<CheckoutConfirmPayload>();
 
-  fulfilmentOption = this.orderService.fulfilmentOption;
   selectedPickupId = signal<string | null>(null);
   selectedCountryCode = signal('');
   checkoutGeography = signal<CheckoutGeography | null>(null);
@@ -76,8 +72,6 @@ export class OrderPreviewComponent implements OnInit {
   subdivisions = signal<GeographySubdivision[]>([]);
   geographyLoading = signal(false);
   geographyError = signal<string | null>(null);
-  deliveryAddress = signal<string>('');
-  deliveryDisclaimerAccepted = signal(true);
 
   merchants = signal<AvailableMerchant[]>([]);
   pickupLocationsLoading = signal(false);
@@ -108,14 +102,6 @@ export class OrderPreviewComponent implements OnInit {
   hasSelectablePickup = computed(() =>
     this.pickupLocations().some((l) => l.pickupAvailable && l.stockState !== 'none'),
   );
-
-  deliveryFee = computed(() => {
-    const geography = this.checkoutGeography();
-    if (!geography || geography.countryCode !== 'NG' || this.fulfilmentOption() !== 'delivery') {
-      return 0;
-    }
-    return getDeliveryFee(geography.subdivisionName);
-  });
 
   emptyPickupMessage = computed(() => {
     const geography = this.checkoutGeography();
@@ -152,21 +138,9 @@ export class OrderPreviewComponent implements OnInit {
     }));
   });
 
-  deliveryAvailable = computed(() => this.checkoutGeography()?.countryCode === 'NG');
-
   ngOnInit(): void {
+    this.orderService.setFulfilmentOption('pickup');
     this.loadCountries();
-  }
-
-  setOption(option: 'pickup' | 'delivery'): void {
-    this.orderService.setFulfilmentOption(option);
-    this.resetAvailability();
-    this.selectedPickupId.set(null);
-    if (option === 'delivery') {
-      this.merchants.set([]);
-    } else if (this.checkoutGeography()) {
-      this.loadMerchants();
-    }
   }
 
   onCountryChange(countryCode: string): void {
@@ -199,13 +173,7 @@ export class OrderPreviewComponent implements OnInit {
       subdivisionCode: subdivision.code,
       subdivisionName: subdivision.name,
     });
-    if (this.fulfilmentOption() === 'pickup') {
-      this.loadMerchants();
-    }
-  }
-
-  onDeliveryAddressInput(event: Event): void {
-    this.deliveryAddress.set((event.target as HTMLInputElement).value);
+    this.loadMerchants();
   }
 
   onLocationSelect(id: string): void {
@@ -238,13 +206,6 @@ export class OrderPreviewComponent implements OnInit {
     return this.getMerchantDisplayById(alt.merchantId) || alt.username;
   }
 
-  assignMissingToDelivery(item: MissingCheckoutItem): void {
-    this.missingAssignments.update((prev) => ({
-      ...prev,
-      [item.productId]: { mode: 'delivery' },
-    }));
-  }
-
   productNameFor(productId: string): string {
     return this.cartLines().find((l) => l.productId === productId)?.productName ?? 'Product';
   }
@@ -252,45 +213,28 @@ export class OrderPreviewComponent implements OnInit {
   assignmentLabel(productId: string): string | null {
     const assignment = this.missingAssignments()[productId];
     if (!assignment) return null;
-    if (assignment.mode === 'delivery') return 'Admin delivery';
     return `Pickup at ${assignment.merchantName}`;
-  }
-
-  formatCurrency(amount: number): string {
-    return `₦${amount.toLocaleString('en-US')}`;
   }
 
   canConfirm(): boolean {
     if (this.submitting()) return false;
-
-    if (this.fulfilmentOption() === 'pickup') {
-      if (!this.checkoutGeography() || !this.selectedPickupId()) return false;
-      if (this.availabilityLoading()) return false;
-      if (this.needsSplitResolution() && this.unresolvedMissingCount() > 0) return false;
-      const groups = this.checkoutGroups();
-      return groups.length > 0 && groups.every((g) => g.items.length > 0);
-    }
-
-    const address = this.deliveryAddress().trim();
-    return address.length >= 10 && this.deliveryAvailable();
+    if (!this.checkoutGeography() || !this.selectedPickupId()) return false;
+    if (this.availabilityLoading()) return false;
+    if (this.needsSplitResolution() && this.unresolvedMissingCount() > 0) return false;
+    const groups = this.checkoutGroups();
+    return groups.length > 0 && groups.every((g) => g.items.length > 0);
   }
 
   confirmButtonLabel(): string {
     if (this.submitting()) return 'Processing checkout…';
-    if (this.fulfilmentOption() === 'pickup') {
-      if (!this.checkoutGeography()) return 'Select a location';
-      if (this.pickupLocationsLoading()) return 'Loading merchants…';
-      if (this.availabilityLoading()) return 'Checking stock…';
-      if (!this.selectedPickupId()) return 'Select a pickup merchant';
-      if (this.unresolvedMissingCount() > 0) {
-        return `Resolve ${this.unresolvedMissingCount()} item(s)`;
-      }
-      if (this.splitSummary().length > 1) return 'Confirm split order';
-      return 'Confirm Order';
-    }
     if (!this.checkoutGeography()) return 'Select a location';
-    if (!this.deliveryAvailable()) return 'Delivery unavailable for this country';
-    if (this.deliveryAddress().trim().length < 10) return 'Enter full delivery address';
+    if (this.pickupLocationsLoading()) return 'Loading merchants…';
+    if (this.availabilityLoading()) return 'Checking stock…';
+    if (!this.selectedPickupId()) return 'Select a pickup merchant';
+    if (this.unresolvedMissingCount() > 0) {
+      return `Resolve ${this.unresolvedMissingCount()} item(s)`;
+    }
+    if (this.splitSummary().length > 1) return 'Confirm split order';
     return 'Confirm Order';
   }
 
@@ -298,11 +242,7 @@ export class OrderPreviewComponent implements OnInit {
     if (!this.canConfirm()) return;
 
     const geography = this.checkoutGeography();
-
-    const groups =
-      this.fulfilmentOption() === 'delivery'
-        ? this.buildDeliveryOnlyGroups()
-        : this.checkoutGroups();
+    const groups = this.checkoutGroups();
 
     if (!geography || groups.length === 0) return;
 
@@ -358,26 +298,31 @@ export class OrderPreviewComponent implements OnInit {
     this.pickupLocationsLoading.set(true);
     this.pickupLocationsError.set(null);
 
-    this.merchantService.fetchPickupMerchantsForCart({
-      countryCode: geography.countryCode,
-      subdivisionCode: geography.subdivisionCode,
-      state: geography.subdivisionName,
-    }, this.cartLines()).subscribe({
-      next: (merchants) => {
-        this.merchants.set(merchants);
-        this.pickupLocationsLoading.set(false);
-      },
-      error: (err) => {
-        this.pickupLocationsError.set(
-          MerchantService.extractApiErrorMessage(
-            err,
-            'Could not load pickup merchants for this location. Try again or choose delivery.',
-          ),
-        );
-        this.merchants.set([]);
-        this.pickupLocationsLoading.set(false);
-      },
-    });
+    this.merchantService
+      .fetchPickupMerchantsForCart(
+        {
+          countryCode: geography.countryCode,
+          subdivisionCode: geography.subdivisionCode,
+          state: geography.subdivisionName,
+        },
+        this.cartLines(),
+      )
+      .subscribe({
+        next: (merchants) => {
+          this.merchants.set(merchants);
+          this.pickupLocationsLoading.set(false);
+        },
+        error: (err) => {
+          this.pickupLocationsError.set(
+            MerchantService.extractApiErrorMessage(
+              err,
+              'Could not load pickup merchants for this location. Try again.',
+            ),
+          );
+          this.merchants.set([]);
+          this.pickupLocationsLoading.set(false);
+        },
+      });
   }
 
   private checkMerchantAvailability(merchantId: string): void {
@@ -433,20 +378,6 @@ export class OrderPreviewComponent implements OnInit {
     return availableQuantities.some((quantity) => quantity > 0) ? 'partial' : 'none';
   }
 
-  private buildDeliveryOnlyGroups(): CheckoutGroup[] {
-    return [
-      {
-        fulfilmentMode: 'OFFLINE_DELIVERY',
-        deliveryAddress: this.deliveryAddress().trim(),
-        deliveryDisclaimerAccepted: this.deliveryDisclaimerAccepted(),
-        items: this.cartLines().map((l) => ({
-          productId: l.productId,
-          quantity: l.quantity,
-        })),
-      },
-    ];
-  }
-
   private buildCheckoutGroups(): CheckoutGroup[] {
     const merchantId = this.selectedPickupId();
     if (!merchantId) return [];
@@ -469,7 +400,6 @@ export class OrderPreviewComponent implements OnInit {
     const assignments = this.missingAssignments();
     const primaryItems: { productId: string; quantity: number }[] = [];
     const pickupBuckets = new Map<string, { productId: string; quantity: number }[]>();
-    const deliveryItems: { productId: string; quantity: number }[] = [];
 
     for (const line of lines) {
       const missingQty = missingMap.get(line.productId) ?? 0;
@@ -483,8 +413,6 @@ export class OrderPreviewComponent implements OnInit {
           const bucket = pickupBuckets.get(assignment.merchantId) ?? [];
           bucket.push({ productId: line.productId, quantity: missingQty });
           pickupBuckets.set(assignment.merchantId, bucket);
-        } else if (assignment?.mode === 'delivery') {
-          deliveryItems.push({ productId: line.productId, quantity: missingQty });
         }
       }
     }
@@ -500,24 +428,10 @@ export class OrderPreviewComponent implements OnInit {
     for (const [mid, items] of pickupBuckets) {
       groups.push({ fulfilmentMode: 'PICKUP', selectedMerchantId: mid, items });
     }
-    if (deliveryItems.length > 0) {
-      groups.push({
-        fulfilmentMode: 'OFFLINE_DELIVERY',
-        deliveryAddress: this.buildAdminDeliveryAddress(),
-        deliveryDisclaimerAccepted: true,
-        items: deliveryItems,
-      });
-    }
     return groups;
   }
 
-  private buildAdminDeliveryAddress(): string {
-    const geography = this.checkoutGeography();
-    return `Admin delivery — ${geography?.subdivisionName ?? ''} (fulfilled by Segulah)`;
-  }
-
   private groupLabel(group: CheckoutGroup): string {
-    if (group.fulfilmentMode === 'OFFLINE_DELIVERY') return 'Admin delivery';
     const label = this.getMerchantDisplayById(group.selectedMerchantId ?? '');
     return `Pickup — ${label || 'Merchant'}`;
   }

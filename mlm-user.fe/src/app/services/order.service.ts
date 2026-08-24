@@ -123,7 +123,7 @@ export class OrderService {
   private api = inject(ApiService);
   private listState = signal<Order[]>([]);
   private selectedOrderState = signal<Order | null>(null);
-  private fulfilmentOptionState = signal<'pickup' | 'delivery'>('delivery');
+  private fulfilmentOptionState = signal<'pickup' | 'delivery'>('pickup');
   private searchQueryState = signal<string>('');
   private statusFilterState = signal<string>('');
 

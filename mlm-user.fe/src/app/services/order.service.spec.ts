@@ -20,7 +20,7 @@ describe('OrderService checkout contracts', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('posts canonical geography and all split groups unchanged', () => {
+  it('posts canonical geography and pickup groups unchanged', () => {
     const payload = {
       countryCode: 'NG',
       subdivisionCode: 'LA',
@@ -34,9 +34,8 @@ describe('OrderService checkout contracts', () => {
           items: [{ productId: 'product-1', quantity: 1 }],
         },
         {
-          fulfilmentMode: 'OFFLINE_DELIVERY' as const,
-          deliveryAddress: '12 Delivery Road, Lagos',
-          deliveryDisclaimerAccepted: true,
+          fulfilmentMode: 'PICKUP' as const,
+          selectedMerchantId: 'merchant-2',
           items: [{ productId: 'product-2', quantity: 2 }],
         },
       ],
