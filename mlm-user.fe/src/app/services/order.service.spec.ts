@@ -38,6 +38,13 @@ describe('OrderService checkout contracts', () => {
           selectedMerchantId: 'merchant-2',
           items: [{ productId: 'product-2', quantity: 2 }],
         },
+        // Home delivery disabled — previous OFFLINE_DELIVERY group example:
+        // {
+        //   fulfilmentMode: 'OFFLINE_DELIVERY' as const,
+        //   deliveryAddress: '12 Delivery Road, Lagos',
+        //   deliveryDisclaimerAccepted: true,
+        //   items: [{ productId: 'product-2', quantity: 2 }],
+        // },
       ],
     };
 

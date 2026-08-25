@@ -166,4 +166,33 @@ describe('OrderPreviewComponent pickup geography', () => {
     );
     expect(component.hasSelectablePickup()).toBe(true);
   });
+
+  // Home delivery disabled — restore these when re-enabling delivery UI:
+  // it('blocks home delivery outside Nigeria', () => {
+  //   const component = create();
+  //   component.setOption('delivery');
+  //   component.onCountryChange('GH');
+  //   component.onSubdivisionChange('AA');
+  //   component.deliveryAddress.set('12 Complete Delivery Road');
+  //   expect(component.deliveryAvailable()).toBe(false);
+  //   expect(component.canConfirm()).toBe(false);
+  // });
+  //
+  // it('emits canonical Nigerian geography for delivery', () => {
+  //   const component = create();
+  //   const emitted = vi.fn();
+  //   component.orderConfirmed.subscribe(emitted);
+  //   component.setOption('delivery');
+  //   component.onCountryChange('NG');
+  //   component.onSubdivisionChange('LA');
+  //   component.deliveryAddress.set('12 Complete Delivery Road');
+  //   component.onConfirm();
+  //   expect(emitted).toHaveBeenCalledWith(
+  //     expect.objectContaining({
+  //       countryCode: 'NG',
+  //       subdivisionCode: 'LA',
+  //       state: 'Lagos',
+  //     }),
+  //   );
+  // });
 });

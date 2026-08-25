@@ -114,6 +114,17 @@ export class CartCheckoutService {
     const totalPv = this.resolveTotalPv(orderData, firstOrder);
     const firstItem = orderItems[0];
     const orderReferences = checkout.orders.map((o) => o.reference ?? o.id);
+    // Home delivery disabled — restore when re-enabling delivery checkout:
+    // const hasPickup = payload.groups.some((g) => g.fulfilmentMode === 'PICKUP');
+    // const hasDelivery = payload.groups.some((g) => g.fulfilmentMode === 'OFFLINE_DELIVERY');
+    // let fulfilmentLabel = 'Pickup';
+    // if (hasPickup && hasDelivery) {
+    //   fulfilmentLabel = 'Split pickup & delivery';
+    // } else if (hasDelivery) {
+    //   fulfilmentLabel = 'Home Delivery';
+    // } else if (checkout.orders.length > 1) {
+    //   fulfilmentLabel = `Pickup (${checkout.orders.length} orders)`;
+    // }
     let fulfilmentLabel = 'Pickup';
     if (checkout.orders.length > 1) {
       fulfilmentLabel = `Pickup (${checkout.orders.length} orders)`;

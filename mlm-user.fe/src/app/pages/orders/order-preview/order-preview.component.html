@@ -11,8 +11,49 @@
         <p class="text-mlm-secondary text-sm mt-2">
           Choose where you want to collect your order
         </p>
+        <!-- Home delivery disabled — restore title: Fulfilment Options / Choose how you want to receive your order -->
         <div class="mt-5 h-px bg-linear-to-r from-mlm-primary/20 to-transparent"></div>
       </div>
+
+      <!-- Home delivery disabled: fulfilment toggle (Pickup | Home Delivery)
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+        <button
+          type="button"
+          (click)="setOption('pickup')"
+          class="text-left p-4 sm:p-5 rounded-xl border-2 transition-colors focus:outline-none"
+          [class]="
+            fulfilmentOption() === 'pickup'
+              ? 'border-mlm-primary bg-mlm-primary/5'
+              : 'border-gray-200 bg-white'
+          "
+        >
+          <span
+            class="inline-block w-2 h-2 rounded-full mb-4 transition-colors"
+            [class]="fulfilmentOption() === 'pickup' ? 'bg-mlm-primary' : 'bg-gray-300'"
+          ></span>
+          <h2 class="text-sm font-bold text-mlm-text mb-1">Pickup</h2>
+          <p class="text-xs text-mlm-secondary leading-relaxed">Collect at a nearby merchant</p>
+        </button>
+
+        <button
+          type="button"
+          (click)="setOption('delivery')"
+          class="text-left p-4 sm:p-5 rounded-xl border-2 transition-colors focus:outline-none"
+          [class]="
+            fulfilmentOption() === 'delivery'
+              ? 'border-mlm-primary bg-mlm-primary/5'
+              : 'border-gray-200 bg-white'
+          "
+        >
+          <span
+            class="inline-block w-2 h-2 rounded-full mb-4 transition-colors"
+            [class]="fulfilmentOption() === 'delivery' ? 'bg-mlm-primary' : 'bg-gray-300'"
+          ></span>
+          <h2 class="text-sm font-bold text-mlm-text mb-1">Home Delivery</h2>
+          <p class="text-xs text-mlm-secondary leading-relaxed">Delivered to your address</p>
+        </button>
+      </div>
+      -->
 
       <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 mb-4 space-y-4">
         <div>
@@ -111,6 +152,7 @@
                 >
                   Merchants are listed below but none can fulfil this cart via pickup yet. Try
                   another merchant or reduce quantities.
+                  <!-- Home delivery disabled: … or choose home delivery. -->
                 </p>
               }
 
@@ -142,6 +184,7 @@
               <p class="text-xs text-amber-800 mt-1">
                 The selected merchant cannot fulfil every item. Assign each missing line to another
                 pickup merchant.
+                <!-- Home delivery disabled: … merchant or admin delivery. -->
               </p>
             </div>
 
@@ -174,6 +217,18 @@
                     merchant or reduce the quantity.
                   </p>
                 }
+
+                <!-- Home delivery disabled: admin delivery fallback
+                @if (item.adminDeliveryAvailable) {
+                  <button
+                    type="button"
+                    (click)="assignMissingToDelivery(item)"
+                    class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-mlm-secondary hover:bg-gray-50 transition-colors"
+                  >
+                    Ship via admin delivery
+                  </button>
+                }
+                -->
               </div>
             }
           </div>
@@ -195,6 +250,45 @@
           </div>
         }
       </div>
+
+      <!-- Home delivery disabled: delivery address + fee form
+      @if (fulfilmentOption() === 'delivery') {
+        <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 space-y-5">
+          @if (checkoutGeography() && !deliveryAvailable()) {
+            <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              International home-delivery pricing is not available yet. Choose pickup or select Nigeria.
+            </p>
+          }
+
+          <div>
+            <label
+              for="delivery-address"
+              class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-2"
+            >
+              Delivery Address
+            </label>
+            <input
+              id="delivery-address"
+              type="text"
+              [value]="deliveryAddress()"
+              (input)="onDeliveryAddressInput($event)"
+              placeholder="Enter your full delivery address (min. 10 characters)"
+              class="w-full px-4 py-3 bg-mlm-background border border-gray-200 rounded-xl text-sm text-mlm-text placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
+              aria-label="Delivery address"
+            />
+          </div>
+
+          @if (checkoutGeography() && deliveryAvailable()) {
+            <div class="bg-gray-50 border border-gray-100 rounded-xl p-4">
+              <div class="flex justify-between items-center text-sm">
+                <span class="text-mlm-secondary">Delivery Fee</span>
+                <span class="font-bold text-mlm-text">{{ formatCurrency(deliveryFee()) }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+      -->
 
       <div class="mt-5 pb-1">
         <button
