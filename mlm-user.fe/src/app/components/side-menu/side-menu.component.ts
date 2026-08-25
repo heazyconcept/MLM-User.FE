@@ -15,6 +15,7 @@ interface MenuItem {
   label: string;
   icon: string;
   route?: string;
+  queryParams?: Record<string, string>;
   badge?: number;
   requiresPayment?: boolean;
   action?: () => void;
@@ -105,6 +106,66 @@ export class SideMenuComponent implements OnInit {
       ];
     }
     return [];
+  }
+
+  private userOrdersMenuItem(): MenuItem {
+    return {
+      label: 'Orders',
+      icon: 'pi pi-shopping-bag',
+      requiresPayment: true,
+      children: [
+        { label: 'All Orders', icon: 'pi pi-list', route: '/orders', requiresPayment: true },
+        {
+          label: 'Pending',
+          icon: 'pi pi-clock',
+          route: '/orders',
+          queryParams: { status: 'Pending' },
+          requiresPayment: true,
+        },
+        {
+          label: 'Ready for Pickup',
+          icon: 'pi pi-map-marker',
+          route: '/orders',
+          queryParams: { status: 'Ready for Pickup' },
+          requiresPayment: true,
+        },
+        {
+          label: 'Out for Delivery',
+          icon: 'pi pi-truck',
+          route: '/orders',
+          queryParams: { status: 'Out for Delivery' },
+          requiresPayment: true,
+        },
+      ],
+    };
+  }
+
+  private merchantOrdersMenuItem(): MenuItem {
+    return {
+      label: 'Orders',
+      icon: 'pi pi-shopping-bag',
+      children: [
+        { label: 'All Orders', icon: 'pi pi-list', route: '/merchant/orders' },
+        {
+          label: 'Assigned',
+          icon: 'pi pi-inbox',
+          route: '/merchant/orders',
+          queryParams: { status: 'ASSIGNED_TO_MERCHANT' },
+        },
+        {
+          label: 'Ready for Pickup',
+          icon: 'pi pi-map-marker',
+          route: '/merchant/orders',
+          queryParams: { status: 'READY_FOR_PICKUP' },
+        },
+        {
+          label: 'Delivery Requested',
+          icon: 'pi pi-truck',
+          route: '/merchant/orders',
+          queryParams: { status: 'OFFLINE_DELIVERY_REQUESTED' },
+        },
+      ],
+    };
   }
 
   private consultantMenuItem(): MenuItem {
@@ -258,7 +319,7 @@ export class SideMenuComponent implements OnInit {
             children: [
               { label: 'Dashboard', icon: 'pi pi-th-large', route: '/merchant/dashboard' },
               { label: 'Profile Settings', icon: 'pi pi-cog', route: '/merchant/profile' },
-              { label: 'Orders', icon: 'pi pi-shopping-bag', route: '/merchant/orders' },
+              this.merchantOrdersMenuItem(),
               { label: 'Inventory', icon: 'pi pi-box', route: '/merchant/inventory' },
               { label: 'Deliveries', icon: 'pi pi-truck', route: '/merchant/deliveries' },
               { label: 'Earnings', icon: 'pi pi-chart-line', route: '/merchant/earnings' },
@@ -303,7 +364,7 @@ export class SideMenuComponent implements OnInit {
             route: '/withdrawals',
             requiresPayment: true,
           },
-          { label: 'Orders', icon: 'pi pi-shopping-bag', route: '/orders', requiresPayment: true },
+          this.userOrdersMenuItem(),
         ],
       },
       {
@@ -427,7 +488,7 @@ export class SideMenuComponent implements OnInit {
 
     // Navigate if has route
     if (item.route) {
-      this.router.navigate([item.route]);
+      void this.router.navigate([item.route], { queryParams: item.queryParams ?? {} });
       this.closeMobileMenu();
     }
   }
@@ -445,10 +506,29 @@ export class SideMenuComponent implements OnInit {
 
   isActiveRoute(route?: string): boolean {
     if (!route) return false;
-    const current = this.activeRoute().split('?')[0];
+    const current = this.currentPath();
     if (current === route) return true;
     if (!current.startsWith(route + '/')) return false;
     if (route === '/marketplace' && current.startsWith('/marketplace/cart')) return false;
     return true;
+  }
+
+  isActiveMenuItem(item: MenuItem): boolean {
+    if (!item.route) return false;
+    const path = this.currentPath();
+    if (path !== item.route) return false;
+
+    const params = new URLSearchParams(this.activeRoute().split('?')[1] ?? '');
+    const statusParam = params.get('status');
+    const itemStatus = item.queryParams?.['status'];
+
+    if (itemStatus) {
+      return statusParam === itemStatus;
+    }
+    return !statusParam;
+  }
+
+  private currentPath(): string {
+    return this.activeRoute().split('?')[0];
   }
 }

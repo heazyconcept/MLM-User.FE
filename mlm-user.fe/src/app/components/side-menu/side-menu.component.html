@@ -77,8 +77,8 @@
                     <li>
                       <a
                         (click)="navigate(child)"
-                        [class.text-mlm-primary]="isActiveRoute(child.route)"
-                        [class.font-semibold]="isActiveRoute(child.route)"
+                        [class.text-mlm-primary]="isActiveMenuItem(child)"
+                        [class.font-semibold]="isActiveMenuItem(child)"
                         [class.opacity-50]="isItemDisabled(child)"
                         class="flex items-center justify-between py-1.5 text-sm text-mlm-warm-600 hover:text-mlm-primary transition-colors cursor-pointer">
                         {{ child.label }}
@@ -94,8 +94,8 @@
                             <li>
                               <a
                                 (click)="navigate(grandchild)"
-                                [class.text-mlm-primary]="isActiveRoute(grandchild.route)"
-                                [class.font-semibold]="isActiveRoute(grandchild.route)"
+                                [class.text-mlm-primary]="isActiveMenuItem(grandchild)"
+                                [class.font-semibold]="isActiveMenuItem(grandchild)"
                                 [class.opacity-50]="isItemDisabled(grandchild)"
                                 class="block py-1 text-[13px] text-mlm-warm-500 hover:text-mlm-primary transition-colors cursor-pointer">
                                 {{ grandchild.label }}
@@ -205,8 +205,8 @@
                     <li>
                       <a
                         (click)="navigate(child)"
-                        [class.text-mlm-primary]="isActiveRoute(child.route)"
-                        [class.font-semibold]="isActiveRoute(child.route)"
+                        [class.text-mlm-primary]="isActiveMenuItem(child)"
+                        [class.font-semibold]="isActiveMenuItem(child)"
                         [class.opacity-50]="isItemDisabled(child)"
                         class="flex items-center justify-between py-1.5 text-sm text-mlm-warm-600 hover:text-mlm-primary transition-colors cursor-pointer">
                         {{ child.label }}
@@ -222,8 +222,8 @@
                             <li>
                               <a
                                 (click)="navigate(grandchild)"
-                                [class.text-mlm-primary]="isActiveRoute(grandchild.route)"
-                                [class.font-semibold]="isActiveRoute(grandchild.route)"
+                                [class.text-mlm-primary]="isActiveMenuItem(grandchild)"
+                                [class.font-semibold]="isActiveMenuItem(grandchild)"
                                 [class.opacity-50]="isItemDisabled(grandchild)"
                                 class="block py-1 text-[13px] text-mlm-warm-500 hover:text-mlm-primary transition-colors cursor-pointer">
                                 {{ grandchild.label }}

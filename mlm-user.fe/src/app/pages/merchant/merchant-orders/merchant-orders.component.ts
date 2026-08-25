@@ -1,6 +1,14 @@
-import { Component, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  inject,
+  OnInit,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
   MerchantService,
@@ -17,6 +25,9 @@ import { StatusBadgeComponent } from '../../../components/status-badge/status-ba
 })
 export class MerchantOrdersComponent implements OnInit {
   private merchantService = inject(MerchantService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
 
   orders = this.merchantService.orders;
   ordersTotal = this.merchantService.ordersTotal;
@@ -40,7 +51,14 @@ export class MerchantOrdersComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.loadOrders();
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const status = params.get('status') ?? '';
+      const normalized =
+        status && this.orderStatuses.includes(status as OrderStatus) ? status : '';
+      this.statusFilter.set(normalized);
+      this.currentPage.set(1);
+      this.loadOrders();
+    });
   }
 
   loadOrders(): void {
@@ -54,9 +72,12 @@ export class MerchantOrdersComponent implements OnInit {
   }
 
   onStatusFilterChange(status: string): void {
-    this.statusFilter.set(status);
-    this.currentPage.set(1);
-    this.loadOrders();
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: status ? { status } : { status: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   nextPage(): void {
