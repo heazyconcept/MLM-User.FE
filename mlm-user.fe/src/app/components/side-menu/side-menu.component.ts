@@ -168,6 +168,25 @@ export class SideMenuComponent implements OnInit {
     };
   }
 
+  private merchantDeliveriesMenuItem(): MenuItem {
+    return {
+      label: 'Deliveries',
+      icon: 'pi pi-truck',
+      children: [
+        {
+          label: 'Delivery History',
+          icon: 'pi pi-history',
+          route: '/merchant/deliveries',
+        },
+        {
+          label: 'Products Delivered',
+          icon: 'pi pi-box',
+          route: '/merchant/deliveries/products',
+        },
+      ],
+    };
+  }
+
   private consultantMenuItem(): MenuItem {
     const status = this.consultantService.consultantStatus();
     let label = 'Become a Business Consultant';
@@ -320,8 +339,8 @@ export class SideMenuComponent implements OnInit {
               { label: 'Dashboard', icon: 'pi pi-th-large', route: '/merchant/dashboard' },
               { label: 'Profile Settings', icon: 'pi pi-cog', route: '/merchant/profile' },
               this.merchantOrdersMenuItem(),
+              this.merchantDeliveriesMenuItem(),
               { label: 'Inventory', icon: 'pi pi-box', route: '/merchant/inventory' },
-              { label: 'Deliveries', icon: 'pi pi-truck', route: '/merchant/deliveries' },
               { label: 'Earnings', icon: 'pi pi-chart-line', route: '/merchant/earnings' },
               { label: 'Allocations', icon: 'pi pi-inbox', route: '/merchant/allocations' },
               { label: 'Stock Handovers', icon: 'pi pi-share-alt', route: '/merchant/handovers' },

@@ -583,12 +583,20 @@ export const routes: Routes = [
         data: { title: 'Order Fulfilment' },
       },
       {
+        path: 'deliveries/products',
+        loadComponent: () =>
+          import(
+            './pages/merchant/merchant-product-delivery-totals/merchant-product-delivery-totals.component'
+          ).then((m) => m.MerchantProductDeliveryTotalsComponent),
+        data: { title: 'Products Delivered' },
+      },
+      {
         path: 'deliveries',
         loadComponent: () =>
           import('./pages/merchant/merchant-deliveries/merchant-deliveries.component').then(
             (m) => m.MerchantDeliveriesComponent,
           ),
-        data: { title: 'Merchant Deliveries' },
+        data: { title: 'Delivery History' },
       },
       {
         path: 'earnings',
