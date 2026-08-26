@@ -218,9 +218,11 @@ export interface MerchantOrderItem {
   id: string;
   productId: string;
   productName: string;
+  productImageUrl?: string;
   quantity: number;
   unitPrice: number;
   pv: number;
+  directReferralPv?: number;
   cpv: number;
 }
 
@@ -233,18 +235,34 @@ export interface MerchantOrderUser {
   lastName?: string;
 }
 
+export type DeliveryCompletionType =
+  | 'MERCHANT_CONFIRM_DELIVERY'
+  | 'MERCHANT_MARK_PICKED_UP'
+  | 'CUSTOMER_CONFIRMED'
+  | 'ADMIN_RESOLVED'
+  | string;
+
 export interface DeliveryConfirmation {
   id: string;
   orderId: string;
+  orderReference?: string;
+  fulfilmentMode?: FulfilmentMode;
+  orderStatus?: OrderStatus | string;
+  completedAt?: string;
+  completionType?: DeliveryCompletionType;
   confirmedBy: string;
   proof: string | null;
   notes: string | null;
   createdAt: string;
+  customerEmail?: string | null;
+  totalAmount?: number;
+  currency?: string;
   order?: MerchantOrder;
 }
 
 export interface MerchantOrder {
   id: string;
+  orderReference?: string;
   userId: string;
   status: OrderStatus;
   totalAmount: number;
@@ -592,6 +610,18 @@ export interface DeliveriesResponse {
   total: number;
 }
 
+export interface MerchantProductDeliveryTotal {
+  productId: string;
+  productName: string;
+  totalQuantityDelivered: number;
+}
+
+export interface MerchantProductDeliverySummaryResponse {
+  products: MerchantProductDeliveryTotal[];
+  totalProducts: number;
+  totalUnits: number;
+}
+
 /* ── Service ───────────────────────────────────────────────────── */
 
 @Injectable({ providedIn: 'root' })
@@ -607,6 +637,9 @@ export class MerchantService {
   private orderDetailSignal = signal<MerchantOrder | null>(null);
   private deliveriesSignal = signal<DeliveryConfirmation[]>([]);
   private deliveriesTotalSignal = signal(0);
+  private productDeliverySummarySignal = signal<MerchantProductDeliverySummaryResponse | null>(
+    null,
+  );
   private earningsSignal = signal<MerchantEarningsSummary | null>(null);
   private allocationsSignal = signal<MerchantAllocation[]>([]);
   private handoverRequestsSignal = signal<MerchantAllocation[]>([]);
@@ -630,6 +663,7 @@ export class MerchantService {
   readonly orderDetail = this.orderDetailSignal.asReadonly();
   readonly deliveries = this.deliveriesSignal.asReadonly();
   readonly deliveriesTotal = this.deliveriesTotalSignal.asReadonly();
+  readonly productDeliverySummary = this.productDeliverySummarySignal.asReadonly();
   readonly earnings = this.earningsSignal.asReadonly();
   readonly allocations = this.allocationsSignal.asReadonly();
   readonly handoverRequests = this.handoverRequestsSignal.asReadonly();
@@ -1467,6 +1501,35 @@ export class MerchantService {
         catchError((err) => {
           console.error('[MerchantService] fetchDeliveries failed', err);
           this.errorSignal.set('Failed to load deliveries.');
+          return of(null);
+        }),
+        finalize(() => this.loadingSignal.set(false)),
+      )
+      .subscribe();
+  }
+
+  /** GET /merchants/deliveries/product-summary — per-product delivered unit totals */
+  fetchProductDeliverySummary(params?: { fromDate?: string; toDate?: string }): void {
+    this.loadingSignal.set(true);
+    this.errorSignal.set(null);
+    const qp: Record<string, string> = {};
+    if (params?.fromDate) qp['fromDate'] = params.fromDate;
+    if (params?.toDate) qp['toDate'] = params.toDate;
+
+    this.api
+      .get<MerchantProductDeliverySummaryResponse>('merchants/deliveries/product-summary', qp)
+      .pipe(
+        tap((res) => {
+          this.productDeliverySummarySignal.set({
+            products: res.products ?? [],
+            totalProducts: res.totalProducts ?? res.products?.length ?? 0,
+            totalUnits: res.totalUnits ?? 0,
+          });
+        }),
+        catchError((err) => {
+          console.error('[MerchantService] fetchProductDeliverySummary failed', err);
+          this.productDeliverySummarySignal.set(null);
+          this.errorSignal.set('Failed to load product delivery totals.');
           return of(null);
         }),
         finalize(() => this.loadingSignal.set(false)),

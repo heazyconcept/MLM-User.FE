@@ -1,0 +1,84 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div class="mb-10">
+        <h1 class="text-3xl font-extrabold text-mlm-text tracking-tight mb-2">Products Delivered</h1>
+        <div class="h-px w-16 bg-mlm-primary/30 mb-4"></div>
+        <p class="text-mlm-secondary text-sm">Total units delivered per product</p>
+      </div>
+
+      <div class="bg-white rounded-lg border border-gray-100 shadow-sm p-6">
+        @if (loading()) {
+          <div class="flex items-center justify-center py-20">
+            <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
+          </div>
+        } @else if (error(); as err) {
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p class="text-red-700 text-sm">{{ err }}</p>
+          </div>
+        } @else if (products().length === 0) {
+          <div class="flex flex-col items-center justify-center py-20 text-center">
+            <div
+              class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6"
+            >
+              <i class="pi pi-box text-4xl text-mlm-warm-400" aria-hidden="true"></i>
+            </div>
+            <h2 class="text-xl font-bold text-mlm-text mb-2">No delivered products yet</h2>
+            <p class="text-mlm-secondary text-sm mb-6 max-w-md">
+              Products you fulfil will appear here with total units delivered.
+            </p>
+            <a
+              routerLink="/merchant/orders"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-mlm-primary text-white text-sm font-semibold rounded-xl hover:bg-brand-green-dark transition-colors focus:outline-none focus:ring-2 focus:ring-mlm-primary/30 focus:ring-offset-2"
+            >
+              View Orders
+            </a>
+          </div>
+        } @else {
+          <div class="flex flex-wrap items-center gap-4 mb-4 text-sm text-mlm-secondary">
+            <span>
+              <span class="font-semibold text-mlm-text">{{ totalProducts() }}</span> product(s)
+            </span>
+            <span class="text-gray-300" aria-hidden="true">·</span>
+            <span>
+              <span class="font-semibold text-mlm-text">{{ totalUnits() }}</span> total unit(s)
+            </span>
+          </div>
+
+          <div class="overflow-x-auto border-t border-gray-200">
+            <table class="w-full text-left" role="table">
+              <thead>
+                <tr class="border-b border-gray-100">
+                  <th
+                    scope="col"
+                    class="py-3 pr-4 text-xs font-semibold text-mlm-secondary uppercase tracking-wide"
+                  >
+                    Product
+                  </th>
+                  <th
+                    scope="col"
+                    class="py-3 pl-4 text-xs font-semibold text-mlm-secondary uppercase tracking-wide text-right"
+                  >
+                    Units delivered
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                @for (product of products(); track product.productId) {
+                  <tr class="hover:bg-gray-50/50 transition-colors">
+                    <td class="py-4 pr-4 text-sm font-medium text-mlm-text">
+                      {{ product.productName }}
+                    </td>
+                    <td class="py-4 pl-4 text-sm font-bold text-mlm-text text-right tabular-nums">
+                      {{ product.totalQuantityDelivered }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  </main>
+</div>
