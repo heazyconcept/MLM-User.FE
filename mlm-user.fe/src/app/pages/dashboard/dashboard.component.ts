@@ -292,10 +292,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
       {
         id: 'profile',
         label: 'Complete profile',
-        description: 'Finish profile details for better trust and payout readiness.',
-        done: profileCompletion >= 100,
+        description: 'Add your phone, address, and bank details so merchants can fulfil your orders.',
+        done:
+          typeof user?.isProfileComplete === 'boolean'
+            ? user.isProfileComplete
+            : profileCompletion >= 100,
         ctaLabel: 'Update profile',
-        route: '/profile',
+        route: '/profile?setup=complete',
       },
       {
         id: 'bank-details',
@@ -1107,7 +1110,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   navigateTo(route: string): void {
-    this.router.navigate([route]);
+    const [path, queryString] = route.split('?');
+    if (!queryString) {
+      void this.router.navigate([path]);
+      return;
+    }
+    const queryParams = Object.fromEntries(new URLSearchParams(queryString));
+    void this.router.navigate([path], { queryParams });
   }
 
   getRankStyle(rank: string | undefined): { bgClass: string; icon: string } {

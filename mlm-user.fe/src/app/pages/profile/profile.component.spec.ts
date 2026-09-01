@@ -9,7 +9,11 @@ import { UserService } from '../../services/user.service';
 import { ProfileComponent } from './profile.component';
 
 describe('ProfileComponent transaction PIN deep link', () => {
-  function create(hasTransactionPin: boolean) {
+  function create(
+    hasTransactionPin: boolean,
+    query: Record<string, string> = { pinAction: 'setup' },
+    userOverrides: Record<string, unknown> = {},
+  ) {
     const currentUser = signal({
       id: 'user-1',
       email: 'member@example.com',
@@ -18,8 +22,10 @@ describe('ProfileComponent transaction PIN deep link', () => {
       lastName: 'Member',
       phoneNumber: '08000000000',
       hasTransactionPin,
+      ...userOverrides,
     });
 
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [ProfileComponent],
       providers: [
@@ -27,7 +33,7 @@ describe('ProfileComponent transaction PIN deep link', () => {
           provide: ActivatedRoute,
           useValue: {
             snapshot: {
-              queryParamMap: convertToParamMap({ pinAction: 'setup' }),
+              queryParamMap: convertToParamMap(query),
               fragment: 'transaction-pin',
             },
           },
@@ -36,7 +42,9 @@ describe('ProfileComponent transaction PIN deep link', () => {
           provide: UserService,
           useValue: {
             currentUser,
+            needsProfileSetup: signal(userOverrides['isProfileComplete'] === false),
             updateProfile: vi.fn(),
+            applyProfileCompleteness: vi.fn(),
           },
         },
         {
@@ -68,5 +76,11 @@ describe('ProfileComponent transaction PIN deep link', () => {
     const component = create(true);
 
     expect(component.pinFormState()).toBe('IDLE');
+  });
+
+  it('opens edit mode when setup=complete is in the query', () => {
+    const component = create(true, { setup: 'complete' }, { isProfileComplete: false });
+
+    expect(component.isEditMode()).toBe(true);
   });
 });

@@ -9,6 +9,12 @@ import { UserService } from '../../services/user.service';
 import { ModalService } from '../../services/modal.service';
 import { LoadingService } from '../../services/loading.service';
 import { resolveLoginErrorMessage } from '../../core/utils/login-error.util';
+import {
+  PROFILE_SETUP_ACTION_LABEL,
+  PROFILE_SETUP_LOGIN_MESSAGE,
+  PROFILE_SETUP_TITLE,
+  resolvePostLoginRedirect,
+} from '../../core/utils/profile-complete.util';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 // import { AuthInputComponent } from '../components/auth-input/auth-input.component';
@@ -56,19 +62,33 @@ export class LoginModernComponent {
           next: (result) => {
             this.isLoading.set(false);
             this.loadingService.hide();
-            const redirectPath =
-              result.paymentStatus === 'PAID' ? '/dashboard' : '/auth/activation';
+            const dest = resolvePostLoginRedirect(
+              result.paymentStatus,
+              this.userService.currentUser()?.isProfileComplete,
+            );
+
+            if (dest.promptProfile) {
+              this.modalService.open(
+                'warning',
+                PROFILE_SETUP_TITLE,
+                PROFILE_SETUP_LOGIN_MESSAGE,
+                dest.path,
+                PROFILE_SETUP_ACTION_LABEL,
+              );
+              void this.router.navigate([dest.path], { queryParams: dest.queryParams });
+              return;
+            }
 
             this.modalService.open(
               'success',
               'Login Successful',
               'Welcome back! You have been successfully logged in.',
-              redirectPath,
+              dest.path,
             );
 
             setTimeout(() => {
               this.modalService.close();
-              this.router.navigate([redirectPath]);
+              void this.router.navigate([dest.path], { queryParams: dest.queryParams });
             }, 2000);
           },
           error: (err: HttpErrorResponse) => {

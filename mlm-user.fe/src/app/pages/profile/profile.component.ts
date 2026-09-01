@@ -66,6 +66,7 @@ export class ProfileComponent implements OnInit {
   pinFormState = signal<'IDLE' | 'CHANGE' | 'RESET_REQUEST' | 'RESET' | 'SETUP'>('IDLE');
   isPinSaving = signal(false);
   currentUser = this.userService.currentUser;
+  needsProfileSetup = this.userService.needsProfileSetup;
   hasBankDetails = computed(() => {
     const user = this.currentUser();
     return !!(user?.bankName?.trim() && user?.accountNumber?.trim() && user?.accountName?.trim());
@@ -78,7 +79,7 @@ export class ProfileComponent implements OnInit {
     lastName: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
     phoneNumber: ['', [Validators.required, Validators.pattern(/^[0-9]{11}$/)]],
-    address: [''],
+    address: ['', [Validators.required]],
     bankName: [''],
     accountNumber: [''],
     accountName: [''],
@@ -156,6 +157,13 @@ export class ProfileComponent implements OnInit {
       this.enterEditMode();
     }
 
+    if (
+      this.route.snapshot.queryParamMap.get('setup') === 'complete' ||
+      this.needsProfileSetup()
+    ) {
+      this.enterEditMode();
+    }
+
     this.configureBankFieldValidators();
     this.onboardingService.getBankDetails().subscribe({
       next: (data: Record<string, unknown>) => {
@@ -176,6 +184,7 @@ export class ProfileComponent implements OnInit {
           this.configureBankFieldValidators();
           this.cdr.markForCheck();
         }
+        this.userService.applyProfileCompleteness(data);
       },
       error: () => {
         /* silently ignore */

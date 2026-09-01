@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { ModalService } from '../../services/modal.service';
+import { isProfileIncompleteError } from '../utils/profile-complete.util';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const modalService = inject(ModalService);
@@ -139,6 +140,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
       // Notification flows handle their own fallbacks locally, so do not show the global modal for them.
       if (req.url.includes('notifications')) {
+        return throwError(() => error);
+      }
+
+      if (isProfileIncompleteError(error)) {
         return throwError(() => error);
       }
 

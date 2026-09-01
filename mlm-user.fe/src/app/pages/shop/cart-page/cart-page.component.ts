@@ -26,6 +26,7 @@ import { PurchaseThankYouModalComponent } from '../../../components/purchase-tha
 import { InvoiceModalComponent } from '../../../components/invoice-modal/invoice-modal.component';
 import { Product } from '../../../services/product.service';
 import { formatCatalogPrice, getUnavailableCartMessage } from '../../../core/utils/product-catalog.util';
+import { isProfileIncompleteError } from '../../../core/utils/profile-complete.util';
 
 @Component({
   selector: 'app-cart-page',
@@ -98,6 +99,7 @@ export class CartPageComponent implements OnInit, OnDestroy {
 
   onProceedToCheckout(): void {
     if (!this.canCheckout()) return;
+    if (!this.checkoutService.requireCompleteProfile()) return;
 
     const ref = this.dialogService.open(PurchaseSummaryModalComponent, {
       data: {
@@ -144,6 +146,7 @@ export class CartPageComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.orderSubmitting.set(false);
+        if (isProfileIncompleteError(err)) return;
         console.error('Cart checkout failed', err);
         const errMsg = err?.error?.message ?? '';
         const friendlyMsg =
