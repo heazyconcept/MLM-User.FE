@@ -34,6 +34,7 @@ import {
   formatCatalogPrice,
   getNextActiveLabel,
 } from '../../../core/utils/product-catalog.util';
+import { isProfileIncompleteError } from '../../../core/utils/profile-complete.util';
 
 @Component({
   selector: 'app-product-detail-page',
@@ -159,6 +160,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
   onBuyNow(): void {
     const p = this.product();
     if (!p || !canPurchaseProduct(p)) return;
+    if (!this.checkoutService.requireCompleteProfile()) return;
     const ref = this.dialogService.open(PurchaseSummaryModalComponent, {
       data: {
         mode: 'single',
@@ -204,6 +206,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.orderSubmitting.set(false);
+        if (isProfileIncompleteError(err)) return;
         console.error('Order failed', err);
         const errMsg = err?.error?.message ?? '';
         const friendlyMsg =

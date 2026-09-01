@@ -14,6 +14,17 @@
         }
       </div>
 
+      @if (needsProfileSetup()) {
+        <div class="mb-6 rounded-2xl border border-mlm-primary/20 bg-white px-5 py-4">
+          <p class="text-sm font-semibold text-mlm-text">
+            Merchants need your details to fulfil orders
+          </p>
+          <p class="mt-1 text-sm text-mlm-secondary">
+            Add your phone, address, and bank details, then save.
+          </p>
+        </div>
+      }
+
       <!-- Complete setup / onboarding wizard CTA: disabled — users use Edit Profile instead.
       @if (!onboardingComplete() && !isEditMode()) {
         <div
@@ -282,7 +293,7 @@
                   <!-- Address -->
                   <div class="col-span-full">
                     <label for="address" class="block text-sm font-medium text-mlm-text mb-2"
-                      >Address</label
+                      >Address <span class="text-red-500">*</span></label
                     >
                     <textarea
                       pTextarea
@@ -293,6 +304,9 @@
                       [autoResize]="true"
                     >
                     </textarea>
+                    @if (profileForm.get('address')?.invalid && profileForm.get('address')?.touched) {
+                      <small class="text-red-500 text-sm mt-1 block">Address is required.</small>
+                    }
                   </div>
 
                   @if (hasBankDetails()) {

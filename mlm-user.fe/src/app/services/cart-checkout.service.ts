@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, of, switchMap, tap, delay, map } from 'rxjs';
+import { Observable, of, switchMap, tap, delay, map, throwError, catchError } from 'rxjs';
 import {
   CheckoutGroup,
   CheckoutResponse,
@@ -13,6 +13,18 @@ import {
   PurchaseThankYouService,
   PurchaseThankYouSummary,
 } from './purchase-thank-you.service';
+import { UserService } from './user.service';
+import { ModalService } from './modal.service';
+import {
+  PROFILE_INCOMPLETE_CODE,
+  PROFILE_SETUP_ACTION_LABEL,
+  PROFILE_SETUP_PATH,
+  PROFILE_SETUP_QUERY,
+  PROFILE_SETUP_TITLE,
+  checkoutProfileMessage,
+  isProfileIncompleteError,
+  profileIncompleteMissingFields,
+} from '../core/utils/profile-complete.util';
 
 export type CheckoutWalletType = 'cash' | 'voucher';
 
@@ -44,11 +56,34 @@ export class CartCheckoutService {
   private cartService = inject(CartService);
   private thankYouService = inject(PurchaseThankYouService);
   private router = inject(Router);
+  private userService = inject(UserService);
+  private modalService = inject(ModalService);
+
+  requireCompleteProfile(): boolean {
+    if (!this.userService.needsProfileSetup()) return true;
+    this.promptProfileSetup(this.userService.currentUser()?.profileMissingFields);
+    return false;
+  }
+
+  promptProfileSetup(missingFields?: readonly string[]): void {
+    this.modalService.open(
+      'warning',
+      PROFILE_SETUP_TITLE,
+      checkoutProfileMessage(missingFields),
+      PROFILE_SETUP_PATH,
+      PROFILE_SETUP_ACTION_LABEL,
+    );
+    void this.router.navigate([PROFILE_SETUP_PATH], { queryParams: { ...PROFILE_SETUP_QUERY } });
+  }
 
   submitCheckoutBatch(
     orderData: PendingCheckoutData,
     payload: CheckoutConfirmPayload,
   ): Observable<CheckoutResponse> {
+    if (!this.requireCompleteProfile()) {
+      return throwError(() => ({ code: PROFILE_INCOMPLETE_CODE }));
+    }
+
     const wallet = orderData.wallet;
     const idempotencyKey = crypto.randomUUID();
 
@@ -62,6 +97,12 @@ export class CartCheckoutService {
         groups: payload.groups,
       })
       .pipe(
+        catchError((err) => {
+          if (isProfileIncompleteError(err)) {
+            this.promptProfileSetup(profileIncompleteMissingFields(err));
+          }
+          return throwError(() => err);
+        }),
         switchMap((checkout) =>
           this.orderService.payCheckoutWithWallet(checkout.checkoutId, 'voucher').pipe(
             tap(() => {

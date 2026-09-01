@@ -1,6 +1,10 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { tap, map, catchError, switchMap } from 'rxjs/operators';
+import {
+  parseProfileMissingFields,
+  type ProfileMissingField,
+} from '../core/utils/profile-complete.util';
 import { ApiService } from './api.service';
 
 export type PaymentStatus = 'UNPAID' | 'PAID';
@@ -14,6 +18,8 @@ export interface User {
   lastName: string;
   paymentStatus: PaymentStatus;
   profileCompletionPercentage: number;
+  isProfileComplete?: boolean;
+  profileMissingFields?: ProfileMissingField[];
   phoneNumber?: string;
   address?: string;
   bankName?: string;
@@ -61,6 +67,8 @@ export class UserService {
   isMerchant = computed(() => this.user()?.isMerchant ?? false);
   onboardingComplete = computed(() => this.user()?.onboardingComplete ?? false);
   currentUser = computed(() => this.user());
+  isProfileComplete = computed(() => this.user()?.isProfileComplete === true);
+  needsProfileSetup = computed(() => this.user()?.isProfileComplete === false);
 
   /** Account currency — fixed at registration; not overridable via preferences */
   displayCurrency = computed(() => (this.user()?.currency ?? 'NGN') as 'NGN' | 'USD');
@@ -153,6 +161,11 @@ export class UserService {
       lastName: String(apiUser['lastName'] ?? apiUser['last_name'] ?? ''),
       paymentStatus: registrationPaid ? 'PAID' : 'UNPAID',
       profileCompletionPercentage: Number(apiUser['profileCompletionPercentage'] ?? 0),
+      isProfileComplete:
+        typeof apiUser['isProfileComplete'] === 'boolean'
+          ? apiUser['isProfileComplete']
+          : undefined,
+      profileMissingFields: parseProfileMissingFields(apiUser['profileMissingFields']),
       phoneNumber:
         (apiUser['phoneNumber'] as string | undefined) ?? (apiUser['phone'] as string | undefined),
       address: apiUser['address'] as string | undefined,
@@ -229,6 +242,28 @@ export class UserService {
       this.user.set(updatedUser);
       this.persistUserData(updatedUser);
     }
+  }
+
+  applyProfileCompleteness(payload: Record<string, unknown>): void {
+    if (!('isProfileComplete' in payload) && !('profileMissingFields' in payload)) return;
+    const currentUser = this.user();
+    if (!currentUser) return;
+    const updatedUser: User = {
+      ...currentUser,
+      isProfileComplete:
+        typeof payload['isProfileComplete'] === 'boolean'
+          ? payload['isProfileComplete']
+          : currentUser.isProfileComplete,
+      profileMissingFields: Array.isArray(payload['profileMissingFields'])
+        ? parseProfileMissingFields(payload['profileMissingFields'])
+        : currentUser.profileMissingFields,
+      profileCompletionPercentage:
+        payload['profileCompletionPercentage'] != null
+          ? Number(payload['profileCompletionPercentage'])
+          : currentUser.profileCompletionPercentage,
+    };
+    this.user.set(updatedUser);
+    this.persistUserData(updatedUser);
   }
 
   updateProfile(

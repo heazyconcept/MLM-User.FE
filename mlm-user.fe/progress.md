@@ -1,6 +1,6 @@
 # API Integration Progress
 
-**Last updated:** July 2026
+**Last updated:** September 2026
 
 | Feature                     | Endpoint                                                  | Status       | Date       | Notes                                                                                                              |
 | --------------------------- | --------------------------------------------------------- | ------------ | ---------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -43,6 +43,7 @@
 | Merchant Stock Top-up List   | `GET /merchants/me/stock-requests`                         | ✅ Completed | 2026-07-19 | Top-ups tab; allocation `source` mapping; confirm receipt via existing allocations flow                            |
 | Korapay NGN Gateway          | `provider: KORAPAY` on payment initiate endpoints           | ✅ Completed | 2026-07-19 | NGN picker option on registration, wallet funding, upgrade, merchant fee/upgrade; feature-flagged                  |
 | Consultant Centre Update     | `PATCH /consultants/me`                                    | ✅ Completed | 2026-07-19 | Approved consultants can edit centre details + trainingSchedule on /consultant                                     |
+| Profile complete flag        | `GET /users/me` `isProfileComplete` + `POST /orders/checkout` `PROFILE_INCOMPLETE` | ✅ Completed | 2026-09-01 | Login prompt + checkout gate; maps missing fields; profile save refetches flag                                     |
 
 ---
 
