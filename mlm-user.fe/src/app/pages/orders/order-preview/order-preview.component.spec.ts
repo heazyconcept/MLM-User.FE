@@ -167,6 +167,127 @@ describe('OrderPreviewComponent pickup geography', () => {
     expect(component.hasSelectablePickup()).toBe(true);
   });
 
+  it('re-fetches availability and clears stale split UI when cart lines change', () => {
+    const merchantWithWine = {
+      id: 'merchant-1',
+      businessName: 'Lagos Hub',
+      phoneNumber: '+2348012345678',
+      address: '12 Pickup Road',
+      serviceAreas: ['Lagos'],
+      locations: [],
+      locationsComplete: true,
+      usingPrimaryAddressFallback: true,
+      products: [
+        {
+          id: 'product-1',
+          name: 'Wine',
+          sku: 'W-1',
+          stockQuantity: 5,
+          inStock: true,
+        },
+      ],
+      pickupAvailable: true,
+    };
+
+    merchantService.checkCheckoutAvailability
+      .mockReset()
+      .mockReturnValueOnce(
+        of({
+          merchants: [merchantWithWine],
+          selectedMerchant: {
+            merchantId: 'merchant-1',
+            canFulfillAll: false,
+            missingItems: [
+              {
+                productId: 'missing-1',
+                quantityNeeded: 1,
+                merchantsWithStock: [],
+                anyMerchantHasStock: false,
+                adminDeliveryAvailable: true,
+              },
+              {
+                productId: 'missing-2',
+                quantityNeeded: 1,
+                merchantsWithStock: [],
+                anyMerchantHasStock: false,
+                adminDeliveryAvailable: true,
+              },
+            ],
+          },
+        }),
+      )
+      .mockReturnValueOnce(
+        of({
+          merchants: [merchantWithWine],
+          selectedMerchant: {
+            merchantId: 'merchant-1',
+            canFulfillAll: true,
+            missingItems: [],
+          },
+        }),
+      );
+
+    const fixture = TestBed.createComponent(OrderPreviewComponent);
+    fixture.componentRef.setInput('pendingOrderData', {
+      mode: 'cart',
+      wallet: 'voucher',
+      items: [
+        {
+          productId: 'product-1',
+          product: { id: 'product-1', name: 'Wine', price: 1000, pv: 10 },
+          quantity: 1,
+        },
+        {
+          productId: 'missing-1',
+          product: { id: 'missing-1', name: 'Missing A', price: 500, pv: 5 },
+          quantity: 1,
+        },
+        {
+          productId: 'missing-2',
+          product: { id: 'missing-2', name: 'Missing B', price: 500, pv: 5 },
+          quantity: 1,
+        },
+      ],
+    });
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    component.onCountryChange('NG');
+    component.onSubdivisionChange('LA');
+    component.onLocationSelect('merchant-1');
+
+    expect(component.needsSplitResolution()).toBe(true);
+    expect(merchantService.checkCheckoutAvailability).toHaveBeenCalledTimes(1);
+
+    fixture.componentRef.setInput('pendingOrderData', {
+      mode: 'cart',
+      wallet: 'voucher',
+      items: [
+        {
+          productId: 'product-1',
+          product: { id: 'product-1', name: 'Wine', price: 1000, pv: 10 },
+          quantity: 1,
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(component.missingItems()).toEqual([]);
+    expect(merchantService.checkCheckoutAvailability).toHaveBeenCalledTimes(2);
+    expect(merchantService.checkCheckoutAvailability).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        items: [{ productId: 'product-1', quantity: 1 }],
+        selectedMerchantId: 'merchant-1',
+      }),
+    );
+    expect(component.needsSplitResolution()).toBe(false);
+    expect(component.pickupLocations()[0]).toEqual(
+      expect.objectContaining({
+        stockState: 'full',
+      }),
+    );
+  });
+
   // Home delivery disabled — restore these when re-enabling delivery UI:
   // it('blocks home delivery outside Nigeria', () => {
   //   const component = create();

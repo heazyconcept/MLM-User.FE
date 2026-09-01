@@ -3,6 +3,7 @@ import {
   inject,
   signal,
   computed,
+  effect,
   input,
   output,
   ChangeDetectionStrategy,
@@ -92,6 +93,14 @@ export class OrderPreviewComponent implements OnInit {
 
   cartLines = computed(() => this.resolveCartLines(this.pendingOrderData() as PendingCheckoutData | null));
 
+  cartKey = computed(() =>
+    this.cartLines()
+      .map((line) => `${line.productId}:${line.quantity}`)
+      .join('|'),
+  );
+
+  private cartLinesSyncInitialized = false;
+
   pickupLocations = computed<PickupLocation[]>(() =>
     this.merchants().map((m) => {
       return {
@@ -132,12 +141,17 @@ export class OrderPreviewComponent implements OnInit {
     return locs.length > 0 && !this.hasSelectablePickup();
   });
 
-  needsSplitResolution = computed(() => {
+  missingItems = computed(() => {
     const avail = this.selectedMerchantAvailability();
-    return avail != null && !avail.canFulfillAll && avail.missingItems.length > 0;
+    if (!avail) return [];
+    const cartProductIds = new Set(this.cartLines().map((line) => line.productId));
+    return avail.missingItems.filter((item) => cartProductIds.has(item.productId));
   });
 
-  missingItems = computed(() => this.selectedMerchantAvailability()?.missingItems ?? []);
+  needsSplitResolution = computed(() => {
+    const avail = this.selectedMerchantAvailability();
+    return avail != null && !avail.canFulfillAll && this.missingItems().length > 0;
+  });
 
   unresolvedMissingCount = computed(() => {
     const missing = this.missingItems();
@@ -158,6 +172,17 @@ export class OrderPreviewComponent implements OnInit {
 
   // Home delivery disabled — restore when re-enabling delivery form:
   // deliveryAvailable = computed(() => this.checkoutGeography()?.countryCode === 'NG');
+
+  constructor() {
+    effect(() => {
+      this.cartKey();
+      if (!this.cartLinesSyncInitialized) {
+        this.cartLinesSyncInitialized = true;
+        return;
+      }
+      this.onCartLinesChanged();
+    });
+  }
 
   ngOnInit(): void {
     // Home delivery disabled — force pickup; remove when toggle is restored
@@ -325,6 +350,19 @@ export class OrderPreviewComponent implements OnInit {
     this.availabilityError.set(null);
   }
 
+  private onCartLinesChanged(): void {
+    this.resetAvailability();
+    const geography = this.checkoutGeography();
+    const merchantId = this.selectedPickupId();
+    if (merchantId && geography) {
+      this.checkMerchantAvailability(merchantId);
+      return;
+    }
+    if (geography) {
+      this.loadMerchants();
+    }
+  }
+
   retryGeography(): void {
     if (this.selectedCountryCode()) {
       this.loadSubdivisions(this.selectedCountryCode());
@@ -465,7 +503,8 @@ export class OrderPreviewComponent implements OnInit {
 
     const avail = this.selectedMerchantAvailability();
     const lines = this.cartLines();
-    if (!avail || avail.canFulfillAll) {
+    const activeMissingItems = this.missingItems();
+    if (!avail || avail.canFulfillAll || activeMissingItems.length === 0) {
       return [
         {
           fulfilmentMode: 'PICKUP',
@@ -476,7 +515,7 @@ export class OrderPreviewComponent implements OnInit {
     }
 
     const missingMap = new Map(
-      avail.missingItems.map((m) => [m.productId, m.quantityNeeded] as const),
+      activeMissingItems.map((m) => [m.productId, m.quantityNeeded] as const),
     );
     const assignments = this.missingAssignments();
     const primaryItems: { productId: string; quantity: number }[] = [];
