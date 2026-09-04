@@ -31,8 +31,13 @@ export class NetworkOverviewComponent implements OnInit {
   referralStats = signal<ReferralStats>({
     teamSize: 0,
     totalDirectReferrals: 0,
+    totalActiveDirectReferrals: 0,
+    totalPaidDirectReferrals: 0,
+    totalRegisteredDirectReferrals: 0,
+    totalMlmActiveDirectReferrals: 0,
+    totalMlmInactiveDirectReferrals: 0,
     totalLeaders: 0,
-    isLeader: false
+    isLeader: false,
   });
   statsLoading = signal(false);
 

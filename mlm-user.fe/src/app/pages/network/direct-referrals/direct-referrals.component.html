@@ -12,10 +12,52 @@
           </a>
           <h1 class="text-2xl font-bold tracking-tight text-mlm-text">My Direct Referrals</h1>
           <p class="mt-1 max-w-2xl text-sm text-mlm-secondary">
-            Everyone who registered with your personal successline link — your direct referral (DR)
-            team.
+            Everyone who registered with your personal successline link. Registered (unpaid) members
+            appear here for tracking but only paid direct referrals count toward dashboard Direct
+            Successlines.
           </p>
         </div>
+
+        @if (!isLoading()) {
+          <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+              <p class="text-[11px] font-semibold uppercase tracking-widest text-mlm-secondary">
+                Registered
+              </p>
+              <p class="mt-2 text-3xl font-medium tabular-nums text-mlm-text">
+                {{ summary().totalRegisteredDirectReferrals }}
+              </p>
+              <p class="mt-1 text-xs text-mlm-secondary">Not paid yet</p>
+            </div>
+            <div class="rounded-xl border border-mlm-primary/20 bg-white p-4 shadow-sm">
+              <p class="text-[11px] font-semibold uppercase tracking-widest text-mlm-primary">
+                Direct successlines
+              </p>
+              <p class="mt-2 text-3xl font-medium tabular-nums text-mlm-text">
+                {{ summary().totalActiveDirectReferrals }}
+              </p>
+              <p class="mt-1 text-xs text-mlm-secondary">Paid direct referrals</p>
+            </div>
+            <div class="rounded-xl border border-green-100 bg-white p-4 shadow-sm">
+              <p class="text-[11px] font-semibold uppercase tracking-widest text-green-700">
+                Active
+              </p>
+              <p class="mt-2 text-3xl font-medium tabular-nums text-mlm-text">
+                {{ summary().totalMlmActiveDirectReferrals }}
+              </p>
+              <p class="mt-1 text-xs text-mlm-secondary">3+ of their own DR</p>
+            </div>
+            <div class="rounded-xl border border-amber-100 bg-white p-4 shadow-sm">
+              <p class="text-[11px] font-semibold uppercase tracking-widest text-amber-800">
+                Inactive
+              </p>
+              <p class="mt-2 text-3xl font-medium tabular-nums text-mlm-text">
+                {{ summary().totalMlmInactiveDirectReferrals }}
+              </p>
+              <p class="mt-1 text-xs text-mlm-secondary">Paid, building toward 3 DR</p>
+            </div>
+          </div>
+        }
 
         @if (errorMessage()) {
           <div class="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
@@ -40,7 +82,30 @@
           </div>
         }
 
-        <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-4">
+          <div class="flex flex-wrap gap-2">
+            @for (option of statusFilterOptions; track option.value) {
+              <button
+                type="button"
+                (click)="onStatusFilterChange(option.value)"
+                [class]="
+                  statusFilter() === option.value
+                    ? 'rounded-full bg-mlm-primary px-4 py-2 text-xs font-semibold text-white'
+                    : 'rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50'
+                "
+              >
+                {{ option.label }}
+                <span class="ml-1 tabular-nums opacity-80">({{ summaryCountForFilter(option.value) }})</span>
+              </button>
+            }
+          </div>
+          @if (isPageFilterActive()) {
+            <p class="text-xs text-mlm-secondary">
+              Status filter applies to the current page only. Use search or change pages to find
+              members in other status groups.
+            </p>
+          }
+
           <div class="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
             <div>
               <label
@@ -104,7 +169,7 @@
 
           <div class="direct-referrals-table -mx-px overflow-x-auto">
             <app-ui-table
-              [value]="rows()"
+              [value]="displayedRows()"
               [headers]="tableHeaders"
               [loading]="isLoading()"
               [paginator]="false"
@@ -172,13 +237,13 @@
               <ng-template #emptyTemplate>
                 <tr>
                   <td [attr.colspan]="tableHeaders.length" class="px-5 py-16 text-center">
-                    @if (searchQuery()) {
+                    @if (searchQuery() || isPageFilterActive()) {
                       <i class="pi pi-search mb-3 block text-3xl text-mlm-secondary/40"></i>
                       <p class="text-sm font-semibold text-mlm-text">
-                        No direct referrals match your search.
+                        No direct referrals match your filters.
                       </p>
                       <p class="mt-1 text-xs text-mlm-secondary">
-                        Try a different username, email, or phone number.
+                        Try a different search term or status filter.
                       </p>
                     } @else {
                       <i class="pi pi-users mb-3 block text-3xl text-mlm-primary/50"></i>

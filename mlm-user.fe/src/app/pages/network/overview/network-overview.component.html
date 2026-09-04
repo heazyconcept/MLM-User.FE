@@ -40,7 +40,7 @@
           </div>
 
           <!-- ─── Stat Grid ───────────────────────────── -->
-          <div class="grid grid-cols-2 xl:grid-cols-4 divide-x divide-y xl:divide-y-0 divide-mlm-secondary/15 border border-mlm-secondary/15 rounded-xl overflow-hidden">
+          <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 divide-x divide-y xl:divide-y-0 divide-mlm-secondary/15 border border-mlm-secondary/15 rounded-xl overflow-hidden">
 
             <a [routerLink]="['/network/downline']"
                class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer">
@@ -54,9 +54,36 @@
             <a [routerLink]="['/network/direct-referrals']"
                class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer">
               <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Direct successlines</span>
-              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ referralStats().totalDirectReferrals }}</span>
+              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ referralStats().totalPaidDirectReferrals }}</span>
               <span class="inline-flex items-center gap-1 text-[11px] text-mlm-secondary bg-mlm-secondary/10 px-2 py-0.5 rounded-full w-fit font-medium">
-                Total
+                Paid only
+              </span>
+            </a>
+
+            <a [routerLink]="['/network/direct-referrals']"
+               class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer">
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Registered members</span>
+              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ referralStats().totalRegisteredDirectReferrals }}</span>
+              <span class="inline-flex items-center gap-1 text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full w-fit font-medium">
+                Not paid
+              </span>
+            </a>
+
+            <a [routerLink]="['/network/direct-referrals']"
+               class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer">
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Active DR</span>
+              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ referralStats().totalMlmActiveDirectReferrals }}</span>
+              <span class="inline-flex items-center gap-1 text-[11px] text-green-700 bg-green-50 px-2 py-0.5 rounded-full w-fit font-medium">
+                3+ referrals
+              </span>
+            </a>
+
+            <a [routerLink]="['/network/direct-referrals']"
+               class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer">
+              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Inactive DR</span>
+              <span class="text-4xl font-medium text-mlm-text tabular-nums leading-none">{{ referralStats().totalMlmInactiveDirectReferrals }}</span>
+              <span class="inline-flex items-center gap-1 text-[11px] text-mlm-secondary bg-mlm-secondary/10 px-2 py-0.5 rounded-full w-fit font-medium">
+                Building
               </span>
             </a>
 
@@ -73,18 +100,21 @@
               </span>
             </a>
 
-            <a [routerLink]="['/network/performance']"
-               class="group flex flex-col gap-2 p-5 bg-white hover:bg-mlm-background transition-colors cursor-pointer border-t-2 border-t-mlm-primary">
-              <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Rank</span>
-              <span class="text-xl sm:text-3xl font-medium text-mlm-text leading-tight break-words whitespace-normal">
+          </div>
+
+          <!-- Rank (kept below stat grid) -->
+          <a [routerLink]="['/network/performance']"
+             class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-mlm-secondary/15 rounded-xl bg-white px-5 py-4 hover:bg-mlm-background transition-colors">
+            <span class="text-[11px] uppercase tracking-widest text-mlm-secondary font-medium">Rank</span>
+            <div class="flex flex-col sm:items-end gap-1">
+              <span class="text-xl sm:text-2xl font-medium text-mlm-text leading-tight">
                 {{ currentUser()?.rank || '—' }}
               </span>
               <span class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full w-fit font-medium text-mlm-secondary bg-mlm-secondary/10">
                 {{ currentUser()?.stage ?? '—' }}
               </span>
-            </a>
-
-          </div>
+            </div>
+          </a>
 
           <!-- ─── CPV Summary ─────────────────────────── -->
           <div class="border border-mlm-secondary/15 rounded-xl bg-white px-5 py-4">
