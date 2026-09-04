@@ -94,6 +94,12 @@ export interface CreateReferralResponse {
 export interface ReferralStats {
   teamSize: number;
   totalDirectReferrals: number;
+  /** Paid/activated DR count — same as totalPaidDirectReferrals (NOT MLM Active). */
+  totalActiveDirectReferrals: number;
+  totalPaidDirectReferrals: number;
+  totalRegisteredDirectReferrals: number;
+  totalMlmActiveDirectReferrals: number;
+  totalMlmInactiveDirectReferrals: number;
   totalLeaders: number;
   isLeader: boolean;
 }
@@ -120,7 +126,11 @@ export type MlmManagementStatus =
 
 export interface DirectReferralsSummary {
   totalDirectReferrals: number;
+  /** Paid/activated DR count — NOT MLM Active status. */
   totalActiveDirectReferrals: number;
+  totalRegisteredDirectReferrals: number;
+  totalMlmActiveDirectReferrals: number;
+  totalMlmInactiveDirectReferrals: number;
   isLeader: boolean;
 }
 
@@ -760,16 +770,16 @@ export class ReferralService {
   /** GET /referrals/me/stats */
   getReferralStats(): Observable<ReferralStats> {
     return this.api.get<Record<string, unknown>>('referrals/me/stats').pipe(
-      map((res) => ({
-        teamSize: Number(res['teamSize'] ?? 0),
-        totalDirectReferrals: Number(res['totalDirectReferrals'] ?? 0),
-        totalLeaders: Number(res['totalLeaders'] ?? 0),
-        isLeader: (res['isLeader'] ?? false) as boolean,
-      })),
+      map((res) => this.mapReferralStats(res)),
       catchError(() =>
         of({
           teamSize: 0,
           totalDirectReferrals: 0,
+          totalActiveDirectReferrals: 0,
+          totalPaidDirectReferrals: 0,
+          totalRegisteredDirectReferrals: 0,
+          totalMlmActiveDirectReferrals: 0,
+          totalMlmInactiveDirectReferrals: 0,
           totalLeaders: 0,
           isLeader: false,
         }),
@@ -778,6 +788,84 @@ export class ReferralService {
   }
 
   // ── Private helpers ───────────────────────────────────────────────
+
+  private mapReferralStats(res: Record<string, unknown>): ReferralStats {
+    const totalDirectReferrals = this.readNumber(res['totalDirectReferrals'], 0);
+    const totalActiveDirectReferrals = this.readNumber(res['totalActiveDirectReferrals'], 0);
+    const totalPaidDirectReferrals = this.readNumber(
+      res['totalPaidDirectReferrals'],
+      totalActiveDirectReferrals,
+    );
+    const totalRegisteredDirectReferrals = this.readNumber(
+      res['totalRegisteredDirectReferrals'],
+      Math.max(0, totalDirectReferrals - totalPaidDirectReferrals),
+    );
+    const totalMlmActiveDirectReferrals = this.readNumber(
+      res['totalMlmActiveDirectReferrals'],
+      0,
+    );
+    const totalMlmInactiveDirectReferrals = this.readNumber(
+      res['totalMlmInactiveDirectReferrals'],
+      Math.max(0, totalPaidDirectReferrals - totalMlmActiveDirectReferrals),
+    );
+
+    return {
+      teamSize: this.readNumber(res['teamSize'], 0),
+      totalDirectReferrals,
+      totalActiveDirectReferrals: totalPaidDirectReferrals,
+      totalPaidDirectReferrals,
+      totalRegisteredDirectReferrals,
+      totalMlmActiveDirectReferrals,
+      totalMlmInactiveDirectReferrals,
+      totalLeaders: this.readNumber(res['totalLeaders'], 0),
+      isLeader:
+        this.readBoolean(res['isLeader']) ?? totalPaidDirectReferrals >= 3,
+    };
+  }
+
+  private mapDirectReferralsSummary(
+    summarySource: Record<string, unknown> | undefined,
+    directReferrals: DirectReferralRow[],
+    totalRecords: number,
+  ): DirectReferralsSummary {
+    const totalDirectReferrals = this.readNumber(
+      summarySource?.['totalDirectReferrals'] ??
+        summarySource?.['total_direct_referrals'],
+      totalRecords,
+    );
+    const paidFromRows = directReferrals.filter((row) => row.isRegistrationPaid).length;
+    const totalActiveDirectReferrals = this.readNumber(
+      summarySource?.['totalActiveDirectReferrals'] ??
+        summarySource?.['total_active_direct_referrals'],
+      paidFromRows,
+    );
+    const totalRegisteredDirectReferrals = this.readNumber(
+      summarySource?.['totalRegisteredDirectReferrals'] ??
+        summarySource?.['total_registered_direct_referrals'],
+      Math.max(0, totalDirectReferrals - totalActiveDirectReferrals),
+    );
+    const totalMlmActiveDirectReferrals = this.readNumber(
+      summarySource?.['totalMlmActiveDirectReferrals'] ??
+        summarySource?.['total_mlm_active_direct_referrals'],
+      0,
+    );
+    const totalMlmInactiveDirectReferrals = this.readNumber(
+      summarySource?.['totalMlmInactiveDirectReferrals'] ??
+        summarySource?.['total_mlm_inactive_direct_referrals'],
+      Math.max(0, totalActiveDirectReferrals - totalMlmActiveDirectReferrals),
+    );
+
+    return {
+      totalDirectReferrals,
+      totalActiveDirectReferrals,
+      totalRegisteredDirectReferrals,
+      totalMlmActiveDirectReferrals,
+      totalMlmInactiveDirectReferrals,
+      isLeader:
+        this.readBoolean(summarySource?.['isLeader'] ?? summarySource?.['is_leader']) ??
+        totalActiveDirectReferrals >= 3,
+    };
+  }
 
   private mapDownlineItem(raw: Record<string, unknown>): DownlineItem {
     const firstName = String(raw['firstName'] ?? raw['first_name'] ?? '');
@@ -1002,23 +1090,11 @@ export class ReferralService {
           (data['sponsorUsername'] as string | null | undefined) ??
           (data['sponsor_username'] as string | null | undefined) ??
           null,
-        summary: {
-          totalDirectReferrals: this.readNumber(
-            summarySource?.['totalDirectReferrals'] ??
-              summarySource?.['total_direct_referrals'] ??
-              totalRecords,
-            totalRecords,
-          ),
-          totalActiveDirectReferrals: this.readNumber(
-            summarySource?.['totalActiveDirectReferrals'] ??
-              summarySource?.['total_active_direct_referrals'] ??
-              directReferrals.filter((row) => row.isRegistrationPaid).length,
-            directReferrals.filter((row) => row.isRegistrationPaid).length,
-          ),
-          isLeader:
-            this.readBoolean(summarySource?.['isLeader'] ?? summarySource?.['is_leader']) ??
-            totalRecords >= 3,
-        },
+        summary: this.mapDirectReferralsSummary(
+          summarySource as Record<string, unknown> | undefined,
+          directReferrals,
+          totalRecords,
+        ),
         pagination: {
           totalRecords,
           currentPage,

@@ -16,9 +16,12 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   ReferralService,
   type DirectReferralRow,
+  type DirectReferralsSummary,
 } from '../../../services/referral.service';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import { UiTableComponent } from '../../../components/table/table-component';
+
+export type DirectReferralStatusFilter = 'ALL' | 'REGISTERED' | 'ACTIVE' | 'INACTIVE';
 
 @Component({
   selector: 'app-direct-referrals',
@@ -77,6 +80,15 @@ export class DirectReferralsComponent implements OnInit {
   private debounceHandle: ReturnType<typeof setTimeout> | null = null;
 
   rows = signal<DirectReferralRow[]>([]);
+  summary = signal<DirectReferralsSummary>({
+    totalDirectReferrals: 0,
+    totalActiveDirectReferrals: 0,
+    totalRegisteredDirectReferrals: 0,
+    totalMlmActiveDirectReferrals: 0,
+    totalMlmInactiveDirectReferrals: 0,
+    isLeader: false,
+  });
+  statusFilter = signal<DirectReferralStatusFilter>('ALL');
   isLoading = signal(false);
   errorMessage = signal<string | null>(null);
   searchQuery = signal('');
@@ -88,7 +100,28 @@ export class DirectReferralsComponent implements OnInit {
   hasPreviousPage = signal(false);
 
   readonly pageSizeOptions = [10, 20, 50];
+  readonly statusFilterOptions: Array<{ value: DirectReferralStatusFilter; label: string }> = [
+    { value: 'ALL', label: 'All' },
+    { value: 'REGISTERED', label: 'Registered' },
+    { value: 'ACTIVE', label: 'Active' },
+    { value: 'INACTIVE', label: 'Inactive' },
+  ];
   readonly tableHeaders = ['Member', 'Package', 'Status', 'Their DRs', 'Joined'];
+
+  readonly displayedRows = computed(() => {
+    const filter = this.statusFilter();
+    const rows = this.rows();
+    if (filter === 'ALL') return rows;
+    if (filter === 'REGISTERED') {
+      return rows.filter((row) => row.status === 'REGISTERED');
+    }
+    if (filter === 'ACTIVE') {
+      return rows.filter((row) => row.status === 'ACTIVE');
+    }
+    return rows.filter((row) => row.status === 'INACTIVE' || row.status === 'ACTIVATED');
+  });
+
+  readonly isPageFilterActive = computed(() => this.statusFilter() !== 'ALL');
 
   readonly showingFrom = computed(() =>
     this.totalRecords() === 0 ? 0 : (this.page() - 1) * this.limit() + 1,
@@ -124,6 +157,29 @@ export class DirectReferralsComponent implements OnInit {
     this.limit.set(nextLimit);
     this.page.set(1);
     this.loadRows();
+  }
+
+  onStatusFilterChange(value: DirectReferralStatusFilter): void {
+    if (value === this.statusFilter()) return;
+    this.statusFilter.set(value);
+  }
+
+  summaryCountForFilter(filter: DirectReferralStatusFilter): number {
+    const stats = this.summary();
+    switch (filter) {
+      case 'ALL':
+        return stats.totalDirectReferrals;
+      case 'REGISTERED':
+        return stats.totalRegisteredDirectReferrals;
+      case 'ACTIVE':
+        return stats.totalMlmActiveDirectReferrals;
+      case 'INACTIVE':
+        return stats.totalMlmInactiveDirectReferrals;
+      default: {
+        const _exhaustive: never = filter;
+        return _exhaustive;
+      }
+    }
   }
 
   previousPage(): void {
@@ -189,8 +245,9 @@ export class DirectReferralsComponent implements OnInit {
       )
       .subscribe({
         next: (response) => {
-          const { pagination, directReferrals } = response.data;
+          const { pagination, directReferrals, summary } = response.data;
           this.rows.set(directReferrals);
+          this.summary.set(summary);
           this.totalRecords.set(pagination.totalRecords);
           this.totalPages.set(Math.max(1, pagination.totalPages));
           this.page.set(pagination.currentPage);
@@ -199,6 +256,14 @@ export class DirectReferralsComponent implements OnInit {
         },
         error: () => {
           this.rows.set([]);
+          this.summary.set({
+            totalDirectReferrals: 0,
+            totalActiveDirectReferrals: 0,
+            totalRegisteredDirectReferrals: 0,
+            totalMlmActiveDirectReferrals: 0,
+            totalMlmInactiveDirectReferrals: 0,
+            isLeader: false,
+          });
           this.totalRecords.set(0);
           this.totalPages.set(1);
           this.hasNextPage.set(false);

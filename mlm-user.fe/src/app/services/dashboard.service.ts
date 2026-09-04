@@ -16,6 +16,9 @@ export type DashboardOverview = {
     productVoucher: number;
     totalDownlines: number;
     directSuccesslines?: number;
+    registeredDirectReferrals?: number;
+    activeDirectReferrals?: number;
+    inactiveDirectReferrals?: number;
     totalCpvs: number;
   };
 };
