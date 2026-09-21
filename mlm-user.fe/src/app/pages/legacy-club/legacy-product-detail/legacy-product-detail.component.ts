@@ -1,59 +1,46 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, signal } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  OnInit,
+  inject,
+  signal,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
 import { MessageService } from 'primeng/api';
 import { environment } from '../../../../environments/environment';
 import { legacyClubMockStore, LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
 import { Product, ProductService } from '../../../services/product.service';
 import { LegacyCartService } from '../../../services/legacy-cart.service';
 import { LegacyClubService } from '../../../services/legacy-club.service';
-import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
-import { LEGACY_ERROR_CODES } from '../../../core/models/legacy-club.models';
+import {
+  LEGACY_ERROR_CODES,
+  LegacyShopMode,
+  resolveLegacyShopMode,
+} from '../../../core/models/legacy-club.models';
+import {
+  canPurchaseProduct,
+  formatCatalogPrice,
+  getNextActiveLabel,
+} from '../../../core/utils/product-catalog.util';
+import { ProductGalleryComponent } from '../../../components/product-gallery/product-gallery.component';
+import { QuantitySelectorComponent } from '../../../components/quantity-selector/quantity-selector.component';
+import { BadgeComponent } from '../../../components/badge/badge.component';
+
+const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'];
 
 @Component({
   selector: 'app-legacy-product-detail',
-  imports: [CommonModule, RouterLink, ButtonModule],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ProductGalleryComponent,
+    QuantitySelectorComponent,
+    BadgeComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="min-h-screen bg-mlm-background">
-      <main class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-      <a routerLink="/legacy/shop" class="text-sm font-medium text-mlm-primary hover:underline"
-        >← Legacy marketplace</a
-      >
-
-      @if (product(); as p) {
-        <div class="grid gap-6 lg:grid-cols-2">
-          <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white">
-            @if (p.images[0]; as img) {
-              <img [src]="img" [alt]="p.name" class="aspect-square w-full object-cover" />
-            } @else {
-              <div class="flex aspect-square items-center justify-center bg-mlm-background text-mlm-secondary">
-                <i class="pi pi-box text-4xl"></i>
-              </div>
-            }
-          </div>
-          <div class="rounded-2xl border border-gray-100 bg-white p-6 sm:p-8">
-            <h1 class="text-2xl font-bold text-mlm-text sm:text-3xl">{{ p.name }}</h1>
-            <p class="mt-3 text-sm leading-relaxed text-mlm-secondary">{{ p.description }}</p>
-            <p class="mt-6 text-3xl font-extrabold tracking-tight text-mlm-text">{{ money(p.price) }}</p>
-            <p class="mt-1 text-sm text-mlm-secondary">{{ p.pv }} PV</p>
-            <p-button
-              class="mt-8"
-              label="Add to Legacy cart"
-              styleClass="w-full sm:w-auto"
-              (onClick)="add()"
-            />
-          </div>
-        </div>
-      } @else {
-        <p class="text-mlm-secondary">Product not found.</p>
-      }
-        </div>
-      </main>
-    </div>
-  `,
+  templateUrl: './legacy-product-detail.component.html',
 })
 export class LegacyProductDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
@@ -64,68 +51,147 @@ export class LegacyProductDetailComponent implements OnInit {
   private messages = inject(MessageService);
 
   product = signal<Product | null>(null);
+  quantity = signal(1);
+  adding = signal(false);
+
+  total = computed(() => {
+    const p = this.product();
+    return p ? p.price * this.quantity() : 0;
+  });
+
+  totalPV = computed(() => {
+    const p = this.product();
+    return p ? p.pv * this.quantity() : 0;
+  });
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id') ?? '';
+    if (!id) {
+      void this.router.navigate(['/legacy/shop']);
+      return;
+    }
+
     this.legacyClub.loadMe().subscribe({
       next: (me) => {
+        const mode = resolveLegacyShopMode(me);
         if (me?.status === 'ACTIVE') {
-          void this.router.navigate(['/legacy']);
+          if (!ACTIVE_SHOP_MODES.includes(mode)) {
+            void this.router.navigate(['/legacy']);
+          }
           return;
+        }
+        if (me?.status !== 'PENDING_JOIN' || mode !== 'JOIN') {
+          void this.router.navigate(['/legacy/join']);
         }
       },
     });
 
+    this.loadProduct(id);
+  }
+
+  onQuantityChange(value: number): void {
+    this.quantity.set(value);
+  }
+
+  onAddToCart(): void {
+    this.addToLegacyCart(false);
+  }
+
+  onBuyNow(): void {
+    this.addToLegacyCart(true);
+  }
+
+  formatCurrency(amount: number): string {
+    const p = this.product();
+    return formatCatalogPrice(amount, p?.currency ?? this.legacyClub.me()?.currency ?? 'NGN');
+  }
+
+  nextActiveLabel(p: Product): string | null {
+    return getNextActiveLabel(p);
+  }
+
+  canPurchase(p: Product): boolean {
+    return canPurchaseProduct(p);
+  }
+
+  buyNowLabel(p: Product): string {
+    const nextActive = getNextActiveLabel(p);
+    if (nextActive) return nextActive;
+    if (p.priceStatus === 'scheduled') return 'Out of Stock';
+    if (p.priceStatus === 'unpriced') return 'Unavailable';
+    if (!p.purchasable) return 'Out of Stock';
+    return 'Buy Now';
+  }
+
+  private loadProduct(id: string): void {
     if (environment.useLegacyClubMocks) {
       const mock = legacyClubMockStore.getProduct(id);
-      if (mock) {
-        this.product.set({
-          id: mock.id,
-          name: mock.name,
-          description: mock.description,
-          memberPriceNGN: mock.price,
-          nonMemberPriceNGN: mock.price,
-          price: mock.price,
-          currency: mock.currency,
-          pv: mock.pv,
-          directReferralPv: mock.directReferralPv,
-          cpv: mock.cpv,
-          category: mock.category,
-          images: mock.images,
-          inStock: mock.inStock,
-          eligibleWallets: ['voucher'],
-          purchasable: mock.purchasable,
-          availableFrom: null,
-          nextPriceEffectiveFrom: null,
-          priceStatus: 'active',
-        });
+      if (!mock) {
+        void this.router.navigate(['/legacy/shop']);
+        return;
       }
+      this.product.set({
+        id: mock.id,
+        name: mock.name,
+        description: mock.description,
+        memberPriceNGN: mock.price,
+        nonMemberPriceNGN: mock.price,
+        price: mock.price,
+        currency: mock.currency,
+        pv: mock.pv,
+        directReferralPv: mock.directReferralPv,
+        cpv: mock.cpv,
+        category: mock.category,
+        images: mock.images,
+        inStock: mock.inStock,
+        eligibleWallets: ['voucher'],
+        purchasable: mock.purchasable,
+        availableFrom: null,
+        nextPriceEffectiveFrom: null,
+        priceStatus: 'active',
+      });
       return;
     }
 
-    this.productService.getProductById(id).subscribe({
-      next: (p) => this.product.set(p ?? null),
+    this.productService.getProductById(id).subscribe((p) => {
+      if (!p) {
+        void this.router.navigate(['/legacy/shop']);
+        return;
+      }
+      this.product.set(p);
     });
   }
 
-  money(amount: number): string {
-    return formatLegacyMoney(amount, this.legacyClub.me()?.currency ?? 'NGN');
-  }
-
-  add(): void {
+  private addToLegacyCart(goToCart: boolean): void {
     const p = this.product();
-    if (!p) return;
-    this.cart.addProduct(p).subscribe({
+    if (!p || !canPurchaseProduct(p) || this.adding()) return;
+
+    this.adding.set(true);
+    this.cart.addProduct(p, this.quantity()).subscribe({
       next: () => {
-        this.messages.add({ severity: 'success', summary: 'Added', detail: 'Added to Legacy cart' });
-        void this.router.navigate(['/legacy/cart']);
+        this.adding.set(false);
+        this.messages.add({
+          severity: 'success',
+          summary: 'Added to cart',
+          detail: `${p.name} was added to your Legacy cart.`,
+          life: 3000,
+        });
+        if (goToCart) {
+          void this.router.navigate(['/legacy/cart']);
+        }
       },
       error: (err: LegacyClubHttpError) => {
+        this.adding.set(false);
         if (err.code === LEGACY_ERROR_CODES.LEGACY_SHOP_JOIN_ONLY) {
           void this.router.navigate(['/legacy']);
           return;
         }
-        this.messages.add({ severity: 'error', summary: 'Cart', detail: err.message });
+        this.messages.add({
+          severity: 'error',
+          summary: 'Could not add to cart',
+          detail: err.message ?? 'This product is unavailable.',
+          life: 4000,
+        });
       },
     });
   }

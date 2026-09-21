@@ -50,6 +50,12 @@ describe('AuthService', () => {
       const profileReq = httpMock.expectOne(r => r.url === `${baseUrl}/users/me` && r.method === 'GET');
       profileReq.flush(mockProfile);
 
+      const bankReq = httpMock.expectOne(r => r.url === `${baseUrl}/users/me/bank` && r.method === 'GET');
+      bankReq.flush({});
+
+      const prefsReq = httpMock.expectOne(r => r.url === `${baseUrl}/users/me/preferences` && r.method === 'GET');
+      prefsReq.flush({});
+
       expect(localStorage.getItem('mlm_auth_token')).toBe('acc123');
       expect(localStorage.getItem('mlm_refresh_token')).toBe('ref456');
       expect(service.isAuthenticated()).toBe(true);

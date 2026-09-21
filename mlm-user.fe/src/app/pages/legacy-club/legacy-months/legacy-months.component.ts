@@ -17,31 +17,38 @@ import {
   LegacyRateTier,
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
+import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
+import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
+import { LegacyPanelComponent } from '../components/legacy-panel.component';
 
 @Component({
   selector: 'app-legacy-months',
-  imports: [CommonModule, RouterLink, ButtonModule, SkeletonModule],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ButtonModule,
+    SkeletonModule,
+    LegacyPageShellComponent,
+    LegacyPageHeaderComponent,
+    LegacyPanelComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-mlm-background">
-      <main class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-      <a routerLink="/legacy" class="text-sm font-medium text-mlm-primary hover:underline">← Legacy Club</a>
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 class="text-2xl font-bold text-mlm-text">Your 6-month cycle</h1>
-          @if (data()?.cycleStartedAt; as started) {
-            <p class="mt-1 text-sm text-mlm-secondary">
-              This cycle, from {{ started | date: 'mediumDate' }}. Each month is 30 days.
-            </p>
-          } @else {
-            <p class="mt-1 text-sm text-mlm-secondary">Each month is 30 days.</p>
-          }
-        </div>
-        <a routerLink="/legacy/history" class="text-sm font-medium font-semibold text-mlm-primary hover:underline">
+    <app-legacy-page-shell>
+      <app-legacy-page-header
+        title="Your 6-month cycle"
+        [subtitle]="cycleSubtitle()"
+        backLink="/legacy"
+        backLabel="Legacy Club"
+      >
+        <a
+          actions
+          routerLink="/legacy/history"
+          class="inline-flex min-h-10 items-center justify-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-mlm-text transition-colors hover:bg-gray-50"
+        >
           View history
         </a>
-      </div>
+      </app-legacy-page-header>
 
       @if (loading()) {
         <p-skeleton height="16rem" styleClass="rounded-2xl" />
@@ -49,16 +56,16 @@ import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
         <p class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">{{ error() }}</p>
       } @else {
         @if (qualifyBanner()) {
-          <div class="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4 text-sm text-emerald-900">
-            {{ qualifyBanner() }}
-          </div>
+          <app-legacy-panel>
+            <p class="text-sm text-emerald-900">{{ qualifyBanner() }}</p>
+          </app-legacy-panel>
         }
 
         @if (firstMonthHint(); as hint) {
           <p class="text-sm text-mlm-secondary">{{ hint }}</p>
         }
 
-        <div class="overflow-x-auto rounded-2xl border border-gray-100 bg-white shadow-sm">
+        <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
           <table class="min-w-full text-left text-sm">
             <thead class="border-b border-gray-100 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
@@ -151,23 +158,21 @@ import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
           </div>
         }
 
-        <div
-          class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm"
-        >
-          <div>
-            <p class="text-sm text-mlm-secondary">Pending total</p>
-            <p class="text-lg font-bold text-gray-900">{{ money(pendingTotal()) }}</p>
+        <app-legacy-panel>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p class="text-sm text-mlm-secondary">Pending total</p>
+              <p class="text-lg font-bold text-mlm-text">{{ money(pendingTotal()) }}</p>
+            </div>
+            @if (shopMode() === 'AUTOSHIP') {
+              <a routerLink="/legacy/shop">
+                <p-button label="Do Autoship" />
+              </a>
+            }
           </div>
-          @if (shopMode() === 'AUTOSHIP') {
-            <a routerLink="/legacy/shop">
-              <p-button label="Do Autoship" />
-            </a>
-          }
-        </div>
+        </app-legacy-panel>
       }
-        </div>
-      </main>
-    </div>
+    </app-legacy-page-shell>
   `,
 })
 export class LegacyMonthsComponent implements OnInit {
@@ -211,6 +216,14 @@ export class LegacyMonthsComponent implements OnInit {
         });
       },
     });
+  }
+
+  cycleSubtitle(): string {
+    const started = this.data()?.cycleStartedAt;
+    if (started) {
+      return `This cycle, from ${new Date(started).toLocaleDateString(undefined, { dateStyle: 'medium' })}. Each month is 30 days.`;
+    }
+    return 'Each month is 30 days.';
   }
 
   money(amount: number): string {

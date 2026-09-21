@@ -8,6 +8,7 @@ import {
   isProfileIncompleteError,
   parseProfileMissingFields,
   profileIncompleteMissingFields,
+  reconcileProfileCompleteness,
   resolvePostLoginRedirect,
 } from './profile-complete.util';
 
@@ -109,6 +110,48 @@ describe('profile-complete.util', () => {
 
     it('falls back when no fields are provided', () => {
       expect(checkoutProfileMessage()).toContain('phone number');
+    });
+  });
+
+  describe('reconcileProfileCompleteness', () => {
+    it('treats a saved account number as complete even when GET /users/me still lists it', () => {
+      const reconciled = reconcileProfileCompleteness({
+        firstName: 'Ezekiel',
+        lastName: 'Member',
+        phoneNumber: '08101435932',
+        address: '12 Example Street',
+        bankName: 'GTBank',
+        accountNumber: '0123456789',
+        accountName: 'Ezekiel Member',
+        isProfileComplete: false,
+        profileMissingFields: ['accountNumber'],
+      });
+
+      expect(reconciled.isProfileComplete).toBe(true);
+      expect(reconciled.profileMissingFields).toEqual([]);
+    });
+
+    it('accepts a masked account number as present', () => {
+      const reconciled = reconcileProfileCompleteness({
+        isProfileComplete: false,
+        profileMissingFields: ['accountNumber'],
+        accountNumberMasked: '******6789',
+      });
+
+      expect(reconciled.isProfileComplete).toBe(true);
+      expect(reconciled.profileMissingFields).toEqual([]);
+    });
+
+    it('keeps the profile incomplete when the account number is actually missing', () => {
+      const reconciled = reconcileProfileCompleteness({
+        isProfileComplete: false,
+        profileMissingFields: ['accountNumber'],
+        bankName: 'GTBank',
+        accountName: 'Ezekiel Member',
+      });
+
+      expect(reconciled.isProfileComplete).toBe(false);
+      expect(reconciled.profileMissingFields).toEqual(['accountNumber']);
     });
   });
 });

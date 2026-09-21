@@ -104,3 +104,63 @@ export function checkoutProfileMessage(missingFields?: readonly string[]): strin
   }
   return 'Finish your profile before placing an order. Merchants need your phone number to contact you.';
 }
+
+export type ProfileFieldSource = {
+  firstName?: string | null;
+  lastName?: string | null;
+  phoneNumber?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  bankName?: string | null;
+  accountNumber?: string | null;
+  accountNumberMasked?: string | null;
+  accountName?: string | null;
+  isProfileComplete?: boolean;
+  profileMissingFields?: ProfileMissingField[];
+};
+
+function hasText(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+export function hasProfileField(user: ProfileFieldSource, field: ProfileMissingField): boolean {
+  switch (field) {
+    case 'firstName':
+      return hasText(user.firstName);
+    case 'lastName':
+      return hasText(user.lastName);
+    case 'phone':
+      return hasText(user.phoneNumber) || hasText(user.phone);
+    case 'address':
+      return hasText(user.address);
+    case 'bankName':
+      return hasText(user.bankName);
+    case 'accountNumber':
+      return hasText(user.accountNumber) || hasText(user.accountNumberMasked);
+    case 'accountName':
+      return hasText(user.accountName);
+    default: {
+      const _exhaustive: never = field;
+      return _exhaustive;
+    }
+  }
+}
+
+/**
+ * GET /users/me can still report bank fields as missing after they were saved on
+ * GET/PUT /users/me/bank (bank is a separate resource). Trust locally known values.
+ */
+export function reconcileProfileCompleteness<T extends ProfileFieldSource>(user: T): T {
+  const reported = parseProfileMissingFields(user.profileMissingFields);
+  const missing = reported.filter((field) => !hasProfileField(user, field));
+
+  if (user.isProfileComplete === true) {
+    return { ...user, profileMissingFields: [], isProfileComplete: true };
+  }
+
+  if (user.isProfileComplete === false && reported.length > 0 && missing.length === 0) {
+    return { ...user, profileMissingFields: [], isProfileComplete: true };
+  }
+
+  return { ...user, profileMissingFields: missing };
+}

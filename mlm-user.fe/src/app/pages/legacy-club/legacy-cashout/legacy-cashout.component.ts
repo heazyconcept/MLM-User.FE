@@ -17,6 +17,10 @@ import {
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
+import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
+import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
+import { LegacyPanelComponent } from '../components/legacy-panel.component';
+import { LegacyBalanceBannerComponent } from '../components/legacy-balance-banner.component';
 
 @Component({
   selector: 'app-legacy-cashout',
@@ -28,104 +32,129 @@ import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
     InputNumberModule,
     InputTextModule,
     SelectModule,
+    LegacyPageShellComponent,
+    LegacyPageHeaderComponent,
+    LegacyPanelComponent,
+    LegacyBalanceBannerComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-mlm-background">
-      <main class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-      <a routerLink="/legacy" class="text-sm font-medium text-mlm-primary hover:underline">← Legacy Club</a>
-      <div>
-        <h1 class="text-2xl font-bold text-mlm-text">Legacy account</h1>
-        <p class="mt-1 text-sm text-mlm-secondary">You can cash out your Legacy account at any time.</p>
-      </div>
+    <app-legacy-page-shell>
+      <app-legacy-page-header
+        title="Legacy account"
+        subtitle="You can cash out or move this balance at any time."
+        backLink="/legacy"
+        backLabel="Legacy Club"
+      />
 
-      <div class="rounded-2xl bg-mlm-primary px-6 py-7 text-center sm:px-8">
-        <p class="text-xs font-bold uppercase tracking-[.15em] text-white/60">Balance</p>
-        <p class="mt-3 text-4xl font-extrabold tracking-tight text-white sm:text-5xl">{{ money(balance()) }}</p>
-        <p class="mt-2 text-sm text-white/70">
-          {{ successlineCount() }} Successline{{ successlineCount() === 1 ? '' : 's' }} · unlocked
-        </p>
-      </div>
+      <app-legacy-panel>
+        <app-legacy-balance-banner
+          label="Available balance"
+          [amount]="money(balance())"
+          [hint]="successlineHint()"
+        />
 
-      @if (isImpersonating()) {
-        <p class="rounded-xl border border-gray-100 bg-white px-5 py-4 text-sm text-mlm-secondary">
-          Cash out and move are disabled during impersonation.
-        </p>
-      } @else if (!canCashout()) {
-        <p class="rounded-xl border border-gray-100 bg-white px-5 py-4 text-sm text-mlm-secondary">
-          Legacy account is not available yet.
-        </p>
-      } @else {
-        <div class="grid gap-5 lg:grid-cols-2">
-          <div class="rounded-2xl border border-gray-100 bg-white p-6 sm:p-7 space-y-4">
-            <h2 class="font-semibold text-mlm-text">Cash out</h2>
-            @if (bankLabel()) {
-              <p class="text-sm text-mlm-secondary">Payout to {{ bankLabel() }}</p>
-            } @else {
-              <p class="text-sm text-amber-800">
-                Add bank details in Profile before cashing out.
-                <a routerLink="/profile" class="font-medium underline">Open profile</a>
-              </p>
-            }
-            <p-inputNumber
-              [(ngModel)]="withdrawAmount"
-              [min]="1"
-              mode="decimal"
-              styleClass="w-full"
-              inputStyleClass="w-full"
-              placeholder="Amount"
-            />
-            <input pInputText type="password" class="w-full" placeholder="PIN" [(ngModel)]="pin" />
-            <p-button
-              label="Cash out"
-              styleClass="w-full"
-              [loading]="busy()"
-              [disabled]="!hasBank()"
-              (onClick)="withdraw()"
-            />
+        @if (isImpersonating()) {
+          <p class="text-sm text-mlm-secondary">
+            Cash out and move are disabled during impersonation.
+          </p>
+        } @else if (!canCashout()) {
+          <p class="text-sm text-mlm-secondary">Legacy account is not available yet.</p>
+        } @else {
+          <div class="grid gap-6 border-t border-gray-100 pt-6 lg:grid-cols-2">
+            <div class="space-y-4">
+              <h2 class="text-sm font-semibold text-mlm-text">Cash out</h2>
+              @if (bankLabel()) {
+                <p class="text-sm text-mlm-secondary">Payout to {{ bankLabel() }}</p>
+              } @else {
+                <div class="rounded-xl border border-amber-100 bg-amber-50/50 p-4 text-sm text-mlm-secondary">
+                  Add bank details in Profile before cashing out.
+                  <a routerLink="/profile" class="ml-1 font-semibold text-mlm-primary hover:underline"
+                    >Open profile</a
+                  >
+                </div>
+              }
+              <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold text-gray-700" for="withdraw-amount">Amount</label>
+                <p-inputNumber
+                  inputId="withdraw-amount"
+                  [(ngModel)]="withdrawAmount"
+                  [min]="1"
+                  mode="decimal"
+                  styleClass="w-full"
+                  inputStyleClass="w-full"
+                  placeholder="Enter amount"
+                />
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold text-gray-700" for="withdraw-pin">Transaction PIN</label>
+                <input
+                  id="withdraw-pin"
+                  pInputText
+                  type="password"
+                  class="w-full"
+                  placeholder="4-digit PIN"
+                  [(ngModel)]="pin"
+                />
+              </div>
+              <p-button
+                label="Cash out"
+                styleClass="w-full"
+                [loading]="busy()"
+                [disabled]="!hasBank()"
+                (onClick)="withdraw()"
+              />
+            </div>
+
+            <div class="space-y-4 lg:border-l lg:border-gray-100 lg:pl-6">
+              <h2 class="text-sm font-semibold text-mlm-text">Move to another wallet</h2>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold text-gray-700" for="transfer-target">Destination</label>
+                <p-select
+                  inputId="transfer-target"
+                  [options]="transferTargets"
+                  [(ngModel)]="transferTarget"
+                  optionLabel="label"
+                  optionValue="value"
+                  styleClass="w-full"
+                  placeholder="Select wallet"
+                />
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold text-gray-700" for="transfer-amount">Amount</label>
+                <p-inputNumber
+                  inputId="transfer-amount"
+                  [(ngModel)]="transferAmount"
+                  [min]="1"
+                  mode="decimal"
+                  styleClass="w-full"
+                  inputStyleClass="w-full"
+                  placeholder="Enter amount"
+                />
+              </div>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold text-gray-700" for="transfer-pin">Transaction PIN</label>
+                <input
+                  id="transfer-pin"
+                  pInputText
+                  type="password"
+                  class="w-full"
+                  placeholder="4-digit PIN"
+                  [(ngModel)]="transferPin"
+                />
+              </div>
+              <p-button
+                label="Move funds"
+                styleClass="w-full"
+                [loading]="busy()"
+                (onClick)="transfer()"
+              />
+            </div>
           </div>
+        }
+      </app-legacy-panel>
 
-          <div class="rounded-2xl border border-gray-100 bg-white p-6 sm:p-7 space-y-4">
-            <h2 class="font-semibold text-mlm-text">Move to another wallet</h2>
-            <p-select
-              [options]="transferTargets"
-              [(ngModel)]="transferTarget"
-              optionLabel="label"
-              optionValue="value"
-              styleClass="w-full"
-              placeholder="Destination"
-            />
-            <p-inputNumber
-              [(ngModel)]="transferAmount"
-              [min]="1"
-              mode="decimal"
-              styleClass="w-full"
-              inputStyleClass="w-full"
-              placeholder="Amount"
-            />
-            <input
-              pInputText
-              type="password"
-              class="w-full"
-              placeholder="PIN"
-              [(ngModel)]="transferPin"
-            />
-            <p-button
-              label="Move"
-              [outlined]="true"
-              styleClass="w-full"
-              [loading]="busy()"
-              (onClick)="transfer()"
-            />
-          </div>
-        </div>
-      }
-
-      <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white">
-        <div class="border-b border-gray-100 px-5 py-4 text-sm font-semibold text-mlm-text sm:px-6">
-          History
-        </div>
+      <app-legacy-panel title="History" [padded]="false">
         @if (items().length === 0) {
           <p class="px-5 py-8 text-sm text-mlm-secondary sm:px-6">No activity yet.</p>
         } @else {
@@ -137,7 +166,7 @@ import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
                   <p class="text-xs text-mlm-secondary">{{ item.date | date: 'medium' }}</p>
                 </div>
                 <span
-                  class="font-semibold"
+                  class="font-semibold tabular-nums"
                   [class]="item.type === 'Credit' ? 'text-emerald-700' : 'text-mlm-text'"
                 >
                   {{ item.type === 'Credit' ? '+' : '−' }}{{ money(item.amount) }}
@@ -146,10 +175,8 @@ import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
             }
           </ul>
         }
-      </div>
-        </div>
-      </main>
-    </div>
+      </app-legacy-panel>
+    </app-legacy-page-shell>
   `,
 })
 export class LegacyCashoutComponent implements OnInit {
@@ -203,6 +230,11 @@ export class LegacyCashoutComponent implements OnInit {
 
   money(amount: number): string {
     return formatLegacyMoney(amount, this.legacyClub.me()?.currency ?? 'NGN');
+  }
+
+  successlineHint(): string {
+    const count = this.successlineCount();
+    return `${count} Successline${count === 1 ? '' : 's'} · unlocked`;
   }
 
   reload(): void {

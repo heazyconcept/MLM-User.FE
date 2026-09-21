@@ -11,68 +11,103 @@ import { WalletService } from '../../../services/wallet.service';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
 import { environment } from '../../../../environments/environment';
+import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
+import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
+import { LegacyPanelComponent } from '../components/legacy-panel.component';
+import { LegacyBalanceBannerComponent } from '../components/legacy-balance-banner.component';
 
 @Component({
   selector: 'app-legacy-voucher',
-  imports: [CommonModule, FormsModule, RouterLink, ButtonModule, InputNumberModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    ButtonModule,
+    InputNumberModule,
+    LegacyPageShellComponent,
+    LegacyPageHeaderComponent,
+    LegacyPanelComponent,
+    LegacyBalanceBannerComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-mlm-background">
-      <main class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-      <a routerLink="/legacy" class="text-sm font-medium text-mlm-primary hover:underline">← Legacy Club</a>
-      <div>
-        <h1 class="text-2xl font-bold text-mlm-text">Legacy product voucher</h1>
-        <p class="mt-1 text-sm text-mlm-secondary">
-          This is not your network Product Voucher. It is only for the Legacy Club marketplace.
-        </p>
-      </div>
+    <app-legacy-page-shell>
+      <div class="flex flex-col gap-8">
+        <app-legacy-page-header
+          title="Legacy product voucher"
+          subtitle="This is not your network Product Voucher. It is only for the Legacy Club marketplace."
+          backLink="/legacy"
+          backLabel="Legacy Club"
+        />
 
-      <div class="grid gap-5 lg:grid-cols-2">
-      <div class="rounded-2xl bg-mlm-primary px-6 py-7 sm:px-8">
-        <p class="text-xs font-bold uppercase tracking-[.15em] text-white/60">Balance</p>
-        <p class="mt-3 text-4xl font-extrabold tracking-tight text-white">{{ money(balance()) }}</p>
-      </div>
+        <div class="grid gap-6 lg:grid-cols-2 lg:gap-8">
+          <app-legacy-panel title="Voucher balance">
+            <app-legacy-balance-banner
+              label="Legacy product voucher"
+              [amount]="money(balance())"
+              hint="Use this balance when paying in the Legacy marketplace."
+            />
+          </app-legacy-panel>
 
-      @if (isImpersonating()) {
-        <p class="rounded-2xl border border-gray-100 bg-white px-6 py-5 text-sm text-mlm-secondary">
-          Funding is disabled during impersonation.
-        </p>
-      } @else {
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 sm:p-7 space-y-4">
-          <p class="text-sm font-semibold text-mlm-text">Fund from CASH</p>
-          <p class="text-sm text-mlm-secondary">Available CASH: {{ money(cashBalance()) }}</p>
-          <p-inputNumber
-            [(ngModel)]="amount"
-            [min]="1"
-            mode="decimal"
-            [useGrouping]="true"
-            styleClass="w-full"
-            inputStyleClass="w-full"
-            placeholder="Amount"
-          />
-          <p-button
-            label="Transfer from CASH"
-            styleClass="w-full"
-            [loading]="submitting()"
-            [disabled]="!amount || amount <= 0"
-            (onClick)="fund()"
-          />
-          <a routerLink="/wallet" class="block text-center text-xs text-mlm-secondary hover:underline">
-            Network voucher is under Wallet
-          </a>
+          <app-legacy-panel title="Fund from CASH">
+            @if (isImpersonating()) {
+              <p class="text-sm text-mlm-secondary">Funding is disabled during impersonation.</p>
+            } @else {
+              <div class="flex flex-col gap-5">
+                <app-legacy-balance-banner
+                  label="Available CASH"
+                  [amount]="money(cashBalance())"
+                  hint="Transfers move funds from your cash wallet."
+                />
+                <div class="flex flex-col gap-2">
+                  <label class="text-sm font-semibold text-gray-700" for="fund-amount">Amount</label>
+                  <p-inputNumber
+                    inputId="fund-amount"
+                    [(ngModel)]="amount"
+                    [min]="1"
+                    mode="decimal"
+                    [useGrouping]="true"
+                    styleClass="w-full"
+                    inputStyleClass="w-full"
+                    placeholder="Enter amount"
+                  />
+                </div>
+                <p-button
+                  label="Transfer from CASH"
+                  styleClass="w-full"
+                  [loading]="submitting()"
+                  [disabled]="!amount || amount <= 0"
+                  (onClick)="fund()"
+                />
+                <a
+                  routerLink="/wallet"
+                  class="block text-center text-xs text-mlm-secondary transition-colors hover:text-mlm-primary"
+                >
+                  Network voucher is under Wallet
+                </a>
+              </div>
+            }
+          </app-legacy-panel>
         </div>
-      }
-      </div>
 
-      @if (me()?.status === 'PENDING_JOIN' || shopMode() === 'AUTOSHIP' || shopMode() === 'UPGRADE' || shopMode() === 'REACTIVATE') {
-        <a routerLink="/legacy/shop">
-          <p-button label="Back to Legacy marketplace" [outlined]="true" />
-        </a>
-      }
-        </div>
-      </main>
-    </div>
+        @if (
+          me()?.status === 'PENDING_JOIN' ||
+          shopMode() === 'AUTOSHIP' ||
+          shopMode() === 'UPGRADE' ||
+          shopMode() === 'REACTIVATE'
+        ) {
+          <div class="pt-2">
+            <a routerLink="/legacy/shop">
+              <p-button
+                label="Back to Legacy marketplace"
+                [outlined]="true"
+                severity="secondary"
+              />
+            </a>
+          </div>
+        }
+      </div>
+    </app-legacy-page-shell>
   `,
 })
 export class LegacyVoucherComponent implements OnInit {
@@ -96,20 +131,20 @@ export class LegacyVoucherComponent implements OnInit {
   refresh(): void {
     this.legacyClub.loadMe().subscribe();
     this.legacyClub.getVoucher().subscribe({
-      next: (v) => this.balance.set(v.balance),
+      next: (res) => this.balance.set(res.balance),
     });
     if (environment.useLegacyClubMocks) {
       this.cashBalance.set(this.legacyClub.getMockCashBalance());
-      return;
+    } else {
+      this.walletService.fetchWallets().subscribe({
+        next: () => {
+          const currency = this.me()?.currency ?? 'NGN';
+          const wallet = this.walletService.allWallets().find((w) => w.currency === currency);
+          this.cashBalance.set(wallet?.cashBalance ?? 0);
+        },
+        error: () => this.cashBalance.set(0),
+      });
     }
-    this.walletService.fetchWallets().subscribe({
-      next: (wallets) => {
-        const currency = this.me()?.currency ?? 'NGN';
-        const wallet = wallets.find((w) => w.currency === currency);
-        this.cashBalance.set(wallet?.cashBalance ?? 0);
-      },
-      error: () => this.cashBalance.set(0),
-    });
   }
 
   money(amount: number): string {
@@ -119,7 +154,8 @@ export class LegacyVoucherComponent implements OnInit {
   fund(): void {
     if (!this.amount || this.amount <= 0 || this.isImpersonating()) return;
     this.submitting.set(true);
-    this.legacyClub.fundVoucherFromCash(this.amount, this.me()?.currency ?? 'NGN').subscribe({
+    const currency = this.me()?.currency ?? 'NGN';
+    this.legacyClub.fundVoucherFromCash(this.amount, currency).subscribe({
       next: () => {
         this.submitting.set(false);
         this.amount = null;

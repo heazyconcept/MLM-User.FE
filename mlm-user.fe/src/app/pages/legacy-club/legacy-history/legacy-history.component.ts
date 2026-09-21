@@ -6,7 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { SkeletonModule } from 'primeng/skeleton';
 import { LegacyClubService } from '../../../services/legacy-club.service';
 import {
@@ -14,18 +14,28 @@ import {
   LegacyHistoryKind,
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
+import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
+import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
+import { LegacyPanelComponent } from '../components/legacy-panel.component';
 
 @Component({
   selector: 'app-legacy-history',
-  imports: [CommonModule, RouterLink, SkeletonModule],
+  imports: [
+    CommonModule,
+    SkeletonModule,
+    LegacyPageShellComponent,
+    LegacyPageHeaderComponent,
+    LegacyPanelComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-mlm-background">
-      <main class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-      <a routerLink="/legacy" class="text-sm font-medium text-mlm-primary hover:underline">← Legacy Club</a>
-      <h1 class="text-2xl font-bold text-mlm-text">Legacy history</h1>
-      <p class="text-sm text-mlm-secondary">Joined, upgrades, and reactivations — newest first.</p>
+    <app-legacy-page-shell>
+      <app-legacy-page-header
+        title="Legacy history"
+        subtitle="Joined, upgrades, and reactivations — newest first."
+        backLink="/legacy"
+        backLabel="Legacy Club"
+      />
 
       @if (loading()) {
         <div class="space-y-3">
@@ -34,32 +44,34 @@ import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
           }
         </div>
       } @else if (error()) {
-        <p class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">{{ error() }}</p>
+        <app-legacy-panel>
+          <p class="text-sm text-red-800">{{ error() }}</p>
+        </app-legacy-panel>
       } @else if (items().length === 0) {
-        <p class="text-gray-500">No history yet.</p>
+        <app-legacy-panel>
+          <p class="text-sm text-mlm-secondary">No history yet.</p>
+        </app-legacy-panel>
       } @else {
         <div class="space-y-3">
           @for (item of items(); track item.id) {
-            <article class="rounded-2xl border border-gray-100 bg-white p-5 sm:p-6">
+            <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
               <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <p class="font-semibold text-gray-900">{{ kindLabel(item) }}</p>
+                  <p class="font-semibold text-mlm-text">{{ kindLabel(item) }}</p>
                   <p class="mt-0.5 text-sm text-mlm-secondary">
                     {{ item.at | date: 'medium' }}
                   </p>
                 </div>
                 <div class="text-right">
-                  <p class="font-semibold text-gray-900">{{ money(item) }}</p>
-                  <p class="text-xs text-gray-500">Instant to Legacy account</p>
+                  <p class="font-semibold text-mlm-text">{{ money(item) }}</p>
+                  <p class="text-xs text-mlm-secondary">Instant to Legacy account</p>
                 </div>
               </div>
             </article>
           }
         </div>
       }
-        </div>
-      </main>
-    </div>
+    </app-legacy-page-shell>
   `,
 })
 export class LegacyHistoryComponent implements OnInit {

@@ -18,44 +18,53 @@ import {
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
+import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
+import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
+import { LegacyPanelComponent } from '../components/legacy-panel.component';
 
 @Component({
   selector: 'app-legacy-upgrade',
-  imports: [CommonModule, RouterLink, ButtonModule, SkeletonModule],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ButtonModule,
+    SkeletonModule,
+    LegacyPageShellComponent,
+    LegacyPageHeaderComponent,
+    LegacyPanelComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-mlm-background">
-      <main class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-      <a routerLink="/legacy" class="text-sm font-medium text-mlm-primary hover:underline">← Legacy Club</a>
-      <div>
-        <h1 class="text-2xl font-bold text-mlm-text">Upgrade package</h1>
-        <p class="mt-1 text-sm text-mlm-secondary">
-          Pay the difference only. Your 6 months start again from month 1. Instant goes to your
-          Legacy account.
-        </p>
-      </div>
+    <app-legacy-page-shell>
+      <app-legacy-page-header
+        title="Upgrade package"
+        subtitle="Pay the difference only. Your 6 months start again from month 1. Instant goes to your Legacy account."
+        backLink="/legacy"
+        backLabel="Legacy Club"
+      />
 
       @if (loading()) {
         <div class="space-y-4">
           @for (_ of [1, 2]; track $index) {
-            <p-skeleton height="10rem" styleClass="rounded-2xl" />
+            <p-skeleton height="10rem" styleClass="rounded-xl" />
           }
         </div>
       } @else if (targets().length === 0) {
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm">
-          <p class="font-semibold text-gray-900">You are on the highest package.</p>
-          <p class="mt-2 text-sm text-mlm-secondary">
-            Reactivate when your 6 months are complete.
-          </p>
-          <a routerLink="/legacy" class="mt-4 inline-block">
-            <p-button label="Back to Legacy Club" />
-          </a>
-        </div>
+        <app-legacy-panel>
+          <div class="py-2 text-center">
+            <p class="font-semibold text-mlm-text">You are on the highest package.</p>
+            <p class="mt-2 text-sm text-mlm-secondary">
+              Reactivate when your 6 months are complete.
+            </p>
+            <a routerLink="/legacy" class="mt-4 inline-block">
+              <p-button label="Back to Legacy Club" />
+            </a>
+          </div>
+        </app-legacy-panel>
       } @else {
         <div class="grid gap-5 lg:grid-cols-2">
           @for (quote of quotes(); track quote.toPackage) {
-            <article class="rounded-2xl border border-gray-100 bg-white p-6 sm:p-7">
+            <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
               <h2 class="text-lg font-bold text-gray-900">
                 {{ quote.fromPackage }} → {{ quote.toPackage }}
               </h2>
@@ -92,11 +101,11 @@ import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
       }
 
       @if (error()) {
-        <p class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">{{ error() }}</p>
+        <app-legacy-panel>
+          <p class="text-sm text-red-800">{{ error() }}</p>
+        </app-legacy-panel>
       }
-        </div>
-      </main>
-    </div>
+    </app-legacy-page-shell>
   `,
 })
 export class LegacyUpgradeComponent implements OnInit {

@@ -1,40 +1,54 @@
 import { Component, ChangeDetectionStrategy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 import { LegacyClubService } from '../../../services/legacy-club.service';
 import { LegacyPackage } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
+import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
+import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 
 @Component({
   selector: 'app-legacy-packages',
-  imports: [CommonModule, RouterLink, ButtonModule, SkeletonModule],
+  imports: [
+    CommonModule,
+    ButtonModule,
+    SkeletonModule,
+    LegacyPageShellComponent,
+    LegacyPageHeaderComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-mlm-background">
-      <main class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between gap-3">
-        <div>
-          <a routerLink="/legacy" class="text-sm font-medium text-mlm-primary hover:underline">← Legacy Club</a>
-          <h1 class="mt-1 text-2xl font-bold text-mlm-text">Choose your package</h1>
-        </div>
-      </div>
+    <app-legacy-page-shell>
+      <app-legacy-page-header
+        title="Choose your package"
+        subtitle="Compare Legacy Club tiers and start your join flow."
+        backLink="/legacy"
+        backLabel="Legacy Club"
+      />
 
       @if (loading()) {
         <div class="grid gap-5 md:grid-cols-3">
           @for (_ of [1, 2, 3]; track $index) {
-            <p-skeleton height="18rem" styleClass="rounded-2xl" />
+            <p-skeleton height="18rem" styleClass="rounded-xl" />
           }
         </div>
       } @else {
         <div class="grid gap-5 md:grid-cols-3">
           @for (pkg of packages(); track pkg.code) {
-            <article class="rounded-2xl border border-gray-100 bg-white p-6 sm:p-7">
-              <h2 class="text-lg font-bold text-mlm-text">{{ pkg.name }}</h2>
-              <p class="mt-3 text-3xl font-extrabold tracking-tight text-mlm-text">{{ money(pkg.purchaseAmount) }}</p>
-              <ul class="mt-5 space-y-2 text-sm text-mlm-text">
+            <article
+              class="flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6"
+            >
+              <div class="flex items-center gap-2">
+                <i class="pi pi-crown text-mlm-primary"></i>
+                <h2 class="text-lg font-bold text-mlm-text">{{ pkg.name }}</h2>
+              </div>
+              <p class="mt-4 text-3xl font-extrabold tracking-tight text-mlm-text">
+                {{ money(pkg.purchaseAmount) }}
+              </p>
+              <p class="text-sm text-mlm-secondary">Product purchase</p>
+              <ul class="mt-5 flex-1 space-y-2 text-sm text-mlm-text">
                 <li>Instant {{ money(pkg.instantCommission) }} → Legacy account</li>
                 <li class="text-mlm-secondary">Monthly {{ money(pkg.monthlyCommission) }}</li>
                 <li>Successline {{ pkg.successlineBonusPercent }}%</li>
@@ -50,9 +64,7 @@ import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
           }
         </div>
       }
-        </div>
-      </main>
-    </div>
+    </app-legacy-page-shell>
   `,
 })
 export class LegacyPackagesComponent implements OnInit {

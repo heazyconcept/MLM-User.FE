@@ -17,73 +17,91 @@ import { LEGACY_ERROR_CODES, LegacyPackage, LegacyPackageCode } from '../../../c
 import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
+import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
+import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
+import { LegacyPanelComponent } from '../components/legacy-panel.component';
 
 @Component({
   selector: 'app-legacy-join',
-  imports: [CommonModule, FormsModule, RouterLink, ButtonModule, InputTextModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    ButtonModule,
+    InputTextModule,
+    LegacyPageShellComponent,
+    LegacyPageHeaderComponent,
+    LegacyPanelComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-mlm-background">
-      <main class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-      <a routerLink="/legacy/packages" class="text-sm font-medium text-mlm-primary hover:underline">← Packages</a>
-      <h1 class="text-2xl font-bold text-mlm-text">Join Legacy Club</h1>
+    <app-legacy-page-shell>
+      <app-legacy-page-header
+        title="Join Legacy Club"
+        subtitle="Confirm your package and sponsor before shopping."
+        backLink="/legacy/packages"
+        backLabel="Packages"
+      />
 
       @if (selectedPackage(); as pkg) {
-        <div class="grid gap-5 lg:grid-cols-2">
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 sm:p-7">
-          <div class="flex items-start justify-between gap-2">
-            <div>
-              <p class="text-xs font-bold uppercase tracking-[.15em] text-mlm-secondary">Package</p>
-              <p class="mt-2 text-xl font-bold text-mlm-text">{{ pkg.name }}</p>
-              <p class="text-sm text-mlm-secondary">{{ money(pkg.purchaseAmount) }} product purchase</p>
-              <p class="mt-2 text-sm text-emerald-800">
-                Instant {{ money(pkg.instantCommission) }} into your Legacy account
-              </p>
+        <div class="grid gap-6 lg:grid-cols-2">
+          <app-legacy-panel title="Package">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xl font-bold text-mlm-text">{{ pkg.name }}</p>
+                <p class="mt-1 text-sm text-mlm-secondary">
+                  {{ money(pkg.purchaseAmount) }} product purchase
+                </p>
+                <p class="mt-2 text-sm text-emerald-800">
+                  Instant {{ money(pkg.instantCommission) }} into your Legacy account
+                </p>
+              </div>
+              <a
+                routerLink="/legacy/packages"
+                class="text-xs font-semibold text-mlm-primary hover:underline"
+              >
+                Change
+              </a>
             </div>
-            <a routerLink="/legacy/packages" class="text-xs font-semibold text-mlm-primary hover:underline"
-              >Change</a
-            >
-          </div>
-        </div>
+          </app-legacy-panel>
 
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 sm:p-7 space-y-3">
-          <h2 class="text-base font-semibold text-mlm-text">Who is registering you?</h2>
-
-          @if (isAuto()) {
-            <p class="text-sm text-mlm-text">
-              You will join under &#64;{{ me()?.defaultSponsor?.username }}.
-            </p>
-            <p class="text-sm text-mlm-secondary">
-              This is your Segulah sponsor. They are already in Legacy Club, so you are placed under
-              them automatically.
-            </p>
-          } @else {
-            <p class="text-sm text-mlm-secondary">
-              Your Segulah sponsor is not in Legacy Club. Enter the username of a member who is. You
-              may call your sponsor and ask them to join first so you stay under them.
-            </p>
-            <label class="block text-sm font-medium text-mlm-text" for="sponsor">
-              Legacy sponsor username
-            </label>
-            <input
-              id="sponsor"
-              pInputText
-              class="w-full"
-              [(ngModel)]="sponsorUsername"
-              (blur)="onValidate()"
-              placeholder="username"
-            />
-            @if (sponsorError()) {
-              <p class="text-sm text-red-600">{{ sponsorError() }}</p>
-            }
-            @if (sponsorOk()) {
-              <p class="text-sm text-emerald-700">
-                Valid — &#64;{{ sponsorOk()?.username }} ({{ sponsorOk()?.legacyPackage }})
+          <app-legacy-panel title="Who is registering you?">
+            @if (isAuto()) {
+              <p class="text-sm text-mlm-text">
+                You will join under &#64;{{ me()?.defaultSponsor?.username }}.
               </p>
+              <p class="text-sm text-mlm-secondary">
+                This is your Segulah sponsor. They are already in Legacy Club, so you are placed
+                under them automatically.
+              </p>
+            } @else {
+              <p class="text-sm text-mlm-secondary">
+                Your Segulah sponsor is not in Legacy Club. Enter the username of a member who is.
+                You may call your sponsor and ask them to join first so you stay under them.
+              </p>
+              <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-semibold text-gray-700" for="sponsor">
+                  Legacy sponsor username
+                </label>
+                <input
+                  id="sponsor"
+                  pInputText
+                  class="w-full"
+                  [(ngModel)]="sponsorUsername"
+                  (blur)="onValidate()"
+                  placeholder="username"
+                />
+              </div>
+              @if (sponsorError()) {
+                <p class="text-sm text-red-600">{{ sponsorError() }}</p>
+              }
+              @if (sponsorOk()) {
+                <p class="text-sm text-emerald-700">
+                  Valid — &#64;{{ sponsorOk()?.username }} ({{ sponsorOk()?.legacyPackage }})
+                </p>
+              }
             }
-          }
-        </div>
+          </app-legacy-panel>
         </div>
 
         <p-button
@@ -94,14 +112,14 @@ import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
           (onClick)="onContinue()"
         />
       } @else {
-        <p class="text-sm text-mlm-secondary">Select a package first.</p>
-        <a routerLink="/legacy/packages">
-          <p-button label="View packages" />
-        </a>
+        <app-legacy-panel>
+          <p class="text-sm text-mlm-secondary">Select a package first.</p>
+          <a routerLink="/legacy/packages" class="mt-4 inline-block">
+            <p-button label="View packages" />
+          </a>
+        </app-legacy-panel>
       }
-        </div>
-      </main>
-    </div>
+    </app-legacy-page-shell>
   `,
 })
 export class LegacyJoinComponent implements OnInit {

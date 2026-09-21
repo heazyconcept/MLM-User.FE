@@ -24,9 +24,16 @@ describe('UserService profile completeness', () => {
     localStorage.clear();
   });
 
-  function flushProfile(body: Record<string, unknown>): void {
+  function flushProfile(
+    body: Record<string, unknown>,
+    bank: Record<string, unknown> = {},
+  ): void {
     const profileReq = httpMock.expectOne((r) => r.url === `${baseUrl}/users/me` && r.method === 'GET');
     profileReq.flush(body);
+    const bankReq = httpMock.expectOne(
+      (r) => r.url === `${baseUrl}/users/me/bank` && r.method === 'GET',
+    );
+    bankReq.flush(bank);
     const prefsReq = httpMock.expectOne(
       (r) => r.url === `${baseUrl}/users/me/preferences` && r.method === 'GET',
     );
@@ -72,5 +79,100 @@ describe('UserService profile completeness', () => {
 
     expect(service.needsProfileSetup()).toBe(false);
     expect(service.isProfileComplete()).toBe(true);
+  });
+
+  it('clears a stale accountNumber gap when GET /users/me/bank already has the number', () => {
+    service.fetchProfile().subscribe();
+    flushProfile(
+      {
+        id: 'user-1',
+        email: 'ada@example.com',
+        firstName: 'Ada',
+        lastName: 'Okafor',
+        phone: '08012345678',
+        address: '12 Example Street',
+        registrationPaid: true,
+        isProfileComplete: false,
+        profileMissingFields: ['accountNumber'],
+      },
+      {
+        bankName: 'GTBank',
+        accountNumber: '0123456789',
+        accountName: 'Ada Okafor',
+      },
+    );
+
+    expect(service.needsProfileSetup()).toBe(false);
+    expect(service.isProfileComplete()).toBe(true);
+    expect(service.currentUser()?.accountNumber).toBe('0123456789');
+  });
+
+  it('treats a masked bank account number as present', () => {
+    service.fetchProfile().subscribe();
+    flushProfile(
+      {
+        id: 'user-1',
+        email: 'ada@example.com',
+        firstName: 'Ada',
+        lastName: 'Okafor',
+        registrationPaid: true,
+        isProfileComplete: false,
+        profileMissingFields: ['accountNumber'],
+      },
+      {
+        bankName: 'GTBank',
+        accountNumberMasked: '******6789',
+        accountName: 'Ada Okafor',
+      },
+    );
+
+    expect(service.needsProfileSetup()).toBe(false);
+    expect(service.currentUser()?.accountNumber).toBe('******6789');
+  });
+
+  it('clears a stale accountNumber gap when bank details are saved locally', () => {
+    service.setUser({
+      id: 'user-1',
+      email: 'ada@example.com',
+      firstName: 'Ada',
+      lastName: 'Okafor',
+      paymentStatus: 'PAID',
+      profileCompletionPercentage: 80,
+      isProfileComplete: false,
+      profileMissingFields: ['accountNumber'],
+    });
+
+    service.updateProfile({
+      bankName: 'GTBank',
+      accountNumber: '0123456789',
+      accountName: 'Ada Okafor',
+    });
+
+    expect(service.needsProfileSetup()).toBe(false);
+    expect(service.isProfileComplete()).toBe(true);
+  });
+
+  it('does not keep accountNumber missing after a completeness payload if the number is already on the user', () => {
+    service.setUser({
+      id: 'user-1',
+      email: 'ada@example.com',
+      firstName: 'Ada',
+      lastName: 'Okafor',
+      paymentStatus: 'PAID',
+      profileCompletionPercentage: 80,
+      isProfileComplete: false,
+      profileMissingFields: ['accountNumber'],
+      accountNumber: '0123456789',
+      bankName: 'GTBank',
+      accountName: 'Ada Okafor',
+    });
+
+    service.applyProfileCompleteness({
+      isProfileComplete: false,
+      profileMissingFields: ['accountNumber'],
+    });
+
+    expect(service.needsProfileSetup()).toBe(false);
+    expect(service.currentUser()?.profileMissingFields).toEqual([]);
   });
 });

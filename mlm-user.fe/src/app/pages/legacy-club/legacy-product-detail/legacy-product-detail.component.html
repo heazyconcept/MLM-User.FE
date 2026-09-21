@@ -1,0 +1,129 @@
+<div class="min-h-screen bg-mlm-background">
+  <main class="py-10">
+    <div class="mx-auto px-4 sm:px-6 lg:px-8">
+      @if (product(); as p) {
+        <div class="mb-6">
+          <a
+            routerLink="/legacy/shop"
+            class="inline-flex items-center gap-1 text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80"
+          >
+            <i class="pi pi-arrow-left"></i>
+            Back to Legacy marketplace
+          </a>
+        </div>
+
+        <div class="flex flex-col gap-8 p-2 lg:flex-row">
+          <div class="lg:w-1/2">
+            <app-product-gallery [images]="p.images" [alt]="p.name"></app-product-gallery>
+          </div>
+
+          <div class="space-y-5 lg:w-1/2">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold uppercase tracking-widest text-mlm-secondary">{{
+                p.category
+              }}</span>
+              @if (p.priceStatus === 'unpriced') {
+                <span class="text-xs font-semibold text-mlm-error">Unavailable</span>
+              } @else if (p.inStock) {
+                <span class="text-xs font-semibold text-mlm-primary">In Stock</span>
+              } @else {
+                <span class="text-xs font-semibold text-mlm-error">Out of Stock</span>
+                @if (nextActiveLabel(p); as nextActive) {
+                  <span class="text-xs text-mlm-secondary">· {{ nextActive }}</span>
+                }
+              }
+            </div>
+
+            <h1 class="text-2xl font-bold tracking-tight text-mlm-text">{{ p.name }}</h1>
+
+            <div class="flex items-center gap-4">
+              <span class="text-4xl font-bold tracking-tight text-mlm-text">{{
+                formatCurrency(p.price)
+              }}</span>
+              <div class="flex items-center gap-2">
+                <app-badge [text]="p.pv + ' PV'" variant="pv"></app-badge>
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <h4 class="mb-3 text-xs font-bold uppercase tracking-widest text-mlm-secondary">
+                Description
+              </h4>
+              <p class="text-sm leading-relaxed text-mlm-secondary">{{ p.description }}</p>
+            </div>
+
+            <div class="pt-2">
+              <span
+                class="mb-2 block text-xs font-bold uppercase tracking-widest text-mlm-secondary"
+              >
+                Pay With
+              </span>
+              <div
+                class="w-full rounded-xl border border-gray-250 bg-gray-50 px-4 py-3 text-sm font-semibold text-mlm-text"
+              >
+                Legacy product voucher
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <h4 class="mb-4 text-xs font-bold uppercase tracking-widest text-mlm-secondary">
+                Quantity
+              </h4>
+              <app-quantity-selector
+                [min]="1"
+                [value]="quantity()"
+                [disabled]="!canPurchase(p) || adding()"
+                (valueChange)="onQuantityChange($event)"
+              >
+              </app-quantity-selector>
+            </div>
+
+            <div class="mt-4 rounded-2xl bg-gray-50 p-5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span
+                    class="mb-1 block text-xs font-bold uppercase tracking-widest text-mlm-secondary"
+                    >Total</span
+                  >
+                  <span class="text-3xl font-bold tracking-tight text-mlm-text">{{
+                    formatCurrency(total())
+                  }}</span>
+                </div>
+                <div class="space-y-1 text-right">
+                  <span
+                    class="mb-1 block text-xs font-bold uppercase tracking-widest text-mlm-secondary"
+                    >Total PV</span
+                  >
+                  <span class="text-xl font-bold text-mlm-secondary">{{ totalPV() }} PV</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-3 pt-3 sm:flex-row">
+              <button
+                type="button"
+                (click)="onAddToCart()"
+                [disabled]="!canPurchase(p) || adding()"
+                class="flex-1 rounded-xl border-2 border-mlm-primary py-4 text-sm font-bold uppercase tracking-wider text-mlm-primary transition-all hover:bg-mlm-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Add to Cart
+              </button>
+              <button
+                type="button"
+                (click)="onBuyNow()"
+                [disabled]="!canPurchase(p) || adding()"
+                class="flex-1 rounded-xl bg-mlm-primary py-4 text-sm font-bold uppercase tracking-wider text-white shadow-lg shadow-mlm-primary/20 transition-all hover:bg-brand-green-dark disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+              >
+                @if (p.priceStatus === 'scheduled' || p.priceStatus === 'unpriced') {
+                  {{ buyNowLabel(p) }}
+                } @else {
+                  Buy Now
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </main>
+</div>

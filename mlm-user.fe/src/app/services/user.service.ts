@@ -3,6 +3,7 @@ import { Observable, of } from 'rxjs';
 import { tap, map, catchError, switchMap } from 'rxjs/operators';
 import {
   parseProfileMissingFields,
+  reconcileProfileCompleteness,
   type ProfileMissingField,
 } from '../core/utils/profile-complete.util';
 import { ApiService } from './api.service';
@@ -54,7 +55,9 @@ export class UserService {
   constructor() {
     const persistedUser = this.getPersistedUserData();
     if (persistedUser) {
-      this.user.set(persistedUser);
+      const reconciled = reconcileProfileCompleteness(persistedUser);
+      this.user.set(reconciled);
+      this.persistUserData(reconciled);
     }
     const stored = localStorage.getItem(DISPLAY_CURRENCY_KEY);
     if (stored === 'NGN' || stored === 'USD') {
@@ -81,18 +84,15 @@ export class UserService {
   fetchProfile(): Observable<User> {
     return this.api.get<Record<string, unknown>>('users/me').pipe(
       map((response) => this.mapApiUserToUser(response)),
+      switchMap((user) =>
+        this.api.get<Record<string, unknown>>('users/me/bank').pipe(
+          map((bank) => this.mergeBankDetails(user, bank)),
+          catchError(() => of(this.mergeBankDetails(user, {}))),
+        ),
+      ),
       tap((user) => {
-        // GET /users/me does not include bank fields (those live on GET /users/me/bank).
-        // Preserve any bank details already loaded so a profile refresh does not wipe them.
-        const previous = this.user();
-        const merged: User = {
-          ...user,
-          bankName: user.bankName || previous?.bankName,
-          accountNumber: user.accountNumber || previous?.accountNumber,
-          accountName: user.accountName || previous?.accountName,
-        };
-        this.user.set(merged);
-        this.persistUserData(merged);
+        this.user.set(user);
+        this.persistUserData(user);
       }),
       switchMap((user) => {
         const current = this.user() ?? user;
@@ -142,6 +142,23 @@ export class UserService {
     const updated: User = { ...current, isMerchant: true };
     this.user.set(updated);
     this.persistUserData(updated);
+  }
+
+  private mergeBankDetails(user: User, bank: Record<string, unknown>): User {
+    const previous = this.user();
+    const bankName = (bank['bankName'] ?? bank['bank_name']) as string | undefined;
+    const accountNumber = (bank['accountNumber'] ??
+      bank['account_number'] ??
+      bank['accountNumberMasked'] ??
+      bank['account_number_masked']) as string | undefined;
+    const accountName = (bank['accountName'] ?? bank['account_name']) as string | undefined;
+
+    return reconcileProfileCompleteness({
+      ...user,
+      bankName: bankName || user.bankName || previous?.bankName,
+      accountNumber: accountNumber || user.accountNumber || previous?.accountNumber,
+      accountName: accountName || user.accountName || previous?.accountName,
+    });
   }
 
   private mapApiUserToUser(apiUser: Record<string, unknown>): User {
@@ -222,8 +239,9 @@ export class UserService {
   }
 
   setUser(user: User): void {
-    this.user.set(user);
-    this.persistUserData(user);
+    const reconciled = reconcileProfileCompleteness(user);
+    this.user.set(reconciled);
+    this.persistUserData(reconciled);
   }
 
   updatePaymentStatus(status: PaymentStatus): void {
@@ -248,7 +266,7 @@ export class UserService {
     if (!('isProfileComplete' in payload) && !('profileMissingFields' in payload)) return;
     const currentUser = this.user();
     if (!currentUser) return;
-    const updatedUser: User = {
+    const updatedUser = reconcileProfileCompleteness({
       ...currentUser,
       isProfileComplete:
         typeof payload['isProfileComplete'] === 'boolean'
@@ -261,7 +279,7 @@ export class UserService {
         payload['profileCompletionPercentage'] != null
           ? Number(payload['profileCompletionPercentage'])
           : currentUser.profileCompletionPercentage,
-    };
+    });
     this.user.set(updatedUser);
     this.persistUserData(updatedUser);
   }
@@ -284,7 +302,7 @@ export class UserService {
   ): void {
     const currentUser = this.user();
     if (currentUser) {
-      const updatedUser = { ...currentUser, ...profileData };
+      const updatedUser = reconcileProfileCompleteness({ ...currentUser, ...profileData });
       this.user.set(updatedUser);
       this.persistUserData(updatedUser);
     }

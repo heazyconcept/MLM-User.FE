@@ -7,7 +7,7 @@ import {
   computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 import { MessageService } from 'primeng/api';
@@ -16,22 +16,34 @@ import { LegacyCartService } from '../../../services/legacy-cart.service';
 import { LegacyPackage, LegacyPackagesResponse } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
+import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
+import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
+import { LegacyPanelComponent } from '../components/legacy-panel.component';
 
 @Component({
   selector: 'app-legacy-reactivate',
-  imports: [CommonModule, RouterLink, ButtonModule, SkeletonModule],
+  imports: [
+    CommonModule,
+    ButtonModule,
+    SkeletonModule,
+    LegacyPageShellComponent,
+    LegacyPageHeaderComponent,
+    LegacyPanelComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-mlm-background">
-      <main class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-      <a routerLink="/legacy" class="text-sm font-medium text-mlm-primary hover:underline">← Legacy Club</a>
-      <h1 class="text-2xl font-bold text-mlm-text">Reactivate Legacy Club</h1>
+    <app-legacy-page-shell>
+      <app-legacy-page-header
+        title="Reactivate Legacy Club"
+        subtitle="Start a new 6-month cycle on your current package."
+        backLink="/legacy"
+        backLabel="Legacy Club"
+      />
 
       @if (loading()) {
-        <p-skeleton height="12rem" styleClass="rounded-2xl" />
+        <p-skeleton height="12rem" styleClass="rounded-xl" />
       } @else {
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 sm:p-8 space-y-4">
+        <app-legacy-panel title="What happens next">
           <p class="text-sm leading-relaxed text-mlm-text">
             Buy products worth
             <span class="font-semibold">{{ money(purchaseAmount()) }}</span>
@@ -52,20 +64,19 @@ import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
             Waiting months are not cancelled. Pay with your Legacy product voucher.
           </p>
           <p-button
-            class="mt-2"
             label="Start reactivate"
             styleClass="w-full sm:w-auto"
             [loading]="starting()"
             (onClick)="start()"
           />
-        </div>
+        </app-legacy-panel>
         @if (error()) {
-          <p class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">{{ error() }}</p>
+          <app-legacy-panel>
+            <p class="text-sm text-red-800">{{ error() }}</p>
+          </app-legacy-panel>
         }
       }
-        </div>
-      </main>
-    </div>
+    </app-legacy-page-shell>
   `,
 })
 export class LegacyReactivateComponent implements OnInit {
@@ -98,10 +109,7 @@ export class LegacyReactivateComponent implements OnInit {
             if (pkg) this.cart.setReactivateFloor(pkg.purchaseAmount);
             this.loading.set(false);
           },
-          error: () => {
-            this.error.set('Could not load package details.');
-            this.loading.set(false);
-          },
+          error: () => this.loading.set(false),
         });
       },
     });
@@ -115,10 +123,8 @@ export class LegacyReactivateComponent implements OnInit {
     if (this.starting()) return;
     this.starting.set(true);
     this.error.set(null);
-    const floor = this.purchaseAmount();
     this.legacyClub.startReactivate().subscribe({
       next: () => {
-        if (floor > 0) this.cart.setReactivateFloor(floor);
         this.starting.set(false);
         void this.router.navigate(['/legacy/shop']);
       },

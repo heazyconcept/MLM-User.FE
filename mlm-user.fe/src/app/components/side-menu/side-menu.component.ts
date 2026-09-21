@@ -207,6 +207,82 @@ export class SideMenuComponent implements OnInit {
     };
   }
 
+  private legacyClubMenuItem(): MenuItem {
+    const isActive = this.legacyClubService.status() === 'ACTIVE';
+    const me = this.legacyClubService.me();
+    const canUpgrade = isActive && (me?.upgradeTargets?.length ?? 0) > 0;
+    const canReactivate = isActive && !!me?.canReactivate;
+
+    const children: MenuItem[] = [
+      { label: 'Overview', icon: 'pi pi-home', route: '/legacy', requiresPayment: true },
+      {
+        label: 'Marketplace',
+        icon: 'pi pi-shopping-bag',
+        route: '/legacy/shop',
+        requiresPayment: true,
+      },
+      ...(isActive
+        ? [
+            {
+              label: 'Legacy Account',
+              icon: 'pi pi-wallet',
+              route: '/legacy/cashout',
+              requiresPayment: true,
+            } satisfies MenuItem,
+            {
+              label: '6-Month Cycle',
+              icon: 'pi pi-calendar',
+              route: '/legacy/months',
+              requiresPayment: true,
+            } satisfies MenuItem,
+            {
+              label: 'History',
+              icon: 'pi pi-history',
+              route: '/legacy/history',
+              requiresPayment: true,
+            } satisfies MenuItem,
+          ]
+        : []),
+      {
+        label: 'Legacy Voucher',
+        icon: 'pi pi-ticket',
+        route: '/legacy/voucher',
+        requiresPayment: true,
+      },
+      ...(canUpgrade
+        ? [
+            {
+              label: 'Upgrade package',
+              icon: 'pi pi-arrow-up',
+              route: '/legacy/upgrade',
+              requiresPayment: true,
+            } satisfies MenuItem,
+          ]
+        : []),
+      ...(canReactivate
+        ? [
+            {
+              label: 'Reactivate',
+              icon: 'pi pi-refresh',
+              route: '/legacy/reactivate',
+              requiresPayment: true,
+            } satisfies MenuItem,
+          ]
+        : []),
+    ];
+
+    return {
+      label: 'Legacy Club',
+      icon: 'pi pi-crown',
+      route: '/legacy',
+      requiresPayment: true,
+      children,
+      ...(this.legacyClubService.hasPendingAutoship()
+        ? { badge: this.legacyClubService.pendingAutoshipCount() }
+        : {}),
+    };
+  }
+
   menuSections = computed<MenuSection[]>(() => {
     const currency = this.displayCurrency();
     const cartCount = this.cartItemCount();
@@ -230,19 +306,7 @@ export class SideMenuComponent implements OnInit {
             route: '/marketplace',
             requiresPayment: true,
           },
-          ...(this.legacyClubService.menuVisible()
-            ? [
-                {
-                  label: 'Legacy Club',
-                  icon: 'pi pi-crown',
-                  route: '/legacy',
-                  requiresPayment: true,
-                  ...(this.legacyClubService.hasPendingAutoship()
-                    ? { badge: this.legacyClubService.pendingAutoshipCount() }
-                    : {}),
-                } satisfies MenuItem,
-              ]
-            : []),
+          ...(this.legacyClubService.menuVisible() ? [this.legacyClubMenuItem()] : []),
           {
             label: 'Cart',
             icon: 'pi pi-shopping-cart',
@@ -550,6 +614,12 @@ export class SideMenuComponent implements OnInit {
   isActiveMenuItem(item: MenuItem): boolean {
     if (!item.route) return false;
     const path = this.currentPath();
+
+    // Legacy marketplace: keep highlight on product detail pages
+    if (item.route === '/legacy/shop' && path.startsWith('/legacy/shop')) {
+      return true;
+    }
+
     if (path !== item.route) return false;
 
     const params = new URLSearchParams(this.activeRoute().split('?')[1] ?? '');
