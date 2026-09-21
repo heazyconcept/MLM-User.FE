@@ -18,30 +18,34 @@ import {
   resolveLegacyShopMode,
 } from '../../../core/models/legacy-club.models';
 import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
+import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
+import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
+import { LegacyPanelComponent } from '../components/legacy-panel.component';
 
 const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'];
 
 @Component({
   selector: 'app-legacy-shop',
-  imports: [CommonModule, RouterLink, ButtonModule, SkeletonModule, ProductCardComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ButtonModule,
+    SkeletonModule,
+    ProductCardComponent,
+    LegacyPageShellComponent,
+    LegacyPageHeaderComponent,
+    LegacyPanelComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-mlm-background">
-      <main class="py-8 pb-28">
-        <div class="mx-auto max-w-7xl space-y-5 px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <a routerLink="/legacy" class="text-sm font-medium text-mlm-primary hover:underline">← Legacy Club</a>
-          <h1 class="mt-1 text-2xl font-bold text-mlm-text">Legacy Club marketplace</h1>
-          @if (modeChip(); as chip) {
-            <span
-              class="mt-2 inline-flex rounded-full bg-mlm-primary/10 px-2.5 py-0.5 text-xs font-semibold text-mlm-primary"
-            >
-              {{ chip }}
-            </span>
-          }
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
+    <app-legacy-page-shell>
+      <app-legacy-page-header
+        title="Legacy Club marketplace"
+        [subtitle]="modeChip() ?? 'Browse products for your Legacy purchase'"
+        backLink="/legacy"
+        backLabel="Legacy Club"
+      >
+        <div actions class="flex flex-wrap items-center gap-2">
           @if (canCancelIntent()) {
             <p-button
               label="Cancel"
@@ -55,18 +59,20 @@ const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'
             <p-button label="Fund Legacy voucher" [outlined]="true" size="small" />
           </a>
         </div>
-      </div>
+      </app-legacy-page-header>
 
       @if (closedMessage()) {
-        <div class="rounded-2xl border border-gray-100 bg-white p-8 text-center">
-          <p class="font-semibold text-mlm-text">{{ closedMessage() }}</p>
-          <a routerLink="/legacy" class="mt-5 inline-block">
-            <p-button label="Back to Legacy Club" />
-          </a>
-        </div>
+        <app-legacy-panel>
+          <div class="py-6 text-center">
+            <p class="font-semibold text-mlm-text">{{ closedMessage() }}</p>
+            <a routerLink="/legacy" class="mt-5 inline-block">
+              <p-button label="Back to Legacy Club" />
+            </a>
+          </div>
+        </app-legacy-panel>
       } @else {
         <div
-          class="sticky top-0 z-10 rounded-2xl border border-gray-100 bg-white/95 px-5 py-4 shadow-sm backdrop-blur"
+          class="sticky top-0 z-10 rounded-xl border border-gray-200 bg-white/95 px-5 py-4 shadow-sm backdrop-blur"
         >
           <div class="flex items-center justify-between gap-3 text-sm">
             <span class="font-medium text-mlm-text">{{ stickyLabel() }}</span>
@@ -87,15 +93,15 @@ const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'
         </div>
 
         @if (loading()) {
-          <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             @for (_ of [1, 2, 3, 4, 5, 6, 7, 8]; track $index) {
-              <p-skeleton height="16rem" styleClass="rounded-2xl" />
+              <p-skeleton height="16rem" styleClass="rounded-xl" />
             }
           </div>
         } @else if (products().length === 0) {
           <p class="py-12 text-center text-mlm-secondary">No products available. Please try again later.</p>
         } @else {
-          <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             @for (product of products(); track product.id) {
               <app-product-card
                 [product]="product"
@@ -106,9 +112,7 @@ const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'
           </div>
         }
       }
-        </div>
-      </main>
-    </div>
+    </app-legacy-page-shell>
   `,
 })
 export class LegacyShopComponent implements OnInit {

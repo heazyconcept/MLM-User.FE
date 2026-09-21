@@ -18,26 +18,40 @@ import {
   LegacyShopMode,
   resolveLegacyShopMode,
 } from '../../../core/models/legacy-club.models';
+import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
+import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
+import { LegacyPanelComponent } from '../components/legacy-panel.component';
 
 const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'];
 
 @Component({
   selector: 'app-legacy-checkout',
-  imports: [CommonModule, RouterLink, ButtonModule, OrderPreviewComponent],
+  imports: [
+    CommonModule,
+    RouterLink,
+    ButtonModule,
+    OrderPreviewComponent,
+    LegacyPageShellComponent,
+    LegacyPageHeaderComponent,
+    LegacyPanelComponent,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen bg-mlm-background">
-      <main class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
-      <a routerLink="/legacy/cart" class="text-sm font-medium text-mlm-primary hover:underline">← Legacy cart</a>
-      <h1 class="text-2xl font-bold text-mlm-text">{{ pageTitle() }}</h1>
+    <app-legacy-page-shell>
+      <app-legacy-page-header
+        [title]="pageTitle()"
+        subtitle="Pay with your Legacy product voucher only."
+        backLink="/legacy/cart"
+        backLabel="Legacy cart"
+      />
 
       @if (isImpersonating()) {
-        <p class="rounded-xl bg-gray-100 px-4 py-3 text-sm text-gray-700">
-          Checkout is disabled during impersonation.
-        </p>
+        <app-legacy-panel>
+          <p class="text-sm text-mlm-secondary">Checkout is disabled during impersonation.</p>
+        </app-legacy-panel>
       } @else {
-        <div class="rounded-2xl border border-gray-100 bg-white p-6 sm:p-7 space-y-2 text-sm text-mlm-text">
+        <app-legacy-panel title="Order details">
+          <div class="space-y-2 text-sm text-mlm-text">
           @if (shopMode() === 'JOIN' && pending(); as p) {
             <p>
               <span class="font-semibold">Package:</span> {{ p.package }}
@@ -89,7 +103,8 @@ const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'
             }
           </p>
           <p class="font-semibold">Cart total: {{ money(cart.subtotal()) }}</p>
-        </div>
+          </div>
+        </app-legacy-panel>
 
         @if (pendingOrderData(); as orderData) {
           <app-order-preview
@@ -99,9 +114,7 @@ const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'
           />
         }
       }
-        </div>
-      </main>
-    </div>
+    </app-legacy-page-shell>
   `,
 })
 export class LegacyCheckoutComponent implements OnInit {
