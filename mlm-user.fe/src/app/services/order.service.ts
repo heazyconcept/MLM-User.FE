@@ -5,7 +5,8 @@ import { map, catchError, tap } from 'rxjs/operators';
 import { formatMerchantUsernameLabel } from '../core/utils/merchant-display.util';
 
 export type OrderFulfilmentMethod = 'pickup' | 'delivery';
-export type OrderWalletType = 'cash' | 'voucher' | 'autoship';
+export type OrderWalletType = 'cash' | 'voucher' | 'autoship' | 'LEGACY_VOUCHER';
+export type ShopChannel = 'NETWORK' | 'LEGACY';
 
 export type OrderStatus =
   | 'Pending'
@@ -70,6 +71,8 @@ export interface CheckoutBatchPayload {
   paymentMethod: 'WALLET';
   idempotencyKey?: string;
   groups: CheckoutGroup[];
+  /** Omit for network shop. Legacy Club must send `LEGACY`. */
+  channel?: ShopChannel;
 }
 
 export interface CheckoutOrderSummary {
@@ -242,7 +245,8 @@ export class OrderService {
     walletType?: OrderWalletType,
   ): Observable<PayCheckoutWalletResponse> {
     const normalizedWalletType =
-      walletType === 'voucher' ? 'VOUCHER'
+      walletType === 'LEGACY_VOUCHER' ? 'LEGACY_VOUCHER'
+      : walletType === 'voucher' ? 'VOUCHER'
       : walletType === 'autoship' ? 'AUTOSHIP'
       : 'CASH';
 
@@ -253,7 +257,8 @@ export class OrderService {
 
   payOrderWithWallet(id: string, walletType?: OrderWalletType): Observable<void> {
     const normalizedWalletType =
-      walletType === 'voucher' ? 'VOUCHER'
+      walletType === 'LEGACY_VOUCHER' ? 'LEGACY_VOUCHER'
+      : walletType === 'voucher' ? 'VOUCHER'
       : walletType === 'autoship' ? 'AUTOSHIP'
       : 'CASH';
 

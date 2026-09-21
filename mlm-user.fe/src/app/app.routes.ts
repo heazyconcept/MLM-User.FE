@@ -639,4 +639,133 @@ export const routes: Routes = [
       },
     ],
   },
+  {
+    path: 'legacy',
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-home/legacy-home.component').then(
+            (m) => m.LegacyHomeComponent,
+          ),
+        data: { title: 'Legacy Club' },
+      },
+      {
+        path: 'packages',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-packages/legacy-packages.component').then(
+            (m) => m.LegacyPackagesComponent,
+          ),
+        data: { title: 'Legacy Packages' },
+      },
+      {
+        path: 'join',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-join/legacy-join.component').then(
+            (m) => m.LegacyJoinComponent,
+          ),
+        data: { title: 'Join Legacy Club' },
+      },
+      {
+        path: 'voucher',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-voucher/legacy-voucher.component').then(
+            (m) => m.LegacyVoucherComponent,
+          ),
+        data: { title: 'Legacy Product Voucher' },
+      },
+      {
+        path: 'shop',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-shop/legacy-shop.component').then(
+            (m) => m.LegacyShopComponent,
+          ),
+        data: { title: 'Legacy Club Marketplace' },
+      },
+      {
+        path: 'shop/product/:id',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-product-detail/legacy-product-detail.component').then(
+            (m) => m.LegacyProductDetailComponent,
+          ),
+        data: { title: 'Legacy Product' },
+      },
+      {
+        path: 'cart',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-cart/legacy-cart.component').then(
+            (m) => m.LegacyCartComponent,
+          ),
+        data: { title: 'Legacy Cart' },
+      },
+      {
+        path: 'checkout',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-checkout/legacy-checkout.component').then(
+            (m) => m.LegacyCheckoutComponent,
+          ),
+        data: { title: 'Legacy Club Checkout' },
+      },
+      {
+        path: 'success',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-success/legacy-success.component').then(
+            (m) => m.LegacySuccessComponent,
+          ),
+        data: { title: 'Welcome to Legacy Club' },
+      },
+      {
+        path: 'successlines',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-successlines/legacy-successlines.component').then(
+            (m) => m.LegacySuccesslinesComponent,
+          ),
+        data: { title: 'My Direct Successlines' },
+      },
+      {
+        path: 'cashout',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-cashout/legacy-cashout.component').then(
+            (m) => m.LegacyCashoutComponent,
+          ),
+        data: { title: 'Legacy Account' },
+      },
+      {
+        path: 'months',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-months/legacy-months.component').then(
+            (m) => m.LegacyMonthsComponent,
+          ),
+        data: { title: 'Legacy 6-Month Cycle' },
+      },
+      {
+        path: 'upgrade',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-upgrade/legacy-upgrade.component').then(
+            (m) => m.LegacyUpgradeComponent,
+          ),
+        data: { title: 'Upgrade Legacy Package' },
+      },
+      {
+        path: 'reactivate',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-reactivate/legacy-reactivate.component').then(
+            (m) => m.LegacyReactivateComponent,
+          ),
+        data: { title: 'Reactivate Legacy Club' },
+      },
+      {
+        path: 'history',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-history/legacy-history.component').then(
+            (m) => m.LegacyHistoryComponent,
+          ),
+        data: { title: 'Legacy History' },
+      },
+    ],
+  },
 ];
