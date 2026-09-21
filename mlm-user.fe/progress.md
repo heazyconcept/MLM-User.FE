@@ -1,6 +1,6 @@
 # API Integration Progress
 
-**Last updated:** September 2026
+**Last updated:** 2026-09-20
 
 | Feature                     | Endpoint                                                  | Status       | Date       | Notes                                                                                                              |
 | --------------------------- | --------------------------------------------------------- | ------------ | ---------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -44,6 +44,21 @@
 | Korapay NGN Gateway          | `provider: KORAPAY` on payment initiate endpoints           | ✅ Completed | 2026-07-19 | NGN picker option on registration, wallet funding, upgrade, merchant fee/upgrade; feature-flagged                  |
 | Consultant Centre Update     | `PATCH /consultants/me`                                    | ✅ Completed | 2026-07-19 | Approved consultants can edit centre details + trainingSchedule on /consultant                                     |
 | Profile complete flag        | `GET /users/me` `isProfileComplete` + `POST /orders/checkout` `PROFILE_INCOMPLETE` | ✅ Completed | 2026-09-01 | Login prompt + checkout gate; maps missing fields; profile save refetches flag                                     |
+| Legacy Club Phase 1 (live)   | `GET /legacy/me`, packages, join, cart `LEGACY`, pay `LEGACY_VOUCHER`, cashout | ✅ Completed | 2026-09-20 | `useLegacyClubMocks: false` in development; bank-aware withdraw; live CASH fund voucher                          |
+| Legacy packages              | `GET /legacy/packages`                                     | ✅ Completed | 2026-09-20 | Base/increased monthly fields accepted when present                                                                |
+| Legacy me / feature detect   | `GET /legacy/me`                                           | ✅ Completed | 2026-09-20 | Menu gated; AUTO vs MANUAL; Phase 2/3 fields when present                                                          |
+| Legacy sponsor validate      | `POST /legacy/sponsors/validate`                           | ✅ Completed | 2026-09-20 | MANUAL only; SPONSOR_* errors                                                                                      |
+| Legacy join start            | `POST /legacy/join/start`                                  | ✅ Completed | 2026-09-20 | PENDING_JOIN + Legacy voucher                                                                                      |
+| Legacy cart                  | `GET/PUT/DELETE /cart?channel=LEGACY`                      | ✅ Completed | 2026-09-20 | Separate from network cart; shopMode floors                                                                        |
+| Legacy checkout pay          | `POST /orders/checkout` + `pay-wallet` `LEGACY_VOUCHER`    | ✅ Completed | 2026-09-20 | Join / Autoship / Upgrade / Reactivate                                                                             |
+| Legacy voucher fund          | `POST /wallets/transfer` CASH → `LEGACY_VOUCHER`           | ✅ Completed | 2026-09-20 | Shows live CASH balance                                                                                            |
+| Legacy cashout / transfer    | `GET/POST /legacy/cashout*`                                | ✅ Completed | 2026-09-20 | Bank + PIN withdraw; unlocked with zero Successlines                                                               |
+| Legacy successlines          | `GET /legacy/successlines`                                 | ✅ Completed | 2026-09-20 | Username list only                                                                                                 |
+| Legacy months (Phase 2)      | `GET /legacy/months`                                       | ✅ Completed | 2026-09-20 | Base/Increased chips; priorPending (Phase 3)                                                                       |
+| Legacy Autoship shop         | cart/checkout when `shopMode=AUTOSHIP`                     | ✅ Completed | 2026-09-20 | Reopens ACTIVE shop; LEGACY_VOUCHER only                                                                           |
+| Legacy upgrade (Phase 3)     | quote/start/cancel                                         | ✅ Completed | 2026-09-20 | `/legacy/upgrade` + shop floor                                                                                     |
+| Legacy reactivate (Phase 3)  | start/cancel                                               | ✅ Completed | 2026-09-20 | Keep increased monthly copy when qualified                                                                         |
+| Legacy history (Phase 3)     | `GET /legacy/history`                                      | ✅ Completed | 2026-09-20 | JOIN / UPGRADE / REACTIVATE / SEED                                                                                 |
 
 ---
 
@@ -52,3 +67,4 @@
 - **Referral code:** Prefilled from `?ref=` query param, `/ref/:code` (localStorage), or `environment.defaultReferralCode`.
 - **GET /wallets:** Returns 403 for unactivated users. Activation-wallet page skips `fetchWallets()` when `!isPaid()`; CASH shows 0.
 - **Add funds:** Activation-wallet links to `/payments/fund` when CASH is 0. Wallet funding credits CASH; user must transfer CASH → REGISTRATION then Activate.
+- **Legacy Club:** Live APIs (`useLegacyClubMocks: false`). Do not mix Legacy cart/voucher with network Marketplace. Specs still mock via `vi.mock`.

@@ -7,6 +7,7 @@ import { resolveWalletErrorMessage } from '../core/utils/wallet-error.util';
 
 // API response types (OpenAPI has no schema; infer from API.md)
 export type WalletType = 'CASH' | 'VOUCHER' | 'AUTOSHIP' | 'REGISTRATION';
+export type TransferToWalletType = 'REGISTRATION' | 'VOUCHER' | 'AUTOSHIP' | 'CASH' | 'LEGACY_VOUCHER';
 
 export interface AutoshipStatus {
   nextAutoshipDate: string | null;
@@ -19,7 +20,7 @@ export interface AutoshipStatus {
 
 export interface TransferRequest {
   fromWalletType: 'CASH' | 'REGISTRATION';
-  toWalletType: 'REGISTRATION' | 'VOUCHER' | 'AUTOSHIP' | 'CASH';
+  toWalletType: TransferToWalletType;
   amount: number;
   currency: 'NGN' | 'USD';
 }
@@ -451,12 +452,14 @@ export class WalletService {
         const targetLabel = request.toWalletType === 'AUTOSHIP' ? 'Autoship'
           : request.toWalletType === 'VOUCHER' ? 'Voucher'
           : request.toWalletType === 'REGISTRATION' ? 'Registration'
+          : request.toWalletType === 'LEGACY_VOUCHER' ? 'Legacy product voucher'
           : 'Cash';
+        const successPath = request.toWalletType === 'LEGACY_VOUCHER' ? '/legacy/voucher' : '/wallet';
         this.modalService.open(
           'success',
           'Transfer Successful',
           `${sym}${request.amount.toLocaleString()} has been moved from your ${sourceLabel} wallet to your ${targetLabel} wallet.`,
-          '/wallet'
+          successPath
         );
         // Refresh wallets to show updated balances
         this.fetchWallets().subscribe();
