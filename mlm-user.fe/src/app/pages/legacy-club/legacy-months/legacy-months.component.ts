@@ -17,6 +17,12 @@ import {
   LegacyRateTier,
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
+import {
+  cyclePeriodCount,
+  isWeeklyCycle,
+  periodColumnHeader,
+  periodLabel,
+} from '../../../core/utils/legacy-cycle.util';
 import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
 import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
@@ -36,7 +42,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
   template: `
     <app-legacy-page-shell>
       <app-legacy-page-header
-        title="Your 6-month cycle"
+        [title]="pageTitle()"
         [subtitle]="cycleSubtitle()"
         backLink="/legacy"
         backLabel="Legacy Club"
@@ -61,7 +67,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
           </app-legacy-panel>
         }
 
-        @if (firstMonthHint(); as hint) {
+        @if (firstPeriodHint(); as hint) {
           <p class="text-sm text-mlm-secondary">{{ hint }}</p>
         }
 
@@ -69,9 +75,13 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
           <table class="min-w-full text-left text-sm">
             <thead class="border-b border-gray-100 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th class="px-5 py-4 font-semibold sm:px-6">Month</th>
+                <th class="px-5 py-4 font-semibold sm:px-6">{{ columnHeader() }}</th>
                 <th class="px-5 py-4 font-semibold sm:px-6">Due</th>
                 <th class="px-5 py-4 font-semibold sm:px-6">Amount</th>
+                @if (showSplitColumns()) {
+                  <th class="px-5 py-4 font-semibold sm:px-6">Cashout</th>
+                  <th class="px-5 py-4 font-semibold sm:px-6">Voucher (net)</th>
+                }
                 <th class="px-5 py-4 font-semibold sm:px-6">Rate</th>
                 <th class="px-5 py-4 font-semibold sm:px-6">Status</th>
               </tr>
@@ -79,9 +89,19 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
             <tbody>
               @for (row of months(); track row.periodIndex) {
                 <tr class="border-b border-gray-50 last:border-0">
-                  <td class="px-4 py-3 font-medium text-gray-900">{{ row.periodIndex }}</td>
+                  <td class="px-4 py-3 font-medium text-gray-900">
+                    {{ rowPeriodLabel(row.periodIndex) }}
+                  </td>
                   <td class="px-4 py-3 text-gray-700">{{ row.dueAt | date: 'mediumDate' }}</td>
                   <td class="px-4 py-3 font-semibold text-gray-900">{{ money(row.amount) }}</td>
+                  @if (showSplitColumns()) {
+                    <td class="px-4 py-3 text-gray-700">
+                      {{ row.cashoutAmount != null ? money(row.cashoutAmount) : '—' }}
+                    </td>
+                    <td class="px-4 py-3 text-gray-700">
+                      {{ row.voucherNet != null ? money(row.voucherNet) : '—' }}
+                    </td>
+                  }
                   <td class="px-4 py-3">
                     <span
                       class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold"
@@ -110,13 +130,19 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
 
         @if (priorPending().length > 0) {
           <div class="space-y-3">
-            <h2 class="text-lg font-semibold text-gray-900">Waiting from previous cycle</h2>
+            <h2 class="text-lg font-semibold text-gray-900">
+              Waiting weeks from an old cycle
+            </h2>
+            <p class="text-sm text-mlm-secondary">
+              These are catch-up periods from before your upgrade. They drop automatically — you do
+              not need to place an order.
+            </p>
             <div class="overflow-x-auto rounded-2xl border border-amber-100 bg-amber-50/40 shadow-sm">
               <table class="min-w-full text-left text-sm">
                 <thead class="border-b border-amber-100 text-xs uppercase tracking-wide text-amber-800">
                   <tr>
                     <th class="px-4 py-3 font-semibold">Package</th>
-                    <th class="px-4 py-3 font-semibold">Month</th>
+                    <th class="px-4 py-3 font-semibold">{{ columnHeader() }}</th>
                     <th class="px-4 py-3 font-semibold">Due</th>
                     <th class="px-4 py-3 font-semibold">Amount</th>
                     <th class="px-4 py-3 font-semibold">Rate</th>
@@ -124,10 +150,13 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
                   </tr>
                 </thead>
                 <tbody>
-                  @for (row of priorPending(); track row.cyclePackage + '-' + row.periodIndex + '-' + row.dueAt) {
+                  @for (
+                    row of priorPending();
+                    track row.cyclePackage + '-' + row.periodIndex + '-' + row.dueAt
+                  ) {
                     <tr class="border-b border-amber-50 last:border-0">
                       <td class="px-4 py-3 font-medium text-gray-900">{{ row.cyclePackage }}</td>
-                      <td class="px-4 py-3 text-gray-700">{{ row.periodIndex }}</td>
+                      <td class="px-4 py-3 text-gray-700">{{ rowPeriodLabel(row.periodIndex) }}</td>
                       <td class="px-4 py-3 text-gray-700">{{ row.dueAt | date: 'mediumDate' }}</td>
                       <td class="px-4 py-3 font-semibold text-gray-900">{{ money(row.amount) }}</td>
                       <td class="px-4 py-3">
@@ -158,19 +187,15 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
           </div>
         }
 
-        <app-legacy-panel>
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p class="text-sm text-mlm-secondary">Pending total</p>
-              <p class="text-lg font-bold text-mlm-text">{{ money(pendingTotal()) }}</p>
-            </div>
-            @if (shopMode() === 'AUTOSHIP') {
-              <a routerLink="/legacy/shop">
-                <p-button label="Do Autoship" />
-              </a>
-            }
-          </div>
-        </app-legacy-panel>
+        @if (pendingTotal() > 0) {
+          <app-legacy-panel>
+            <p class="text-sm text-mlm-secondary">Processing total</p>
+            <p class="text-lg font-bold text-mlm-text">{{ money(pendingTotal()) }}</p>
+            <p class="mt-1 text-xs text-mlm-secondary">
+              These periods are due and will drop automatically.
+            </p>
+          </app-legacy-panel>
+        }
       }
     </app-legacy-page-shell>
   `,
@@ -182,12 +207,13 @@ export class LegacyMonthsComponent implements OnInit {
   loading = signal(true);
   error = signal<string | null>(null);
   data = signal<LegacyMonthsResponse | null>(null);
-  shopMode = this.legacyClub.shopMode;
 
   months = computed(() => this.data()?.months ?? []);
   priorPending = computed(() => this.data()?.priorPending ?? []);
 
   pendingTotal = computed(() => {
+    const fromApi = this.data()?.pendingTotal;
+    if (typeof fromApi === 'number') return fromApi;
     const current = this.months()
       .filter((m) => m.status === 'PENDING')
       .reduce((sum, m) => sum + m.amount, 0);
@@ -196,6 +222,16 @@ export class LegacyMonthsComponent implements OnInit {
       .reduce((sum, m) => sum + m.amount, 0);
     return current + prior;
   });
+
+  showSplitColumns = computed(() =>
+    this.months().some((m) => m.cashoutAmount != null || m.voucherNet != null),
+  );
+
+  pageTitle = computed(() =>
+    isWeeklyCycle(this.data()) ? 'Your weekly cycle' : 'Your cycle',
+  );
+
+  columnHeader = computed(() => periodColumnHeader(this.data()));
 
   ngOnInit(): void {
     this.legacyClub.loadMe().subscribe({
@@ -210,7 +246,7 @@ export class LegacyMonthsComponent implements OnInit {
             this.loading.set(false);
           },
           error: () => {
-            this.error.set('Could not load your 6-month cycle.');
+            this.error.set('Could not load your weekly cycle.');
             this.loading.set(false);
           },
         });
@@ -219,11 +255,23 @@ export class LegacyMonthsComponent implements OnInit {
   }
 
   cycleSubtitle(): string {
-    const started = this.data()?.cycleStartedAt;
-    if (started) {
-      return `This cycle, from ${new Date(started).toLocaleDateString(undefined, { dateStyle: 'medium' })}. Each month is 30 days.`;
+    const data = this.data();
+    const started = data?.cycleStartedAt;
+    const total = cyclePeriodCount(data);
+    if (isWeeklyCycle(data)) {
+      const base = started
+        ? `This cycle, from ${new Date(started).toLocaleDateString(undefined, { dateStyle: 'medium' })}.`
+        : '';
+      return `${base} ${total} weeks · every 7 days.`.trim();
     }
-    return 'Each month is 30 days.';
+    if (started) {
+      return `This cycle, from ${new Date(started).toLocaleDateString(undefined, { dateStyle: 'medium' })}.`;
+    }
+    return '';
+  }
+
+  rowPeriodLabel(index: number): string {
+    return periodLabel(index, this.data());
   }
 
   money(amount: number): string {
@@ -237,11 +285,11 @@ export class LegacyMonthsComponent implements OnInit {
   statusLabel(status: LegacyMonthStatus): string {
     switch (status) {
       case 'PENDING':
-        return 'Waiting for Autoship';
+        return 'Processing';
       case 'DROPPED':
-        return 'In Legacy account';
+        return 'Paid';
       case 'SCHEDULED':
-        return 'Not due yet';
+        return 'Scheduled';
       default: {
         const _exhaustive: never = status;
         return _exhaustive;
@@ -267,10 +315,10 @@ export class LegacyMonthsComponent implements OnInit {
   qualifyBanner(): string | null {
     const q = this.data()?.monthlyQualify ?? this.legacyClub.me()?.monthlyQualify;
     if (!q?.isQualified) return null;
-    return 'Future months use the increased commission. Months already waiting keep their amount.';
+    return 'You now earn the increased weekly rate. Future weeks use the increased amount.';
   }
 
-  firstMonthHint(): string | null {
+  firstPeriodHint(): string | null {
     const months = this.months();
     if (months.length === 0) return null;
     const first = months.find((m) => m.periodIndex === 1) ?? months[0];
@@ -278,6 +326,7 @@ export class LegacyMonthsComponent implements OnInit {
     const now = Date.now();
     const due = new Date(first.dueAt).getTime();
     if (Number.isNaN(due) || due <= now) return null;
-    return `Your first monthly is due on ${new Date(first.dueAt).toLocaleDateString()}. Instant is already in your Legacy account.`;
+    const label = isWeeklyCycle(this.data()) ? 'first weekly' : 'first period';
+    return `Your ${label} is due on ${new Date(first.dueAt).toLocaleDateString()}. Instant is already in your Legacy account.`;
   }
 }

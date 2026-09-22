@@ -12,9 +12,11 @@ import {
   LegacyJoinStartRequest,
   LegacyMe,
   LegacyMemberLookup,
+  LegacyMonthRow,
   LegacyMonthsResponse,
   LegacyPackageCode,
   LegacyPackagesResponse,
+  LegacyPriorPendingMonth,
   LegacySponsorValidateResponse,
   LegacySuccesslinesResponse,
   LegacyUpgradeQuote,
@@ -27,6 +29,7 @@ import {
   legacyClubMockStore,
 } from '../core/mocks/legacy-club.mock';
 import { LEGACY_CLUB_USE_MOCKS } from '../core/tokens/legacy-club.tokens';
+import { cyclePeriodCount, isWeeklyCycle } from '../core/utils/legacy-cycle.util';
 import { ApiService } from './api.service';
 import { UserService } from './user.service';
 
@@ -86,8 +89,14 @@ export class LegacyClubService {
 
   readonly status = computed(() => this.meState()?.status ?? null);
   readonly shopMode = computed(() => resolveLegacyShopMode(this.meState()));
-  readonly pendingAutoshipCount = computed(() => this.meState()?.cycle?.pendingCount ?? 0);
-  readonly hasPendingAutoship = computed(() => this.pendingAutoshipCount() > 0);
+  /** Weeks (or months) issued so far — for side-menu progress badge. */
+  readonly cycleIssuedCount = computed(() => this.meState()?.cycle?.issuedCount ?? 0);
+  readonly cyclePeriodTotal = computed(() => cyclePeriodCount(this.meState()?.cycle));
+  readonly hasActiveCycle = computed(() => {
+    const cycle = this.meState()?.cycle;
+    return !!cycle && !cycle.isCycleComplete;
+  });
+  readonly isWeeklyCycle = computed(() => isWeeklyCycle(this.meState()?.cycle));
 
   constructor() {
     effect(() => {
@@ -286,15 +295,10 @@ export class LegacyClubService {
 
   getMonths(): Observable<LegacyMonthsResponse> {
     if (this.useMocks) {
-      return of({
-        currency: 'NGN',
-        cycleMonths: 6,
-        months: [],
-        priorPending: [],
-      });
+      return of(this.buildMockMonthsResponse());
     }
     return this.api.get<unknown>('legacy/months').pipe(
-      map((raw) => unwrapData<LegacyMonthsResponse>(raw)),
+      map((raw) => this.mapMonthsResponse(unwrapData<Record<string, unknown>>(raw))),
       catchError((err) => throwError(() => mapHttpErrorCatch(err))),
     );
   }
@@ -356,6 +360,95 @@ export class LegacyClubService {
     if (!this.useMocks) return;
     legacyClubMockStore.reset(options);
     this.meState.set(null);
+  }
+
+  private buildMockMonthsResponse(): LegacyMonthsResponse {
+    const me = this.meState();
+    const cycle = me?.cycle ?? null;
+    const currency = me?.currency ?? 'NGN';
+    const cycleMonths = cycle?.cycleMonths ?? 6;
+    const cycleWeeks = cycle?.cycleWeeks ?? 24;
+    const startedAt = cycle?.startedAt ?? new Date().toISOString();
+    const weeks = cycleWeeks;
+    const amount = cycle?.nextDueAmount ?? 7500;
+    const cashoutAmount = cycle?.nextDueCashoutAmount ?? 5000;
+    const voucherNet = cycle?.nextDueVoucherNet ?? 2250;
+    const voucherGross = Math.round(voucherNet / 0.9);
+    const voucherFee = voucherGross - voucherNet;
+    const issued = cycle?.issuedCount ?? 0;
+    const months: LegacyMonthRow[] = Array.from({ length: weeks }, (_, i) => {
+      const periodIndex = i + 1;
+      const dueAt = new Date(
+        new Date(startedAt).getTime() + periodIndex * 7 * 24 * 60 * 60 * 1000,
+      ).toISOString();
+      const dropped = periodIndex <= issued;
+      return {
+        periodIndex,
+        dueAt,
+        amount,
+        cashoutAmount,
+        voucherGross,
+        voucherFee,
+        voucherNet,
+        rateTier: cycle?.nextDueRateTier ?? 'BASE',
+        status: dropped ? 'DROPPED' : 'SCHEDULED',
+        droppedAt: dropped ? dueAt : null,
+        autoshipOrderId: null,
+      };
+    });
+    return {
+      currency,
+      cycleMonths,
+      cycleWeeks,
+      cycleStartedAt: startedAt,
+      pendingTotal: 0,
+      monthlyQualify: me?.monthlyQualify ?? null,
+      months,
+      priorPending: [],
+    };
+  }
+
+  private mapMonthsResponse(raw: Record<string, unknown>): LegacyMonthsResponse {
+    const monthsRaw = Array.isArray(raw['months']) ? (raw['months'] as Record<string, unknown>[]) : [];
+    const priorRaw = Array.isArray(raw['priorPending'])
+      ? (raw['priorPending'] as Record<string, unknown>[])
+      : [];
+
+    const months: LegacyMonthRow[] = monthsRaw.map((row) => ({
+      periodIndex: Number(row['periodIndex'] ?? 0),
+      dueAt: String(row['dueAt'] ?? ''),
+      amount: Number(row['amount'] ?? 0),
+      cashoutAmount:
+        row['cashoutAmount'] != null ? Number(row['cashoutAmount']) : undefined,
+      voucherGross: row['voucherGross'] != null ? Number(row['voucherGross']) : undefined,
+      voucherFee: row['voucherFee'] != null ? Number(row['voucherFee']) : undefined,
+      voucherNet: row['voucherNet'] != null ? Number(row['voucherNet']) : undefined,
+      rateTier: (row['rateTier'] as LegacyMonthRow['rateTier']) ?? 'BASE',
+      status: (row['status'] as LegacyMonthRow['status']) ?? 'SCHEDULED',
+      droppedAt: (row['droppedAt'] as string | null) ?? null,
+      autoshipOrderId: (row['autoshipOrderId'] as string | null) ?? null,
+    }));
+
+    const priorPending: LegacyPriorPendingMonth[] = priorRaw.map((row) => ({
+      cyclePackage: row['cyclePackage'] as LegacyPriorPendingMonth['cyclePackage'],
+      periodIndex: Number(row['periodIndex'] ?? 0),
+      amount: Number(row['amount'] ?? 0),
+      rateTier: (row['rateTier'] as LegacyPriorPendingMonth['rateTier']) ?? 'BASE',
+      dueAt: String(row['dueAt'] ?? ''),
+      status: (row['status'] as LegacyPriorPendingMonth['status']) ?? 'PENDING',
+    }));
+
+    return {
+      currency: (raw['currency'] as LegacyMonthsResponse['currency']) ?? 'NGN',
+      cycleMonths: Number(raw['cycleMonths'] ?? 6),
+      cycleWeeks:
+        raw['cycleWeeks'] != null ? Number(raw['cycleWeeks']) : undefined,
+      cycleStartedAt: raw['cycleStartedAt'] as string | undefined,
+      pendingTotal: raw['pendingTotal'] != null ? Number(raw['pendingTotal']) : undefined,
+      monthlyQualify: (raw['monthlyQualify'] as LegacyMonthsResponse['monthlyQualify']) ?? null,
+      months,
+      priorPending,
+    };
   }
 }
 

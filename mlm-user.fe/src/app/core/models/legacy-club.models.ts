@@ -73,12 +73,18 @@ export interface LegacyPendingJoin {
 export interface LegacyCycle {
   startedAt: string;
   cycleMonths: number;
+  /** Weekly model: 24 weeks (6 × 4). Absent on monthly-only backends. */
+  cycleWeeks?: number;
   issuedCount: number;
   droppedCount: number;
   pendingCount: number;
   pendingAmount: number;
   nextDueAt: string | null;
   nextDueAmount: number;
+  /** Weekly cashout slice of next due (hide when absent). */
+  nextDueCashoutAmount?: number;
+  /** Weekly voucher net of next due after 10% fee (hide when absent). */
+  nextDueVoucherNet?: number;
   nextDueRateTier: LegacyRateTier;
   isCycleComplete: boolean;
 }
@@ -92,6 +98,8 @@ export interface LegacyMonthlyQualify {
 
 export interface LegacyAutoship {
   requiredAmount: number;
+  /** Weekly Autoship slice — display helper only; not a checkout floor. */
+  weeklyAutoshipAmount?: number;
   lastAutoshipAt: string | null;
   shopMode: LegacyShopMode;
 }
@@ -220,9 +228,15 @@ export interface LegacyMonthRow {
   periodIndex: number;
   dueAt: string;
   amount: number;
+  /** Weekly split — hide column when absent. */
+  cashoutAmount?: number;
+  voucherGross?: number;
+  voucherFee?: number;
+  voucherNet?: number;
   rateTier: LegacyRateTier;
   status: LegacyMonthStatus;
   droppedAt: string | null;
+  /** Deprecated for release logic; may still arrive from older backends. */
   autoshipOrderId: string | null;
 }
 
@@ -238,7 +252,10 @@ export interface LegacyPriorPendingMonth {
 export interface LegacyMonthsResponse {
   currency: LegacyCurrency;
   cycleMonths: number;
+  /** When present, UI labels periods as weeks. */
+  cycleWeeks?: number;
   cycleStartedAt?: string;
+  pendingTotal?: number;
   monthlyQualify?: LegacyMonthlyQualify | null;
   months: LegacyMonthRow[];
   priorPending?: LegacyPriorPendingMonth[];
@@ -311,4 +328,13 @@ export function packageMonthlyDisplay(pkg: LegacyPackage): {
   const increased = pkg.monthlyCommissionIncreased ?? pkg.monthlyCommission;
   const base = pkg.monthlyCommissionBase ?? pkg.monthlyCommission;
   return { base, increased };
+}
+
+/** Weekly preview from monthly flyer (backend ÷ 4). */
+export function packageWeeklyDisplay(pkg: LegacyPackage): {
+  base: number;
+  increased: number;
+} {
+  const { base, increased } = packageMonthlyDisplay(pkg);
+  return { base: base / 4, increased: increased / 4 };
 }

@@ -55,8 +55,9 @@ export class LegacySuccessComponent implements OnInit {
     const intent = this.me()?.intent;
     if (intent === 'UPGRADE') return 'Upgrade complete';
     if (intent === 'REACTIVATE') return 'Welcome back to Legacy Club';
-    if (this.me()?.status === 'ACTIVE' && resolveLegacyShopMode(this.me()) === 'AUTOSHIP') {
-      return 'Autoship paid';
+    const mode = resolveLegacyShopMode(this.me());
+    if (this.me()?.status === 'ACTIVE' && (mode === 'AUTOSHIP' || mode === 'NONE')) {
+      return 'Payment complete';
     }
     return 'Welcome to Legacy Club';
   });
@@ -68,12 +69,9 @@ export class LegacySuccessComponent implements OnInit {
     if (intent === 'UPGRADE' || intent === 'REACTIVATE') {
       return `Instant Membership Commission ${instant} is in your Legacy account. You can cash it out now.`;
     }
-    if (me?.status === 'ACTIVE' && me.cycle && resolveLegacyShopMode(me) !== 'JOIN') {
-      const pending = me.cycle.pendingAmount ?? 0;
-      if (pending === 0 && (me.cycle.droppedCount ?? 0) > 0) {
-        return 'Pending monthly commission has dropped into your Legacy account where available. You can cash out anytime.';
-      }
-      return 'Your Legacy marketplace payment is complete. Pending monthly commission drops into your Legacy account when Autoship qualifies.';
+    const mode = resolveLegacyShopMode(me);
+    if (me?.status === 'ACTIVE' && (mode === 'AUTOSHIP' || mode === 'NONE') && me.cycle) {
+      return 'Your Legacy marketplace payment is complete. Weekly membership commission drops into your Legacy account and voucher automatically every 7 days — shopping does not unlock extra commission.';
     }
     return `Instant Membership Commission ${instant} is in your Legacy account. You can cash it out now.`;
   });
