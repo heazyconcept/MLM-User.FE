@@ -1,13 +1,23 @@
 export type LegacyPackageCode = 'VIP' | 'EXECUTIVE' | 'SUPREME';
-export type LegacyMemberStatus = 'NONE' | 'PENDING_JOIN' | 'ACTIVE';
+export type LegacyMemberStatus =
+  | 'NONE'
+  | 'PENDING_JOIN'
+  | 'ACTIVE'
+  | 'REACTIVATION_DUE'
+  | 'SUSPENDED';
 export type LegacySponsorResolution = 'AUTO' | 'MANUAL';
 export type LegacySponsorSource = 'AUTO' | 'CHOSEN' | 'SEED';
 export type ShopChannel = 'NETWORK' | 'LEGACY';
 export type LegacyCurrency = 'NGN' | 'USD';
 export type LegacyWalletStatus = 'ACTIVE' | 'LOCKED';
 
-/** Phase 2–3 shop mode. Phase 1 backends omit this. */
-export type LegacyShopMode = 'JOIN' | 'AUTOSHIP' | 'UPGRADE' | 'REACTIVATE' | 'NONE';
+/** Product shop gate — orthogonal to membership status. */
+export type LegacyShopMode = 'JOIN' | 'SHOP' | 'NONE';
+/** Legacy shop modes from older backends (mapped to SHOP in resolver). */
+export type LegacyShopModeLegacy = 'AUTOSHIP' | 'UPGRADE' | 'REACTIVATE';
+export type LegacyPaymentPurpose = 'JOIN' | 'UPGRADE' | 'REACTIVATE';
+export type LegacyPaymentMethod = 'REGISTRATION_WALLET' | 'MANUAL_BANK';
+export type LegacyPaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type LegacyRateTier = 'BASE' | 'INCREASED';
 export type LegacyMonthStatus = 'SCHEDULED' | 'PENDING' | 'DROPPED';
 export type LegacyIntent = 'NONE' | 'UPGRADE' | 'REACTIVATE';
@@ -109,9 +119,62 @@ export interface LegacyPriorPendingSummary {
   amount: number;
 }
 
+export interface LegacyLifecycle {
+  status: LegacyMemberStatus;
+  earningEligible: boolean;
+  cashoutEligible: boolean;
+  canReactivate: boolean;
+  startedAt: string | null;
+  earningEndsAt: string | null;
+  suspensionDueAt: string | null;
+  reactivationSecondsRemaining: number;
+}
+
+export interface LegacyPendingPayment {
+  purpose: LegacyPaymentPurpose;
+  status: 'PENDING';
+  paymentRequired: number;
+  paymentMethods: LegacyPaymentMethod[];
+  rejectionReason?: string | null;
+}
+
+export interface LegacyPendingUpgrade {
+  package: LegacyPackageCode;
+  paymentRequired: number;
+}
+
+export interface LegacyJoinPreview {
+  sponsorResolution: LegacySponsorResolution;
+  defaultSponsor: LegacyDefaultSponsor | null;
+  paymentRequired?: number;
+}
+
+export interface LegacyPaymentWalletRequest {
+  purpose: LegacyPaymentPurpose;
+  requestKey: string;
+  pin: string;
+}
+
+export interface LegacyPaymentRecord {
+  id: string;
+  purpose: LegacyPaymentPurpose;
+  status: LegacyPaymentStatus;
+  amount: number;
+  currency: LegacyCurrency;
+  rejectionReason?: string | null;
+  createdAt: string;
+}
+
+export interface LegacyCompanyBankAccount {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+}
+
 export interface LegacyMe {
   status: LegacyMemberStatus;
   currency: LegacyCurrency;
+  lifecycle?: LegacyLifecycle | null;
   sponsorResolution: LegacySponsorResolution;
   defaultSponsor: LegacyDefaultSponsor | null;
   membership: LegacyMembership | null;
@@ -121,13 +184,16 @@ export interface LegacyMe {
   directSuccesslineCount: number;
   minDirectsToIncreaseMonthly: number;
   canCashoutLegacy: boolean;
+  cashoutRestrictionReason?: string | null;
   pendingJoin: LegacyPendingJoin | null;
+  pendingUpgrade?: LegacyPendingUpgrade | null;
+  pendingPayment?: LegacyPendingPayment | null;
   /** Phase 2+ */
   cycle?: LegacyCycle | null;
   monthlyQualify?: LegacyMonthlyQualify | null;
   autoship?: LegacyAutoship | null;
-  /** Phase 3 — may also live on autoship.shopMode in Phase 2 */
-  shopMode?: LegacyShopMode;
+  /** May also live on autoship.shopMode in older backends */
+  shopMode?: LegacyShopMode | LegacyShopModeLegacy;
   intent?: LegacyIntent;
   intentPackage?: LegacyPackageCode | null;
   canReactivate?: boolean;
@@ -193,6 +259,7 @@ export interface LegacyCashoutResponse {
   balance: number;
   walletStatus: LegacyWalletStatus;
   canCashoutLegacy: boolean;
+  cashoutRestrictionReason?: string | null;
   directSuccesslineCount: number;
   items: LegacyCashoutLedgerItem[];
   nextCursor: string | null;
@@ -202,9 +269,6 @@ export interface LegacyCashoutWithdrawRequest {
   amount: number;
   currency: LegacyCurrency;
   pin: string;
-  bankName?: string;
-  accountNumber?: string;
-  accountName?: string;
 }
 
 export interface LegacyCashoutTransferRequest {
@@ -301,24 +365,96 @@ export const LEGACY_ERROR_CODES = {
   SPONSOR_MUST_BE_AUTO: 'SPONSOR_MUST_BE_AUTO',
   PACKAGE_INACTIVE: 'PACKAGE_INACTIVE',
   ALREADY_ACTIVE: 'ALREADY_ACTIVE',
+  LEGACY_ALREADY_ACTIVE: 'LEGACY_ALREADY_ACTIVE',
   REGISTRATION_UNPAID: 'REGISTRATION_UNPAID',
   LEGACY_CART_BELOW_PACKAGE: 'LEGACY_CART_BELOW_PACKAGE',
   LEGACY_JOIN_REQUIRED: 'LEGACY_JOIN_REQUIRED',
   LEGACY_SHOP_JOIN_ONLY: 'LEGACY_SHOP_JOIN_ONLY',
   LEGACY_VOUCHER_REQUIRED: 'LEGACY_VOUCHER_REQUIRED',
+  LEGACY_CASHOUT_LOCKED: 'LEGACY_CASHOUT_LOCKED',
   IMPERSONATION_ACTION_BLOCKED: 'IMPERSONATION_ACTION_BLOCKED',
   PACKAGE_NOT_HIGHER: 'PACKAGE_NOT_HIGHER',
   CYCLE_NOT_COMPLETE: 'CYCLE_NOT_COMPLETE',
   NOT_LEGACY_MEMBER: 'NOT_LEGACY_MEMBER',
   WALLET_LOCKED: 'WALLET_LOCKED',
+  INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
+  DUPLICATE_REQUEST_KEY: 'DUPLICATE_REQUEST_KEY',
 } as const;
+
+function normalizeShopMode(raw: string | undefined): LegacyShopMode {
+  if (!raw) return 'NONE';
+  if (raw === 'SHOP' || raw === 'AUTOSHIP') return 'SHOP';
+  if (raw === 'JOIN') return 'JOIN';
+  if (raw === 'UPGRADE' || raw === 'REACTIVATE') return 'JOIN';
+  return 'NONE';
+}
 
 export function resolveLegacyShopMode(me: LegacyMe | null | undefined): LegacyShopMode {
   if (!me) return 'NONE';
-  if (me.shopMode) return me.shopMode;
-  if (me.autoship?.shopMode) return me.autoship.shopMode;
-  if (me.status === 'PENDING_JOIN') return 'JOIN';
+  if (me.shopMode) return normalizeShopMode(me.shopMode);
+  if (me.autoship?.shopMode) return normalizeShopMode(me.autoship.shopMode);
+  if (me.status === 'PENDING_JOIN' || me.pendingPayment?.purpose === 'JOIN') return 'JOIN';
+  if (me.pendingPayment?.purpose === 'UPGRADE' || me.pendingPayment?.purpose === 'REACTIVATE') {
+    return 'JOIN';
+  }
+  if (me.pendingUpgrade) return 'JOIN';
   return 'NONE';
+}
+
+export function isLegacyMember(me: LegacyMe | null | undefined): boolean {
+  if (!me) return false;
+  return me.status !== 'NONE' && me.status !== 'PENDING_JOIN';
+}
+
+function positiveAmount(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return null;
+}
+
+function firstPositiveAmount(
+  source: object | null | undefined,
+  keys: string[],
+): number | null {
+  if (!source) return null;
+  const record = source as Record<string, unknown>;
+  for (const key of keys) {
+    const amount = positiveAmount(record[key]);
+    if (amount != null) return amount;
+  }
+  return null;
+}
+
+/** Amount the member must pay for the current join, upgrade, or reactivate. */
+export function paymentAmountFromMe(me: LegacyMe | null | undefined): number {
+  if (!me) return 0;
+  return (
+    firstPositiveAmount(me.pendingPayment, [
+      'paymentRequired',
+      'payment_required',
+      'amount',
+      'purchaseRequired',
+      'purchaseAmount',
+    ]) ??
+    firstPositiveAmount(me.pendingJoin, [
+      'purchaseRequired',
+      'paymentRequired',
+      'purchase_required',
+      'purchaseAmount',
+      'remainingToJoin',
+      'amount',
+    ]) ??
+    firstPositiveAmount(me.pendingUpgrade, [
+      'paymentRequired',
+      'payAmount',
+      'amount',
+      'purchaseAmount',
+    ]) ??
+    0
+  );
 }
 
 export function packageMonthlyDisplay(pkg: LegacyPackage): {

@@ -11,7 +11,6 @@ import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 import { MessageService } from 'primeng/api';
 import { LegacyClubService } from '../../../services/legacy-club.service';
-import { LegacyCartService } from '../../../services/legacy-cart.service';
 import {
   LegacyPackageCode,
   LegacyUpgradeQuote,
@@ -39,7 +38,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
       <app-legacy-page-header
         title="Upgrade package"
         subtitle="Pay the difference only. Your weekly cycle starts again from week 1. Instant goes to your Legacy account."
-        backLink="/legacy"
+        backLink="/legacy/home"
         backLabel="Legacy Club"
       />
 
@@ -115,7 +114,6 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
 })
 export class LegacyUpgradeComponent implements OnInit {
   private legacyClub = inject(LegacyClubService);
-  private cart = inject(LegacyCartService);
   private router = inject(Router);
   private messages = inject(MessageService);
 
@@ -129,7 +127,7 @@ export class LegacyUpgradeComponent implements OnInit {
     this.legacyClub.loadMe().subscribe({
       next: (me) => {
         if (me?.status !== 'ACTIVE') {
-          void this.router.navigate(['/legacy']);
+          void this.router.navigate(['/legacy/home']);
           return;
         }
         const targets = me.upgradeTargets ?? [];
@@ -175,9 +173,8 @@ export class LegacyUpgradeComponent implements OnInit {
     this.error.set(null);
     this.legacyClub.startUpgrade(quote.toPackage).subscribe({
       next: () => {
-        this.cart.setUpgradeFloor(quote.payAmount);
         this.starting.set(null);
-        void this.router.navigate(['/legacy/shop']);
+        void this.router.navigate(['/legacy/pay/UPGRADE']);
       },
       error: (err: LegacyClubHttpError) => {
         this.starting.set(null);

@@ -12,7 +12,6 @@ import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 import { MessageService } from 'primeng/api';
 import { LegacyClubService } from '../../../services/legacy-club.service';
-import { LegacyCartService } from '../../../services/legacy-cart.service';
 import { LegacyPackage, LegacyPackagesResponse } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
@@ -35,8 +34,8 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
     <app-legacy-page-shell>
       <app-legacy-page-header
         title="Reactivate Legacy Club"
-        subtitle="Start a new 24-week cycle on your current package."
-        backLink="/legacy"
+        subtitle="Start a new weekly cycle on your current package."
+        backLink="/legacy/home"
         backLabel="Legacy Club"
       />
 
@@ -45,9 +44,9 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
       } @else {
         <app-legacy-panel title="What happens next">
           <p class="text-sm leading-relaxed text-mlm-text">
-            Buy products worth
+            Pay
             <span class="font-semibold">{{ money(purchaseAmount()) }}</span>
-            again for {{ packageCode() }}. Full Instant
+            to reactivate {{ packageCode() }}. Full Instant
             <span class="font-semibold">{{ money(instantAmount()) }}</span>
             goes to your Legacy account.
           </p>
@@ -61,7 +60,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
             </p>
           }
           <p class="text-sm text-mlm-secondary">
-            New week 1 starts in 7 days after you reactivate. Pay with your Legacy product voucher.
+            New week 1 starts in 7 days after you reactivate. Pay from your registration wallet or manual bank transfer.
           </p>
           <p-button
             label="Start reactivate"
@@ -81,7 +80,6 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
 })
 export class LegacyReactivateComponent implements OnInit {
   private legacyClub = inject(LegacyClubService);
-  private cart = inject(LegacyCartService);
   private router = inject(Router);
   private messages = inject(MessageService);
 
@@ -98,15 +96,19 @@ export class LegacyReactivateComponent implements OnInit {
   ngOnInit(): void {
     this.legacyClub.loadMe().subscribe({
       next: (me) => {
-        if (me?.status !== 'ACTIVE' || !me.canReactivate) {
-          void this.router.navigate(['/legacy']);
+        const canReactivate =
+          me?.canReactivate ||
+          me?.lifecycle?.canReactivate ||
+          me?.status === 'REACTIVATION_DUE' ||
+          me?.status === 'SUSPENDED';
+        if (!canReactivate) {
+          void this.router.navigate(['/legacy/home']);
           return;
         }
         this.legacyClub.getPackages().subscribe({
           next: (res: LegacyPackagesResponse) => {
-            const pkg = res.packages.find((p) => p.code === me.membership?.package) ?? null;
+            const pkg = res.packages.find((p) => p.code === me?.membership?.package) ?? null;
             this.packageInfo.set(pkg);
-            if (pkg) this.cart.setReactivateFloor(pkg.purchaseAmount);
             this.loading.set(false);
           },
           error: () => this.loading.set(false),
@@ -126,7 +128,7 @@ export class LegacyReactivateComponent implements OnInit {
     this.legacyClub.startReactivate().subscribe({
       next: () => {
         this.starting.set(false);
-        void this.router.navigate(['/legacy/shop']);
+        void this.router.navigate(['/legacy/pay/REACTIVATE']);
       },
       error: (err: LegacyClubHttpError) => {
         this.starting.set(false);

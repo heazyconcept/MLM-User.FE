@@ -67,6 +67,8 @@ export class OrderPreviewComponent implements OnInit {
 
   pendingOrderData = input<any>(null);
   submitting = input<boolean>(false);
+  /** Legacy marketplace collects in person. Network checkout still offers delivery. */
+  pickupOnly = input(false);
   orderConfirmed = output<CheckoutConfirmPayload>();
 
   // Home delivery disabled — toggle used setOption / fulfilmentOption; keep signal for OrderService default
@@ -185,7 +187,7 @@ export class OrderPreviewComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Home delivery disabled — force pickup; remove when toggle is restored
+    // Home delivery disabled on network checkout; legacy marketplace is pickup-only.
     this.orderService.setFulfilmentOption('pickup');
     this.loadCountries();
   }

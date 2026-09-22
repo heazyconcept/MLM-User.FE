@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-01  
 **From:** User FE (`mlm-user.fe`)  
-**Status:** Implemented (backend + frontend)  
+**Status:** Implemented (backend + frontend) — **open bug:** bank saved but completeness still false; see [`BACKEND_BUG_BANK_PROFILE_COMPLETENESS.md`](./BACKEND_BUG_BANK_PROFILE_COMPLETENESS.md)  
 **Severity:** High  
 **Area:** User profile (`GET/PUT /users/me`, `PUT /users/me/bank`) and checkout (`POST /orders/checkout`)
 

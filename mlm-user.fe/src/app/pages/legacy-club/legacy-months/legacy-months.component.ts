@@ -44,7 +44,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
       <app-legacy-page-header
         [title]="pageTitle()"
         [subtitle]="cycleSubtitle()"
-        backLink="/legacy"
+        backLink="/legacy/home"
         backLabel="Legacy Club"
       >
         <a

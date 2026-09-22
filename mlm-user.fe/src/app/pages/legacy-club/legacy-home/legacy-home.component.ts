@@ -17,10 +17,9 @@ import { LegacyClubService } from '../../../services/legacy-club.service';
 import { UserService } from '../../../services/user.service';
 import {
   LegacyMemberLookup,
-  LegacyPackage,
-  LegacyPackagesResponse,
   LegacyRateTier,
   LegacyCycle,
+  isLegacyMember,
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import {
@@ -60,7 +59,41 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
             <p-skeleton height="16rem" styleClass="rounded-2xl" />
           }
         </div>
-      } @else if (status() === 'ACTIVE') {
+      } @else if (isMemberView()) {
+        @if (status() === 'REACTIVATION_DUE') {
+          <div
+            class="mb-5 rounded-xl border border-amber-200 bg-amber-50/80 px-5 py-4 text-sm text-amber-950"
+          >
+            <p class="font-semibold">Reactivation period</p>
+            <p class="mt-1">
+              Reactivate before
+              {{ lifecycle()?.suspensionDueAt | date: 'mediumDate' }} to keep earning and cash out.
+            </p>
+            @if (graceCountdown()) {
+              <p class="mt-1 text-xs">{{ graceCountdown() }}</p>
+            }
+            @if (canReactivate()) {
+              <a routerLink="/legacy/reactivate" class="mt-3 inline-block">
+                <p-button label="Reactivate now" size="small" />
+              </a>
+            }
+          </div>
+        } @else if (status() === 'SUSPENDED') {
+          <div
+            class="mb-5 rounded-xl border border-red-200 bg-red-50/80 px-5 py-4 text-sm text-red-900"
+          >
+            <p class="font-semibold">Membership suspended</p>
+            <p class="mt-1">Reactivate to earn and cash out again.</p>
+            <a routerLink="/legacy/reactivate" class="mt-3 inline-block">
+              <p-button label="Reactivate" size="small" severity="danger" />
+            </a>
+          </div>
+        } @else if (cycle(); as c) {
+          <p class="mb-4 text-sm text-mlm-secondary">
+            Week {{ c.issuedCount + 1 }} of {{ cyclePeriodCount(c) }}
+          </p>
+        }
+
         <app-legacy-page-header
           eyebrow="Legacy Club"
           [title]="(me()?.membership?.package ?? '') + ' Member'"
@@ -80,9 +113,9 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
           <app-legacy-metric-card
             label="Legacy account"
             [value]="money(me()?.legacyCashout?.balance ?? 0)"
-            description="You can cash out or move this money at any time."
+            [description]="cashoutCardHint()"
           >
-            <a footer routerLink="/legacy/cashout">
+            <a footer routerLink="/legacy/account">
               <p-button label="Open Legacy account" styleClass="w-full" />
             </a>
           </app-legacy-metric-card>
@@ -90,11 +123,17 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
           <app-legacy-metric-card
             label="Legacy product voucher"
             [value]="money(me()?.legacyVoucher?.balance ?? 0)"
-            description="Fund this wallet before paying in the Legacy marketplace."
+            description="Weekly voucher credit for Legacy marketplace."
           >
-            <a footer routerLink="/legacy/voucher">
-              <p-button label="Fund voucher" [outlined]="true" styleClass="w-full" />
-            </a>
+            @if (canShop()) {
+              <a footer routerLink="/legacy/shop">
+                <p-button label="Shop marketplace" styleClass="w-full" />
+              </a>
+            } @else {
+              <a footer routerLink="/legacy/voucher">
+                <p-button label="View voucher" [outlined]="true" styleClass="w-full" />
+              </a>
+            }
           </app-legacy-metric-card>
 
           <app-legacy-metric-card
@@ -162,7 +201,7 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
                 <p class="mt-3 text-sm text-mlm-secondary">No weekly due right now.</p>
               }
               <p class="mt-3 text-sm text-mlm-secondary">{{ qualifyHint() }}</p>
-              <a routerLink="/legacy/months" class="mt-5 block">
+              <a routerLink="/legacy/weeks" class="mt-5 block">
                 <p-button [label]="cycleLinkLabel()" [outlined]="true" styleClass="w-full" />
               </a>
             </app-legacy-panel>
@@ -180,9 +219,11 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
                   unlock commission — drops happen automatically every 7 days.
                 }
               </p>
-              <a routerLink="/legacy/shop" class="mt-5 block">
-                <p-button label="Shop Legacy marketplace" styleClass="w-full" />
-              </a>
+              @if (canShop()) {
+                <a routerLink="/legacy/shop" class="mt-5 block">
+                  <p-button label="Shop Legacy marketplace" styleClass="w-full" />
+                </a>
+              }
               <p class="mt-3 text-xs text-mlm-secondary">
                 Pay with Legacy product voucher only — not the network Product Voucher.
               </p>
@@ -209,22 +250,21 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
                 <app-legacy-panel>
                   <p class="text-xs font-bold uppercase tracking-[.15em] text-mlm-secondary">Upgrade</p>
                   <p class="mt-3 text-sm leading-relaxed text-mlm-text">
-                    Pay the difference in products only (Legacy voucher). Your weekly cycle starts
-                    again from week 1. Instant goes to your Legacy account.
+                    Pay the package difference from your registration wallet or manual bank. Your
+                    weekly cycle starts again from week 1.
                   </p>
                   <a routerLink="/legacy/upgrade" class="mt-5 block">
                     <p-button label="Upgrade" styleClass="w-full" />
                   </a>
                 </app-legacy-panel>
               }
-              @if (me()?.canReactivate) {
+              @if (canReactivate()) {
                 <app-legacy-panel>
                   <p class="text-xs font-bold uppercase tracking-[.15em] text-mlm-secondary">
                     Reactivate
                   </p>
                   <p class="mt-3 text-sm leading-relaxed text-mlm-text">
-                    Buy products worth your full package again. Full Instant goes to your Legacy
-                    account.
+                    Pay your full package amount again. Full Instant goes to your Legacy account.
                   </p>
                   @if (me()?.monthlyQualify?.isQualified) {
                     <p class="mt-2 text-sm text-emerald-800">
@@ -319,154 +359,6 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
             </div>
           </div>
         </p-dialog>
-      } @else {
-        <app-legacy-page-header
-          title="Legacy Club"
-          subtitle="Buy products, build your Successline, and earn your legacy."
-        />
-
-        <div class="flex flex-col gap-6">
-          @if (me()?.sponsorResolution === 'AUTO' && me()?.defaultSponsor) {
-            <div
-              class="rounded-xl border border-emerald-100 bg-emerald-50/70 px-5 py-4 text-sm text-emerald-900"
-            >
-              You will join under
-              <span class="font-semibold">&#64;{{ me()?.defaultSponsor?.username }}</span>
-              — your Segulah sponsor is already in Legacy Club.
-            </div>
-          } @else if (me()?.sponsorResolution === 'MANUAL') {
-            <div
-              class="rounded-xl border border-amber-100 bg-amber-50/70 px-5 py-4 text-sm text-amber-950"
-            >
-              Your Segulah sponsor is not in Legacy Club yet. You will need a Legacy Club username,
-              or ask them to join first so you stay under them.
-            </div>
-          }
-
-          @if (status() === 'PENDING_JOIN' && me()?.pendingJoin; as pending) {
-            <app-legacy-panel>
-              <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="min-w-0">
-                  <p class="text-xs font-bold uppercase tracking-[.15em] text-mlm-secondary">
-                    Join in progress
-                  </p>
-                  <p class="mt-2 text-lg font-semibold text-mlm-text">Finish your Legacy join</p>
-                  <p class="mt-1 text-sm text-mlm-secondary">
-                    {{ money(pending.remainingToJoin) }} remaining for
-                    <span class="font-medium text-mlm-text">{{ pending.package }}</span>
-                  </p>
-                </div>
-                <a routerLink="/legacy/shop" class="shrink-0">
-                  <p-button label="Continue shopping" styleClass="w-full sm:w-auto" />
-                </a>
-              </div>
-            </app-legacy-panel>
-          }
-
-          <div>
-            <div class="mb-4 flex flex-wrap items-end justify-between gap-2">
-              <div>
-                <h2 class="text-sm font-semibold text-mlm-text">
-                  {{ status() === 'PENDING_JOIN' ? 'Your package' : 'Choose a package' }}
-                </h2>
-                <p class="mt-0.5 text-sm text-mlm-secondary">
-                  @if (status() === 'PENDING_JOIN') {
-                    Complete shopping for your selected package to activate Legacy Club.
-                  } @else {
-                    Instant commission goes to your Legacy account after you join.
-                  }
-                </p>
-              </div>
-              <a
-                routerLink="/legacy/packages"
-                class="text-sm font-semibold text-mlm-primary hover:underline"
-              >
-                Compare packages
-              </a>
-            </div>
-
-            <div class="grid gap-5 md:grid-cols-3">
-              @for (pkg of packages(); track pkg.code) {
-                <article
-                  class="flex flex-col rounded-xl border bg-white p-5 shadow-sm sm:p-6"
-                  [class]="
-                    isPendingPackage(pkg.code)
-                      ? 'border-mlm-primary ring-1 ring-mlm-primary/20'
-                      : 'border-gray-200'
-                  "
-                >
-                  <div class="flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-2">
-                      <i class="pi pi-crown text-mlm-primary"></i>
-                      <h3 class="text-lg font-bold text-mlm-text">{{ pkg.name }}</h3>
-                    </div>
-                    @if (isPendingPackage(pkg.code)) {
-                      <span
-                        class="rounded-full bg-mlm-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-mlm-primary"
-                      >
-                        Selected
-                      </span>
-                    }
-                  </div>
-                  <p class="mt-4 text-3xl font-extrabold tracking-tight text-mlm-text">
-                    {{ money(pkg.purchaseAmount) }}
-                  </p>
-                  <p class="text-sm text-mlm-secondary">Product purchase</p>
-                  <ul class="mt-5 flex-1 space-y-2.5 text-sm text-mlm-text">
-                    <li>
-                      Instant {{ money(pkg.instantCommission) }} —
-                      <span class="font-medium">into your Legacy account</span>
-                    </li>
-                    <li class="text-mlm-secondary">
-                      Monthly {{ money(pkg.monthlyCommission) }}
-                      ({{ money(pkg.monthlyCommission / 4) }} / week) × 6 — starts after you join
-                    </li>
-                    <li>Successline {{ pkg.successlineBonusPercent }}% of directs' Instant</li>
-                    <li class="font-medium">6-month total {{ money(pkg.sixMonthTotal) }}</li>
-                  </ul>
-                  <div class="mt-4 flex flex-wrap gap-1.5">
-                    <span
-                      class="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-800"
-                    >
-                      Cash out anytime
-                    </span>
-                    <span
-                      class="rounded-full bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-mlm-secondary"
-                    >
-                      Weekly commission auto-drop
-                    </span>
-                  </div>
-                  @if (status() === 'PENDING_JOIN') {
-                    @if (isPendingPackage(pkg.code)) {
-                      <a routerLink="/legacy/shop" class="mt-5 block">
-                        <p-button label="Continue shopping" styleClass="w-full" />
-                      </a>
-                    } @else {
-                      <p-button
-                        class="mt-5"
-                        styleClass="w-full"
-                        label="Not selected"
-                        [outlined]="true"
-                        [disabled]="true"
-                      />
-                    }
-                  } @else {
-                    <p-button
-                      class="mt-5"
-                      styleClass="w-full"
-                      [label]="'Join as ' + pkg.code"
-                      (onClick)="joinPackage(pkg)"
-                    />
-                  }
-                </article>
-              }
-            </div>
-          </div>
-
-          <p class="text-center text-xs text-mlm-secondary">
-            USD members: ₦1,000 = $1, same as the network.
-          </p>
-        </div>
       }
     </app-legacy-page-shell>
   `,
@@ -476,13 +368,24 @@ export class LegacyHomeComponent implements OnInit {
   private userService = inject(UserService);
   private router = inject(Router);
 
+  readonly cyclePeriodCount = cyclePeriodCount;
+
   me = this.legacyClub.me;
   loading = this.legacyClub.loading;
   status = this.legacyClub.status;
-  packages = signal<LegacyPackage[]>([]);
   registerModalVisible = signal(false);
   username = computed(() => this.userService.currentUser()?.username ?? '');
   cycle = computed(() => this.me()?.cycle ?? null);
+  lifecycle = computed(() => this.me()?.lifecycle ?? null);
+  isMemberView = computed(() => isLegacyMember(this.me()));
+  canShop = this.legacyClub.canShopProducts;
+  canReactivate = computed(
+    () =>
+      !!this.me()?.canReactivate ||
+      !!this.me()?.lifecycle?.canReactivate ||
+      this.status() === 'REACTIVATION_DUE' ||
+      this.status() === 'SUSPENDED',
+  );
 
   memberSubtitle = computed(() => {
     const m = this.me()?.membership;
@@ -497,10 +400,29 @@ export class LegacyHomeComponent implements OnInit {
   lookupError = signal<string | null>(null);
 
   ngOnInit(): void {
-    this.legacyClub.loadMe().subscribe();
-    this.legacyClub.getPackages().subscribe({
-      next: (res: LegacyPackagesResponse) => this.packages.set(res.packages.filter((p) => p.isActive)),
+    this.legacyClub.loadMe().subscribe({
+      next: (me) => {
+        if (me && !isLegacyMember(me)) {
+          void this.router.navigateByUrl(this.legacyClub.legacyHomePath(), { replaceUrl: true });
+        }
+      },
     });
+  }
+
+  cashoutCardHint(): string {
+    if (this.me()?.canCashoutLegacy === false) {
+      return this.me()?.cashoutRestrictionReason ?? 'Cash out is temporarily locked.';
+    }
+    return 'You can cash out or move this money when eligible.';
+  }
+
+  graceCountdown(): string | null {
+    const seconds = this.lifecycle()?.reactivationSecondsRemaining ?? 0;
+    if (seconds <= 0) return null;
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    if (days > 0) return `${days} day${days === 1 ? '' : 's'} ${hours}h remaining`;
+    return `${hours} hour${hours === 1 ? '' : 's'} remaining`;
   }
 
   money(amount: number): string {
@@ -539,14 +461,6 @@ export class LegacyHomeComponent implements OnInit {
     }
     const need = Math.max(0, required - count);
     return `Refer ${need} more Successline${need === 1 ? '' : 's'} to raise your next weekly. You can already cash out.`;
-  }
-
-  joinPackage(pkg: LegacyPackage): void {
-    void this.router.navigate(['/legacy/join'], { queryParams: { package: pkg.code } });
-  }
-
-  isPendingPackage(code: string): boolean {
-    return this.me()?.pendingJoin?.package === code;
   }
 
   openRegisterModal(): void {

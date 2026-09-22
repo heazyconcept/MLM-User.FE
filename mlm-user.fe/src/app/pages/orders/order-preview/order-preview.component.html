@@ -1,314 +1,262 @@
-<div class="bg-mlm-background">
-  <main class="py-4 sm:py-6">
-    <div class="px-0 sm:px-2 max-w-2xl mx-auto">
-      <div class="mb-5 sm:mb-6">
-        <p class="text-xs font-bold text-mlm-primary uppercase tracking-[.15em] mb-3">
-          Order Setup
-        </p>
-        <h1 class="text-2xl sm:text-3xl font-extrabold text-mlm-text tracking-tight">
-          Pickup Location
-        </h1>
-        <p class="text-mlm-secondary text-sm mt-2">
-          Choose where you want to collect your order
-        </p>
-        <!-- Home delivery disabled — restore title: Fulfilment Options / Choose how you want to receive your order -->
-        <div class="mt-5 h-px bg-linear-to-r from-mlm-primary/20 to-transparent"></div>
-      </div>
-
-      <!-- Home delivery disabled: fulfilment toggle (Pickup | Home Delivery)
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-        <button
-          type="button"
-          (click)="setOption('pickup')"
-          class="text-left p-4 sm:p-5 rounded-xl border-2 transition-colors focus:outline-none"
-          [class]="
-            fulfilmentOption() === 'pickup'
-              ? 'border-mlm-primary bg-mlm-primary/5'
-              : 'border-gray-200 bg-white'
-          "
-        >
-          <span
-            class="inline-block w-2 h-2 rounded-full mb-4 transition-colors"
-            [class]="fulfilmentOption() === 'pickup' ? 'bg-mlm-primary' : 'bg-gray-300'"
-          ></span>
-          <h2 class="text-sm font-bold text-mlm-text mb-1">Pickup</h2>
-          <p class="text-xs text-mlm-secondary leading-relaxed">Collect at a nearby merchant</p>
-        </button>
-
-        <button
-          type="button"
-          (click)="setOption('delivery')"
-          class="text-left p-4 sm:p-5 rounded-xl border-2 transition-colors focus:outline-none"
-          [class]="
-            fulfilmentOption() === 'delivery'
-              ? 'border-mlm-primary bg-mlm-primary/5'
-              : 'border-gray-200 bg-white'
-          "
-        >
-          <span
-            class="inline-block w-2 h-2 rounded-full mb-4 transition-colors"
-            [class]="fulfilmentOption() === 'delivery' ? 'bg-mlm-primary' : 'bg-gray-300'"
-          ></span>
-          <h2 class="text-sm font-bold text-mlm-text mb-1">Home Delivery</h2>
-          <p class="text-xs text-mlm-secondary leading-relaxed">Delivered to your address</p>
-        </button>
-      </div>
-      -->
-
-      <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 mb-4 space-y-4">
-        <div>
-          <label
-            for="checkout-country"
-            class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-2"
-          >
-            Country
-          </label>
-          <select
-            id="checkout-country"
-            class="w-full px-4 py-3 bg-mlm-background border border-gray-200 rounded-xl text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
-            [ngModel]="selectedCountryCode()"
-            (ngModelChange)="onCountryChange($event)"
-            [disabled]="geographyLoading() && countries().length === 0"
-          >
-            <option value="">Choose a country…</option>
-            @for (country of countries(); track country.code) {
-              <option [value]="country.code">{{ country.name }}</option>
-            }
-          </select>
+<div [class]="pickupOnly() ? '' : 'bg-mlm-background'">
+  <main [class]="pickupOnly() ? '' : 'py-4 sm:py-6'">
+    <section
+      [class]="
+        pickupOnly()
+          ? 'mx-auto max-w-2xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm'
+          : 'mx-auto max-w-2xl px-0 sm:px-2'
+      "
+    >
+      @if (pickupOnly()) {
+        <div class="border-b border-gray-100 px-6 py-5 sm:px-8 sm:py-6">
+          <h2 class="text-sm font-semibold text-mlm-text">Pickup</h2>
+          <p class="mt-2 text-sm leading-relaxed text-mlm-secondary">
+            Collect this order from a merchant. Choose a country and state to see pickup points.
+          </p>
+        </div>
+      } @else {
+        <div class="mb-5 sm:mb-6">
+          <p class="text-xs font-bold text-mlm-primary uppercase tracking-[.15em] mb-3">
+            Order Setup
+          </p>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-mlm-text tracking-tight">
+            Pickup Location
+          </h1>
+          <p class="text-mlm-secondary text-sm mt-2">
+            Choose where you want to collect your order
+          </p>
+          <!-- Home delivery disabled — restore title: Fulfilment Options / Choose how you want to receive your order -->
+          <div class="mt-5 h-px bg-linear-to-r from-mlm-primary/20 to-transparent"></div>
         </div>
 
-        @if (selectedCountryCode()) {
+        <!-- Home delivery disabled: fulfilment toggle (Pickup | Home Delivery)
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          ...
+        </div>
+        -->
+      }
+
+      <div [class]="pickupOnly() ? 'space-y-8 px-6 py-6 sm:px-8 sm:py-8' : ''">
+        <div
+          [class]="
+            pickupOnly()
+              ? 'space-y-6'
+              : 'mb-4 space-y-4 rounded-xl border border-gray-100 bg-white p-4 sm:p-6'
+          "
+        >
           <div>
             <label
-              for="checkout-subdivision"
-              class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-2"
+              for="checkout-country"
+              class="mb-3 block text-xs font-bold uppercase tracking-widest text-mlm-secondary"
             >
-              State or region
+              Country
             </label>
             <select
-              id="checkout-subdivision"
+              id="checkout-country"
               class="w-full px-4 py-3 bg-mlm-background border border-gray-200 rounded-xl text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
-              [ngModel]="checkoutGeography()?.subdivisionCode ?? ''"
-              (ngModelChange)="onSubdivisionChange($event)"
-              [disabled]="geographyLoading()"
+              [ngModel]="selectedCountryCode()"
+              (ngModelChange)="onCountryChange($event)"
+              [disabled]="geographyLoading() && countries().length === 0"
             >
-              <option value="">Choose a state or region…</option>
-              @for (subdivision of subdivisions(); track subdivision.code) {
-                <option [value]="subdivision.code">{{ subdivision.name }}</option>
+              <option value="">Choose a country…</option>
+              @for (country of countries(); track country.code) {
+                <option [value]="country.code">{{ country.name }}</option>
               }
             </select>
           </div>
-        }
 
-        @if (geographyLoading()) {
-          <p class="text-sm text-mlm-secondary">Loading locations…</p>
-        } @else if (geographyError()) {
-          <div class="flex flex-wrap items-center justify-between gap-3 text-sm text-red-600">
-            <span>{{ geographyError() }}</span>
-            <button type="button" class="font-semibold text-mlm-primary" (click)="retryGeography()">
-              Try again
-            </button>
-          </div>
-        } @else if (selectedCountryCode() && subdivisions().length === 0) {
-          <p class="text-sm text-mlm-secondary">
-            No states or regions are available for this country yet.
-          </p>
-        }
-      </div>
-
-      <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 space-y-5">
-        @if (checkoutGeography(); as geography) {
-          <div>
-            <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-4">
-              Select Pickup Merchant
-            </p>
-
-            @if (pickupLocationsLoading()) {
-              <div class="flex items-center gap-2 py-2">
-                <span
-                  class="w-4 h-4 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"
-                ></span>
-                <span class="text-sm text-mlm-secondary"
-                  >Loading merchants in {{ geography.subdivisionName }}…</span
-                >
-              </div>
-            } @else if (pickupLocationsError()) {
-              <div class="flex flex-wrap items-center justify-between gap-3 py-2">
-                <p class="text-sm text-red-600">{{ pickupLocationsError() }}</p>
-                <button
-                  type="button"
-                  class="text-sm font-semibold text-mlm-primary"
-                  (click)="retryPickupMerchants()"
-                >
-                  Try again
-                </button>
-              </div>
-            } @else if (emptyPickupMessage()) {
-              <p class="text-sm text-mlm-secondary py-2">{{ emptyPickupMessage() }}</p>
-            } @else {
-              @if (showNoSelectableBanner()) {
-                <p
-                  class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3"
-                >
-                  Merchants are listed below but none can fulfil this cart via pickup yet. Try
-                  another merchant or reduce quantities.
-                  <!-- Home delivery disabled: … or choose home delivery. -->
-                </p>
-              }
-
-              <app-location-selector
-                [locations]="pickupLocations()"
-                [selectedId]="selectedPickupId()"
-                (locationSelect)="onLocationSelect($event)"
-              ></app-location-selector>
-
-              @if (availabilityLoading()) {
-                <p class="text-sm text-mlm-secondary mt-3 flex items-center gap-2">
-                  <span
-                    class="w-3.5 h-3.5 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"
-                  ></span>
-                  Checking stock for selected merchant…
-                </p>
-              }
-              @if (availabilityError()) {
-                <p class="text-sm text-red-600 mt-3">{{ availabilityError() }}</p>
-              }
-            }
-          </div>
-        }
-
-        @if (needsSplitResolution()) {
-          <div class="border border-amber-200 bg-amber-50/60 rounded-xl p-4 space-y-4">
+          @if (selectedCountryCode()) {
             <div>
-              <p class="text-sm font-bold text-amber-900">Stock conflict — split your order</p>
-              <p class="text-xs text-amber-800 mt-1">
-                The selected merchant cannot fulfil every item. Assign each missing line to another
-                pickup merchant.
-                <!-- Home delivery disabled: … merchant or admin delivery. -->
-              </p>
+              <label
+                for="checkout-subdivision"
+                class="mb-3 block text-xs font-bold uppercase tracking-widest text-mlm-secondary"
+              >
+                State or region
+              </label>
+              <select
+                id="checkout-subdivision"
+                class="w-full px-4 py-3 bg-mlm-background border border-gray-200 rounded-xl text-sm text-mlm-text focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary"
+                [ngModel]="checkoutGeography()?.subdivisionCode ?? ''"
+                (ngModelChange)="onSubdivisionChange($event)"
+                [disabled]="geographyLoading()"
+              >
+                <option value="">Choose a state or region…</option>
+                @for (subdivision of subdivisions(); track subdivision.code) {
+                  <option [value]="subdivision.code">{{ subdivision.name }}</option>
+                }
+              </select>
             </div>
-
-            @for (item of missingItems(); track item.productId) {
-              <div class="bg-white border border-amber-100 rounded-lg p-3 space-y-2">
-                <div class="flex justify-between gap-3 text-sm">
-                  <span class="font-semibold text-mlm-text">{{ productNameFor(item.productId) }}</span>
-                  <span class="text-mlm-secondary shrink-0">Qty {{ item.quantityNeeded }}</span>
-                </div>
-
-                @if (assignmentLabel(item.productId); as label) {
-                  <p class="text-xs font-medium text-mlm-primary">{{ label }}</p>
-                }
-
-                @if (item.anyMerchantHasStock && item.merchantsWithStock.length > 0) {
-                  <div class="flex flex-wrap gap-2">
-                    @for (alt of item.merchantsWithStock; track alt.merchantId) {
-                      <button
-                        type="button"
-                        (click)="assignMissingToMerchant(item, alt.merchantId, alt.username)"
-                        class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-mlm-primary/30 text-mlm-primary hover:bg-mlm-primary/5 transition-colors"
-                      >
-                        {{ merchantWithStockLabel(alt) }} ({{ alt.stockQuantity }} in stock)
-                      </button>
-                    }
-                  </div>
-                } @else {
-                  <p class="text-xs text-amber-800">
-                    No other pickup merchant has this item in stock. Choose a different primary
-                    merchant or reduce the quantity.
-                  </p>
-                }
-
-                <!-- Home delivery disabled: admin delivery fallback
-                @if (item.adminDeliveryAvailable) {
-                  <button
-                    type="button"
-                    (click)="assignMissingToDelivery(item)"
-                    class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-mlm-secondary hover:bg-gray-50 transition-colors"
-                  >
-                    Ship via admin delivery
-                  </button>
-                }
-                -->
-              </div>
-            }
-          </div>
-        }
-
-        @if (splitSummary().length > 0 && selectedPickupId() && !availabilityLoading()) {
-          <div class="border border-gray-100 rounded-xl p-4 bg-gray-50/50">
-            <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">
-              Order summary
-            </p>
-            <ul class="space-y-2 text-sm">
-              @for (group of splitSummary(); track group.index) {
-                <li class="flex justify-between gap-3">
-                  <span class="text-mlm-text">{{ group.label }}</span>
-                  <span class="text-mlm-secondary shrink-0">{{ group.itemCount }} item(s)</span>
-                </li>
-              }
-            </ul>
-          </div>
-        }
-      </div>
-
-      <!-- Home delivery disabled: delivery address + fee form
-      @if (fulfilmentOption() === 'delivery') {
-        <div class="bg-white border border-gray-100 rounded-xl p-4 sm:p-6 space-y-5">
-          @if (checkoutGeography() && !deliveryAvailable()) {
-            <p class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              International home-delivery pricing is not available yet. Choose pickup or select Nigeria.
-            </p>
           }
 
-          <div>
-            <label
-              for="delivery-address"
-              class="text-xs font-bold text-mlm-secondary uppercase tracking-widest block mb-2"
-            >
-              Delivery Address
-            </label>
-            <input
-              id="delivery-address"
-              type="text"
-              [value]="deliveryAddress()"
-              (input)="onDeliveryAddressInput($event)"
-              placeholder="Enter your full delivery address (min. 10 characters)"
-              class="w-full px-4 py-3 bg-mlm-background border border-gray-200 rounded-xl text-sm text-mlm-text placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 focus:border-mlm-primary transition-all"
-              aria-label="Delivery address"
-            />
-          </div>
-
-          @if (checkoutGeography() && deliveryAvailable()) {
-            <div class="bg-gray-50 border border-gray-100 rounded-xl p-4">
-              <div class="flex justify-between items-center text-sm">
-                <span class="text-mlm-secondary">Delivery Fee</span>
-                <span class="font-bold text-mlm-text">{{ formatCurrency(deliveryFee()) }}</span>
-              </div>
+          @if (geographyLoading()) {
+            <p class="text-sm text-mlm-secondary">Loading locations…</p>
+          } @else if (geographyError()) {
+            <div class="flex flex-wrap items-center justify-between gap-3 text-sm text-red-600">
+              <span>{{ geographyError() }}</span>
+              <button type="button" class="font-semibold text-mlm-primary" (click)="retryGeography()">
+                Try again
+              </button>
             </div>
+          } @else if (selectedCountryCode() && subdivisions().length === 0) {
+            <p class="text-sm text-mlm-secondary">
+              No states or regions are available for this country yet.
+            </p>
           }
         </div>
-      }
-      -->
 
-      <div class="mt-5 pb-1">
-        <button
-          type="button"
-          (click)="onConfirm()"
-          [disabled]="!canConfirm()"
-          class="w-full py-3.5 sm:py-4 bg-mlm-primary text-white text-sm font-bold uppercase tracking-wider rounded-xl disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        >
-          @if (submitting()) {
-            <span class="flex items-center justify-center gap-2">
-              <span
-                class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
-              ></span>
-              Processing checkout…
-            </span>
-          } @else {
-            {{ confirmButtonLabel() }}
-          }
-        </button>
+        @if (!pickupOnly() || checkoutGeography()) {
+          <div
+            [class]="
+              pickupOnly()
+                ? checkoutGeography()
+                  ? 'space-y-6 border-t border-gray-100 pt-8'
+                  : ''
+                : 'space-y-5 rounded-xl border border-gray-100 bg-white p-4 sm:p-6'
+            "
+          >
+            @if (checkoutGeography(); as geography) {
+              <div>
+                <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-4">
+                  Select Pickup Merchant
+                </p>
+
+                @if (pickupLocationsLoading()) {
+                  <div class="flex items-center gap-2 py-2">
+                    <span
+                      class="w-4 h-4 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"
+                    ></span>
+                    <span class="text-sm text-mlm-secondary"
+                      >Loading merchants in {{ geography.subdivisionName }}…</span
+                    >
+                  </div>
+                } @else if (pickupLocationsError()) {
+                  <div class="flex flex-wrap items-center justify-between gap-3 py-2">
+                    <p class="text-sm text-red-600">{{ pickupLocationsError() }}</p>
+                    <button
+                      type="button"
+                      class="text-sm font-semibold text-mlm-primary"
+                      (click)="retryPickupMerchants()"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                } @else if (emptyPickupMessage()) {
+                  <p class="text-sm text-mlm-secondary py-2">{{ emptyPickupMessage() }}</p>
+                } @else {
+                  @if (showNoSelectableBanner()) {
+                    <p
+                      class="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3"
+                    >
+                      Merchants are listed below but none can fulfil this cart via pickup yet. Try
+                      another merchant or reduce quantities.
+                    </p>
+                  }
+
+                  <app-location-selector
+                    [locations]="pickupLocations()"
+                    [selectedId]="selectedPickupId()"
+                    (locationSelect)="onLocationSelect($event)"
+                  ></app-location-selector>
+
+                  @if (availabilityLoading()) {
+                    <p class="text-sm text-mlm-secondary mt-3 flex items-center gap-2">
+                      <span
+                        class="w-3.5 h-3.5 border-2 border-mlm-primary/20 border-t-mlm-primary rounded-full animate-spin"
+                      ></span>
+                      Checking stock for selected merchant…
+                    </p>
+                  }
+                  @if (availabilityError()) {
+                    <p class="text-sm text-red-600 mt-3">{{ availabilityError() }}</p>
+                  }
+                }
+              </div>
+            }
+
+            @if (needsSplitResolution()) {
+              <div class="border border-amber-200 bg-amber-50/60 rounded-xl p-4 space-y-4">
+                <div>
+                  <p class="text-sm font-bold text-amber-900">Stock conflict — split your order</p>
+                  <p class="text-xs text-amber-800 mt-1">
+                    The selected merchant cannot fulfil every item. Assign each missing line to another
+                    pickup merchant.
+                  </p>
+                </div>
+
+                @for (item of missingItems(); track item.productId) {
+                  <div class="bg-white border border-amber-100 rounded-lg p-3 space-y-2">
+                    <div class="flex justify-between gap-3 text-sm">
+                      <span class="font-semibold text-mlm-text">{{ productNameFor(item.productId) }}</span>
+                      <span class="text-mlm-secondary shrink-0">Qty {{ item.quantityNeeded }}</span>
+                    </div>
+
+                    @if (assignmentLabel(item.productId); as label) {
+                      <p class="text-xs font-medium text-mlm-primary">{{ label }}</p>
+                    }
+
+                    @if (item.anyMerchantHasStock && item.merchantsWithStock.length > 0) {
+                      <div class="flex flex-wrap gap-2">
+                        @for (alt of item.merchantsWithStock; track alt.merchantId) {
+                          <button
+                            type="button"
+                            (click)="assignMissingToMerchant(item, alt.merchantId, alt.username)"
+                            class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-mlm-primary/30 text-mlm-primary hover:bg-mlm-primary/5 transition-colors"
+                          >
+                            {{ merchantWithStockLabel(alt) }} ({{ alt.stockQuantity }} in stock)
+                          </button>
+                        }
+                      </div>
+                    } @else {
+                      <p class="text-xs text-amber-800">
+                        No other pickup merchant has this item in stock. Choose a different primary
+                        merchant or reduce the quantity.
+                      </p>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            @if (splitSummary().length > 0 && selectedPickupId() && !availabilityLoading()) {
+              <div class="border border-gray-100 rounded-xl p-4 bg-gray-50/50">
+                <p class="text-xs font-bold text-mlm-secondary uppercase tracking-widest mb-3">
+                  Order summary
+                </p>
+                <ul class="space-y-2 text-sm">
+                  @for (group of splitSummary(); track group.index) {
+                    <li class="flex justify-between gap-3">
+                      <span class="text-mlm-text">{{ group.label }}</span>
+                      <span class="text-mlm-secondary shrink-0">{{ group.itemCount }} item(s)</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          </div>
+        }
+
+        <div [class]="pickupOnly() ? 'border-t border-gray-100 pt-8' : 'mt-5 pb-1'">
+          <button
+            type="button"
+            (click)="onConfirm()"
+            [disabled]="!canConfirm()"
+            class="w-full rounded-xl bg-mlm-primary py-3.5 text-sm font-bold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40 sm:py-4"
+            [class.uppercase]="!pickupOnly()"
+            [class.tracking-wider]="!pickupOnly()"
+          >
+            @if (submitting()) {
+              <span class="flex items-center justify-center gap-2">
+                <span
+                  class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                ></span>
+                Processing checkout…
+              </span>
+            } @else {
+              {{ confirmButtonLabel() }}
+            }
+          </button>
+        </div>
       </div>
-    </div>
+    </section>
   </main>
 </div>

@@ -645,30 +645,67 @@ export const routes: Routes = [
       import('./layouts/dashboard-layout/dashboard-layout.component').then(
         (m) => m.DashboardLayoutComponent,
       ),
+    canActivate: [
+      () =>
+        import('./core/guards/legacy.guard').then((m) => m.legacyBootstrapGuard),
+    ],
     children: [
       {
         path: '',
         loadComponent: () =>
-          import('./pages/legacy-club/legacy-home/legacy-home.component').then(
-            (m) => m.LegacyHomeComponent,
+          import('./pages/legacy-club/legacy-gate/legacy-gate.component').then(
+            (m) => m.LegacyGateComponent,
           ),
         data: { title: 'Legacy Club' },
       },
       {
-        path: 'packages',
+        path: 'home',
         loadComponent: () =>
-          import('./pages/legacy-club/legacy-packages/legacy-packages.component').then(
-            (m) => m.LegacyPackagesComponent,
+          import('./pages/legacy-club/legacy-home/legacy-home.component').then(
+            (m) => m.LegacyHomeComponent,
           ),
-        data: { title: 'Legacy Packages' },
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyHomeGuard),
+        ],
+        data: { title: 'Legacy Club' },
+      },
+      {
+        path: 'packages',
+        redirectTo: 'join',
+        pathMatch: 'full',
       },
       {
         path: 'join',
         loadComponent: () =>
+          import('./pages/legacy-club/legacy-packages/legacy-packages.component').then(
+            (m) => m.LegacyPackagesComponent,
+          ),
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyJoinGuard),
+        ],
+        data: { title: 'Join Legacy Club' },
+      },
+      {
+        path: 'join/sponsor',
+        loadComponent: () =>
           import('./pages/legacy-club/legacy-join/legacy-join.component').then(
             (m) => m.LegacyJoinComponent,
           ),
-        data: { title: 'Join Legacy Club' },
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyJoinGuard),
+        ],
+        data: { title: 'Confirm sponsor' },
+      },
+      {
+        path: 'pay/:purpose',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-pay/legacy-pay.component').then(
+            (m) => m.LegacyPayComponent,
+          ),
+        data: { title: 'Legacy payment' },
       },
       {
         path: 'voucher',
@@ -684,6 +721,10 @@ export const routes: Routes = [
           import('./pages/legacy-club/legacy-shop/legacy-shop.component').then(
             (m) => m.LegacyShopComponent,
           ),
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyShopGuard),
+        ],
         data: { title: 'Legacy Club Marketplace' },
       },
       {
@@ -724,22 +765,44 @@ export const routes: Routes = [
           import('./pages/legacy-club/legacy-successlines/legacy-successlines.component').then(
             (m) => m.LegacySuccesslinesComponent,
           ),
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyMemberGuard),
+        ],
         data: { title: 'My Direct Successlines' },
       },
       {
         path: 'cashout',
+        redirectTo: 'account',
+        pathMatch: 'full',
+      },
+      {
+        path: 'account',
         loadComponent: () =>
           import('./pages/legacy-club/legacy-cashout/legacy-cashout.component').then(
             (m) => m.LegacyCashoutComponent,
           ),
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyMemberGuard),
+        ],
         data: { title: 'Legacy Account' },
       },
       {
         path: 'months',
+        redirectTo: 'weeks',
+        pathMatch: 'full',
+      },
+      {
+        path: 'weeks',
         loadComponent: () =>
           import('./pages/legacy-club/legacy-months/legacy-months.component').then(
             (m) => m.LegacyMonthsComponent,
           ),
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyMemberGuard),
+        ],
         data: { title: 'Legacy Weekly Cycle' },
       },
       {
@@ -764,6 +827,10 @@ export const routes: Routes = [
           import('./pages/legacy-club/legacy-history/legacy-history.component').then(
             (m) => m.LegacyHistoryComponent,
           ),
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyMemberGuard),
+        ],
         data: { title: 'Legacy History' },
       },
     ],

@@ -84,56 +84,13 @@ export class LegacyCartService {
   );
   readonly isEmpty = computed(() => this.itemsState().length === 0);
 
-  readonly purchaseRequired = computed(() => {
-    const me = this.legacyClub.me();
-    const mode = resolveLegacyShopMode(me);
-    if (mode === 'JOIN') return me?.pendingJoin?.purchaseRequired ?? 0;
-    if (mode === 'UPGRADE') return this.upgradeFloorState();
-    if (mode === 'REACTIVATE') {
-      // Full package purchase — packages loaded separately; use pendingJoin or membership package amount from intent
-      return this.reactivateFloorState() || me?.pendingJoin?.purchaseRequired || 0;
-    }
-    return 0;
-  });
-
-  private upgradeFloorState = signal(0);
-  private reactivateFloorState = signal(0);
-
-  setUpgradeFloor(amount: number): void {
-    this.upgradeFloorState.set(amount);
-  }
-
-  setReactivateFloor(amount: number): void {
-    this.reactivateFloorState.set(amount);
-  }
-
-  readonly remaining = computed(() =>
-    Math.max(0, this.purchaseRequired() - this.subtotal()),
-  );
-
   readonly canCheckout = computed(() => {
-    const me = this.legacyClub.me();
-    const mode = resolveLegacyShopMode(me);
-    if (this.isEmpty()) return false;
-    // Optional shop for ACTIVE members (NONE / AUTOSHIP) — any non-empty cart.
-    if (me?.status === 'ACTIVE' && (mode === 'AUTOSHIP' || mode === 'NONE')) {
-      return true;
-    }
-    if (mode === 'NONE') return false;
-    const required = this.purchaseRequired();
-    return required > 0 && this.subtotal() >= required;
+    const mode = resolveLegacyShopMode(this.legacyClub.me());
+    if (mode !== 'SHOP') return false;
+    return !this.isEmpty();
   });
 
-  readonly progressPercent = computed(() => {
-    const me = this.legacyClub.me();
-    const mode = resolveLegacyShopMode(me);
-    if (me?.status === 'ACTIVE' && (mode === 'AUTOSHIP' || mode === 'NONE')) {
-      return this.isEmpty() ? 0 : 100;
-    }
-    const required = this.purchaseRequired();
-    if (required <= 0) return 0;
-    return Math.min(100, Math.round((this.subtotal() / required) * 100));
-  });
+  readonly progressPercent = computed(() => (this.isEmpty() ? 0 : 100));
 
   /** Display helper for weekly voucher credit — not a checkout floor. */
   readonly weeklyVoucherHintAmount = computed(() => {

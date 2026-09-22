@@ -38,8 +38,8 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
     <app-legacy-page-shell>
       <app-legacy-page-header
         title="Join Legacy Club"
-        subtitle="Confirm your package and sponsor before shopping."
-        backLink="/legacy/packages"
+        subtitle="Confirm your package and sponsor before payment."
+        backLink="/legacy/join"
         backLabel="Packages"
       />
 
@@ -57,7 +57,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
                 </p>
               </div>
               <a
-                routerLink="/legacy/packages"
+                routerLink="/legacy/join"
                 class="text-xs font-semibold text-mlm-primary hover:underline"
               >
                 Change
@@ -155,7 +155,10 @@ export class LegacyJoinComponent implements OnInit {
     this.legacyClub.loadMe().subscribe({
       next: (me) => {
         if (me?.status === 'ACTIVE') {
-          void this.router.navigate(['/legacy']);
+          void this.router.navigate(['/legacy/home']);
+        }
+        if (me?.status === 'PENDING_JOIN') {
+          void this.router.navigate(['/legacy/pay/JOIN']);
         }
       },
     });
@@ -196,12 +199,12 @@ export class LegacyJoinComponent implements OnInit {
     this.legacyClub.startJoin(pkg.code, sponsor).subscribe({
       next: () => {
         this.submitting.set(false);
-        void this.router.navigate(['/legacy/shop']);
+        void this.router.navigate(['/legacy/pay/JOIN']);
       },
       error: (err: LegacyClubHttpError) => {
         this.submitting.set(false);
         if (err.code === LEGACY_ERROR_CODES.ALREADY_ACTIVE) {
-          void this.router.navigate(['/legacy']);
+          void this.router.navigate(['/legacy/home']);
           return;
         }
         this.sponsorError.set(legacyErrorMessage(err));
