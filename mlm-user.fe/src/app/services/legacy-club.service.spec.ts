@@ -9,7 +9,7 @@ import { LegacyClubService } from './legacy-club.service';
 import { LegacyCartService } from './legacy-cart.service';
 import { UserService, User } from './user.service';
 import { ApiService } from './api.service';
-import { legacyClubMockStore, LegacyClubHttpError } from '../core/mocks/legacy-club.mock';
+import { legacyClubMockStore } from '../core/mocks/legacy-club.mock';
 import { LEGACY_ERROR_CODES } from '../core/models/legacy-club.models';
 import { LEGACY_CLUB_USE_MOCKS } from '../core/tokens/legacy-club.tokens';
 
@@ -147,12 +147,16 @@ describe('LegacyClubService (mocks)', () => {
     expect(after.balance).toBe(15000);
   });
 
-  it('closes Legacy shop when ACTIVE', async () => {
+  it('allows optional Legacy shop checkout when ACTIVE', async () => {
     legacyClubMockStore.seedActive();
     await firstValueFrom(service.loadMe());
-    await expect(firstValueFrom(cart.refresh())).rejects.toBeInstanceOf(LegacyClubHttpError);
-    await expect(firstValueFrom(cart.refresh())).rejects.toMatchObject({
-      code: LEGACY_ERROR_CODES.LEGACY_SHOP_JOIN_ONLY,
-    });
+    await firstValueFrom(cart.refresh());
+    expect(cart.isEmpty()).toBe(true);
+    expect(cart.canCheckout()).toBe(false);
+
+    await firstValueFrom(cart.setQuantity('legacy-prod-1', 1));
+    expect(cart.canCheckout()).toBe(true);
+    expect(service.me()?.cycle?.cycleWeeks).toBe(24);
+    expect(service.isWeeklyCycle()).toBe(true);
   });
 });

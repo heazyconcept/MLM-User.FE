@@ -22,7 +22,7 @@ import { LegacyPageShellComponent } from '../components/legacy-page-shell.compon
 import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
 
-const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'];
+const INTENT_SHOP_MODES: LegacyShopMode[] = ['JOIN', 'UPGRADE', 'REACTIVATE'];
 
 @Component({
   selector: 'app-legacy-shop',
@@ -41,7 +41,7 @@ const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'
     <app-legacy-page-shell>
       <app-legacy-page-header
         title="Legacy Club marketplace"
-        [subtitle]="modeChip() ?? 'Browse products for your Legacy purchase'"
+        [subtitle]="modeChip()"
         backLink="/legacy"
         backLabel="Legacy Club"
       >
@@ -83,13 +83,15 @@ const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'
           @if (stickyHint(); as hint) {
             <p class="mt-1 text-xs text-mlm-secondary">{{ hint }}</p>
           }
-          <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
-            <div
-              class="h-full rounded-full transition-all"
-              [class]="cart.canCheckout() ? 'bg-emerald-500' : 'bg-mlm-primary'"
-              [style.width.%]="cart.progressPercent()"
-            ></div>
-          </div>
+          @if (showIntentProgress()) {
+            <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
+              <div
+                class="h-full rounded-full transition-all"
+                [class]="cart.canCheckout() ? 'bg-emerald-500' : 'bg-mlm-primary'"
+                [style.width.%]="cart.progressPercent()"
+              ></div>
+            </div>
+          }
         </div>
 
         @if (loading()) {
@@ -138,7 +140,8 @@ export class LegacyShopComponent implements OnInit {
         return p ? `${p.package} · ${this.money(p.purchaseRequired)}` : 'Join';
       }
       case 'AUTOSHIP':
-        return `Autoship · ${this.money(me?.autoship?.requiredAmount ?? 0)}`;
+      case 'NONE':
+        return 'Optional shop · spend voucher anytime';
       case 'UPGRADE':
         return me?.intentPackage
           ? `Upgrade · ${me.intentPackage}`
@@ -147,8 +150,6 @@ export class LegacyShopComponent implements OnInit {
         return me?.membership?.package
           ? `Reactivate · ${me.membership.package}`
           : 'Reactivate · full pack';
-      case 'NONE':
-        return null;
       default: {
         const _exhaustive: never = mode;
         return _exhaustive;
@@ -159,34 +160,25 @@ export class LegacyShopComponent implements OnInit {
   stickyLabel = computed(() => {
     const mode = this.shopMode();
     const subtotal = this.cart.subtotal();
-    if (mode === 'AUTOSHIP') {
-      const required = this.cart.autoshipRequired();
-      return `Cart ${this.money(subtotal)} of ${this.money(required)} Autoship`;
+    if (mode === 'AUTOSHIP' || mode === 'NONE') {
+      return `Cart ${this.money(subtotal)}`;
     }
     return `Cart ${this.money(subtotal)} of ${this.money(this.cart.purchaseRequired())}`;
   });
 
   stickyHint = computed(() => {
     const mode = this.shopMode();
-    if (mode === 'AUTOSHIP') {
-      const pending = this.legacyClub.me()?.cycle?.pendingCount ?? 0;
-      if (pending > 0) {
-        const units = this.cart.autoshipReleaseUnits();
-        if (units > 0) {
-          return `This checkout can release ${units} waiting month(s).`;
-        }
-        return 'Cart is below one Autoship unit — this checkout is PV only until you reach the minimum.';
+    const voucherNet = this.legacyClub.me()?.cycle?.nextDueVoucherNet;
+    if (mode === 'AUTOSHIP' || mode === 'NONE') {
+      if (voucherNet != null && voucherNet > 0) {
+        return `Your weekly voucher credit is ${this.money(voucherNet)} — shop whenever you want.`;
       }
-      return 'Autoship not required right now. You can still buy (PV only). Early Autoship does not keep a credit.';
-    }
-    if (mode === 'UPGRADE' || mode === 'REACTIVATE') {
-      const units = this.cart.autoshipReleaseUnits();
-      if (units > 0) {
-        return `This basket can also release ${units} waiting month(s).`;
-      }
+      return 'Optional shop — spend your Legacy product voucher anytime. Commission drops automatically every 7 days.';
     }
     return null;
   });
+
+  showIntentProgress = computed(() => INTENT_SHOP_MODES.includes(this.shopMode()));
 
   canCancelIntent = computed(() => {
     const mode = this.shopMode();
@@ -198,14 +190,7 @@ export class LegacyShopComponent implements OnInit {
       next: (me) => {
         const mode = resolveLegacyShopMode(me);
         if (me?.status === 'ACTIVE') {
-          if (!ACTIVE_SHOP_MODES.includes(mode)) {
-            // Phase 1-only backend or no cycle / NONE: keep shop closed
-            this.closedMessage.set(
-              'Legacy marketplace is closed until Autoship (coming in your 6-month cycle).',
-            );
-            this.loading.set(false);
-            return;
-          }
+          // ACTIVE: always open shop (optional spend or upgrade/reactivate intent).
           this.openShop();
           return;
         }
@@ -236,14 +221,6 @@ export class LegacyShopComponent implements OnInit {
         }),
       error: (err: LegacyClubHttpError) => {
         if (err.code === LEGACY_ERROR_CODES.LEGACY_SHOP_JOIN_ONLY) {
-          const me = this.legacyClub.me();
-          const mode = resolveLegacyShopMode(me);
-          if (me?.status === 'ACTIVE' && (mode === 'NONE' || !me.cycle)) {
-            this.closedMessage.set(
-              'Legacy marketplace is closed until Autoship (coming in your 6-month cycle).',
-            );
-            return;
-          }
           void this.router.navigate(['/legacy']);
           return;
         }

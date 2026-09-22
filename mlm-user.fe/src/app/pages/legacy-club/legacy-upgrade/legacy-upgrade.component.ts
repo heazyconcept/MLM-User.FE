@@ -38,7 +38,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
     <app-legacy-page-shell>
       <app-legacy-page-header
         title="Upgrade package"
-        subtitle="Pay the difference only. Your 6 months start again from month 1. Instant goes to your Legacy account."
+        subtitle="Pay the difference only. Your weekly cycle starts again from week 1. Instant goes to your Legacy account."
         backLink="/legacy"
         backLabel="Legacy Club"
       />
@@ -54,7 +54,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
           <div class="py-2 text-center">
             <p class="font-semibold text-mlm-text">You are on the highest package.</p>
             <p class="mt-2 text-sm text-mlm-secondary">
-              Reactivate when your 6 months are complete.
+              Reactivate when your 24-week cycle is complete.
             </p>
             <a routerLink="/legacy" class="mt-4 inline-block">
               <p-button label="Back to Legacy Club" />
@@ -80,12 +80,17 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
                 <li>
                   New monthly: base {{ money(quote.newMonthlyBase) }} · increased
                   {{ money(quote.newMonthlyIncreased) }}
+                  ({{ money(quote.newMonthlyIncreased / 4) }} / week increased)
                 </li>
-                <li>New Autoship {{ money(quote.newAutoshipAmount) }}</li>
+                <li>
+                  Weekly voucher slice {{ money(quote.newAutoshipAmount / 4) }}
+                  (flyer Autoship {{ money(quote.newAutoshipAmount) }} / month)
+                </li>
               </ul>
               <p class="mt-3 text-xs text-gray-500">
-                Waiting months keep their old amount. Months not yet due are replaced. If you already
-                have 3 Successlines, new months use the increased {{ quote.toPackage }} rate.
+                Waiting weeks from the old cycle keep their amounts until catch-up drop. The new
+                list shows only the new package weeks. If you already have 3 Successlines, new weeks
+                use the increased {{ quote.toPackage }} rate.
               </p>
               <p-button
                 class="mt-4"

@@ -238,6 +238,10 @@ export const legacyClubMockStore = {
   seedActive(options?: { package?: LegacyPackageCode; cashoutBalance?: number }): void {
     const pkg = packageByCode(options?.package ?? 'VIP');
     const balance = options?.cashoutBalance ?? pkg.instantCommission;
+    const weeklyIncreased = Math.round(pkg.monthlyCommission / 4);
+    const weeklyAutoship = Math.round(pkg.autoshipAmount / 4);
+    const nextDueCashout = weeklyIncreased - weeklyAutoship;
+    const nextDueVoucherNet = Math.round(weeklyAutoship * 0.9);
     state.me = {
       status: 'ACTIVE',
       currency: 'NGN',
@@ -258,6 +262,35 @@ export const legacyClubMockStore = {
       minDirectsToIncreaseMonthly: 3,
       canCashoutLegacy: true,
       pendingJoin: null,
+      shopMode: 'NONE',
+      cycle: {
+        startedAt: '2026-09-18T10:00:00.000Z',
+        cycleMonths: 6,
+        cycleWeeks: 24,
+        issuedCount: 3,
+        droppedCount: 3,
+        pendingCount: 0,
+        pendingAmount: 0,
+        nextDueAt: '2026-10-09T10:00:00.000Z',
+        nextDueAmount: weeklyIncreased,
+        nextDueCashoutAmount: nextDueCashout,
+        nextDueVoucherNet,
+        nextDueRateTier: 'BASE',
+        isCycleComplete: false,
+      },
+      monthlyQualify: {
+        directSuccesslineCount: 0,
+        required: 3,
+        qualifiedAt: null,
+        isQualified: false,
+      },
+      autoship: {
+        requiredAmount: weeklyAutoship,
+        weeklyAutoshipAmount: weeklyAutoship,
+        lastAutoshipAt: null,
+        shopMode: 'NONE',
+      },
+      priorPending: { count: 0, amount: 0 },
     };
     state.ledger = [
       {
@@ -588,13 +621,7 @@ export const legacyClubMockStore = {
 
   async getCart(): Promise<{ items: LegacyMockCartLine[]; subtotal: number }> {
     if (state.me.status === 'ACTIVE') {
-      return rejectDelay(
-        new LegacyClubHttpError(
-          403,
-          LEGACY_ERROR_CODES.LEGACY_SHOP_JOIN_ONLY,
-          'Legacy marketplace is closed until Autoship (Phase 2).',
-        ),
-      );
+      return delay({ items: [...state.cart], subtotal: cartSubtotal() });
     }
     if (state.me.status !== 'PENDING_JOIN') {
       return rejectDelay(
@@ -609,16 +636,7 @@ export const legacyClubMockStore = {
   },
 
   async putCartItem(productId: string, quantity: number): Promise<{ items: LegacyMockCartLine[]; subtotal: number }> {
-    if (state.me.status === 'ACTIVE') {
-      return rejectDelay(
-        new LegacyClubHttpError(
-          403,
-          LEGACY_ERROR_CODES.LEGACY_SHOP_JOIN_ONLY,
-          'Legacy marketplace is closed until Autoship (Phase 2).',
-        ),
-      );
-    }
-    if (state.me.status !== 'PENDING_JOIN') {
+    if (state.me.status !== 'ACTIVE' && state.me.status !== 'PENDING_JOIN') {
       return rejectDelay(
         new LegacyClubHttpError(
           403,
@@ -660,30 +678,48 @@ export const legacyClubMockStore = {
   },
 
   async checkoutAndPay(walletType: string): Promise<{ checkoutId: string; orderId: string }> {
-    if (state.me.status === 'ACTIVE') {
-      return rejectDelay(
-        new LegacyClubHttpError(
-          403,
-          LEGACY_ERROR_CODES.LEGACY_SHOP_JOIN_ONLY,
-          'Legacy marketplace is closed until Autoship (Phase 2).',
-        ),
-      );
-    }
-    if (state.me.status !== 'PENDING_JOIN' || !state.me.pendingJoin) {
-      return rejectDelay(
-        new LegacyClubHttpError(
-          403,
-          LEGACY_ERROR_CODES.LEGACY_JOIN_REQUIRED,
-          'Start your Legacy join first.',
-        ),
-      );
-    }
     if (walletType !== 'LEGACY_VOUCHER') {
       return rejectDelay(
         new LegacyClubHttpError(
           400,
           LEGACY_ERROR_CODES.LEGACY_VOUCHER_REQUIRED,
           'Pay with Legacy product voucher only.',
+        ),
+      );
+    }
+
+    // Optional ACTIVE shop — any non-empty cart, no Autoship floor.
+    if (state.me.status === 'ACTIVE') {
+      const subtotal = cartSubtotal();
+      if (subtotal <= 0) {
+        return rejectDelay(
+          new LegacyClubHttpError(400, 'EMPTY_CART', 'Add products before checkout.'),
+        );
+      }
+      const voucher = state.me.legacyVoucher ?? { balance: 0, status: 'ACTIVE' as const };
+      if (voucher.balance < subtotal) {
+        return rejectDelay(
+          new LegacyClubHttpError(
+            400,
+            'INSUFFICIENT_BALANCE',
+            'Fund your Legacy product voucher, then return here.',
+          ),
+        );
+      }
+      state.me = {
+        ...state.me,
+        legacyVoucher: { ...voucher, balance: voucher.balance - subtotal },
+      };
+      state.cart = [];
+      return delay({ checkoutId: `checkout-${Date.now()}`, orderId: `legacy-order-${Date.now()}` });
+    }
+
+    if (state.me.status !== 'PENDING_JOIN' || !state.me.pendingJoin) {
+      return rejectDelay(
+        new LegacyClubHttpError(
+          403,
+          LEGACY_ERROR_CODES.LEGACY_JOIN_REQUIRED,
+          'Start your Legacy join first.',
         ),
       );
     }
@@ -709,6 +745,11 @@ export const legacyClubMockStore = {
     const sponsorUsername = state.me.pendingJoin.sponsorUsername;
     const sponsorSource = state.me.pendingJoin.sponsorSource;
     const orderId = `legacy-order-${Date.now()}`;
+    const weeklyIncreased = Math.round(pkg.monthlyCommission / 4);
+    const weeklyAutoship = Math.round(pkg.autoshipAmount / 4);
+    const nextDueCashout = weeklyIncreased - weeklyAutoship;
+    const nextDueVoucherNet = Math.round(weeklyAutoship * 0.9);
+    const startedAt = new Date().toISOString();
 
     state.me = {
       status: 'ACTIVE',
@@ -719,8 +760,8 @@ export const legacyClubMockStore = {
         package: pkg.code,
         sponsorUsername,
         sponsorSource,
-        joinedAt: new Date().toISOString(),
-        cycleStartedAt: new Date().toISOString(),
+        joinedAt: startedAt,
+        cycleStartedAt: startedAt,
         joinOrderId: orderId,
       },
       legacyCashout: { balance: pkg.instantCommission, status: 'ACTIVE' },
@@ -730,6 +771,35 @@ export const legacyClubMockStore = {
       minDirectsToIncreaseMonthly: 3,
       canCashoutLegacy: true,
       pendingJoin: null,
+      shopMode: 'NONE',
+      cycle: {
+        startedAt,
+        cycleMonths: 6,
+        cycleWeeks: 24,
+        issuedCount: 0,
+        droppedCount: 0,
+        pendingCount: 0,
+        pendingAmount: 0,
+        nextDueAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        nextDueAmount: weeklyIncreased,
+        nextDueCashoutAmount: nextDueCashout,
+        nextDueVoucherNet,
+        nextDueRateTier: 'BASE',
+        isCycleComplete: false,
+      },
+      monthlyQualify: {
+        directSuccesslineCount: 0,
+        required: 3,
+        qualifiedAt: null,
+        isQualified: false,
+      },
+      autoship: {
+        requiredAmount: weeklyAutoship,
+        weeklyAutoshipAmount: weeklyAutoship,
+        lastAutoshipAt: null,
+        shopMode: 'NONE',
+      },
+      priorPending: { count: 0, amount: 0 },
     };
     state.ledger = [
       {

@@ -13,8 +13,6 @@ import { LegacyPageShellComponent } from '../components/legacy-page-shell.compon
 import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
 
-const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'];
-
 @Component({
   selector: 'app-legacy-cart',
   imports: [
@@ -108,23 +106,14 @@ const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'
                 You can add more than the package amount. Extra products still earn PV.
               </p>
             }
-          } @else if (shopMode() === 'AUTOSHIP') {
-            <div class="flex justify-between text-sm">
-              <span class="text-mlm-secondary">Autoship minimum</span>
-              <span class="font-semibold text-mlm-text">{{ money(cart.autoshipRequired()) }}</span>
-            </div>
-            @if (cart.autoshipWarnBelowUnit()) {
-              <p class="text-sm text-amber-800">
-                Cart is below one Autoship unit. You can still checkout — this will be PV only and
-                will not release waiting months.
-              </p>
-            } @else if (cart.autoshipReleaseUnits() > 0) {
-              <p class="text-sm text-emerald-800">
-                This checkout can release {{ cart.autoshipReleaseUnits() }} waiting month(s).
-              </p>
-            } @else {
-              <p class="text-sm text-mlm-secondary">
-                Autoship — no Instant Commission. Pay with Legacy product voucher.
+          } @else if (shopMode() === 'AUTOSHIP' || shopMode() === 'NONE') {
+            <p class="text-sm text-mlm-secondary">
+              Optional shop — spend your Legacy product voucher anytime. No Instant Commission on
+              this checkout.
+            </p>
+            @if (voucherHint() > 0) {
+              <p class="text-xs text-mlm-secondary">
+                Your weekly voucher credit is {{ money(voucherHint()) }}.
               </p>
             }
           } @else if (shopMode() === 'UPGRADE' || shopMode() === 'REACTIVATE') {
@@ -141,11 +130,6 @@ const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'
             } @else {
               <p class="text-sm text-emerald-800">
                 Ready to checkout. Instant goes to your Legacy account.
-              </p>
-            }
-            @if (cart.autoshipReleaseUnits() > 0) {
-              <p class="text-xs text-mlm-secondary">
-                This basket can also release {{ cart.autoshipReleaseUnits() }} waiting month(s).
               </p>
             }
           }
@@ -177,16 +161,13 @@ export class LegacyCartComponent implements OnInit {
 
   pendingPackage = signal('VIP');
   shopMode = computed(() => resolveLegacyShopMode(this.legacyClub.me()));
+  voucherHint = computed(() => this.cart.weeklyVoucherHintAmount());
 
   ngOnInit(): void {
     this.legacyClub.loadMe().subscribe({
       next: (me) => {
         const mode = resolveLegacyShopMode(me);
         if (me?.status === 'ACTIVE') {
-          if (!ACTIVE_SHOP_MODES.includes(mode)) {
-            void this.router.navigate(['/legacy']);
-            return;
-          }
           this.ensureFloors(mode);
           this.cart.refresh().subscribe({ error: () => undefined });
           return;

@@ -20,8 +20,14 @@ import {
   LegacyPackage,
   LegacyPackagesResponse,
   LegacyRateTier,
+  LegacyCycle,
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
+import {
+  cyclePeriodCount,
+  cycleProgressLabel,
+  isWeeklyCycle,
+} from '../../../core/utils/legacy-cycle.util';
 import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
 import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
@@ -94,7 +100,7 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
           <app-legacy-metric-card
             label="My Successlines"
             [value]="'' + (me()?.directSuccesslineCount ?? 0)"
-            description="3 Successlines will raise your monthly commission later."
+            description="3 Successlines will raise your weekly commission later."
           >
             <a footer routerLink="/legacy/successlines">
               <p-button label="View Successlines" [outlined]="true" styleClass="w-full" />
@@ -113,33 +119,16 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
           <div class="grid gap-5 lg:grid-cols-2">
             <app-legacy-panel>
               <p class="text-xs font-bold uppercase tracking-[.15em] text-mlm-secondary">
-                Monthly Membership Commission
+                Weekly membership commission
               </p>
-              @if (cycle.pendingCount > 0) {
-                <p class="mt-3 text-3xl font-extrabold tracking-tight text-mlm-text">
-                  {{ money(cycle.pendingAmount) }} pending
-                </p>
-                <span
-                  class="mt-3 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold"
-                  [class]="
-                    cycle.nextDueRateTier === 'INCREASED'
-                      ? 'bg-emerald-50 text-emerald-800'
-                      : 'bg-gray-100 text-gray-700'
-                  "
-                >
-                  {{ rateLabel(cycle.nextDueRateTier) }}
-                </span>
-                <p class="mt-2 text-sm text-mlm-secondary">
-                  This waits until you complete Autoship. It will not cancel.
-                </p>
-              } @else if (cycle.isCycleComplete) {
+              <p class="mt-1 text-xs text-mlm-secondary">Same membership commission — every 7 days.</p>
+              @if (cycle.isCycleComplete) {
                 <p class="mt-3 text-lg font-semibold text-mlm-text">
-                  {{ cycle.cycleMonths }} of {{ cycle.cycleMonths }} months paid into your Legacy
-                  account
+                  {{ cycleProgress() }} paid into your Legacy account and voucher
                 </p>
               } @else if (cycle.nextDueAt) {
                 <p class="mt-3 text-lg font-semibold text-mlm-text">
-                  Next month {{ money(cycle.nextDueAmount) }} on
+                  Next week {{ money(cycle.nextDueAmount) }} on
                   {{ cycle.nextDueAt | date: 'mediumDate' }}
                 </p>
                 <span
@@ -152,49 +141,63 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
                 >
                   {{ rateLabel(cycle.nextDueRateTier) }}
                 </span>
+                @if (hasWeeklySplit(cycle)) {
+                  <ul class="mt-4 space-y-2 text-sm text-mlm-text">
+                    <li>
+                      <span class="font-semibold">{{ money(cycle.nextDueCashoutAmount!) }}</span>
+                      to Legacy account (cashable)
+                    </li>
+                    <li>
+                      <span class="font-semibold">{{ money(cycle.nextDueVoucherNet!) }}</span>
+                      to Legacy product voucher
+                    </li>
+                  </ul>
+                  <p class="mt-2 text-xs text-mlm-secondary">
+                    Part funds your Legacy product voucher (10% fee). The rest is in your Legacy
+                    account to cash out.
+                  </p>
+                }
+                <p class="mt-3 text-sm text-mlm-secondary">{{ cycleProgress() }}</p>
               } @else {
-                <p class="mt-3 text-sm text-mlm-secondary">No monthly due right now.</p>
+                <p class="mt-3 text-sm text-mlm-secondary">No weekly due right now.</p>
               }
               <p class="mt-3 text-sm text-mlm-secondary">{{ qualifyHint() }}</p>
               <a routerLink="/legacy/months" class="mt-5 block">
-                <p-button label="View 6-month cycle" [outlined]="true" styleClass="w-full" />
+                <p-button [label]="cycleLinkLabel()" [outlined]="true" styleClass="w-full" />
               </a>
             </app-legacy-panel>
 
             <app-legacy-panel>
-              <p class="text-xs font-bold uppercase tracking-[.15em] text-mlm-secondary">Autoship</p>
-              <p class="mt-3 text-sm leading-relaxed text-mlm-text">
-                Buy products of your choice from the Legacy marketplace, worth at least
-                {{ money(me()?.autoship?.requiredAmount ?? 0) }}. Pay with your Legacy product
-                voucher.
+              <p class="text-xs font-bold uppercase tracking-[.15em] text-mlm-secondary">
+                Legacy marketplace
               </p>
-              @if (shopMode() === 'AUTOSHIP') {
-                <a routerLink="/legacy/shop" class="mt-5 block">
-                  <p-button label="Shop Autoship" styleClass="w-full" />
-                </a>
-              } @else if (cycle.nextDueAt && !cycle.isCycleComplete) {
-                <p class="mt-5 text-sm text-emerald-800">
-                  You are up to date. Shop again after {{ cycle.nextDueAt | date: 'mediumDate' }}.
-                </p>
-                <p class="mt-1 text-xs text-mlm-secondary">Extra shop = PV only.</p>
-              } @else {
-                <p class="mt-5 text-sm text-mlm-secondary">Autoship is not required right now.</p>
-              }
+              <p class="mt-3 text-sm leading-relaxed text-mlm-text">
+                @if (cycle.nextDueVoucherNet != null && cycle.nextDueVoucherNet > 0) {
+                  Your weekly voucher credit is {{ money(cycle.nextDueVoucherNet) }} — shop whenever
+                  you want.
+                } @else {
+                  Spend your Legacy product voucher in the marketplace anytime. Shopping does not
+                  unlock commission — drops happen automatically every 7 days.
+                }
+              </p>
+              <a routerLink="/legacy/shop" class="mt-5 block">
+                <p-button label="Shop Legacy marketplace" styleClass="w-full" />
+              </a>
               <p class="mt-3 text-xs text-mlm-secondary">
-                This is not the Segulah Autoship wallet or the network Product Voucher.
+                Pay with Legacy product voucher only — not the network Product Voucher.
               </p>
             </app-legacy-panel>
           </div>
 
           @if (cycle.isCycleComplete) {
             <app-legacy-panel>
-              <p class="font-semibold text-mlm-text">Your 6-month cycle is complete.</p>
+              <p class="font-semibold text-mlm-text">Your weekly cycle is complete.</p>
               <p class="mt-1 text-sm text-mlm-secondary">
-                Pending still drops when you do Autoship.
+                Reactivate to start a new week 1 in 7 days.
               </p>
               @if (me()?.monthlyQualify?.isQualified) {
                 <p class="mt-1 text-sm text-mlm-secondary">
-                  When you reactivate, you keep the increased monthly.
+                  When you reactivate, you keep the increased weekly rate.
                 </p>
               }
             </app-legacy-panel>
@@ -206,8 +209,8 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
                 <app-legacy-panel>
                   <p class="text-xs font-bold uppercase tracking-[.15em] text-mlm-secondary">Upgrade</p>
                   <p class="mt-3 text-sm leading-relaxed text-mlm-text">
-                    Pay the difference in products only (Legacy voucher). Your 6 months start again
-                    from month 1. Instant goes to your Legacy account.
+                    Pay the difference in products only (Legacy voucher). Your weekly cycle starts
+                    again from week 1. Instant goes to your Legacy account.
                   </p>
                   <a routerLink="/legacy/upgrade" class="mt-5 block">
                     <p-button label="Upgrade" styleClass="w-full" />
@@ -225,11 +228,11 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
                   </p>
                   @if (me()?.monthlyQualify?.isQualified) {
                     <p class="mt-2 text-sm text-emerald-800">
-                      You keep the increased monthly. You do not need 3 new Successlines.
+                      You keep the increased weekly rate. You do not need 3 new Successlines.
                     </p>
                   } @else {
                     <p class="mt-2 text-sm text-mlm-secondary">
-                      Refer 3 Successlines to raise monthly on this new cycle. You can already cash
+                      Refer 3 Successlines to raise weekly on this new cycle. You can already cash
                       out.
                     </p>
                   }
@@ -415,7 +418,8 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
                       <span class="font-medium">into your Legacy account</span>
                     </li>
                     <li class="text-mlm-secondary">
-                      Monthly {{ money(pkg.monthlyCommission) }} × 6 — starts after you join
+                      Monthly {{ money(pkg.monthlyCommission) }}
+                      ({{ money(pkg.monthlyCommission / 4) }} / week) × 6 — starts after you join
                     </li>
                     <li>Successline {{ pkg.successlineBonusPercent }}% of directs' Instant</li>
                     <li class="font-medium">6-month total {{ money(pkg.sixMonthTotal) }}</li>
@@ -429,7 +433,7 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
                     <span
                       class="rounded-full bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-mlm-secondary"
                     >
-                      Autoship unlocks monthly
+                      Weekly commission auto-drop
                     </span>
                   </div>
                   @if (status() === 'PENDING_JOIN') {
@@ -475,7 +479,6 @@ export class LegacyHomeComponent implements OnInit {
   me = this.legacyClub.me;
   loading = this.legacyClub.loading;
   status = this.legacyClub.status;
-  shopMode = this.legacyClub.shopMode;
   packages = signal<LegacyPackage[]>([]);
   registerModalVisible = signal(false);
   username = computed(() => this.userService.currentUser()?.username ?? '');
@@ -508,15 +511,34 @@ export class LegacyHomeComponent implements OnInit {
     return tier === 'INCREASED' ? 'Increased' : 'Base';
   }
 
+  hasWeeklySplit(cycle: LegacyCycle): boolean {
+    return cycle.nextDueCashoutAmount != null && cycle.nextDueVoucherNet != null;
+  }
+
+  cycleProgress(): string {
+    const cycle = this.cycle();
+    if (!cycle) return '';
+    return cycleProgressLabel(cycle.issuedCount, cycle);
+  }
+
+  cycleLinkLabel(): string {
+    const cycle = this.cycle();
+    const total = cyclePeriodCount(cycle);
+    if (isWeeklyCycle(cycle)) {
+      return `View ${total}-week cycle`;
+    }
+    return `View ${cycle?.cycleMonths ?? 6}-month cycle`;
+  }
+
   qualifyHint(): string {
     const q = this.me()?.monthlyQualify;
     const required = q?.required ?? this.me()?.minDirectsToIncreaseMonthly ?? 3;
     const count = q?.directSuccesslineCount ?? this.me()?.directSuccesslineCount ?? 0;
     if (q?.isQualified || count >= required) {
-      return 'Your next monthly uses the increased amount.';
+      return 'You now earn the increased weekly rate. You keep it if you reactivate.';
     }
     const need = Math.max(0, required - count);
-    return `Refer ${need} more Successline${need === 1 ? '' : 's'} to raise your next monthly. You can already cash out.`;
+    return `Refer ${need} more Successline${need === 1 ? '' : 's'} to raise your next weekly. You can already cash out.`;
   }
 
   joinPackage(pkg: LegacyPackage): void {

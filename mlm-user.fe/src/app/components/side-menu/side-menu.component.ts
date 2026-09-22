@@ -230,7 +230,7 @@ export class SideMenuComponent implements OnInit {
               requiresPayment: true,
             } satisfies MenuItem,
             {
-              label: '6-Month Cycle',
+              label: 'Weekly Cycle',
               icon: 'pi pi-calendar',
               route: '/legacy/months',
               requiresPayment: true,
@@ -277,8 +277,8 @@ export class SideMenuComponent implements OnInit {
       route: '/legacy',
       requiresPayment: true,
       children,
-      ...(this.legacyClubService.hasPendingAutoship()
-        ? { badge: this.legacyClubService.pendingAutoshipCount() }
+      ...(this.legacyClubService.hasActiveCycle() && this.legacyClubService.cycleIssuedCount() > 0
+        ? { badge: this.legacyClubService.cycleIssuedCount() }
         : {}),
     };
   }

@@ -16,7 +16,6 @@ import { LegacyCartService } from '../../../services/legacy-cart.service';
 import { LegacyClubService } from '../../../services/legacy-club.service';
 import {
   LEGACY_ERROR_CODES,
-  LegacyShopMode,
   resolveLegacyShopMode,
 } from '../../../core/models/legacy-club.models';
 import {
@@ -27,8 +26,6 @@ import {
 import { ProductGalleryComponent } from '../../../components/product-gallery/product-gallery.component';
 import { QuantitySelectorComponent } from '../../../components/quantity-selector/quantity-selector.component';
 import { BadgeComponent } from '../../../components/badge/badge.component';
-
-const ACTIVE_SHOP_MODES: LegacyShopMode[] = ['AUTOSHIP', 'UPGRADE', 'REACTIVATE'];
 
 @Component({
   selector: 'app-legacy-product-detail',
@@ -75,9 +72,6 @@ export class LegacyProductDetailComponent implements OnInit {
       next: (me) => {
         const mode = resolveLegacyShopMode(me);
         if (me?.status === 'ACTIVE') {
-          if (!ACTIVE_SHOP_MODES.includes(mode)) {
-            void this.router.navigate(['/legacy']);
-          }
           return;
         }
         if (me?.status !== 'PENDING_JOIN' || mode !== 'JOIN') {

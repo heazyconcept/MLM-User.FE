@@ -740,7 +740,7 @@ export const routes: Routes = [
           import('./pages/legacy-club/legacy-months/legacy-months.component').then(
             (m) => m.LegacyMonthsComponent,
           ),
-        data: { title: 'Legacy 6-Month Cycle' },
+        data: { title: 'Legacy Weekly Cycle' },
       },
       {
         path: 'upgrade',

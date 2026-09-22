@@ -13,20 +13,20 @@
       description="Members currently under you in Legacy Club."
     />
     <app-legacy-metric-card
-      label="Needed for increased monthly"
+      label="Needed for increased weekly"
       [value]="'' + requiredCount()"
       [description]="
         isQualified()
-          ? 'You already qualify for the increased monthly rate.'
-          : 'Refer ' + remainingToQualify() + ' more to raise your next monthly.'
+          ? 'You already qualify for the increased weekly rate.'
+          : 'Refer ' + remainingToQualify() + ' more to raise your next weekly.'
       "
     />
     <app-legacy-metric-card
-      label="Monthly rate status"
+      label="Weekly rate status"
       [value]="isQualified() ? 'Increased' : 'Base'"
       [description]="
         isQualified()
-          ? 'Future months use the increased commission.'
+          ? 'Future weeks use the increased commission. You keep it if you reactivate.'
           : 'You can still cash out anytime — increase unlocks with more Successlines.'
       "
     />

@@ -35,7 +35,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
     <app-legacy-page-shell>
       <app-legacy-page-header
         title="Reactivate Legacy Club"
-        subtitle="Start a new 6-month cycle on your current package."
+        subtitle="Start a new 24-week cycle on your current package."
         backLink="/legacy"
         backLabel="Legacy Club"
       />
@@ -53,15 +53,15 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
           </p>
           @if (isQualified()) {
             <p class="text-sm text-emerald-800">
-              You keep the increased monthly. You do not need 3 new Successlines.
+              You keep the increased weekly rate. You do not need 3 new Successlines.
             </p>
           } @else {
             <p class="text-sm text-mlm-secondary">
-              Refer 3 Successlines to raise monthly on this new cycle. You can already cash out.
+              Refer 3 Successlines to raise weekly on this new cycle. You can already cash out.
             </p>
           }
           <p class="text-sm text-mlm-secondary">
-            Waiting months are not cancelled. Pay with your Legacy product voucher.
+            New week 1 starts in 7 days after you reactivate. Pay with your Legacy product voucher.
           </p>
           <p-button
             label="Start reactivate"

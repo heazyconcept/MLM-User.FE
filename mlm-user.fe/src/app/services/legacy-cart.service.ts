@@ -112,42 +112,33 @@ export class LegacyCartService {
   );
 
   readonly canCheckout = computed(() => {
-    const mode = resolveLegacyShopMode(this.legacyClub.me());
-    if (mode === 'AUTOSHIP') return !this.isEmpty();
+    const me = this.legacyClub.me();
+    const mode = resolveLegacyShopMode(me);
+    if (this.isEmpty()) return false;
+    // Optional shop for ACTIVE members (NONE / AUTOSHIP) — any non-empty cart.
+    if (me?.status === 'ACTIVE' && (mode === 'AUTOSHIP' || mode === 'NONE')) {
+      return true;
+    }
     if (mode === 'NONE') return false;
     const required = this.purchaseRequired();
-    return required > 0 && this.subtotal() >= required && !this.isEmpty();
+    return required > 0 && this.subtotal() >= required;
   });
 
   readonly progressPercent = computed(() => {
-    const mode = resolveLegacyShopMode(this.legacyClub.me());
-    if (mode === 'AUTOSHIP') {
-      const required = this.legacyClub.me()?.autoship?.requiredAmount ?? 0;
-      if (required <= 0) return 0;
-      return Math.min(100, Math.round((this.subtotal() / required) * 100));
+    const me = this.legacyClub.me();
+    const mode = resolveLegacyShopMode(me);
+    if (me?.status === 'ACTIVE' && (mode === 'AUTOSHIP' || mode === 'NONE')) {
+      return this.isEmpty() ? 0 : 100;
     }
     const required = this.purchaseRequired();
     if (required <= 0) return 0;
     return Math.min(100, Math.round((this.subtotal() / required) * 100));
   });
 
-  readonly autoshipRequired = computed(() => this.legacyClub.me()?.autoship?.requiredAmount ?? 0);
-
-  readonly autoshipReleaseUnits = computed(() => {
-    const required = this.autoshipRequired();
-    if (required <= 0) return 0;
-    const units = Math.floor(this.subtotal() / required);
-    const pending =
-      (this.legacyClub.me()?.cycle?.pendingCount ?? 0) +
-      (this.legacyClub.me()?.priorPending?.count ?? 0);
-    return Math.min(units, pending);
-  });
-
-  readonly autoshipWarnBelowUnit = computed(() => {
-    const mode = resolveLegacyShopMode(this.legacyClub.me());
-    if (mode !== 'AUTOSHIP') return false;
-    const pending = this.legacyClub.me()?.cycle?.pendingCount ?? 0;
-    return pending > 0 && this.autoshipReleaseUnits() === 0;
+  /** Display helper for weekly voucher credit — not a checkout floor. */
+  readonly weeklyVoucherHintAmount = computed(() => {
+    const cycle = this.legacyClub.me()?.cycle;
+    return cycle?.nextDueVoucherNet ?? this.legacyClub.me()?.autoship?.weeklyAutoshipAmount ?? 0;
   });
 
   refresh(): Observable<{ items: LegacyCartLineItem[]; subtotal: number }> {

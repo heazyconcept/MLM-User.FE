@@ -50,7 +50,10 @@ import { LegacyPageHeaderComponent } from '../components/legacy-page-header.comp
               <p class="text-sm text-mlm-secondary">Product purchase</p>
               <ul class="mt-5 flex-1 space-y-2 text-sm text-mlm-text">
                 <li>Instant {{ money(pkg.instantCommission) }} → Legacy account</li>
-                <li class="text-mlm-secondary">Monthly {{ money(pkg.monthlyCommission) }}</li>
+                <li class="text-mlm-secondary">
+                  Monthly {{ money(pkg.monthlyCommission) }}
+                  ({{ money(pkg.monthlyCommission / 4) }} / week)
+                </li>
                 <li>Successline {{ pkg.successlineBonusPercent }}%</li>
                 <li class="font-medium">6-month total {{ money(pkg.sixMonthTotal) }}</li>
               </ul>
