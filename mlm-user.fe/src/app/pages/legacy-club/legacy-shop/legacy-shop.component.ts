@@ -1,4 +1,12 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  OnInit,
+  inject,
+  signal,
+  computed,
+  effect,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -14,15 +22,12 @@ import { ProductCardComponent } from '../../shop/components/product-card.compone
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import {
   LEGACY_ERROR_CODES,
-  LegacyShopMode,
   resolveLegacyShopMode,
 } from '../../../core/models/legacy-club.models';
 import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
 import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
 import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
-
-const INTENT_SHOP_MODES: LegacyShopMode[] = ['JOIN', 'UPGRADE', 'REACTIVATE'];
 
 @Component({
   selector: 'app-legacy-shop',
@@ -41,20 +46,11 @@ const INTENT_SHOP_MODES: LegacyShopMode[] = ['JOIN', 'UPGRADE', 'REACTIVATE'];
     <app-legacy-page-shell>
       <app-legacy-page-header
         title="Legacy Club marketplace"
-        [subtitle]="modeChip()"
-        backLink="/legacy"
+        subtitle="Optional shop · pay with Legacy product voucher"
+        backLink="/legacy/home"
         backLabel="Legacy Club"
       >
         <div actions class="flex flex-wrap items-center gap-2">
-          @if (canCancelIntent()) {
-            <p-button
-              label="Cancel"
-              [text]="true"
-              size="small"
-              [loading]="cancelling()"
-              (onClick)="cancelIntent()"
-            />
-          }
           <a routerLink="/legacy/voucher">
             <p-button label="Fund Legacy voucher" [outlined]="true" size="small" />
           </a>
@@ -65,7 +61,7 @@ const INTENT_SHOP_MODES: LegacyShopMode[] = ['JOIN', 'UPGRADE', 'REACTIVATE'];
         <app-legacy-panel>
           <div class="py-6 text-center">
             <p class="font-semibold text-mlm-text">{{ closedMessage() }}</p>
-            <a routerLink="/legacy" class="mt-5 inline-block">
+            <a routerLink="/legacy/home" class="mt-5 inline-block">
               <p-button label="Back to Legacy Club" />
             </a>
           </div>
@@ -75,22 +71,13 @@ const INTENT_SHOP_MODES: LegacyShopMode[] = ['JOIN', 'UPGRADE', 'REACTIVATE'];
           class="sticky top-0 z-10 rounded-xl border border-gray-200 bg-white/95 px-5 py-4 shadow-sm backdrop-blur"
         >
           <div class="flex items-center justify-between gap-3 text-sm">
-            <span class="font-medium text-mlm-text">{{ stickyLabel() }}</span>
+            <span class="font-medium text-mlm-text">Cart {{ money(cart.subtotal()) }}</span>
             <a routerLink="/legacy/cart" class="font-semibold text-mlm-primary hover:underline">
               View cart ({{ cart.itemCount() }})
             </a>
           </div>
           @if (stickyHint(); as hint) {
             <p class="mt-1 text-xs text-mlm-secondary">{{ hint }}</p>
-          }
-          @if (showIntentProgress()) {
-            <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
-              <div
-                class="h-full rounded-full transition-all"
-                [class]="cart.canCheckout() ? 'bg-emerald-500' : 'bg-mlm-primary'"
-                [style.width.%]="cart.progressPercent()"
-              ></div>
-            </div>
           }
         </div>
 
@@ -127,79 +114,29 @@ export class LegacyShopComponent implements OnInit {
   products = signal<Product[]>([]);
   loading = signal(true);
   closedMessage = signal<string | null>(null);
-  cancelling = signal(false);
+  private awaitingLiveProducts = signal(false);
 
-  shopMode = computed(() => resolveLegacyShopMode(this.legacyClub.me()));
-
-  modeChip = computed(() => {
-    const me = this.legacyClub.me();
-    const mode = this.shopMode();
-    switch (mode) {
-      case 'JOIN': {
-        const p = me?.pendingJoin;
-        return p ? `${p.package} · ${this.money(p.purchaseRequired)}` : 'Join';
-      }
-      case 'AUTOSHIP':
-      case 'NONE':
-        return 'Optional shop · spend voucher anytime';
-      case 'UPGRADE':
-        return me?.intentPackage
-          ? `Upgrade · ${me.intentPackage}`
-          : 'Upgrade · difference';
-      case 'REACTIVATE':
-        return me?.membership?.package
-          ? `Reactivate · ${me.membership.package}`
-          : 'Reactivate · full pack';
-      default: {
-        const _exhaustive: never = mode;
-        return _exhaustive;
-      }
-    }
-  });
-
-  stickyLabel = computed(() => {
-    const mode = this.shopMode();
-    const subtotal = this.cart.subtotal();
-    if (mode === 'AUTOSHIP' || mode === 'NONE') {
-      return `Cart ${this.money(subtotal)}`;
-    }
-    return `Cart ${this.money(subtotal)} of ${this.money(this.cart.purchaseRequired())}`;
-  });
+  constructor() {
+    effect(() => {
+      if (!this.awaitingLiveProducts()) return;
+      if (this.productService.isLoading()) return;
+      this.products.set([...this.productService.products()]);
+      this.loading.set(false);
+      this.awaitingLiveProducts.set(false);
+    });
+  }
 
   stickyHint = computed(() => {
-    const mode = this.shopMode();
     const voucherNet = this.legacyClub.me()?.cycle?.nextDueVoucherNet;
-    if (mode === 'AUTOSHIP' || mode === 'NONE') {
-      if (voucherNet != null && voucherNet > 0) {
-        return `Your weekly voucher credit is ${this.money(voucherNet)} — shop whenever you want.`;
-      }
-      return 'Optional shop — spend your Legacy product voucher anytime. Commission drops automatically every 7 days.';
+    if (voucherNet != null && voucherNet > 0) {
+      return `Your weekly voucher credit is ${this.money(voucherNet)} — shop whenever you want.`;
     }
-    return null;
-  });
-
-  showIntentProgress = computed(() => INTENT_SHOP_MODES.includes(this.shopMode()));
-
-  canCancelIntent = computed(() => {
-    const mode = this.shopMode();
-    return mode === 'UPGRADE' || mode === 'REACTIVATE';
+    return 'Spend your Legacy product voucher anytime. Shopping does not unlock commission.';
   });
 
   ngOnInit(): void {
     this.legacyClub.loadMe().subscribe({
-      next: (me) => {
-        const mode = resolveLegacyShopMode(me);
-        if (me?.status === 'ACTIVE') {
-          // ACTIVE: always open shop (optional spend or upgrade/reactivate intent).
-          this.openShop();
-          return;
-        }
-        if (me?.status !== 'PENDING_JOIN' || mode !== 'JOIN') {
-          void this.router.navigate(['/legacy/join']);
-          return;
-        }
-        this.openShop();
-      },
+      next: () => this.openShop(),
     });
   }
 
@@ -221,7 +158,7 @@ export class LegacyShopComponent implements OnInit {
         }),
       error: (err: LegacyClubHttpError) => {
         if (err.code === LEGACY_ERROR_CODES.LEGACY_SHOP_JOIN_ONLY) {
-          void this.router.navigate(['/legacy']);
+          void this.router.navigate(['/legacy/pay/JOIN']);
           return;
         }
         this.messages.add({ severity: 'error', summary: 'Cart', detail: err.message });
@@ -229,76 +166,48 @@ export class LegacyShopComponent implements OnInit {
     });
   }
 
-  cancelIntent(): void {
-    const mode = this.shopMode();
-    if (mode !== 'UPGRADE' && mode !== 'REACTIVATE') return;
-    this.cancelling.set(true);
-    const req =
-      mode === 'UPGRADE' ? this.legacyClub.cancelUpgrade() : this.legacyClub.cancelReactivate();
-    req.subscribe({
-      next: () => {
-        this.cancelling.set(false);
-        this.messages.add({
-          severity: 'success',
-          summary: 'Cancelled',
-          detail: mode === 'UPGRADE' ? 'Upgrade cancelled.' : 'Reactivate cancelled.',
-        });
-        void this.router.navigate(['/legacy']);
-      },
-      error: (err: LegacyClubHttpError) => {
-        this.cancelling.set(false);
-        this.messages.add({
-          severity: 'error',
-          summary: 'Cancel',
-          detail: err.message ?? 'Could not cancel.',
-        });
-      },
-    });
-  }
-
   private openShop(): void {
+    const mode = resolveLegacyShopMode(this.legacyClub.me());
+    if (mode === 'JOIN') {
+      this.closedMessage.set('Finish your membership payment before shopping.');
+      this.loading.set(false);
+      return;
+    }
+    if (mode !== 'SHOP') {
+      this.closedMessage.set('Legacy marketplace is not available right now.');
+      this.loading.set(false);
+      return;
+    }
     this.closedMessage.set(null);
     this.loadProducts();
     this.cart.refresh().subscribe({ error: () => undefined });
   }
 
   private loadProducts(): void {
+    this.loading.set(true);
     if (environment.useLegacyClubMocks) {
-      const mocks = legacyClubMockStore.getProducts();
+      const mockProducts = legacyClubMockStore.getProducts();
       this.products.set(
-        mocks.map(
-          (p): Product => ({
-            id: p.id,
-            name: p.name,
-            description: p.description,
-            memberPriceNGN: p.price,
-            nonMemberPriceNGN: p.price,
-            price: p.price,
-            currency: p.currency,
-            pv: p.pv,
-            directReferralPv: p.directReferralPv,
-            cpv: p.cpv,
-            category: p.category,
-            images: p.images,
-            inStock: p.inStock,
-            eligibleWallets: ['voucher'],
-            purchasable: p.purchasable,
-            availableFrom: null,
-            nextPriceEffectiveFrom: null,
-            priceStatus: 'active',
-          }),
-        ),
+        mockProducts.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          price: p.price,
+          memberPriceNGN: p.price,
+          currency: p.currency,
+          pv: p.pv,
+          directReferralPv: p.directReferralPv,
+          cpv: p.cpv,
+          category: p.category,
+          images: p.images,
+          inStock: p.inStock,
+          purchasable: p.purchasable,
+        })) as Product[],
       );
       this.loading.set(false);
       return;
     }
+    this.awaitingLiveProducts.set(true);
     this.productService.loadProducts();
-    const poll = window.setInterval(() => {
-      if (!this.productService.isLoading()) {
-        this.products.set([...this.productService.filteredProducts()]);
-        this.loading.set(false);
-        window.clearInterval(poll);
-      }
-    }, 50);
   }
 }

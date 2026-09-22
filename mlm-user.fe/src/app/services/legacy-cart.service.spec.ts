@@ -58,17 +58,14 @@ describe('LegacyCartService (mocks)', () => {
 
   afterEach(() => legacyClubMockStore.reset());
 
-  it('computes remaining and canCheckout from package floor', async () => {
+  it('allows checkout when shopMode is SHOP and cart is non-empty', async () => {
+    legacyClubMockStore.seedActive();
     await firstValueFrom(club.loadMe());
-    await firstValueFrom(club.startJoin('VIP'));
-    await firstValueFrom(cart.setQuantity('legacy-prod-1', 2));
-    expect(cart.subtotal()).toBe(30000);
-    expect(cart.remaining()).toBe(30000);
+    expect(club.shopMode()).toBe('SHOP');
     expect(cart.canCheckout()).toBe(false);
 
-    await firstValueFrom(cart.setQuantity('legacy-prod-3', 1));
-    expect(cart.subtotal()).toBe(75000);
-    expect(cart.remaining()).toBe(0);
+    await firstValueFrom(cart.setQuantity('legacy-prod-1', 1));
+    expect(cart.subtotal()).toBe(15000);
     expect(cart.canCheckout()).toBe(true);
   });
 });

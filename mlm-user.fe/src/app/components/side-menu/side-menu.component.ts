@@ -208,31 +208,46 @@ export class SideMenuComponent implements OnInit {
   }
 
   private legacyClubMenuItem(): MenuItem {
-    const isActive = this.legacyClubService.status() === 'ACTIVE';
     const me = this.legacyClubService.me();
-    const canUpgrade = isActive && (me?.upgradeTargets?.length ?? 0) > 0;
-    const canReactivate = isActive && !!me?.canReactivate;
+    const isMember = this.legacyClubService.isMember();
+    const canUpgrade = me?.status === 'ACTIVE' && (me?.upgradeTargets?.length ?? 0) > 0;
+    const canReactivate =
+      !!me?.canReactivate ||
+      !!me?.lifecycle?.canReactivate ||
+      me?.status === 'REACTIVATION_DUE' ||
+      me?.status === 'SUSPENDED';
+    const canShop = this.legacyClubService.canShopProducts();
 
     const children: MenuItem[] = [
-      { label: 'Overview', icon: 'pi pi-home', route: '/legacy', requiresPayment: true },
-      {
-        label: 'Marketplace',
-        icon: 'pi pi-shopping-bag',
-        route: '/legacy/shop',
-        requiresPayment: true,
-      },
-      ...(isActive
+      { label: 'Overview', icon: 'pi pi-home', route: '/legacy/home', requiresPayment: true },
+      ...(canShop
+        ? [
+            {
+              label: 'Marketplace',
+              icon: 'pi pi-shopping-bag',
+              route: '/legacy/shop',
+              requiresPayment: true,
+            } satisfies MenuItem,
+          ]
+        : []),
+      ...(isMember
         ? [
             {
               label: 'Legacy Account',
               icon: 'pi pi-wallet',
-              route: '/legacy/cashout',
+              route: '/legacy/account',
               requiresPayment: true,
             } satisfies MenuItem,
             {
               label: 'Weekly Cycle',
               icon: 'pi pi-calendar',
-              route: '/legacy/months',
+              route: '/legacy/weeks',
+              requiresPayment: true,
+            } satisfies MenuItem,
+            {
+              label: 'Successlines',
+              icon: 'pi pi-users',
+              route: '/legacy/successlines',
               requiresPayment: true,
             } satisfies MenuItem,
             {

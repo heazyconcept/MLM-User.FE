@@ -288,6 +288,29 @@ Users cannot delete individual notifications. The frontend needs a delete endpoi
 
 ---
 
+## Issue: Bank saved but profile completeness still flags `accountNumber`
+
+### Problem
+
+After `PUT /users/me/bank`, `GET /users/me/bank` returns a valid bank record (`bankName`, `accountName`, `accountNumberMasked`) but still returns `isProfileComplete: false` and `profileMissingFields: ["accountNumber"]`. Users who completed profile and bank setup are blocked from checkout by the frontend profile gate.
+
+### Affected endpoints
+
+- `GET /users/me/bank` — returns incorrect completeness metadata alongside saved bank
+- `GET /users/me` — may also keep `isProfileComplete: false` if completeness ignores the bank resource
+- `PUT /users/me/bank` — should recompute completeness after save
+- `POST /orders/checkout` — may return `PROFILE_INCOMPLETE` for the same stale reason
+
+### Expected behavior
+
+Completeness calculation must include the bank entity. If bank details exist on `/users/me/bank`, do not list `accountNumber` as missing and set `isProfileComplete: true` when all other required fields are present.
+
+### Full write-up
+
+See [`BACKEND_BUG_BANK_PROFILE_COMPLETENESS.md`](./BACKEND_BUG_BANK_PROFILE_COMPLETENESS.md).
+
+---
+
 ## How to add more issues
 
 For each new issue, add a section with:

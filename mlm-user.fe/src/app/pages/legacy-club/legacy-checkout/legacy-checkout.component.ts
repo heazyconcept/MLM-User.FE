@@ -43,64 +43,52 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
       />
 
       @if (isImpersonating()) {
-        <app-legacy-panel>
-          <p class="text-sm text-mlm-secondary">Checkout is disabled during impersonation.</p>
-        </app-legacy-panel>
+        <div class="max-w-2xl">
+          <app-legacy-panel>
+            <p class="text-sm text-mlm-secondary">Checkout is disabled during impersonation.</p>
+          </app-legacy-panel>
+        </div>
       } @else {
-        <app-legacy-panel title="Order details">
-          <div class="space-y-2 text-sm text-mlm-text">
-          @if (shopMode() === 'JOIN' && pending(); as p) {
-            <p>
-              <span class="font-semibold">Package:</span> {{ p.package }}
-            </p>
-            <p>
-              <span class="font-semibold">Sponsor:</span> &#64;{{ p.sponsorUsername }}
-              <span class="text-gray-500">
-                ({{ p.sponsorSource === 'AUTO' ? 'Automatic' : 'You chose this username' }})
-              </span>
-            </p>
-            <p>
-              Instant you will receive
-              <span class="font-semibold">in the Legacy account</span>
-              after pay.
-            </p>
-          } @else if (shopMode() === 'AUTOSHIP' || shopMode() === 'NONE') {
-            <p class="font-semibold">Legacy marketplace</p>
-            <p>Spend your Legacy product voucher anytime. No Instant Commission on this checkout.</p>
-          } @else if (shopMode() === 'UPGRADE') {
-            <p class="font-semibold">
-              Upgrade{{ intentPackage() ? ' to ' + intentPackage() : '' }}
-            </p>
-            <p>Pay the difference only. Instant goes to your Legacy account.</p>
-            <p>Your weekly cycle starts again from week 1.</p>
-          } @else if (shopMode() === 'REACTIVATE') {
-            <p class="font-semibold">Reactivate {{ membershipPackage() }}</p>
-            <p>Full Instant goes to your Legacy account. Cycle starts again from week 1.</p>
-            @if (isQualified()) {
-              <p class="text-emerald-800">You keep the increased weekly rate.</p>
-            }
-          }
-
-          <p>
-            Pay with <span class="font-semibold">Legacy product voucher</span> only —
-            balance {{ money(voucherBalance()) }}.
+        <div class="mt-2 flex max-w-2xl flex-col gap-8">
+          <app-legacy-panel>
+            <div class="flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p class="text-xs font-bold uppercase tracking-[.15em] text-mlm-secondary">
+                  Legacy product voucher
+                </p>
+                <p class="mt-3 text-3xl font-extrabold tracking-tight text-mlm-text">
+                  {{ money(voucherBalance()) }}
+                </p>
+                <p class="mt-3 text-sm leading-relaxed text-mlm-secondary">
+                  Payment comes from this balance.
+                </p>
+              </div>
+              <div class="sm:text-right">
+                <p class="text-xs font-bold uppercase tracking-[.15em] text-mlm-secondary">
+                  Cart total
+                </p>
+                <p class="mt-3 text-2xl font-bold text-mlm-text">{{ money(cart.subtotal()) }}</p>
+              </div>
+            </div>
             @if (voucherBalance() < cart.subtotal()) {
-              <a routerLink="/legacy/voucher" class="ml-1 font-medium text-mlm-primary hover:underline"
-                >Fund your Legacy product voucher, then return here.</a
+              <a
+                routerLink="/legacy/voucher"
+                class="mt-6 inline-flex text-sm font-semibold text-mlm-primary hover:underline"
               >
+                Add funds before you pay
+              </a>
             }
-          </p>
-          <p class="font-semibold">Cart total: {{ money(cart.subtotal()) }}</p>
-          </div>
-        </app-legacy-panel>
+          </app-legacy-panel>
 
-        @if (pendingOrderData(); as orderData) {
-          <app-order-preview
-            [pendingOrderData]="orderData"
-            [submitting]="submitting()"
-            (orderConfirmed)="onConfirm($event)"
-          />
-        }
+          @if (pendingOrderData(); as orderData) {
+            <app-order-preview
+              [pendingOrderData]="orderData"
+              [submitting]="submitting()"
+              [pickupOnly]="true"
+              (orderConfirmed)="onConfirm($event)"
+            />
+          }
+        </div>
       }
     </app-legacy-page-shell>
   `,
@@ -116,48 +104,13 @@ export class LegacyCheckoutComponent implements OnInit {
   voucherBalance = signal(0);
   pendingOrderData = signal<CartCheckoutData | null>(null);
   isImpersonating = computed(() => !!this.auth.impersonation());
-  pending = computed(() => this.legacyClub.me()?.pendingJoin ?? null);
-  shopMode = computed(() => resolveLegacyShopMode(this.legacyClub.me()));
-  intentPackage = computed(() => this.legacyClub.me()?.intentPackage ?? null);
-  membershipPackage = computed(() => this.legacyClub.me()?.membership?.package ?? '');
-  isQualified = computed(() => !!this.legacyClub.me()?.monthlyQualify?.isQualified);
-
-  pageTitle = computed(() => {
-    const mode = this.shopMode();
-    switch (mode) {
-      case 'AUTOSHIP':
-      case 'NONE':
-        return 'Legacy marketplace checkout';
-      case 'UPGRADE':
-        return 'Legacy upgrade checkout';
-      case 'REACTIVATE':
-        return 'Legacy reactivate checkout';
-      case 'JOIN':
-        return 'Legacy Club checkout';
-      default: {
-        const _exhaustive: never = mode;
-        return _exhaustive;
-      }
-    }
-  });
+  pageTitle = computed(() => 'Legacy marketplace checkout');
 
   ngOnInit(): void {
     this.legacyClub.loadMe().subscribe({
       next: (me) => {
-        const mode = resolveLegacyShopMode(me);
-        if (me?.status === 'ACTIVE') {
-          this.ensureFloors(mode);
-          this.cart.refresh().subscribe({
-            next: () => this.buildPending(),
-            error: () => undefined,
-          });
-          this.legacyClub.getVoucher().subscribe({
-            next: (v) => this.voucherBalance.set(v.balance),
-          });
-          return;
-        }
-        if (me?.status !== 'PENDING_JOIN') {
-          void this.router.navigate(['/legacy/join']);
+        if (resolveLegacyShopMode(me) !== 'SHOP') {
+          void this.router.navigate(['/legacy/home']);
           return;
         }
         this.cart.refresh().subscribe({
@@ -182,19 +135,6 @@ export class LegacyCheckoutComponent implements OnInit {
       next: () => this.submitting.set(false),
       error: () => this.submitting.set(false),
     });
-  }
-
-  private ensureFloors(mode: ReturnType<typeof resolveLegacyShopMode>): void {
-    if (mode === 'REACTIVATE' && this.cart.purchaseRequired() <= 0) {
-      const pkg = this.legacyClub.me()?.membership?.package;
-      if (!pkg) return;
-      this.legacyClub.getPackages().subscribe({
-        next: (res) => {
-          const found = res.packages.find((p) => p.code === pkg);
-          if (found) this.cart.setReactivateFloor(found.purchaseAmount);
-        },
-      });
-    }
   }
 
   private buildPending(): void {

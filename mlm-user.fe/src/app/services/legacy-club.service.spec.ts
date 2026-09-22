@@ -100,35 +100,28 @@ describe('LegacyClubService (mocks)', () => {
     expect(after?.pendingJoin?.sponsorSource).toBe('CHOSEN');
   });
 
-  it('blocks checkout below package floor then pays with LEGACY_VOUCHER', async () => {
+  it('creates pendingPayment on join and activates via wallet pay', async () => {
     await firstValueFrom(service.loadMe());
     await firstValueFrom(service.startJoin('VIP'));
-    await firstValueFrom(service.fundVoucherFromCash(100000, 'NGN'));
+    const pending = await firstValueFrom(service.loadMe());
+    expect(pending?.pendingPayment?.purpose).toBe('JOIN');
+    expect(pending?.pendingPayment?.paymentRequired).toBe(60000);
 
-    await firstValueFrom(cart.setQuantity('legacy-prod-1', 1));
-    expect(cart.canCheckout()).toBe(false);
-    expect(cart.remaining()).toBe(45000);
-
-    await firstValueFrom(cart.setQuantity('legacy-prod-3', 1));
-    expect(cart.subtotal()).toBe(60000);
-    expect(cart.canCheckout()).toBe(true);
-
-    const paid = await legacyClubMockStore.checkoutAndPay('LEGACY_VOUCHER');
-    expect(paid.orderId).toBeTruthy();
-
+    await firstValueFrom(
+      service.payWithWallet({ purpose: 'JOIN', requestKey: crypto.randomUUID(), pin: '1234' }),
+    );
     const me = await firstValueFrom(service.loadMe());
     expect(me?.status).toBe('ACTIVE');
     expect(me?.legacyCashout?.balance).toBe(20000);
     expect(me?.instantReceived).toBe(20000);
     expect(me?.canCashoutLegacy).toBe(true);
-    expect(me?.directSuccesslineCount).toBe(0);
+    expect(me?.shopMode).toBe('SHOP');
   });
 
-  it('rejects network VOUCHER on Legacy pay', async () => {
+  it('rejects network VOUCHER on Legacy product checkout', async () => {
+    legacyClubMockStore.seedActive();
     await firstValueFrom(service.loadMe());
-    await firstValueFrom(service.startJoin('VIP'));
-    await firstValueFrom(service.fundVoucherFromCash(100000, 'NGN'));
-    await firstValueFrom(cart.setQuantity('legacy-prod-3', 2));
+    await firstValueFrom(cart.setQuantity('legacy-prod-1', 1));
     await expect(legacyClubMockStore.checkoutAndPay('VOUCHER')).rejects.toMatchObject({
       code: LEGACY_ERROR_CODES.LEGACY_VOUCHER_REQUIRED,
     });
@@ -147,9 +140,10 @@ describe('LegacyClubService (mocks)', () => {
     expect(after.balance).toBe(15000);
   });
 
-  it('allows optional Legacy shop checkout when ACTIVE', async () => {
+  it('allows Legacy shop checkout when shopMode is SHOP', async () => {
     legacyClubMockStore.seedActive();
     await firstValueFrom(service.loadMe());
+    expect(service.shopMode()).toBe('SHOP');
     await firstValueFrom(cart.refresh());
     expect(cart.isEmpty()).toBe(true);
     expect(cart.canCheckout()).toBe(false);

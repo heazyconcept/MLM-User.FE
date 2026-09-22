@@ -7,23 +7,35 @@ import {
   LegacyCashoutTransferRequest,
   LegacyCashoutTransferResponse,
   LegacyCashoutWithdrawRequest,
+  LegacyCompanyBankAccount,
   LegacyCurrency,
   LegacyHistoryResponse,
+  LegacyJoinPreview,
   LegacyJoinStartRequest,
+  LegacyLifecycle,
   LegacyMe,
   LegacyMemberLookup,
   LegacyMonthRow,
   LegacyMonthsResponse,
   LegacyPackageCode,
   LegacyPackagesResponse,
+  LegacyPaymentRecord,
+  LegacyPaymentWalletRequest,
   LegacyPriorPendingMonth,
   LegacySponsorValidateResponse,
   LegacySuccesslinesResponse,
   LegacyUpgradeQuote,
   LegacyVoucherResponse,
   LEGACY_ERROR_CODES,
+  isLegacyMember,
+  paymentAmountFromMe,
   resolveLegacyShopMode,
 } from '../core/models/legacy-club.models';
+import {
+  legacyHomeScreenPath,
+  paymentPurposeFromMe,
+  resolveLegacyHomeScreen,
+} from '../core/utils/legacy-routing.util';
 import {
   LegacyClubHttpError,
   legacyClubMockStore,
@@ -97,6 +109,25 @@ export class LegacyClubService {
     return !!cycle && !cycle.isCycleComplete;
   });
   readonly isWeeklyCycle = computed(() => isWeeklyCycle(this.meState()?.cycle));
+  readonly legacyHomeScreen = computed(() => {
+    const me = this.meState();
+    if (!me) return null;
+    return resolveLegacyHomeScreen(me);
+  });
+  readonly legacyHomePath = computed(() => {
+    const screen = this.legacyHomeScreen();
+    return screen ? legacyHomeScreenPath(screen) : '/legacy/join';
+  });
+  readonly paymentPurpose = computed(() => {
+    const me = this.meState();
+    if (!me) return null;
+    return paymentPurposeFromMe(me);
+  });
+  readonly paymentRequired = computed(() => paymentAmountFromMe(this.meState()));
+  readonly canShopProducts = computed(() => this.shopMode() === 'SHOP');
+  readonly isGracePeriod = computed(() => this.meState()?.status === 'REACTIVATION_DUE');
+  readonly isSuspended = computed(() => this.meState()?.status === 'SUSPENDED');
+  readonly isMember = computed(() => isLegacyMember(this.meState()));
 
   constructor() {
     effect(() => {
@@ -157,6 +188,90 @@ export class LegacyClubService {
         this.errorState.set('Failed to load Legacy Club');
         return throwError(() => err);
       }),
+    );
+  }
+
+  getJoinPreview(): Observable<LegacyJoinPreview> {
+    if (this.useMocks) {
+      return from(legacyClubMockStore.getJoinPreview());
+    }
+    return this.api.get<unknown>('legacy/join-preview').pipe(
+      map((raw) => unwrapData<LegacyJoinPreview>(raw)),
+      catchError((err) => throwError(() => mapHttpErrorCatch(err))),
+    );
+  }
+
+  getLifecycle(): Observable<LegacyLifecycle> {
+    if (this.useMocks) {
+      return from(legacyClubMockStore.getLifecycle());
+    }
+    return this.api.get<unknown>('legacy/lifecycle').pipe(
+      map((raw) => unwrapData<LegacyLifecycle>(raw)),
+      catchError((err) => throwError(() => mapHttpErrorCatch(err))),
+    );
+  }
+
+  payWithWallet(body: LegacyPaymentWalletRequest): Observable<void> {
+    if (this.useMocks) {
+      return from(legacyClubMockStore.payWithWallet(body)).pipe(
+        tap(() => void this.loadMe().subscribe()),
+        catchError((err) =>
+          throwError(() => (err instanceof LegacyClubHttpError ? err : mapHttpErrorCatch(err))),
+        ),
+      );
+    }
+    return this.api.post<unknown>('legacy/payments/wallet', body).pipe(
+      map(() => undefined),
+      tap(() => void this.loadMe().subscribe()),
+      catchError((err) => throwError(() => mapHttpErrorCatch(err))),
+    );
+  }
+
+  payManual(formData: FormData): Observable<LegacyPaymentRecord> {
+    if (this.useMocks) {
+      return from(legacyClubMockStore.payManual(formData)).pipe(
+        tap(() => void this.loadMe().subscribe()),
+        catchError((err) =>
+          throwError(() => (err instanceof LegacyClubHttpError ? err : mapHttpErrorCatch(err))),
+        ),
+      );
+    }
+    return this.api.post<unknown>('legacy/payments/manual', formData).pipe(
+      map((raw) => unwrapData<LegacyPaymentRecord>(raw)),
+      tap(() => void this.loadMe().subscribe()),
+      catchError((err) => throwError(() => mapHttpErrorCatch(err))),
+    );
+  }
+
+  getCompanyBankAccount(): Observable<LegacyCompanyBankAccount | null> {
+    if (this.useMocks) {
+      return from(legacyClubMockStore.getCompanyBankAccount());
+    }
+    return this.api.get<unknown>('legacy/payments/company-bank-account').pipe(
+      map((raw) => {
+        const data = unwrapData<Record<string, unknown>>(raw);
+        if (!data) return null;
+        return {
+          bankName: String(data['bankName'] ?? data['bank_name'] ?? ''),
+          accountNumber: String(data['accountNumber'] ?? data['account_number'] ?? ''),
+          accountName: String(data['accountName'] ?? data['account_name'] ?? ''),
+        };
+      }),
+      catchError(() => of(null)),
+    );
+  }
+
+  getPendingPayments(): Observable<LegacyPaymentRecord[]> {
+    if (this.useMocks) {
+      return from(legacyClubMockStore.getPendingPayments());
+    }
+    return this.api.get<unknown>('legacy/payments', { status: 'PENDING' }).pipe(
+      map((raw) => {
+        const data = unwrapData<LegacyPaymentRecord[] | { items?: LegacyPaymentRecord[] }>(raw);
+        if (Array.isArray(data)) return data;
+        return data?.items ?? [];
+      }),
+      catchError((err) => throwError(() => mapHttpErrorCatch(err))),
     );
   }
 

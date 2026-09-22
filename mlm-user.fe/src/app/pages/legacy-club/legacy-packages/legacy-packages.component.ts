@@ -95,6 +95,6 @@ export class LegacyPackagesComponent implements OnInit {
   }
 
   select(pkg: LegacyPackage): void {
-    void this.router.navigate(['/legacy/join'], { queryParams: { package: pkg.code } });
+    void this.router.navigate(['/legacy/join/sponsor'], { queryParams: { package: pkg.code } });
   }
 }

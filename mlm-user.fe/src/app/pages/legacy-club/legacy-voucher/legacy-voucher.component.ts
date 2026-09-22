@@ -90,12 +90,7 @@ import { LegacyBalanceBannerComponent } from '../components/legacy-balance-banne
           </app-legacy-panel>
         </div>
 
-        @if (
-          me()?.status === 'PENDING_JOIN' ||
-          shopMode() === 'AUTOSHIP' ||
-          shopMode() === 'UPGRADE' ||
-          shopMode() === 'REACTIVATE'
-        ) {
+        @if (shopMode() === 'SHOP') {
           <div class="pt-2">
             <a routerLink="/legacy/shop">
               <p-button

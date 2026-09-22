@@ -66,6 +66,8 @@ export class OrderPreviewComponent implements OnInit {
 
   pendingOrderData = input<any>(null);
   submitting = input<boolean>(false);
+  /** Legacy marketplace collects in person. Network checkout still offers delivery. */
+  pickupOnly = input(false);
   orderConfirmed = output<CheckoutConfirmPayload>();
 
   fulfilmentOption = this.orderService.fulfilmentOption;
@@ -155,6 +157,9 @@ export class OrderPreviewComponent implements OnInit {
   deliveryAvailable = computed(() => this.checkoutGeography()?.countryCode === 'NG');
 
   ngOnInit(): void {
+    if (this.pickupOnly()) {
+      this.orderService.setFulfilmentOption('pickup');
+    }
     this.loadCountries();
   }
 

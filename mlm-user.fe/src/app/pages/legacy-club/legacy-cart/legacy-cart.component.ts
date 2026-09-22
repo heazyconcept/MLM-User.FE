@@ -5,10 +5,7 @@ import { ButtonModule } from 'primeng/button';
 import { LegacyCartService } from '../../../services/legacy-cart.service';
 import { LegacyClubService } from '../../../services/legacy-club.service';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
-import {
-  LegacyShopMode,
-  resolveLegacyShopMode,
-} from '../../../core/models/legacy-club.models';
+import { resolveLegacyShopMode } from '../../../core/models/legacy-club.models';
 import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
 import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
@@ -91,47 +88,13 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
             <span class="font-semibold text-mlm-text">{{ money(cart.subtotal()) }}</span>
           </div>
 
-          @if (shopMode() === 'JOIN') {
-            <div class="flex justify-between text-sm">
-              <span class="text-mlm-secondary">Required for {{ pendingPackage() }}</span>
-              <span class="font-semibold text-mlm-text">{{ money(cart.purchaseRequired()) }}</span>
-            </div>
-            @if (!cart.canCheckout()) {
-              <p class="text-sm text-amber-800">
-                Add products worth at least {{ money(cart.remaining()) }} more to join as
-                {{ pendingPackage() }}.
-              </p>
-            } @else {
-              <p class="text-sm text-emerald-800">
-                You can add more than the package amount. Extra products still earn PV.
-              </p>
-            }
-          } @else if (shopMode() === 'AUTOSHIP' || shopMode() === 'NONE') {
-            <p class="text-sm text-mlm-secondary">
-              Optional shop — spend your Legacy product voucher anytime. No Instant Commission on
-              this checkout.
+          <p class="text-sm text-mlm-secondary">
+            Pay with Legacy product voucher only. No membership Instant on product checkout.
+          </p>
+          @if (voucherHint() > 0) {
+            <p class="text-xs text-mlm-secondary">
+              Your weekly voucher credit is {{ money(voucherHint()) }}.
             </p>
-            @if (voucherHint() > 0) {
-              <p class="text-xs text-mlm-secondary">
-                Your weekly voucher credit is {{ money(voucherHint()) }}.
-              </p>
-            }
-          } @else if (shopMode() === 'UPGRADE' || shopMode() === 'REACTIVATE') {
-            <div class="flex justify-between text-sm">
-              <span class="text-mlm-secondary">
-                {{ shopMode() === 'UPGRADE' ? 'Upgrade difference' : 'Reactivate package' }}
-              </span>
-              <span class="font-semibold text-mlm-text">{{ money(cart.purchaseRequired()) }}</span>
-            </div>
-            @if (!cart.canCheckout()) {
-              <p class="text-sm text-amber-800">
-                Add products worth at least {{ money(cart.remaining()) }} more.
-              </p>
-            } @else {
-              <p class="text-sm text-emerald-800">
-                Ready to checkout. Instant goes to your Legacy account.
-              </p>
-            }
           }
 
           <p-button
@@ -159,24 +122,15 @@ export class LegacyCartComponent implements OnInit {
   private legacyClub = inject(LegacyClubService);
   private router = inject(Router);
 
-  pendingPackage = signal('VIP');
-  shopMode = computed(() => resolveLegacyShopMode(this.legacyClub.me()));
   voucherHint = computed(() => this.cart.weeklyVoucherHintAmount());
 
   ngOnInit(): void {
     this.legacyClub.loadMe().subscribe({
       next: (me) => {
-        const mode = resolveLegacyShopMode(me);
-        if (me?.status === 'ACTIVE') {
-          this.ensureFloors(mode);
-          this.cart.refresh().subscribe({ error: () => undefined });
+        if (resolveLegacyShopMode(me) !== 'SHOP') {
+          void this.router.navigate(['/legacy/home']);
           return;
         }
-        if (me?.status !== 'PENDING_JOIN') {
-          void this.router.navigate(['/legacy/join']);
-          return;
-        }
-        this.pendingPackage.set(me.pendingJoin?.package ?? 'VIP');
         this.cart.refresh().subscribe({ error: () => undefined });
       },
     });
@@ -196,22 +150,5 @@ export class LegacyCartComponent implements OnInit {
 
   goCheckout(): void {
     void this.router.navigate(['/legacy/checkout']);
-  }
-
-  private ensureFloors(mode: LegacyShopMode): void {
-    if (mode === 'UPGRADE' && this.cart.purchaseRequired() <= 0) {
-      // Floor should already be set from upgrade start; leave as-is if missing
-      return;
-    }
-    if (mode === 'REACTIVATE' && this.cart.purchaseRequired() <= 0) {
-      const pkg = this.legacyClub.me()?.membership?.package;
-      if (!pkg) return;
-      this.legacyClub.getPackages().subscribe({
-        next: (res) => {
-          const found = res.packages.find((p) => p.code === pkg);
-          if (found) this.cart.setReactivateFloor(found.purchaseAmount);
-        },
-      });
-    }
   }
 }
