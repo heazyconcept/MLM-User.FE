@@ -4,6 +4,7 @@ import { RouterOutlet } from '@angular/router';
 import { SideMenuComponent } from '../../components/side-menu/side-menu.component';
 import { DashboardHeaderComponent } from '../../components/dashboard-header/dashboard-header.component';
 import { DashboardPopupComponent } from '../../components/dashboard-popup/dashboard-popup.component';
+import { LoadingComponent } from '../../components/loading/loading.component';
 import { LayoutService } from '../../services/layout.service';
 import { RealTimeNotificationService } from '../../services/realtime-notification.service';
 import { DashboardPopupService } from '../../services/dashboard-popup.service';
@@ -16,6 +17,7 @@ import { DashboardPopupService } from '../../services/dashboard-popup.service';
     SideMenuComponent,
     DashboardHeaderComponent,
     DashboardPopupComponent,
+    LoadingComponent,
   ],
 
   templateUrl: './dashboard-layout.component.html',

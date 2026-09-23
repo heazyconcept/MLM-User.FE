@@ -3,11 +3,10 @@ import { RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 
 import { ModalComponent } from './components/modal/modal.component';
-import { LoadingComponent } from './components/loading/loading.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastModule, ModalComponent, LoadingComponent],
+  imports: [RouterOutlet, ToastModule, ModalComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
