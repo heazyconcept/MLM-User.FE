@@ -22,11 +22,12 @@ export class LegacyPaymentService {
 
   payWithWallet(
     purpose: LegacyPaymentPurpose,
-    pin: string,
     requestKey?: string,
   ): Observable<LegacyMe | null> {
-    const key = requestKey ?? this.newRequestKey();
-    const body: LegacyPaymentWalletRequest = { purpose, requestKey: key, pin };
+    const body: LegacyPaymentWalletRequest = {
+      purpose,
+      requestKey: requestKey ?? this.newRequestKey(),
+    };
     return this.legacyClub.payWithWallet(body).pipe(
       switchMap(() => this.legacyClub.loadMe()),
     );
@@ -34,10 +35,9 @@ export class LegacyPaymentService {
 
   payWithWalletRetry409(
     purpose: LegacyPaymentPurpose,
-    pin: string,
     requestKey: string,
   ): Observable<LegacyMe | null> {
-    return this.payWithWallet(purpose, pin, requestKey).pipe(
+    return this.payWithWallet(purpose, requestKey).pipe(
       tap({
         error: (err: unknown) => {
           if (err instanceof LegacyClubHttpError && err.status === 409) {

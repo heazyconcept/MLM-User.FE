@@ -54,7 +54,7 @@ Live probe against `https://api.segulah.ng` returned 502 at implementation time 
 
 ## POST /legacy/payments/wallet
 
-Request: `{ "purpose": "JOIN", "requestKey": "<uuid>", "pin": "1234" }`
+Request: `{ "purpose": "JOIN", "requestKey": "<uuid>" }` — registration-wallet Legacy payments do **not** require `pin`.
 
 ## POST /legacy/payments/manual (multipart)
 

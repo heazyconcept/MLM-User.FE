@@ -39,11 +39,30 @@ export function legacyErrorMessage(err: unknown, fallback = 'Something went wron
       case 'NOT_LEGACY_MEMBER':
         return 'Join Legacy Club first.';
       default:
-        return err.message || fallback;
+        return mapPinValidationMessage(err.message) ?? err.message ?? fallback;
     }
   }
   const http = err as { error?: { message?: string | string[]; code?: string }; message?: string };
-  if (typeof http?.error?.message === 'string') return http.error.message;
-  if (Array.isArray(http?.error?.message)) return http.error.message[0] ?? fallback;
-  return http?.message ?? fallback;
+  const raw =
+    typeof http?.error?.message === 'string'
+      ? http.error.message
+      : Array.isArray(http?.error?.message)
+        ? http.error.message.join(' ')
+        : http?.message;
+  return mapPinValidationMessage(raw) ?? raw ?? fallback;
+}
+
+function mapPinValidationMessage(message: string | undefined): string | null {
+  if (!message) return null;
+  const normalized = message.toLowerCase();
+  if (
+    normalized.includes('pin must match') ||
+    normalized.includes('pin must be a string') ||
+    normalized.includes('pin should not be empty') ||
+    normalized.includes('pin must be longer') ||
+    normalized.includes('pin is required')
+  ) {
+    return 'Enter your 4-digit transaction PIN to continue.';
+  }
+  return null;
 }

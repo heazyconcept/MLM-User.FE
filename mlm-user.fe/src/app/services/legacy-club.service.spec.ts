@@ -108,7 +108,7 @@ describe('LegacyClubService (mocks)', () => {
     expect(pending?.pendingPayment?.paymentRequired).toBe(60000);
 
     await firstValueFrom(
-      service.payWithWallet({ purpose: 'JOIN', requestKey: crypto.randomUUID(), pin: '1234' }),
+      service.payWithWallet({ purpose: 'JOIN', requestKey: crypto.randomUUID() }),
     );
     const me = await firstValueFrom(service.loadMe());
     expect(me?.status).toBe('ACTIVE');
