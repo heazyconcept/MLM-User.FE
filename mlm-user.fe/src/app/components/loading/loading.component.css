@@ -1,6 +1,6 @@
 /* ── Full-screen loading overlay ── */
 .loading-overlay {
-    position: fixed;
+    position: absolute;
     inset: 0;
     z-index: 9999;
     display: flex;

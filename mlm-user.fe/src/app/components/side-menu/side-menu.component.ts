@@ -1,4 +1,13 @@
-import { Component, signal, computed, inject, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  signal,
+  computed,
+  inject,
+  OnInit,
+  DestroyRef,
+  ChangeDetectionStrategy,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { TooltipModule } from 'primeng/tooltip';
@@ -47,12 +56,30 @@ interface MenuSection {
       .hide-scrollbar::-webkit-scrollbar {
         display: none;
       }
+
+      .side-menu-flyout {
+        position: absolute;
+        left: calc(100% + 0.25rem);
+        top: 0;
+        z-index: 60;
+        min-width: 12rem;
+        max-height: min(70vh, 24rem);
+        overflow-y: auto;
+        padding: 0.375rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgb(229 231 235);
+        background: white;
+        box-shadow:
+          0 10px 15px -3px rgb(0 0 0 / 0.1),
+          0 4px 6px -4px rgb(0 0 0 / 0.1);
+      }
     `,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SideMenuComponent implements OnInit {
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
   private userService = inject(UserService);
   private authService = inject(AuthService);
   private layoutService = inject(LayoutService);
@@ -499,56 +526,57 @@ export class SideMenuComponent implements OnInit {
     return sections.filter((s: MenuSection) => s.title !== 'MERCHANT');
   });
 
-  constructor() {
+  ngOnInit(): void {
+    this.activeRoute.set(this.router.url);
+    this.syncExpandedFromRoute(this.router.url);
+
     this.router.events
-      .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe((event: unknown) => {
-        const navEvent = event as NavigationEnd;
-        this.activeRoute.set(navEvent.urlAfterRedirects);
-        this.autoExpandActiveSubmenu();
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((event) => {
+        this.activeRoute.set(event.urlAfterRedirects);
+        this.syncExpandedFromRoute(event.urlAfterRedirects);
       });
 
-    this.activeRoute.set(this.router.url);
-    this.autoExpandActiveSubmenu();
-  }
-
-  ngOnInit(): void {
     this.merchantService.fetchProfile();
     if (this.isPaid()) {
       this.consultantService.fetchConsultantData();
     }
   }
 
-  private autoExpandActiveSubmenu(): void {
-    const currentUrl = this.activeRoute();
-    this.visibleMenuSections().forEach((section: MenuSection) => {
-      section.items.forEach((item: MenuItem) => {
-        const hasActiveChild = item.children?.some(
-          (child: MenuItem) => child.route && currentUrl.startsWith(child.route),
-        );
-        const hasActiveGrandchild = item.children?.some(
-          (child: MenuItem) => child.children?.some(
-            (gc: MenuItem) => gc.route && currentUrl.startsWith(gc.route),
-          ),
-        );
-        const isParentActive =
-          item.route && (currentUrl === item.route || currentUrl.startsWith(item.route + '/'));
+  private syncExpandedFromRoute(url: string): void {
+    const next = new Set<string>();
 
-        if (hasActiveChild || hasActiveGrandchild || (isParentActive && item.children)) {
-          this.toggleSubMenu(item.label, true);
+    const walk = (items: MenuItem[], ancestors: string[]): void => {
+      for (const item of items) {
+        if (!item.children?.length) continue;
+
+        const branchActive = item.children.some((child) => this.isMenuBranchActive(child, url));
+        if (branchActive) {
+          ancestors.forEach((label) => next.add(label));
+          next.add(item.label);
         }
 
-        // Also expand nested children if they have an active grandchild
-        item.children?.forEach((child: MenuItem) => {
-          const childHasActiveRoute = child.children?.some(
-            (gc: MenuItem) => gc.route && currentUrl.startsWith(gc.route),
-          );
-          if (childHasActiveRoute) {
-            this.toggleSubMenu(child.label, true);
-          }
-        });
-      });
-    });
+        walk(item.children, [...ancestors, item.label]);
+      }
+    };
+
+    this.visibleMenuSections().forEach((section) => walk(section.items, []));
+    this.openMenus.set(next);
+  }
+
+  private isMenuBranchActive(item: MenuItem, url: string): boolean {
+    if (item.route) {
+      if (item.queryParams) {
+        return this.isActiveMenuItem(item);
+      }
+      const path = url.split('?')[0];
+      return path === item.route || path.startsWith(`${item.route}/`);
+    }
+
+    return item.children?.some((child) => this.isMenuBranchActive(child, url)) ?? false;
   }
 
   toggleCollapse(): void {
@@ -581,34 +609,50 @@ export class SideMenuComponent implements OnInit {
     return (item.requiresPayment ?? false) && !this.isPaid();
   }
 
-  navigate(item: MenuItem): void {
-    // Handle action items (like logout)
-    if (item.action) {
-      item.action();
-      return;
-    }
+  menuHref(item: MenuItem): string | undefined {
+    if (!item.route || this.isItemDisabled(item)) return undefined;
+    const query = item.queryParams;
+    if (!query || Object.keys(query).length === 0) return item.route;
+    return `${item.route}?${new URLSearchParams(query).toString()}`;
+  }
 
-    // Prevent navigation if item requires payment and user hasn't paid
+  handleAction(item: MenuItem): void {
+    item.action?.();
+    this.closeMobileMenu();
+  }
+
+  navigateTo(item: MenuItem, event: MouseEvent): void {
     if (this.isItemDisabled(item)) {
+      event.preventDefault();
       return;
     }
 
-    // Parent items are expand/collapse controls; leaf items perform navigation.
-    if (item.children && item.children.length > 0) {
-      this.toggleSubMenu(item.label);
+    if (!item.route || event.defaultPrevented) return;
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
       return;
     }
 
-    // Navigate if has route
-    if (item.route) {
-      void this.router
-        .navigate([item.route], { queryParams: item.queryParams ?? {} })
-        .then((ok) => {
-          if (ok) {
-            this.closeMobileMenu();
-          }
-        });
+    event.preventDefault();
+    event.stopPropagation();
+
+    void this.router
+      .navigate([item.route], { queryParams: item.queryParams ?? {} })
+      .then((ok) => {
+        if (ok) {
+          this.closeMobileMenu();
+        }
+      });
+  }
+
+  submenuLinkClass(item: MenuItem, active: boolean): string {
+    const base =
+      'flex items-center justify-between py-1.5 text-sm text-mlm-warm-600 hover:text-mlm-primary transition-colors';
+    if (this.isItemDisabled(item)) {
+      return `${base} opacity-50 cursor-not-allowed`;
     }
+    return active
+      ? `${base} text-mlm-primary font-semibold cursor-pointer`
+      : `${base} cursor-pointer`;
   }
 
   logout(): void {
