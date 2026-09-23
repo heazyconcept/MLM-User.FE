@@ -288,6 +288,26 @@ Users cannot delete individual notifications. The frontend needs a delete endpoi
 
 ---
 
+## Issue: Legacy registration-wallet payment requires PIN
+
+### Problem
+
+`POST /legacy/payments/wallet` returns 400 when `pin` is omitted, with messages such as `pin must match /^\d{4}$/ regular expression` and `pin must be a string`. Product decision: Legacy join/upgrade/reactivate paid from the registration wallet should **not** require a Transaction PIN. FE sends only `{ purpose, requestKey }`.
+
+### Affected endpoints
+
+- `POST /legacy/payments/wallet`
+
+### Expected behavior
+
+Make `pin` optional (or remove from DTO) for registration-wallet Legacy membership payments. Keep PIN required on `/legacy/cashout/withdraw` and `/legacy/cashout/transfer`.
+
+### Full write-up
+
+See [`BACKEND_BUG_LEGACY_WALLET_PAYMENT_NO_PIN.md`](./BACKEND_BUG_LEGACY_WALLET_PAYMENT_NO_PIN.md).
+
+---
+
 ## Issue: Bank saved but profile completeness still flags `accountNumber`
 
 ### Problem

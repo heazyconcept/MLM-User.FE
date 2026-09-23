@@ -152,7 +152,8 @@ export interface LegacyJoinPreview {
 export interface LegacyPaymentWalletRequest {
   purpose: LegacyPaymentPurpose;
   requestKey: string;
-  pin: string;
+  /** Not required for registration-wallet Legacy membership payments. */
+  pin?: string;
 }
 
 export interface LegacyPaymentRecord {

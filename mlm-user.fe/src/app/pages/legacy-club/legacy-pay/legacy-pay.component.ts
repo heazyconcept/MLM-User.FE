@@ -8,7 +8,7 @@ import {
   computed,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
@@ -19,6 +19,7 @@ import { LegacyPaymentService } from '../../../services/legacy-payment.service';
 import { RegistrationService } from '../../../services/registration.service';
 import {
   LegacyMe,
+  LegacyMemberStatus,
   LegacyPackageCode,
   LegacyPaymentMethod,
   LegacyPaymentPurpose,
@@ -38,11 +39,30 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
 
 type PayTab = 'wallet' | 'manual';
 
+function formatLegacyMembershipStatus(status: LegacyMemberStatus): string {
+  switch (status) {
+    case 'NONE':
+    case 'PENDING_JOIN':
+      return 'PENDING';
+    case 'ACTIVE':
+      return 'ACTIVE';
+    case 'REACTIVATION_DUE':
+      return 'REACTIVATION DUE';
+    case 'SUSPENDED':
+      return 'SUSPENDED';
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
+}
+
 @Component({
   selector: 'app-legacy-pay',
   imports: [
     CommonModule,
     FormsModule,
+    RouterLink,
     ButtonModule,
     InputTextModule,
     LegacyPageShellComponent,
@@ -52,14 +72,25 @@ type PayTab = 'wallet' | 'manual';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-legacy-page-shell>
-      <app-legacy-page-header
-        [title]="pageTitle()"
-        [subtitle]="pageSubtitle()"
-        backLink="/legacy"
-        backLabel="Legacy Club"
-      />
-
       <div class="flex max-w-2xl flex-col gap-8">
+        <div class="rounded-xl border border-amber-200 bg-amber-50/80 px-5 py-4 sm:px-6">
+          <p class="font-semibold text-mlm-text">
+            Club Membership {{ membershipStatusLabel() }}
+          </p>
+          <p class="mt-2 text-sm leading-relaxed text-mlm-secondary">
+            Fund your product voucher wallet to
+            <a routerLink="/legacy/voucher" class="font-semibold text-mlm-primary hover:underline">
+              ACTIVATE
+            </a>
+          </p>
+        </div>
+
+        <app-legacy-page-header
+          [title]="pageTitle()"
+          [subtitle]="pageSubtitle()"
+          backLink="/legacy"
+          backLabel="Legacy Club"
+        />
         @if (pendingManual()) {
           <app-legacy-panel title="Payment pending review">
             <p class="text-sm leading-relaxed text-mlm-text">
@@ -117,23 +148,6 @@ type PayTab = 'wallet' | 'manual';
                   Balance:
                   <span class="font-semibold text-mlm-text">{{ money(walletBalance()) }}</span>
                 </p>
-                <div class="flex flex-col gap-2">
-                  <label class="text-sm font-semibold text-gray-700" for="pay-pin">
-                    Transaction PIN
-                  </label>
-                  <input
-                    id="pay-pin"
-                    pInputText
-                    type="password"
-                    class="w-full max-w-xs"
-                    placeholder="4-digit PIN"
-                    inputmode="numeric"
-                    autocomplete="off"
-                    maxlength="4"
-                    [ngModel]="pin()"
-                    (ngModelChange)="onPinChange($event)"
-                  />
-                </div>
                 @if (error()) {
                   <p class="text-sm text-red-800">{{ error() }}</p>
                 }
@@ -220,7 +234,6 @@ export class LegacyPayComponent implements OnInit, OnDestroy {
   companyBank = signal<{ bankName: string; accountNumber: string; accountName: string } | null>(
     null,
   );
-  pin = signal('');
   packageAmount = signal(0);
   depositorName = '';
   evidenceFile = signal<File | null>(null);
@@ -253,7 +266,7 @@ export class LegacyPayComponent implements OnInit, OnDestroy {
     const me = this.me();
     if (!me || this.purpose() === 'JOIN') {
       const pkg = me?.pendingJoin?.package;
-      if (pkg) return `Instant commission credited to your Legacy account after approval.`;
+      if (pkg) return 'Instant commission will be for product purchases.';
     }
     return null;
   });
@@ -266,6 +279,10 @@ export class LegacyPayComponent implements OnInit, OnDestroy {
 
   hasWalletMethod = computed(() => this.paymentMethods().includes('REGISTRATION_WALLET'));
   hasManualMethod = computed(() => this.paymentMethods().includes('MANUAL_BANK'));
+
+  membershipStatusLabel = computed(() =>
+    formatLegacyMembershipStatus(this.me()?.status ?? 'NONE'),
+  );
 
   ngOnInit(): void {
     const purpose = (this.route.snapshot.paramMap.get('purpose') ?? 'JOIN').toUpperCase();
@@ -304,7 +321,6 @@ export class LegacyPayComponent implements OnInit, OnDestroy {
   canPayWallet = computed(() => {
     return (
       !this.submitting() &&
-      /^\d{4}$/.test(this.pin()) &&
       this.amountDue() > 0 &&
       this.walletBalance() >= this.amountDue()
     );
@@ -313,16 +329,11 @@ export class LegacyPayComponent implements OnInit, OnDestroy {
   payHint = computed(() => {
     if (this.canPayWallet() || this.submitting()) return null;
     if (this.amountDue() <= 0) return 'Loading the amount due for this package…';
-    if (!/^\d{4}$/.test(this.pin())) return 'Enter your 4-digit transaction PIN.';
     if (this.walletBalance() < this.amountDue()) {
       return 'Your registration wallet balance is lower than the amount due.';
     }
     return null;
   });
-
-  onPinChange(value: string): void {
-    this.pin.set(value.replace(/\D/g, '').slice(0, 4));
-  }
 
   canSubmitManual(): boolean {
     return (
@@ -341,7 +352,7 @@ export class LegacyPayComponent implements OnInit, OnDestroy {
     const key = this.requestKey();
 
     const attempt = () => {
-      this.paymentService.payWithWallet(purpose, this.pin(), key).subscribe({
+      this.paymentService.payWithWallet(purpose, key).subscribe({
         next: (me) => {
           this.submitting.set(false);
           if (me && me.status === 'ACTIVE') {

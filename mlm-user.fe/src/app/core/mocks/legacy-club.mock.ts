@@ -502,9 +502,6 @@ export const legacyClubMockStore = {
     if (amount <= 0) {
       return rejectDelay(new LegacyClubHttpError(400, 'NO_PAYMENT', 'No payment due.'));
     }
-    if (!body.pin || body.pin.length < 4) {
-      return rejectDelay(new LegacyClubHttpError(400, 'INVALID_PIN', 'Invalid PIN.'));
-    }
     if (state.registrationWalletBalance < amount) {
       return rejectDelay(
         new LegacyClubHttpError(400, LEGACY_ERROR_CODES.INSUFFICIENT_BALANCE, 'Insufficient registration wallet balance.'),
