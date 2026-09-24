@@ -6,14 +6,15 @@ import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
 import { LegacyClubService } from '../../../services/legacy-club.service';
+import { ModalService } from '../../../services/modal.service';
 import { AuthService } from '../../../services/auth.service';
 import { UserService } from '../../../services/user.service';
 import { OnboardingService } from '../../../services/onboarding.service';
 import {
   LegacyCashoutLedgerItem,
   LegacyCashoutTransferTarget,
+  humanizeLegacyCashoutLedgerDescription,
   isLegacyMember,
   LEGACY_ERROR_CODES,
 } from '../../../core/models/legacy-club.models';
@@ -45,7 +46,7 @@ type ActionStep = 'form' | 'pin';
   template: `
     <app-legacy-page-shell>
       <app-legacy-page-header
-        title="Legacy account"
+        title="Legacy cashout"
         [subtitle]="restrictionHint()"
         backLink="/legacy/home"
         backLabel="Legacy Club"
@@ -276,6 +277,10 @@ type ActionStep = 'form' | 'pin';
                     styleClass="w-full"
                     placeholder="Select wallet"
                   />
+                  <p class="mt-2 text-xs leading-relaxed text-mlm-secondary">
+                    Autoship funds are credited to your Legacy product voucher — there is no
+                    separate Legacy Autoship wallet.
+                  </p>
                 </div>
 
                 <div class="mt-6 flex flex-col gap-1.5">
@@ -307,15 +312,15 @@ type ActionStep = 'form' | 'pin';
           </div>
         }
 
-        <app-legacy-panel title="History" [padded]="false">
-          @if (items().length === 0) {
+        <app-legacy-panel title="Recent activity" [padded]="false">
+          @if (previewItems().length === 0) {
             <p class="px-5 py-8 text-sm text-mlm-secondary sm:px-6">No activity yet.</p>
           } @else {
             <ul class="divide-y divide-gray-100">
-              @for (item of items(); track item.id) {
+              @for (item of previewItems(); track item.id) {
                 <li class="flex items-start justify-between gap-3 px-5 py-4 text-sm sm:px-6">
                   <div>
-                    <p class="font-medium text-mlm-text">{{ item.description }}</p>
+                    <p class="font-medium text-mlm-text">{{ ledgerDescription(item.description) }}</p>
                     <p class="text-xs text-mlm-secondary">{{ item.date | date: 'medium' }}</p>
                   </div>
                   <span
@@ -328,6 +333,14 @@ type ActionStep = 'form' | 'pin';
               }
             </ul>
           }
+          <div class="border-t border-gray-100 px-5 py-4 sm:px-6">
+            <a
+              routerLink="/legacy/history"
+              class="inline-flex min-h-10 items-center text-sm font-semibold text-mlm-primary hover:underline"
+            >
+              View full membership history
+            </a>
+          </div>
         </app-legacy-panel>
       </div>
     </app-legacy-page-shell>
@@ -339,12 +352,13 @@ export class LegacyCashoutComponent implements OnInit {
   private userService = inject(UserService);
   private onboarding = inject(OnboardingService);
   private router = inject(Router);
-  private messages = inject(MessageService);
+  private modalService = inject(ModalService);
 
   balance = signal(0);
   successlineCount = signal(0);
   canCashout = signal(false);
   items = signal<LegacyCashoutLedgerItem[]>([]);
+  previewItems = computed(() => this.items().slice(0, 3));
   busy = signal(false);
   bank = signal<{ bankName: string; accountNumber: string; accountName: string } | null>(null);
 
@@ -373,7 +387,6 @@ export class LegacyCashoutComponent implements OnInit {
   transferTargets = [
     { label: 'Cash', value: 'CASH' as const },
     { label: 'Network Product Voucher', value: 'VOUCHER' as const },
-    { label: 'Autoship', value: 'AUTOSHIP' as const },
     { label: 'Legacy product voucher', value: 'LEGACY_VOUCHER' as const },
   ];
 
@@ -394,7 +407,7 @@ export class LegacyCashoutComponent implements OnInit {
 
   restrictionHint(): string {
     if (this.canCashout()) return 'Cash out to your bank or move funds to another wallet.';
-    return 'Legacy account ledger';
+    return 'Legacy cashout ledger';
   }
 
   lockMessage(): string {
@@ -418,6 +431,10 @@ export class LegacyCashoutComponent implements OnInit {
       this.transferTargets.find((target) => target.value === this.transferTarget)?.label ??
       'selected wallet'
     );
+  }
+
+  ledgerDescription(description: string): string {
+    return humanizeLegacyCashoutLedgerDescription(description);
   }
 
   onWithdrawPinChange(value: string): void {
@@ -450,11 +467,13 @@ export class LegacyCashoutComponent implements OnInit {
       return;
     }
     if (!this.hasBank()) {
-      this.messages.add({
-        severity: 'warn',
-        summary: 'Bank details',
-        detail: 'Add bank details in Profile before cashing out.',
-      });
+      this.modalService.open(
+        'warning',
+        'Bank details required',
+        'Add bank details in Profile before cashing out.',
+        '/profile',
+        'Open profile',
+      );
       return;
     }
 
@@ -477,11 +496,13 @@ export class LegacyCashoutComponent implements OnInit {
 
     const bank = this.bank();
     if (!bank) {
-      this.messages.add({
-        severity: 'warn',
-        summary: 'Bank details',
-        detail: 'Add bank details in Profile before cashing out.',
-      });
+      this.modalService.open(
+        'warning',
+        'Bank details required',
+        'Add bank details in Profile before cashing out.',
+        '/profile',
+        'Open profile',
+      );
       this.backFromWithdrawPin();
       return;
     }
@@ -499,20 +520,20 @@ export class LegacyCashoutComponent implements OnInit {
           this.withdrawAmount = null;
           this.backFromWithdrawPin();
           this.reload();
-          this.messages.add({
-            severity: 'success',
-            summary: 'Submitted',
-            detail: 'Legacy cash out submitted.',
-          });
+          this.modalService.open(
+            'success',
+            'Cash out submitted',
+            `Your cash out of ${this.money(amount)} has been submitted. Payout will be processed to ${bank.bankName}.`,
+          );
         },
         error: (err) => {
           this.busy.set(false);
           this.withdrawPin.set('');
-          this.messages.add({
-            severity: 'error',
-            summary: 'Cash out failed',
-            detail: legacyErrorMessage(err),
-          });
+          this.modalService.open(
+            'error',
+            'Cash out failed',
+            legacyErrorMessage(err),
+          );
           if ((err as { code?: string })?.code === LEGACY_ERROR_CODES.LEGACY_CASHOUT_LOCKED) {
             return;
           }
@@ -565,20 +586,20 @@ export class LegacyCashoutComponent implements OnInit {
           this.transferAmount = null;
           this.backFromTransferPin();
           this.reload();
-          this.messages.add({
-            severity: 'success',
-            summary: 'Moved',
-            detail: 'Funds moved from Legacy account.',
-          });
+          this.modalService.open(
+            'success',
+            'Transfer complete',
+            `${this.money(amount)} was moved from your Legacy cashout to ${this.transferTargetLabel()}.`,
+          );
         },
         error: (err) => {
           this.busy.set(false);
           this.transferPin.set('');
-          this.messages.add({
-            severity: 'error',
-            summary: 'Transfer failed',
-            detail: legacyErrorMessage(err),
-          });
+          this.modalService.open(
+            'error',
+            'Transfer failed',
+            legacyErrorMessage(err),
+          );
         },
       });
   }

@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal, effect } from '@angular/core';
 import { Observable, from, of, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
+import { mapLegacyHistoryResponse } from '../core/utils/legacy-history.util';
 import { environment } from '../../environments/environment';
 import {
   LegacyCashoutResponse,
@@ -22,13 +23,21 @@ import {
   LegacyPaymentRecord,
   LegacyPaymentWalletRequest,
   LegacyPriorPendingMonth,
+  LegacyRegisterSuccesslineRequest,
+  LegacyRegisterSuccesslineResponse,
+  LegacyPvHistoryItem,
+  LegacyPvHistoryResponse,
+  LegacyPvSummary,
   LegacySponsorValidateResponse,
   LegacySuccesslinesResponse,
   LegacyUpgradeQuote,
   LegacyVoucherResponse,
   LEGACY_ERROR_CODES,
+  canAccessLegacyMarketplace,
+  canAccessLegacyVoucher,
   isLegacyMember,
   paymentAmountFromMe,
+  resolveLegacyCashoutTransferTarget,
   resolveLegacyShopMode,
 } from '../core/models/legacy-club.models';
 import {
@@ -124,7 +133,8 @@ export class LegacyClubService {
     return paymentPurposeFromMe(me);
   });
   readonly paymentRequired = computed(() => paymentAmountFromMe(this.meState()));
-  readonly canShopProducts = computed(() => this.shopMode() === 'SHOP');
+  readonly canShopProducts = computed(() => canAccessLegacyMarketplace(this.meState()));
+  readonly canAccessVoucher = computed(() => canAccessLegacyVoucher(this.meState()));
   readonly isGracePeriod = computed(() => this.meState()?.status === 'REACTIVATION_DUE');
   readonly isSuspended = computed(() => this.meState()?.status === 'SUSPENDED');
   readonly isMember = computed(() => isLegacyMember(this.meState()));
@@ -158,7 +168,7 @@ export class LegacyClubService {
     if (this.useMocks) {
       return from(legacyClubMockStore.getMe()).pipe(
         tap((me) => {
-          this.meState.set(me);
+          this.meState.set(this.normalizeLegacyMe(me));
           this.featureAvailableState.set(true);
           this.loadingState.set(false);
         }),
@@ -171,7 +181,7 @@ export class LegacyClubService {
     }
 
     return this.api.get<unknown>('legacy/me').pipe(
-      map((raw) => unwrapData<LegacyMe>(raw)),
+      map((raw) => this.normalizeLegacyMe(unwrapData<LegacyMe>(raw))),
       tap((me) => {
         this.meState.set(me);
         this.featureAvailableState.set(true);
@@ -328,6 +338,24 @@ export class LegacyClubService {
       .pipe(map((raw) => unwrapData<LegacyMemberLookup>(raw)));
   }
 
+  registerSuccessline(
+    body: LegacyRegisterSuccesslineRequest,
+  ): Observable<LegacyRegisterSuccesslineResponse> {
+    if (this.useMocks) {
+      return from(legacyClubMockStore.registerSuccessline(body)).pipe(
+        tap(() => void this.loadMe().subscribe()),
+        catchError((err) =>
+          throwError(() => (err instanceof LegacyClubHttpError ? err : mapHttpErrorCatch(err))),
+        ),
+      );
+    }
+    return this.api.post<unknown>('legacy/successlines/register', body).pipe(
+      map((raw) => unwrapData<LegacyRegisterSuccesslineResponse>(raw)),
+      tap(() => void this.loadMe().subscribe()),
+      catchError((err) => throwError(() => mapHttpErrorCatch(err))),
+    );
+  }
+
   getSuccesslines(page = 1, limit = 20, search = ''): Observable<LegacySuccesslinesResponse> {
     if (this.useMocks) {
       return from(legacyClubMockStore.getSuccesslines(page, limit, search));
@@ -337,13 +365,20 @@ export class LegacyClubService {
       .pipe(map((raw) => unwrapData<LegacySuccesslinesResponse>(raw)));
   }
 
-  getCashout(): Observable<LegacyCashoutResponse> {
+  getCashout(options?: { limit?: number; cursor?: string }): Observable<LegacyCashoutResponse> {
     if (this.useMocks) {
-      return from(legacyClubMockStore.getCashout()).pipe(
+      return from(legacyClubMockStore.getCashout(options)).pipe(
         catchError((err) => throwError(() => (err instanceof LegacyClubHttpError ? err : mapHttpErrorCatch(err)))),
       );
     }
-    return this.api.get<unknown>('legacy/cashout').pipe(
+    const params: Record<string, string | number> = {};
+    if (options?.limit != null) {
+      params['limit'] = options.limit;
+    }
+    if (options?.cursor) {
+      params['cursor'] = options.cursor;
+    }
+    return this.api.get<unknown>('legacy/cashout', params).pipe(
       map((raw) => unwrapData<LegacyCashoutResponse>(raw)),
       catchError((err) => throwError(() => mapHttpErrorCatch(err))),
     );
@@ -363,13 +398,17 @@ export class LegacyClubService {
   }
 
   transferCashout(body: LegacyCashoutTransferRequest): Observable<LegacyCashoutTransferResponse> {
+    const payload: LegacyCashoutTransferRequest = {
+      ...body,
+      toWalletType: resolveLegacyCashoutTransferTarget(body.toWalletType),
+    };
     if (this.useMocks) {
-      return from(legacyClubMockStore.transferCashout(body)).pipe(
+      return from(legacyClubMockStore.transferCashout(payload)).pipe(
         tap(() => void this.loadMe().subscribe()),
         catchError((err) => throwError(() => (err instanceof LegacyClubHttpError ? err : mapHttpErrorCatch(err)))),
       );
     }
-    return this.api.post<LegacyCashoutTransferResponse>('legacy/cashout/transfer', body).pipe(
+    return this.api.post<LegacyCashoutTransferResponse>('legacy/cashout/transfer', payload).pipe(
       tap(() => void this.loadMe().subscribe()),
       catchError((err) => throwError(() => mapHttpErrorCatch(err))),
     );
@@ -460,12 +499,31 @@ export class LegacyClubService {
   }
 
   getHistory(): Observable<LegacyHistoryResponse> {
+    const currency = this.meState()?.currency ?? 'NGN';
+    if (this.useMocks) {
+      return from(legacyClubMockStore.getHistory()).pipe(
+        map((raw) => mapLegacyHistoryResponse(raw, currency)),
+        catchError((err) => throwError(() => (err instanceof LegacyClubHttpError ? err : mapHttpErrorCatch(err)))),
+      );
+    }
     return this.api.get<unknown>('legacy/history').pipe(
-      map((raw) => {
-        const data = unwrapData<LegacyHistoryResponse | LegacyHistoryItemLike[]>(raw);
-        if (Array.isArray(data)) return { items: data as LegacyHistoryResponse['items'] };
-        return data;
-      }),
+      map((raw) => mapLegacyHistoryResponse(unwrapData(raw), currency)),
+      catchError((err) => throwError(() => mapHttpErrorCatch(err))),
+    );
+  }
+
+  getPvHistory(options?: { limit?: number; cursor?: string }): Observable<LegacyPvHistoryResponse> {
+    if (this.useMocks) {
+      return from(legacyClubMockStore.getPvHistory(options));
+    }
+    const params: Record<string, string | number> = {
+      limit: options?.limit ?? 20,
+    };
+    if (options?.cursor) {
+      params['cursor'] = options.cursor;
+    }
+    return this.api.get<unknown>('legacy/pv/history', params).pipe(
+      map((raw) => this.mapPvHistoryResponse(unwrapData<Record<string, unknown>>(raw))),
       catchError((err) => throwError(() => mapHttpErrorCatch(err))),
     );
   }
@@ -475,6 +533,69 @@ export class LegacyClubService {
     if (!this.useMocks) return;
     legacyClubMockStore.reset(options);
     this.meState.set(null);
+  }
+
+  private normalizeLegacyMe(me: LegacyMe): LegacyMe {
+    const record = me as LegacyMe & { legacy_pv?: Record<string, unknown> };
+    const legacyPvRaw = me.legacyPv ?? record.legacy_pv;
+    if (!legacyPvRaw || typeof legacyPvRaw !== 'object') {
+      return {
+        ...me,
+        legacyPv: me.legacyPv ?? {
+          totalPv: 0,
+          personalProductPv: 0,
+          directReferralProductPv: 0,
+        },
+      };
+    }
+    const raw = legacyPvRaw as Record<string, unknown>;
+    const legacyPv: LegacyPvSummary = {
+      totalPv: Number(raw['totalPv'] ?? raw['total_pv'] ?? 0),
+      personalProductPv: Number(raw['personalProductPv'] ?? raw['personal_product_pv'] ?? 0),
+      directReferralProductPv: Number(
+        raw['directReferralProductPv'] ?? raw['direct_referral_product_pv'] ?? 0,
+      ),
+    };
+    return { ...me, legacyPv };
+  }
+
+  private mapPvHistoryResponse(raw: Record<string, unknown>): LegacyPvHistoryResponse {
+    const itemsRaw = Array.isArray(raw['items']) ? (raw['items'] as Record<string, unknown>[]) : [];
+    const items: LegacyPvHistoryItem[] = itemsRaw.map((row) => ({
+      id: String(row['id'] ?? ''),
+      kind: (row['kind'] as LegacyPvHistoryItem['kind']) ?? 'OWN_PURCHASE',
+      pvAmount: Number(row['pvAmount'] ?? row['pv_amount'] ?? 0),
+      at: String(row['at'] ?? row['createdAt'] ?? ''),
+      orderId: String(row['orderId'] ?? row['order_id'] ?? ''),
+      orderReference:
+        (row['orderReference'] as string | null | undefined) ??
+        (row['order_reference'] as string | null | undefined) ??
+        null,
+      orderTotal:
+        row['orderTotal'] != null
+          ? Number(row['orderTotal'])
+          : row['order_total'] != null
+            ? Number(row['order_total'])
+            : null,
+      currency:
+        (row['currency'] as LegacyPvHistoryItem['currency']) ??
+        (row['currency_code'] as LegacyPvHistoryItem['currency']) ??
+        null,
+      productSummary: String(row['productSummary'] ?? row['product_summary'] ?? ''),
+      buyerUsername:
+        (row['buyerUsername'] as string | null | undefined) ??
+        (row['buyer_username'] as string | null | undefined) ??
+        null,
+      downlineUsername:
+        (row['downlineUsername'] as string | null | undefined) ??
+        (row['downline_username'] as string | null | undefined) ??
+        null,
+    }));
+    const nextCursor =
+      (raw['nextCursor'] as string | null | undefined) ??
+      (raw['next_cursor'] as string | null | undefined) ??
+      null;
+    return { items, nextCursor };
   }
 
   private buildMockMonthsResponse(): LegacyMonthsResponse {
@@ -567,4 +688,3 @@ export class LegacyClubService {
   }
 }
 
-type LegacyHistoryItemLike = LegacyHistoryResponse['items'][number];

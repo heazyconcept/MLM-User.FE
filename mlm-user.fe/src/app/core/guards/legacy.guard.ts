@@ -7,7 +7,11 @@ import {
   resolveLegacyHomeScreen,
 } from '../utils/legacy-routing.util';
 import { LegacyPaymentPurpose } from '../models/legacy-club.models';
-import { isLegacyMember } from '../models/legacy-club.models';
+import {
+  canAccessLegacyMarketplace,
+  canAccessLegacyVoucher,
+  isLegacyMember,
+} from '../models/legacy-club.models';
 
 function redirectToHome(router: Router, path: string): boolean {
   void router.navigateByUrl(path, { replaceUrl: true });
@@ -78,15 +82,24 @@ export const legacyMemberGuard: CanActivateFn = () => {
 export const legacyShopGuard: CanActivateFn = () => {
   const legacyClub = inject(LegacyClubService);
   const router = inject(Router);
-  const mode = legacyClub.shopMode();
+  const me = legacyClub.me();
 
-  if (mode === 'JOIN') {
-    const me = legacyClub.me();
-    const screen = me ? resolveLegacyHomeScreen(me) : 'JOIN_PAYMENT';
-    return redirectToHome(router, legacyHomeScreenPath(screen));
+  if (!canAccessLegacyMarketplace(me)) {
+    if (me?.status === 'NONE') {
+      return redirectToHome(router, '/legacy/join');
+    }
+    return redirectToHome(router, legacyClub.legacyHomePath());
   }
-  if (mode !== 'SHOP') {
-    return redirectToHome(router, '/legacy/home');
+  return true;
+};
+
+export const legacyVoucherGuard: CanActivateFn = () => {
+  const legacyClub = inject(LegacyClubService);
+  const router = inject(Router);
+  const me = legacyClub.me();
+
+  if (!canAccessLegacyVoucher(me)) {
+    return redirectToHome(router, '/legacy/join');
   }
   return true;
 };

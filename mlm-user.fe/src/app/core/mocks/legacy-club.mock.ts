@@ -16,11 +16,17 @@ import {
   LegacyPackagesResponse,
   LegacyPaymentRecord,
   LegacyPaymentWalletRequest,
+  LegacyRegisterSuccesslineRequest,
+  LegacyRegisterSuccesslineResponse,
+  LegacyPvHistoryItem,
+  LegacyPvHistoryResponse,
+  LegacyPvSummary,
   LegacySponsorSource,
   LegacySponsorValidateResponse,
   LegacySuccesslinesResponse,
   LegacyVoucherResponse,
   LEGACY_ERROR_CODES,
+  formatLegacyCashoutTransferLabel,
 } from '../models/legacy-club.models';
 
 export interface LegacyMockCartLine {
@@ -153,15 +159,43 @@ const LEGACY_SPONSORS: Record<string, LegacyPackageCode> = {
   chioma: 'VIP',
 };
 
+interface MockMembershipEvent {
+  type: 'JOIN' | 'UPGRADE' | 'REACTIVATE' | 'SEED';
+  toPackage: LegacyPackageCode;
+  fromPackage?: LegacyPackageCode | null;
+  instantCommission: number;
+  payAmount?: number;
+  createdAt: string;
+  cycleId?: string;
+  orderId?: string | null;
+}
+
 interface MockState {
   me: LegacyMe;
   cart: LegacyMockCartLine[];
   cashBalance: number;
   registrationWalletBalance: number;
   ledger: LegacyCashoutLedgerItem[];
+  membershipEvents: MockMembershipEvent[];
+  pvHistory: LegacyPvHistoryItem[];
   successlines: LegacySuccesslinesResponse['successlines'];
   currentUsername: string;
   pendingPayments: LegacyPaymentRecord[];
+}
+
+const EMPTY_LEGACY_PV: LegacyPvSummary = {
+  totalPv: 0,
+  personalProductPv: 0,
+  directReferralProductPv: 0,
+};
+
+function addLegacyPv(summary: LegacyPvSummary | null | undefined, delta: LegacyPvSummary): LegacyPvSummary {
+  const base = summary ?? EMPTY_LEGACY_PV;
+  return {
+    totalPv: base.totalPv + delta.totalPv,
+    personalProductPv: base.personalProductPv + delta.personalProductPv,
+    directReferralProductPv: base.directReferralProductPv + delta.directReferralProductPv,
+  };
 }
 
 function baseNoneAuto(): LegacyMe {
@@ -188,6 +222,8 @@ function createInitialState(): MockState {
     cashBalance: 500000,
     registrationWalletBalance: 500000,
     ledger: [],
+    membershipEvents: [],
+    pvHistory: [],
     successlines: [],
     currentUsername: 'demo_member',
     pendingPayments: [],
@@ -241,6 +277,14 @@ export const legacyClubMockStore = {
         defaultSponsor: null,
       };
     }
+  },
+
+  getRegistrationWalletBalance(): number {
+    return state.registrationWalletBalance;
+  },
+
+  setRegistrationWalletBalance(balance: number): void {
+    state.registrationWalletBalance = balance;
   },
 
   /** Test helper: jump straight to ACTIVE with zero successlines. */
@@ -310,7 +354,51 @@ export const legacyClubMockStore = {
         suspensionDueAt: null,
         reactivationSecondsRemaining: 0,
       },
+      legacyPv: {
+        totalPv: 45,
+        personalProductPv: 30,
+        directReferralProductPv: 15,
+      },
     };
+    state.pvHistory = [
+      {
+        id: 'pv-own-1',
+        kind: 'OWN_PURCHASE',
+        pvAmount: 30,
+        at: '2026-09-20T12:00:00.000Z',
+        orderId: 'legacy-order-demo-1',
+        orderReference: 'ORD-LEG-001',
+        orderTotal: 30000,
+        currency: 'NGN',
+        productSummary: 'Segulah Herbal Tea × 2',
+        buyerUsername: null,
+        downlineUsername: null,
+      },
+      {
+        id: 'pv-ref-1',
+        kind: 'DIRECT_REFERRAL_PURCHASE',
+        pvAmount: 15,
+        at: '2026-09-19T11:30:00.000Z',
+        orderId: 'legacy-order-demo-2',
+        orderReference: 'ORD-LEG-002',
+        orderTotal: null,
+        currency: null,
+        productSummary: 'Wellness Pack × 1',
+        buyerUsername: 'jane_doe',
+        downlineUsername: 'jane_doe',
+      },
+    ];
+    state.membershipEvents = [
+      {
+        type: 'JOIN',
+        toPackage: pkg.code,
+        instantCommission: pkg.instantCommission,
+        payAmount: pkg.purchaseAmount,
+        createdAt: '2026-09-18T10:00:00.000Z',
+        cycleId: 'mock-cycle-1',
+        orderId: 'mock-join-order-1',
+      },
+    ];
     state.ledger = [
       {
         id: 'ledger-instant-1',
@@ -318,6 +406,22 @@ export const legacyClubMockStore = {
         description: `Legacy Club Instant Membership Commission (${pkg.code})`,
         type: 'Credit',
         amount: pkg.instantCommission,
+        currency: 'NGN',
+      },
+      {
+        id: 'ledger-successline-1',
+        date: '2026-09-19T11:00:00.000Z',
+        description: 'Legacy Successline bonus — Instant from bode',
+        type: 'Credit',
+        amount: 4000,
+        currency: 'NGN',
+      },
+      {
+        id: 'ledger-transfer-1',
+        date: '2026-09-23T15:11:17.000Z',
+        description: 'Move to undefined',
+        type: 'Debit',
+        amount: 10000,
         currency: 'NGN',
       },
     ];
@@ -645,6 +749,150 @@ export const legacyClubMockStore = {
     state.cart = [];
   },
 
+  async registerSuccessline(
+    body: LegacyRegisterSuccesslineRequest,
+  ): Promise<LegacyRegisterSuccesslineResponse> {
+    if (state.me.status !== 'ACTIVE') {
+      return rejectDelay(
+        new LegacyClubHttpError(
+          403,
+          LEGACY_ERROR_CODES.NOT_LEGACY_MEMBER,
+          'Join Legacy Club first.',
+        ),
+      );
+    }
+
+    const normalized = body.username.trim().toLowerCase();
+    if (!normalized) {
+      return rejectDelay(
+        new LegacyClubHttpError(
+          400,
+          LEGACY_ERROR_CODES.TARGET_NOT_FOUND,
+          'Enter a username.',
+        ),
+      );
+    }
+
+    const lookup = await this.lookupMember(normalized);
+    if (!lookup.exists) {
+      return rejectDelay(
+        new LegacyClubHttpError(
+          400,
+          LEGACY_ERROR_CODES.TARGET_NOT_FOUND,
+          'We could not find that username.',
+        ),
+      );
+    }
+    if (!lookup.isRegistrationPaid) {
+      return rejectDelay(
+        new LegacyClubHttpError(
+          400,
+          LEGACY_ERROR_CODES.TARGET_NOT_PAID,
+          'That person has not completed Segulah registration payment.',
+        ),
+      );
+    }
+    if (lookup.legacyStatus === 'ACTIVE') {
+      return rejectDelay(
+        new LegacyClubHttpError(
+          400,
+          LEGACY_ERROR_CODES.ALREADY_IN_LEGACY,
+          'That member is already in Legacy Club.',
+        ),
+      );
+    }
+    if (lookup.legacyStatus === 'PENDING_JOIN') {
+      return rejectDelay(
+        new LegacyClubHttpError(
+          400,
+          LEGACY_ERROR_CODES.ALREADY_PENDING,
+          'That member already started joining Legacy Club.',
+        ),
+      );
+    }
+
+    const pkg = packageByCode(body.package);
+    if (!pkg.isActive) {
+      return rejectDelay(
+        new LegacyClubHttpError(
+          400,
+          LEGACY_ERROR_CODES.PACKAGE_INACTIVE,
+          'That package is not available.',
+        ),
+      );
+    }
+
+    if (state.registrationWalletBalance < pkg.purchaseAmount) {
+      return rejectDelay(
+        new LegacyClubHttpError(
+          400,
+          LEGACY_ERROR_CODES.INSUFFICIENT_BALANCE,
+          'Insufficient registration wallet balance.',
+        ),
+      );
+    }
+
+    state.registrationWalletBalance -= pkg.purchaseAmount;
+    const successlineBonus = Math.round(
+      (pkg.instantCommission * pkg.successlineBonusPercent) / 100,
+    );
+    const joinedAt = new Date().toISOString();
+    const sponsorUsername = state.currentUsername;
+
+    state.successlines = [
+      {
+        username: normalized,
+        package: pkg.code,
+        joinedAt,
+        sponsorSource: 'CHOSEN',
+      },
+      ...state.successlines,
+    ];
+
+    state.cashBalance += successlineBonus;
+    state.ledger.unshift({
+      id: `ledger-successline-${Date.now()}`,
+      date: joinedAt,
+      description: `Successline bonus — Instant from @${normalized}`,
+      type: 'Credit',
+      amount: successlineBonus,
+      currency: state.me.currency,
+    });
+
+    const directCount = state.me.directSuccesslineCount + 1;
+    const required = state.me.minDirectsToIncreaseMonthly;
+    state.me = {
+      ...state.me,
+      directSuccesslineCount: directCount,
+      legacyCashout: state.me.legacyCashout
+        ? { ...state.me.legacyCashout, balance: state.cashBalance }
+        : { balance: state.cashBalance, status: 'ACTIVE' },
+      monthlyQualify: state.me.monthlyQualify
+        ? {
+            ...state.me.monthlyQualify,
+            directSuccesslineCount: directCount,
+            isQualified: directCount >= required,
+            qualifiedAt:
+              directCount >= required && !state.me.monthlyQualify.isQualified
+                ? joinedAt
+                : state.me.monthlyQualify.qualifiedAt,
+          }
+        : state.me.monthlyQualify,
+    };
+
+    return delay({
+      username: normalized,
+      package: pkg.code,
+      legacyStatus: 'ACTIVE',
+      sponsorUsername,
+      sponsorSource: 'CHOSEN',
+      joinedAt,
+      instantCommission: pkg.instantCommission,
+      successlineBonus,
+      currency: state.me.currency,
+    });
+  },
+
   async lookupMember(username: string): Promise<LegacyMemberLookup> {
     const normalized = username.trim().toLowerCase();
     if (!normalized) {
@@ -715,20 +963,45 @@ export const legacyClubMockStore = {
     });
   },
 
-  async getCashout(): Promise<LegacyCashoutResponse> {
+  async getHistory(): Promise<{ currency: LegacyCurrency; events: MockMembershipEvent[] }> {
+    if (state.me.status !== 'ACTIVE') {
+      return rejectDelay(
+        new LegacyClubHttpError(403, 'LEGACY_NOT_ACTIVE', 'An active Legacy Club membership is required.'),
+      );
+    }
+    return delay({
+      currency: state.me.currency,
+      events: [...state.membershipEvents],
+    });
+  },
+
+  async getCashout(options?: {
+    limit?: number;
+    cursor?: string;
+  }): Promise<LegacyCashoutResponse> {
     if (!state.me.legacyCashout) {
       return rejectDelay(
         new LegacyClubHttpError(404, 'NOT_FOUND', 'Legacy account not found.'),
       );
     }
+    let rows = [...state.ledger].sort(
+      (a, b) => Date.parse(b.date) - Date.parse(a.date),
+    );
+    if (options?.cursor) {
+      const cursorTime = Date.parse(options.cursor);
+      rows = rows.filter((row) => Date.parse(row.date) < cursorTime);
+    }
+    const limit = options?.limit ?? rows.length;
+    const page = rows.slice(0, limit);
+    const hasMore = rows.length > limit;
     return delay({
       currency: state.me.currency,
       balance: state.me.legacyCashout.balance,
       walletStatus: state.me.legacyCashout.status,
       canCashoutLegacy: true,
       directSuccesslineCount: state.me.directSuccesslineCount,
-      items: [...state.ledger],
-      nextCursor: null,
+      items: page,
+      nextCursor: hasMore ? (page[page.length - 1]?.date ?? null) : null,
     });
   },
 
@@ -780,7 +1053,7 @@ export const legacyClubMockStore = {
       ...state.me,
       legacyCashout: { ...state.me.legacyCashout, balance: nextBalance },
     };
-    if (body.toWalletType === 'LEGACY_VOUCHER') {
+    if (body.toWalletType === 'LEGACY_VOUCHER' || body.toWalletType === 'AUTOSHIP') {
       const voucher = state.me.legacyVoucher ?? { balance: 0, status: 'ACTIVE' as const };
       state.me = {
         ...state.me,
@@ -793,7 +1066,7 @@ export const legacyClubMockStore = {
       {
         id: `ledger-tr-${Date.now()}`,
         date: new Date().toISOString(),
-        description: `Move to ${body.toWalletType}`,
+        description: `Move to ${formatLegacyCashoutTransferLabel(body.toWalletType)}`,
         type: 'Debit',
         amount: body.amount,
         currency: body.currency,
@@ -916,11 +1189,54 @@ export const legacyClubMockStore = {
         ),
       );
     }
+    const orderId = `legacy-order-${Date.now()}`;
+    const orderPv = state.cart.reduce((sum, line) => sum + line.pv * line.quantity, 0);
+    const productSummary =
+      state.cart.length === 1
+        ? `${state.cart[0].name} × ${state.cart[0].quantity}`
+        : `${state.cart.length} items (${orderPv} PV)`;
+    const pvRow: LegacyPvHistoryItem = {
+      id: `pv-${Date.now()}`,
+      kind: 'OWN_PURCHASE',
+      pvAmount: orderPv,
+      at: new Date().toISOString(),
+      orderId,
+      orderReference: `ORD-LEG-${String(Date.now()).slice(-6)}`,
+      orderTotal: subtotal,
+      currency: state.me.currency,
+      productSummary,
+      buyerUsername: null,
+      downlineUsername: null,
+    };
+    state.pvHistory = [pvRow, ...state.pvHistory];
     state.me = {
       ...state.me,
       legacyVoucher: { ...voucher, balance: voucher.balance - subtotal },
+      legacyPv: addLegacyPv(state.me.legacyPv, {
+        totalPv: orderPv,
+        personalProductPv: orderPv,
+        directReferralProductPv: 0,
+      }),
     };
     state.cart = [];
-    return delay({ checkoutId: `checkout-${Date.now()}`, orderId: `legacy-order-${Date.now()}` });
+    return delay({ checkoutId: `checkout-${Date.now()}`, orderId });
+  },
+
+  async getPvHistory(options?: {
+    limit?: number;
+    cursor?: string;
+  }): Promise<LegacyPvHistoryResponse> {
+    const limit = options?.limit ?? 20;
+    const cursorAt = options?.cursor ? new Date(options.cursor) : null;
+    const filtered =
+      cursorAt && !Number.isNaN(cursorAt.getTime())
+        ? state.pvHistory.filter((row) => new Date(row.at).getTime() < cursorAt.getTime())
+        : state.pvHistory;
+    const slice = filtered.slice(0, limit);
+    const nextItem = filtered[limit];
+    return delay({
+      items: slice,
+      nextCursor: nextItem?.at ?? null,
+    });
   },
 };

@@ -244,6 +244,7 @@ export class SideMenuComponent implements OnInit {
       me?.status === 'REACTIVATION_DUE' ||
       me?.status === 'SUSPENDED';
     const canShop = this.legacyClubService.canShopProducts();
+    const canAccessVoucher = this.legacyClubService.canAccessVoucher();
 
     const children: MenuItem[] = [
       { label: 'Overview', icon: 'pi pi-home', route: '/legacy/home', requiresPayment: true },
@@ -260,7 +261,7 @@ export class SideMenuComponent implements OnInit {
       ...(isMember
         ? [
             {
-              label: 'Legacy Account',
+              label: 'Legacy Cashout',
               icon: 'pi pi-wallet',
               route: '/legacy/account',
               requiresPayment: true,
@@ -278,19 +279,29 @@ export class SideMenuComponent implements OnInit {
               requiresPayment: true,
             } satisfies MenuItem,
             {
-              label: 'History',
+              label: 'Membership history',
               icon: 'pi pi-history',
               route: '/legacy/history',
               requiresPayment: true,
             } satisfies MenuItem,
+            {
+              label: 'PV history',
+              icon: 'pi pi-chart-line',
+              route: '/legacy/pv/history',
+              requiresPayment: true,
+            } satisfies MenuItem,
           ]
         : []),
-      {
-        label: 'Legacy Voucher',
-        icon: 'pi pi-ticket',
-        route: '/legacy/voucher',
-        requiresPayment: true,
-      },
+      ...(canAccessVoucher
+        ? [
+            {
+              label: 'Legacy Voucher',
+              icon: 'pi pi-ticket',
+              route: '/legacy/voucher',
+              requiresPayment: true,
+            } satisfies MenuItem,
+          ]
+        : []),
       ...(canUpgrade
         ? [
             {

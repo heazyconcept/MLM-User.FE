@@ -20,6 +20,7 @@ import {
 import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
 import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
+import { PurchaseThankYouModalComponent } from '../../../components/purchase-thank-you-modal/purchase-thank-you-modal.component';
 
 @Component({
   selector: 'app-legacy-checkout',
@@ -31,6 +32,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
     LegacyPageShellComponent,
     LegacyPageHeaderComponent,
     LegacyPanelComponent,
+    PurchaseThankYouModalComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -91,6 +93,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
         </div>
       }
     </app-legacy-page-shell>
+    <app-purchase-thank-you-modal />
   `,
 })
 export class LegacyCheckoutComponent implements OnInit {
@@ -129,9 +132,10 @@ export class LegacyCheckoutComponent implements OnInit {
   }
 
   onConfirm(payload: CheckoutConfirmPayload): void {
-    if (this.isImpersonating() || this.submitting()) return;
+    const orderData = this.pendingOrderData();
+    if (this.isImpersonating() || this.submitting() || !orderData) return;
     this.submitting.set(true);
-    this.checkout.submitLegacyCheckout(payload).subscribe({
+    this.checkout.submitLegacyCheckout(orderData, payload).subscribe({
       next: () => this.submitting.set(false),
       error: () => this.submitting.set(false),
     });
@@ -161,6 +165,6 @@ export class LegacyCheckoutComponent implements OnInit {
       };
       return { productId: line.productId, product, quantity: line.quantity };
     });
-    this.pendingOrderData.set({ mode: 'cart', items, wallet: 'voucher' });
+    this.pendingOrderData.set({ mode: 'cart', items, wallet: 'legacy_voucher' });
   }
 }

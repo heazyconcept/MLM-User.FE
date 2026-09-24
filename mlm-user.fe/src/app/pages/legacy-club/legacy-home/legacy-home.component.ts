@@ -11,17 +11,28 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
 import { DialogModule } from 'primeng/dialog';
+import { DialogService } from 'primeng/dynamicdialog';
 import { LegacyClubService } from '../../../services/legacy-club.service';
 import { UserService } from '../../../services/user.service';
+import { RegistrationService } from '../../../services/registration.service';
+import { ModalService } from '../../../services/modal.service';
 import {
   LegacyMemberLookup,
+  LegacyPackage,
+  LegacyPackageCode,
   LegacyRateTier,
   LegacyCycle,
   isLegacyMember,
+  formatLegacyPvAmount,
+  legacyPvCardDescription,
 } from '../../../core/models/legacy-club.models';
+import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
+import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
+import { RegistrationFundingComponent } from '../../wallet/registration-funding/registration-funding.component';
 import {
   cyclePeriodCount,
   cycleProgressLabel,
@@ -32,16 +43,18 @@ import { LegacyPageHeaderComponent } from '../components/legacy-page-header.comp
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
 import { LegacyMetricCardComponent } from '../components/legacy-metric-card.component';
 
-type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
+type LookupResultKind = 'ready' | 'already' | 'not-member' | 'blocked' | null;
 
 @Component({
   selector: 'app-legacy-home',
+  providers: [DialogService],
   imports: [
     CommonModule,
     FormsModule,
     RouterLink,
     ButtonModule,
     InputTextModule,
+    SelectModule,
     SkeletonModule,
     DialogModule,
     LegacyPageShellComponent,
@@ -54,8 +67,8 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
     <app-legacy-page-shell>
       @if (loading()) {
         <p-skeleton height="8rem" styleClass="rounded-2xl" />
-        <div class="grid gap-5 md:grid-cols-3">
-          @for (_ of [1, 2, 3]; track $index) {
+        <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          @for (_ of [1, 2, 3, 4]; track $index) {
             <p-skeleton height="16rem" styleClass="rounded-2xl" />
           }
         </div>
@@ -104,26 +117,26 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
             routerLink="/legacy/history"
             class="inline-flex min-h-10 items-center justify-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-mlm-text transition-colors hover:bg-gray-50"
           >
-            View history
+            Membership history
           </a>
         </app-legacy-page-header>
 
         <div class="flex flex-col gap-6">
-        <div class="grid gap-5 md:grid-cols-3">
+        <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           <app-legacy-metric-card
-            label="Legacy account"
+            label="Legacy cashout"
             [value]="money(me()?.legacyCashout?.balance ?? 0)"
             [description]="cashoutCardHint()"
           >
             <a footer routerLink="/legacy/account">
-              <p-button label="Open Legacy account" styleClass="w-full" />
+              <p-button label="Open Legacy cashout" styleClass="w-full" />
             </a>
           </app-legacy-metric-card>
 
           <app-legacy-metric-card
             label="Legacy product voucher"
             [value]="money(me()?.legacyVoucher?.balance ?? 0)"
-            description="Weekly voucher credit for Legacy marketplace."
+            description="Voucher credit for Legacy marketplace."
           >
             @if (canShop()) {
               <a footer routerLink="/legacy/shop">
@@ -134,6 +147,16 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
                 <p-button label="View voucher" [outlined]="true" styleClass="w-full" />
               </a>
             }
+          </app-legacy-metric-card>
+
+          <app-legacy-metric-card
+            label="Legacy PV"
+            [value]="legacyPvTotal()"
+            [description]="legacyPvDescription()"
+          >
+            <a footer routerLink="/legacy/pv/history">
+              <p-button label="View PV history" styleClass="w-full" />
+            </a>
           </app-legacy-metric-card>
 
           <app-legacy-metric-card
@@ -324,12 +347,12 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
               />
             </div>
             <p class="text-xs text-mlm-secondary">
-              They still complete join on their own login. You cannot pay their pack from this
-              screen.
+              When they are eligible, pick a Legacy package and pay from your registration wallet.
+              They join under you immediately — no pending state if payment fails.
             </p>
 
             <div class="border-t border-gray-100 pt-4">
-              <p class="text-sm font-medium text-mlm-text">Check if someone can join Legacy</p>
+              <p class="text-sm font-medium text-mlm-text">Register a downline</p>
               <div class="mt-3 flex flex-col gap-2 sm:flex-row">
                 <input
                   pInputText
@@ -347,7 +370,11 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
                 />
               </div>
               @if (lookupKind() === 'ready') {
-                <p class="mt-2 text-sm font-medium text-emerald-800">Ready</p>
+                <p class="mt-2 text-sm font-medium text-emerald-800">
+                  Ready — &#64;{{ lookedUpUsername() }} can join under you
+                </p>
+              } @else if (lookupKind() === 'blocked') {
+                <p class="mt-2 text-sm font-medium text-red-700">{{ lookupBlockMessage() }}</p>
               } @else if (lookupKind() === 'already') {
                 <p class="mt-2 text-sm font-medium text-mlm-text">Already in Legacy</p>
               } @else if (lookupKind() === 'not-member') {
@@ -355,6 +382,71 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
               }
               @if (lookupError()) {
                 <p class="mt-2 text-sm text-red-700">{{ lookupError() }}</p>
+              }
+
+              @if (lookupKind() === 'ready') {
+                <div class="mt-4 space-y-4 rounded-xl border border-gray-100 bg-mlm-background/60 p-4">
+                  <div class="flex flex-col gap-1.5">
+                    <label class="text-sm font-semibold text-gray-700" for="registerPackage">
+                      Legacy package
+                    </label>
+                    <p-select
+                      inputId="registerPackage"
+                      [options]="registerPackageOptions()"
+                      [ngModel]="selectedRegisterPackage()"
+                      (ngModelChange)="selectedRegisterPackage.set($event)"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Select package"
+                      styleClass="w-full"
+                    />
+                  </div>
+                  @if (selectedRegisterPackageDef(); as pkg) {
+                    <div class="text-sm text-mlm-secondary">
+                      <p>
+                        Amount due:
+                        <span class="font-semibold text-mlm-text">{{ money(pkg.purchaseAmount) }}</span>
+                      </p>
+                      <p class="mt-1">
+                        They receive instant
+                        <span class="font-semibold text-emerald-800">{{
+                          money(pkg.instantCommission)
+                        }}</span>
+                        into their Legacy account.
+                      </p>
+                      <p class="mt-1">
+                        Your Successline bonus:
+                        <span class="font-semibold text-mlm-text">{{
+                          money(registerSuccesslineBonus(pkg))
+                        }}</span>
+                      </p>
+                    </div>
+                  }
+                  <p class="text-sm text-mlm-secondary">
+                    Registration wallet balance:
+                    <span class="font-semibold text-mlm-text">{{ money(registrationBalance()) }}</span>
+                  </p>
+                  @if (registerPayHint()) {
+                    <p class="text-sm text-amber-800">{{ registerPayHint() }}</p>
+                    <p-button
+                      label="Fund registration wallet"
+                      [outlined]="true"
+                      size="small"
+                      styleClass="w-full sm:w-auto"
+                      (onClick)="openRegistrationFundingDialog()"
+                    />
+                  }
+                  @if (registerError()) {
+                    <p class="text-sm text-red-700">{{ registerError() }}</p>
+                  }
+                  <p-button
+                    label="Register & pay"
+                    styleClass="w-full"
+                    [loading]="registerSubmitting()"
+                    [disabled]="!canRegisterAndPay()"
+                    (onClick)="registerSuccessline()"
+                  />
+                </div>
               }
             </div>
           </div>
@@ -366,6 +458,9 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | null;
 export class LegacyHomeComponent implements OnInit {
   private legacyClub = inject(LegacyClubService);
   private userService = inject(UserService);
+  private registrationService = inject(RegistrationService);
+  private modalService = inject(ModalService);
+  private dialogService = inject(DialogService);
   private router = inject(Router);
 
   readonly cyclePeriodCount = cyclePeriodCount;
@@ -374,7 +469,32 @@ export class LegacyHomeComponent implements OnInit {
   loading = this.legacyClub.loading;
   status = this.legacyClub.status;
   registerModalVisible = signal(false);
+  registerPackages = signal<LegacyPackage[]>([]);
+  selectedRegisterPackage = signal<LegacyPackageCode | null>(null);
+  registrationBalance = signal(0);
+  registerSubmitting = signal(false);
+  registerError = signal<string | null>(null);
+  lookedUpUsername = signal('');
+  lookupBlockMessage = signal('');
   username = computed(() => this.userService.currentUser()?.username ?? '');
+  registerPackageOptions = computed(() =>
+    this.registerPackages()
+      .filter((pkg) => pkg.isActive)
+      .map((pkg) => ({ label: pkg.name, value: pkg.code })),
+  );
+  selectedRegisterPackageDef = computed(() => {
+    const code = this.selectedRegisterPackage();
+    if (!code) return null;
+    return this.registerPackages().find((pkg) => pkg.code === code) ?? null;
+  });
+  registerPayHint = computed(() => {
+    const pkg = this.selectedRegisterPackageDef();
+    if (!pkg || this.registerSubmitting()) return null;
+    if (this.registrationBalance() < pkg.purchaseAmount) {
+      return 'Your registration wallet balance is lower than the amount due.';
+    }
+    return null;
+  });
   cycle = computed(() => this.me()?.cycle ?? null);
   lifecycle = computed(() => this.me()?.lifecycle ?? null);
   isMemberView = computed(() => isLegacyMember(this.me()));
@@ -386,6 +506,10 @@ export class LegacyHomeComponent implements OnInit {
       this.status() === 'REACTIVATION_DUE' ||
       this.status() === 'SUSPENDED',
   );
+  legacyPvTotal = computed(() =>
+    formatLegacyPvAmount(this.me()?.legacyPv?.totalPv ?? 0),
+  );
+  legacyPvDescription = computed(() => legacyPvCardDescription(this.me()?.legacyPv));
 
   memberSubtitle = computed(() => {
     const m = this.me()?.membership;
@@ -413,7 +537,7 @@ export class LegacyHomeComponent implements OnInit {
     if (this.me()?.canCashoutLegacy === false) {
       return this.me()?.cashoutRestrictionReason ?? 'Cash out is temporarily locked.';
     }
-    return 'You can cash out or move this money when eligible.';
+    return 'You can cash out or move this money.';
   }
 
   graceCountdown(): string | null {
@@ -467,15 +591,110 @@ export class LegacyHomeComponent implements OnInit {
     this.lookupUsername = '';
     this.lookupKind.set(null);
     this.lookupError.set(null);
+    this.registerError.set(null);
+    this.lookedUpUsername.set('');
+    this.lookupBlockMessage.set('');
+    this.selectedRegisterPackage.set(null);
     this.registerModalVisible.set(true);
+    this.loadRegisterModalData();
   }
 
   onRegisterModalVisibleChange(visible: boolean): void {
     this.registerModalVisible.set(visible);
     if (!visible) {
-      this.lookupKind.set(null);
-      this.lookupError.set(null);
+      this.resetRegisterModalState();
     }
+  }
+
+  private resetRegisterModalState(): void {
+    this.lookupKind.set(null);
+    this.lookupError.set(null);
+    this.registerError.set(null);
+    this.lookedUpUsername.set('');
+    this.lookupBlockMessage.set('');
+    this.selectedRegisterPackage.set(null);
+    this.registerSubmitting.set(false);
+  }
+
+  private loadRegisterModalData(): void {
+    this.legacyClub.getPackages().subscribe({
+      next: (res) => {
+        const active = res.packages.filter((pkg) => pkg.isActive);
+        this.registerPackages.set(active);
+        this.selectedRegisterPackage.set(active[0]?.code ?? null);
+      },
+    });
+    this.registrationService.getRegistrationWallet().subscribe({
+      next: (wallet) => this.registrationBalance.set(wallet?.balance ?? 0),
+    });
+  }
+
+  registerSuccesslineBonus(pkg: LegacyPackage): number {
+    return Math.round((pkg.instantCommission * pkg.successlineBonusPercent) / 100);
+  }
+
+  canRegisterAndPay(): boolean {
+    const pkg = this.selectedRegisterPackageDef();
+    return (
+      this.lookupKind() === 'ready' &&
+      !!pkg &&
+      !this.registerSubmitting() &&
+      this.registrationBalance() >= pkg.purchaseAmount
+    );
+  }
+
+  openRegistrationFundingDialog(): void {
+    const fundingRef = this.dialogService.open(RegistrationFundingComponent, {
+      header: 'Fund Registration Wallet',
+      width: '480px',
+      contentStyle: { 'max-height': '650px', overflow: 'auto' },
+      baseZIndex: 11000,
+      data: {
+        returnAfterFundingUrl: '/legacy',
+        selectedPackage: this.selectedRegisterPackage() ?? 'VIP',
+      },
+    });
+    fundingRef?.onClose.subscribe(() => {
+      this.registrationService.getRegistrationWallet().subscribe({
+        next: (wallet) => this.registrationBalance.set(wallet?.balance ?? 0),
+      });
+    });
+  }
+
+  registerSuccessline(): void {
+    if (!this.canRegisterAndPay()) return;
+    const username = this.lookedUpUsername();
+    const pkg = this.selectedRegisterPackage();
+    if (!username || !pkg) return;
+
+    this.registerSubmitting.set(true);
+    this.registerError.set(null);
+
+    this.legacyClub
+      .registerSuccessline({
+        username,
+        package: pkg,
+        requestKey: crypto.randomUUID(),
+      })
+      .subscribe({
+        next: (res) => {
+          this.registerSubmitting.set(false);
+          this.registerModalVisible.set(false);
+          this.resetRegisterModalState();
+          this.modalService.open(
+            'celebration',
+            'Successline registered',
+            `@${res.username} is now in Legacy Club under you (${res.package}).`,
+            '/legacy/successlines',
+            'View Successlines',
+            '/Share.json',
+          );
+        },
+        error: (err) => {
+          this.registerSubmitting.set(false);
+          this.registerError.set(legacyErrorMessage(err, 'Registration failed. Try again.'));
+        },
+      });
   }
 
   copyUsername(): void {
@@ -488,6 +707,9 @@ export class LegacyHomeComponent implements OnInit {
     const username = this.lookupUsername.trim();
     this.lookupKind.set(null);
     this.lookupError.set(null);
+    this.registerError.set(null);
+    this.lookedUpUsername.set('');
+    this.lookupBlockMessage.set('');
     if (!username) {
       this.lookupError.set('Enter a username.');
       return;
@@ -504,6 +726,16 @@ export class LegacyHomeComponent implements OnInit {
           this.lookupKind.set('already');
           return;
         }
+        if (res.canRegisterUnderMe === false) {
+          this.lookupKind.set('blocked');
+          this.lookupBlockMessage.set(
+            res.blockCode
+              ? legacyErrorMessage(new LegacyClubHttpError(400, res.blockCode, ''))
+              : 'You cannot register this member under you.',
+          );
+          return;
+        }
+        this.lookedUpUsername.set(res.username);
         this.lookupKind.set('ready');
       },
       error: () => {

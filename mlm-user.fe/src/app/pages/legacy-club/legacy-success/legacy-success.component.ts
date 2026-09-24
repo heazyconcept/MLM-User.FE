@@ -48,7 +48,7 @@ export class LegacySuccessComponent implements OnInit {
 
   body = computed(
     () =>
-      'Your Legacy marketplace order is complete. Weekly membership commission continues to drop automatically — shopping does not unlock extra commission.',
+      'Your Legacy marketplace order is complete. Weekly membership commission continues to drop automatically — shopping does not unlock extra commission. But you receive PV on every product purchased by you and your direct referrals.',
   );
 
   ngOnInit(): void {

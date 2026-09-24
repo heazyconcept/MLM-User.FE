@@ -20,6 +20,14 @@ export function legacyErrorMessage(err: unknown, fallback = 'Something went wron
         return 'You are already in Legacy Club.';
       case LEGACY_ERROR_CODES.REGISTRATION_UNPAID:
         return 'Complete your Segulah registration payment first.';
+      case LEGACY_ERROR_CODES.TARGET_NOT_FOUND:
+        return 'We could not find that username.';
+      case LEGACY_ERROR_CODES.TARGET_NOT_PAID:
+        return 'That person has not completed Segulah registration payment.';
+      case LEGACY_ERROR_CODES.ALREADY_IN_LEGACY:
+        return 'That member is already in Legacy Club.';
+      case LEGACY_ERROR_CODES.ALREADY_PENDING:
+        return 'That member already started joining Legacy Club. They must finish or cancel first.';
       case LEGACY_ERROR_CODES.LEGACY_CART_BELOW_PACKAGE:
         return err.message || 'Add more products to meet the package amount.';
       case LEGACY_ERROR_CODES.LEGACY_VOUCHER_REQUIRED:
