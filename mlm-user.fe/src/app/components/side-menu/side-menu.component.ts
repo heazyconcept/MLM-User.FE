@@ -507,8 +507,13 @@ export class SideMenuComponent implements OnInit {
 
     // Navigate if has route
     if (item.route) {
-      void this.router.navigate([item.route], { queryParams: item.queryParams ?? {} });
-      this.closeMobileMenu();
+      void this.router
+        .navigate([item.route], { queryParams: item.queryParams ?? {} })
+        .then((ok) => {
+          if (ok) {
+            this.closeMobileMenu();
+          }
+        });
     }
   }
 
