@@ -28,6 +28,8 @@ export function legacyErrorMessage(err: unknown, fallback = 'Something went wron
         return 'That member is already in Legacy Club.';
       case LEGACY_ERROR_CODES.ALREADY_PENDING:
         return 'That member already started joining Legacy Club. They must finish or cancel first.';
+      case LEGACY_ERROR_CODES.NOT_IN_DOWNLINE:
+        return 'That member is not in your downline.';
       case LEGACY_ERROR_CODES.LEGACY_CART_BELOW_PACKAGE:
         return err.message || 'Add more products to meet the package amount.';
       case LEGACY_ERROR_CODES.LEGACY_VOUCHER_REQUIRED:

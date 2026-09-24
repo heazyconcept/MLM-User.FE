@@ -52,6 +52,7 @@ import {
 import { LEGACY_CLUB_USE_MOCKS } from '../core/tokens/legacy-club.tokens';
 import { cyclePeriodCount, isWeeklyCycle } from '../core/utils/legacy-cycle.util';
 import { ApiService } from './api.service';
+import { LegacyQualifyCelebrationService } from './legacy-qualify-celebration.service';
 import { UserService } from './user.service';
 
 function unwrapData<T>(raw: unknown): T {
@@ -87,6 +88,7 @@ function mapHttpErrorCatch(err: unknown): LegacyClubHttpError {
 export class LegacyClubService {
   private api = inject(ApiService);
   private userService = inject(UserService);
+  private qualifyCelebration = inject(LegacyQualifyCelebrationService);
 
   private readonly useMocks =
     inject(LEGACY_CLUB_USE_MOCKS, { optional: true }) ?? environment.useLegacyClubMocks === true;
@@ -168,9 +170,11 @@ export class LegacyClubService {
     if (this.useMocks) {
       return from(legacyClubMockStore.getMe()).pipe(
         tap((me) => {
-          this.meState.set(this.normalizeLegacyMe(me));
+          const normalized = this.normalizeLegacyMe(me);
+          this.meState.set(normalized);
           this.featureAvailableState.set(true);
           this.loadingState.set(false);
+          this.afterMeLoaded(normalized);
         }),
         catchError((err) => {
           this.loadingState.set(false);
@@ -186,6 +190,7 @@ export class LegacyClubService {
         this.meState.set(me);
         this.featureAvailableState.set(true);
         this.loadingState.set(false);
+        this.afterMeLoaded(me);
       }),
       catchError((err) => {
         this.loadingState.set(false);
@@ -685,6 +690,11 @@ export class LegacyClubService {
       months,
       priorPending,
     };
+  }
+
+  private afterMeLoaded(me: LegacyMe | null): void {
+    const userId = this.userService.currentUser()?.id ?? '';
+    this.qualifyCelebration.maybeCelebrate(me, userId);
   }
 }
 

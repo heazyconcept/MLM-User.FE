@@ -371,6 +371,20 @@ See [`BACKEND_REQUEST_LEGACY_SPONSOR_REGISTER_SUCCESSLINE.md`](./BACKEND_REQUEST
 
 ---
 
+## Issue: Legacy sponsor register blocks indirect downlines — **resolved**
+
+`GET /legacy/members/lookup` and `POST /legacy/successlines/register` previously used **direct referral** (`resolveLegacySponsor`) and returned `SPONSOR_MUST_BE_AUTO` for indirect downlines (e.g. @Dele could not register Kosi11 while @Dele1a could).
+
+**Fix (HerbApi `007652e`):** Eligibility uses **`isUserInDownline`** (same as Downline List). Indirect uplines can register under themselves with `sponsorSource: CHOSEN`.
+
+**Ops:** Deploy HerbApi `dev` ≥ `007652e` to production.
+
+### Full write-up
+
+See [`BACKEND_BUG_LEGACY_SPONSOR_REGISTER_DOWNLINE_VS_REFERRAL.md`](./BACKEND_BUG_LEGACY_SPONSOR_REGISTER_DOWNLINE_VS_REFERRAL.md).
+
+---
+
 ## Issue: Legacy marketplace PV not visible on Legacy dashboard — **resolved**
 
 Backend shipped `legacyPv` on `GET /legacy/me` and `GET /legacy/pv/history` (CPV sources `PRODUCT_PURCHASE_PV`, `LEGACY_DIRECT_SUCCESSLINE_PV`). User FE integrated Legacy PV metric card on `/legacy/home` and PV history at `/legacy/pv/history`.

@@ -455,6 +455,7 @@ export const LEGACY_ERROR_CODES = {
   TARGET_NOT_PAID: 'TARGET_NOT_PAID',
   ALREADY_IN_LEGACY: 'ALREADY_IN_LEGACY',
   ALREADY_PENDING: 'ALREADY_PENDING',
+  NOT_IN_DOWNLINE: 'NOT_IN_DOWNLINE',
 } as const;
 
 /** Legacy cashout has no Autoship wallet — route those transfers to Legacy product voucher. */
