@@ -108,6 +108,7 @@ import { LegacyMetricCardComponent } from '../components/legacy-metric-card.comp
         }
 
         <app-legacy-page-header
+          [memberUsername]="username()"
           eyebrow="Legacy Club"
           [title]="(me()?.membership?.package ?? '') + ' Member'"
           [subtitle]="memberSubtitle()"

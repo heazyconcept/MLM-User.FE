@@ -16,6 +16,9 @@ import { RouterLink } from '@angular/router';
             ← {{ backLabel() }}
           </a>
         }
+        @if (memberUsername()) {
+          <p class="mb-1 text-base font-bold text-mlm-text">{{ memberUsername() }}</p>
+        }
         @if (eyebrow()) {
           <p class="text-xs font-bold uppercase tracking-[.15em] text-mlm-secondary">{{ eyebrow() }}</p>
         }
@@ -34,6 +37,7 @@ export class LegacyPageHeaderComponent {
   title = input.required<string>();
   subtitle = input<string>();
   eyebrow = input<string>();
+  memberUsername = input<string>();
   backLink = input<string>();
   backLabel = input('Back');
 }
