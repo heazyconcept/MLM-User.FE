@@ -649,11 +649,9 @@ export class SideMenuComponent implements OnInit {
     void this.router
       .navigate([item.route], { queryParams: item.queryParams ?? {} })
       .then((ok) => {
-        if (!ok) {
-          window.location.assign(this.menuHref(item) ?? item.route!);
-          return;
+        if (ok) {
+          this.closeMobileMenu();
         }
-        this.closeMobileMenu();
       });
   }
 

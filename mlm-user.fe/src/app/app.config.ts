@@ -4,7 +4,7 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { NavigationError, provideRouter, Router } from '@angular/router';
+import { NavigationEnd, NavigationError, provideRouter, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
@@ -36,10 +36,19 @@ const MyPreset = definePreset(Aura, {
 
 import { routes } from './app.routes';
 
-/** After deploy, cached index.html may reference removed lazy chunks — hard-reload the target URL. */
+const LAZY_ROUTE_RECOVERY_KEY = 'mlm.lazy-route-recovery';
+
+/** After deploy, cached index.html may reference removed lazy chunks — hard-reload the target URL once. */
 function provideLazyRouteRecovery(): ReturnType<typeof provideAppInitializer> {
   return provideAppInitializer(() => {
     const router = inject(Router);
+
+    router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => {
+        sessionStorage.removeItem(LAZY_ROUTE_RECOVERY_KEY);
+      });
+
     router.events
       .pipe(filter((event): event is NavigationError => event instanceof NavigationError))
       .subscribe((event) => {
@@ -50,9 +59,13 @@ function provideLazyRouteRecovery(): ReturnType<typeof provideAppInitializer> {
           message.includes('ChunkLoadError') ||
           message.includes('error loading dynamically imported module');
 
-        if (isChunkFailure && event.url) {
-          window.location.assign(event.url);
-        }
+        if (!isChunkFailure || !event.url) return;
+
+        const lastRecovery = sessionStorage.getItem(LAZY_ROUTE_RECOVERY_KEY);
+        if (lastRecovery === event.url) return;
+
+        sessionStorage.setItem(LAZY_ROUTE_RECOVERY_KEY, event.url);
+        window.location.assign(event.url);
       });
   });
 }
