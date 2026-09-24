@@ -63,6 +63,9 @@ describe('interpretLegacyMemberLookup', () => {
       legacyStatus: 'NONE',
     });
     expect(result.kind).toBe('not-member');
+    expect(result.message).toBe(
+      'This is not a registered member in Segulah Global Network.',
+    );
   });
 });
 
