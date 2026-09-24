@@ -18,7 +18,7 @@ import { CartService } from '../../../services/cart.service';
 import {
   CartCheckoutService,
   CheckoutConfirmPayload,
-  CheckoutWalletType,
+  NetworkCheckoutWalletType,
   PendingCheckoutData,
 } from '../../../services/cart-checkout.service';
 import { ProductGalleryComponent } from '../../../components/product-gallery/product-gallery.component';
@@ -64,7 +64,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
   private dialogService = inject(DialogService);
 
   product = signal<Product | null>(null);
-  selectedWallet = signal<CheckoutWalletType>('voucher');
+  selectedWallet = signal<NetworkCheckoutWalletType>('voucher');
   quantity = signal(1);
   fulfilmentDrawerVisible = signal(false);
   pendingOrderData = signal<PendingCheckoutData | null>(null);
@@ -95,7 +95,9 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     return p ? p.pv * q : 0;
   });
 
-  readonly walletOptions = [{ type: 'voucher' as CheckoutWalletType, label: 'Product Voucher' }];
+  readonly walletOptions = [
+    { type: 'voucher' as NetworkCheckoutWalletType, label: 'Product Voucher' },
+  ];
 
   eligibleWalletOptions = computed(() => {
     const p = this.product();
@@ -125,7 +127,7 @@ export class ProductDetailPageComponent implements OnInit, OnDestroy {
     });
   }
 
-  onWalletChange(wallet: CheckoutWalletType): void {
+  onWalletChange(wallet: NetworkCheckoutWalletType): void {
     const p = this.product();
     if (p?.eligibleWallets.includes(wallet)) {
       this.selectedWallet.set(wallet);

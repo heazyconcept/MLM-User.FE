@@ -21,7 +21,46 @@ export type LegacyPaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type LegacyRateTier = 'BASE' | 'INCREASED';
 export type LegacyMonthStatus = 'SCHEDULED' | 'PENDING' | 'DROPPED';
 export type LegacyIntent = 'NONE' | 'UPGRADE' | 'REACTIVATE';
-export type LegacyHistoryKind = 'JOIN' | 'UPGRADE' | 'REACTIVATE' | 'SEED';
+export type LegacyHistoryKind =
+  | 'JOIN'
+  | 'UPGRADE'
+  | 'REACTIVATE'
+  | 'SEED'
+  | 'INSTANT_COMMISSION'
+  | 'SUCCESSLINE_INSTANT_BONUS'
+  | 'MONTHLY_COMMISSION'
+  | 'SUCCESSLINE_MONTHLY_BONUS'
+  | 'WITHDRAWAL'
+  | 'TRANSFER';
+
+export type LegacyHistoryDirection = 'CREDIT' | 'DEBIT';
+export type LegacyHistoryFilter = 'ALL' | 'MEMBERSHIP' | 'ACCOUNT';
+export type LegacyPvHistoryKind = 'OWN_PURCHASE' | 'DIRECT_REFERRAL_PURCHASE';
+
+export interface LegacyPvSummary {
+  totalPv: number;
+  personalProductPv: number;
+  directReferralProductPv: number;
+}
+
+export interface LegacyPvHistoryItem {
+  id: string;
+  kind: LegacyPvHistoryKind;
+  pvAmount: number;
+  at: string;
+  orderId: string;
+  orderReference?: string | null;
+  orderTotal?: number | null;
+  currency?: LegacyCurrency | null;
+  productSummary: string;
+  buyerUsername?: string | null;
+  downlineUsername?: string | null;
+}
+
+export interface LegacyPvHistoryResponse {
+  items: LegacyPvHistoryItem[];
+  nextCursor: string | null;
+}
 
 export type LegacyCashoutTransferTarget =
   | 'CASH'
@@ -200,6 +239,8 @@ export interface LegacyMe {
   canReactivate?: boolean;
   upgradeTargets?: LegacyPackageCode[];
   priorPending?: LegacyPriorPendingSummary | null;
+  /** Legacy marketplace PV summary — from GET /legacy/me */
+  legacyPv?: LegacyPvSummary | null;
 }
 
 export interface LegacySponsorValidateRequest {
@@ -222,6 +263,28 @@ export interface LegacyMemberLookup {
   exists: boolean;
   isRegistrationPaid: boolean;
   legacyStatus: LegacyMemberStatus | 'NONE';
+  /** When caller is ACTIVE Legacy member — backend optional. */
+  canRegisterUnderMe?: boolean;
+  sponsorSourceIfRegistered?: LegacySponsorSource;
+  blockCode?: string;
+}
+
+export interface LegacyRegisterSuccesslineRequest {
+  username: string;
+  package: LegacyPackageCode;
+  requestKey: string;
+}
+
+export interface LegacyRegisterSuccesslineResponse {
+  username: string;
+  package: LegacyPackageCode;
+  legacyStatus: 'ACTIVE';
+  sponsorUsername: string;
+  sponsorSource: LegacySponsorSource;
+  joinedAt: string;
+  instantCommission: number;
+  successlineBonus: number;
+  currency: LegacyCurrency;
 }
 
 export interface LegacySuccessline {
@@ -340,16 +403,24 @@ export interface LegacyUpgradeQuote {
 export interface LegacyHistoryItem {
   id: string;
   kind: LegacyHistoryKind;
-  package: LegacyPackageCode;
-  fromPackage?: LegacyPackageCode | null;
-  instantAmount: number;
-  currency: LegacyCurrency;
   at: string;
+  title: string;
+  amount: number;
+  direction: LegacyHistoryDirection;
+  currency: LegacyCurrency;
+  subtitle?: string | null;
+  package?: LegacyPackageCode | null;
+  fromPackage?: LegacyPackageCode | null;
+  payAmount?: number | null;
   orderId?: string | null;
+  /** Present on membership lifecycle rows for compatibility. */
+  instantAmount?: number | null;
 }
 
 export interface LegacyHistoryResponse {
+  currency?: LegacyCurrency;
   items: LegacyHistoryItem[];
+  nextCursor?: string | null;
 }
 
 export interface LegacyApiErrorBody {
@@ -380,7 +451,87 @@ export const LEGACY_ERROR_CODES = {
   WALLET_LOCKED: 'WALLET_LOCKED',
   INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
   DUPLICATE_REQUEST_KEY: 'DUPLICATE_REQUEST_KEY',
+  TARGET_NOT_FOUND: 'TARGET_NOT_FOUND',
+  TARGET_NOT_PAID: 'TARGET_NOT_PAID',
+  ALREADY_IN_LEGACY: 'ALREADY_IN_LEGACY',
+  ALREADY_PENDING: 'ALREADY_PENDING',
 } as const;
+
+/** Legacy cashout has no Autoship wallet — route those transfers to Legacy product voucher. */
+export function resolveLegacyCashoutTransferTarget(
+  target: LegacyCashoutTransferTarget,
+): LegacyCashoutTransferTarget {
+  return target === 'AUTOSHIP' ? 'LEGACY_VOUCHER' : target;
+}
+
+export function formatLegacyCashoutTransferLabel(
+  target: LegacyCashoutTransferTarget | string,
+): string {
+  const resolved = resolveLegacyCashoutTransferTarget(target as LegacyCashoutTransferTarget);
+  switch (resolved) {
+    case 'LEGACY_VOUCHER':
+    case 'AUTOSHIP':
+      return 'Legacy product voucher';
+    case 'VOUCHER':
+      return 'Network product voucher';
+    case 'CASH':
+      return 'Cash wallet';
+  }
+}
+
+export function formatLegacyPvAmount(pv: number): string {
+  return Number.isInteger(pv) ? `${pv} PV` : `${pv.toFixed(1)} PV`;
+}
+
+export function legacyPvCardDescription(summary: LegacyPvSummary | null | undefined): string {
+  if (!summary) {
+    return 'PV from Legacy marketplace purchases and Successline shopping.';
+  }
+  const { personalProductPv, directReferralProductPv } = summary;
+  if (personalProductPv === 0 && directReferralProductPv === 0) {
+    return 'Shop the Legacy marketplace to earn PV that counts toward your network totals.';
+  }
+  const parts: string[] = [];
+  if (personalProductPv > 0) {
+    parts.push(`${formatLegacyPvAmount(personalProductPv).replace(' PV', '')} from your purchases`);
+  }
+  if (directReferralProductPv > 0) {
+    parts.push(
+      `${formatLegacyPvAmount(directReferralProductPv).replace(' PV', '')} from Successlines`,
+    );
+  }
+  return parts.join(' · ');
+}
+
+export function legacyPvHistoryRowTitle(item: LegacyPvHistoryItem): string {
+  const kind: LegacyPvHistoryKind = item.kind;
+  switch (kind) {
+    case 'OWN_PURCHASE':
+      return `You earned ${item.pvAmount} PV from your purchase`;
+    case 'DIRECT_REFERRAL_PURCHASE': {
+      const username = item.downlineUsername ?? item.buyerUsername;
+      return username
+        ? `You earned ${item.pvAmount} PV from @${username}'s purchase`
+        : `You earned ${item.pvAmount} PV from a Successline purchase`;
+    }
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
+  }
+}
+
+/** Normalize ledger copy from GET /legacy/cashout for member-facing history. */
+export function humanizeLegacyCashoutLedgerDescription(description: string): string {
+  const trimmed = description.trim();
+  const moveMatch = /^Move to (.+)$/.exec(trimmed);
+  if (!moveMatch) return description;
+  const target = moveMatch[1]?.trim();
+  if (!target || target === 'undefined') {
+    return 'Move to Legacy product voucher';
+  }
+  return `Move to ${formatLegacyCashoutTransferLabel(target)}`;
+}
 
 function normalizeShopMode(raw: string | undefined): LegacyShopMode {
   if (!raw) return 'NONE';
@@ -405,6 +556,17 @@ export function resolveLegacyShopMode(me: LegacyMe | null | undefined): LegacySh
 export function isLegacyMember(me: LegacyMe | null | undefined): boolean {
   if (!me) return false;
   return me.status !== 'NONE' && me.status !== 'PENDING_JOIN';
+}
+
+/** Legacy marketplace is only for registered Legacy members with an open shop. */
+export function canAccessLegacyMarketplace(me: LegacyMe | null | undefined): boolean {
+  return isLegacyMember(me) && resolveLegacyShopMode(me) === 'SHOP';
+}
+
+/** Legacy product voucher is available during join or after registration — not before join starts. */
+export function canAccessLegacyVoucher(me: LegacyMe | null | undefined): boolean {
+  if (!me) return false;
+  return me.status !== 'NONE';
 }
 
 function positiveAmount(value: unknown): number | null {

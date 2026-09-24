@@ -1,11 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, from, throwError } from 'rxjs';
+import { Observable, from, of, throwError } from 'rxjs';
 import { catchError, map, switchMap, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LegacyClubHttpError, legacyClubMockStore } from '../core/mocks/legacy-club.mock';
 import { LEGACY_ERROR_CODES } from '../core/models/legacy-club.models';
 import {
+  CartCheckoutData,
+  CartCheckoutService,
   CheckoutConfirmPayload,
 } from './cart-checkout.service';
 import { LegacyCartService } from './legacy-cart.service';
@@ -13,8 +15,10 @@ import { LegacyClubService } from './legacy-club.service';
 import {
   CheckoutBatchPayload,
   CheckoutResponse,
+  Order,
   OrderService,
 } from './order.service';
+import { PurchaseThankYouService } from './purchase-thank-you.service';
 import { UserService } from './user.service';
 import { ModalService } from './modal.service';
 import {
@@ -52,6 +56,8 @@ export class LegacyCheckoutService {
   private orderService = inject(OrderService);
   private legacyCart = inject(LegacyCartService);
   private legacyClub = inject(LegacyClubService);
+  private cartCheckout = inject(CartCheckoutService);
+  private thankYouService = inject(PurchaseThankYouService);
   private userService = inject(UserService);
   private modalService = inject(ModalService);
   private router = inject(Router);
@@ -71,7 +77,10 @@ export class LegacyCheckoutService {
     return false;
   }
 
-  submitLegacyCheckout(payload: CheckoutConfirmPayload): Observable<{ checkoutId: string; orderId?: string }> {
+  submitLegacyCheckout(
+    orderData: CartCheckoutData,
+    payload: CheckoutConfirmPayload,
+  ): Observable<{ checkoutId: string; orderId?: string }> {
     if (!this.requireCompleteProfile()) {
       return throwError(() => ({ code: PROFILE_INCOMPLETE_CODE }));
     }
@@ -94,10 +103,24 @@ export class LegacyCheckoutService {
           void this.legacyClub.loadMe().subscribe();
         }),
         tap((res) => {
-          void this.router.navigate(['/legacy/success'], {
-            queryParams: { orderId: res.orderId },
-          });
+          const checkout: CheckoutResponse = {
+            checkoutId: res.checkoutId,
+            orders: [
+              {
+                id: res.orderId,
+                fulfilmentMode: 'PICKUP',
+                totalAmount: this.legacyCart.subtotal(),
+                items: orderData.items.map((line) => ({
+                  productId: line.productId,
+                  quantity: line.quantity,
+                })),
+              },
+            ],
+            grandTotal: this.legacyCart.subtotal(),
+          };
+          this.openThankYouModal(checkout, undefined, orderData, payload);
         }),
+        map((res) => ({ checkoutId: res.checkoutId, orderId: res.orderId })),
         catchError((err) => {
           const mapped = err instanceof LegacyClubHttpError ? err : mapHttpErrorCatch(err);
           this.handleCheckoutError(mapped);
@@ -133,17 +156,26 @@ export class LegacyCheckoutService {
       }),
       switchMap((checkout: CheckoutResponse) =>
         this.orderService.payCheckoutWithWallet(checkout.checkoutId, 'LEGACY_VOUCHER').pipe(
-          switchMap(() => this.legacyCart.clear().pipe(map(() => checkout))),
-          tap(() => {
+          switchMap(() =>
+            this.legacyCart.clear().pipe(
+              catchError(() => of(undefined)),
+              map(() => checkout),
+            ),
+          ),
+          switchMap((c) =>
+            this.cartCheckout.fetchFirstPaidOrderWithRetry(c).pipe(
+              map((firstOrder) => ({ checkout: c, firstOrder })),
+            ),
+          ),
+          tap(({ checkout: c, firstOrder }) => {
             void this.legacyClub.loadMe().subscribe();
             void this.legacyClub.getMonths().subscribe({ error: () => undefined });
+            this.openThankYouModal(c, firstOrder, orderData, payload);
           }),
-          tap((c) => {
-            void this.router.navigate(['/legacy/success'], {
-              queryParams: { orderId: c.orders[0]?.id },
-            });
-          }),
-          map((c) => ({ checkoutId: c.checkoutId, orderId: c.orders[0]?.id })),
+          map(({ checkout: c }) => ({
+            checkoutId: c.checkoutId,
+            orderId: c.orders[0]?.id,
+          })),
           catchError((err) => {
             const mapped = mapHttpErrorCatch(err);
             this.handleCheckoutError(mapped);
@@ -151,6 +183,20 @@ export class LegacyCheckoutService {
           }),
         ),
       ),
+    );
+  }
+
+  private openThankYouModal(
+    checkout: CheckoutResponse,
+    firstOrder: Order | undefined,
+    orderData: CartCheckoutData,
+    payload: CheckoutConfirmPayload,
+  ): void {
+    this.thankYouService.open(
+      this.cartCheckout.buildThankYouSummary(checkout, firstOrder, orderData, payload),
+      () => {
+        void this.router.navigate(['/legacy/home']);
+      },
     );
   }
 

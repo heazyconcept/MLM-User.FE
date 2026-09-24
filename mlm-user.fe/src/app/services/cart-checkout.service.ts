@@ -26,7 +26,8 @@ import {
   profileIncompleteMissingFields,
 } from '../core/utils/profile-complete.util';
 
-export type CheckoutWalletType = 'cash' | 'voucher';
+export type NetworkCheckoutWalletType = 'cash' | 'voucher' | 'autoship';
+export type CheckoutWalletType = NetworkCheckoutWalletType | 'legacy_voucher';
 
 export interface SingleCheckoutData {
   mode: 'single';
@@ -126,7 +127,7 @@ export class CartCheckoutService {
       );
   }
 
-  private fetchFirstPaidOrderWithRetry(
+  fetchFirstPaidOrderWithRetry(
     checkout: CheckoutResponse,
   ): Observable<Order | undefined> {
     const firstId = checkout.orders[0]?.id;
@@ -209,6 +210,7 @@ export class CartCheckoutService {
 
   formatWalletLabel(wallet: CheckoutWalletType): string {
     if (wallet === 'voucher') return 'Product Voucher';
+    if (wallet === 'legacy_voucher') return 'Legacy product voucher';
     return 'Cash Wallet';
   }
 }

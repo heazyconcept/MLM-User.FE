@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -31,7 +31,7 @@ import { LegacyBalanceBannerComponent } from '../components/legacy-balance-banne
           backLabel="Legacy Club"
         />
 
-        <div class="grid gap-6 lg:grid-cols-2 lg:gap-8">
+        <div [class]="voucherGridClass()">
           <app-legacy-panel title="Voucher balance">
             <app-legacy-balance-banner
               label="Legacy product voucher"
@@ -40,14 +40,18 @@ import { LegacyBalanceBannerComponent } from '../components/legacy-balance-banne
             />
           </app-legacy-panel>
 
-          <app-legacy-panel title="Legacy marketplace">
-            <p class="text-sm leading-relaxed text-mlm-secondary">
-              Instant commission from product purchases is credited to this voucher.
-            </p>
-            <a routerLink="/legacy/shop" class="mt-6 block">
-              <p-button label="Legacy marketplace" styleClass="w-full" />
-            </a>
-          </app-legacy-panel>
+          @if (canShop()) {
+            <app-legacy-panel title="Legacy marketplace">
+              <p class="text-sm leading-relaxed text-mlm-secondary">
+                This voucher is funded by your weekly membership commission. Product purchases do
+                not pay commission — you receive PV on every product purchased by you and your
+                direct referrals.
+              </p>
+              <a routerLink="/legacy/shop" class="mt-6 block">
+                <p-button label="Legacy marketplace" styleClass="w-full" />
+              </a>
+            </app-legacy-panel>
+          }
         </div>
       </div>
     </app-legacy-page-shell>
@@ -57,6 +61,10 @@ export class LegacyVoucherComponent implements OnInit {
   private legacyClub = inject(LegacyClubService);
 
   balance = signal(0);
+  canShop = this.legacyClub.canShopProducts;
+  voucherGridClass = computed(() =>
+    this.canShop() ? 'grid gap-6 lg:grid-cols-2 lg:gap-8' : 'grid gap-6',
+  );
 
   ngOnInit(): void {
     this.refresh();

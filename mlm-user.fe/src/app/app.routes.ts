@@ -713,6 +713,10 @@ export const routes: Routes = [
           import('./pages/legacy-club/legacy-voucher/legacy-voucher.component').then(
             (m) => m.LegacyVoucherComponent,
           ),
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyVoucherGuard),
+        ],
         data: { title: 'Legacy Product Voucher' },
       },
       {
@@ -733,6 +737,10 @@ export const routes: Routes = [
           import('./pages/legacy-club/legacy-product-detail/legacy-product-detail.component').then(
             (m) => m.LegacyProductDetailComponent,
           ),
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyShopGuard),
+        ],
         data: { title: 'Legacy Product' },
       },
       {
@@ -741,6 +749,10 @@ export const routes: Routes = [
           import('./pages/legacy-club/legacy-cart/legacy-cart.component').then(
             (m) => m.LegacyCartComponent,
           ),
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyShopGuard),
+        ],
         data: { title: 'Legacy Cart' },
       },
       {
@@ -749,6 +761,10 @@ export const routes: Routes = [
           import('./pages/legacy-club/legacy-checkout/legacy-checkout.component').then(
             (m) => m.LegacyCheckoutComponent,
           ),
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyShopGuard),
+        ],
         data: { title: 'Legacy Club Checkout' },
       },
       {
@@ -786,7 +802,7 @@ export const routes: Routes = [
           () =>
             import('./core/guards/legacy.guard').then((m) => m.legacyMemberGuard),
         ],
-        data: { title: 'Legacy Account' },
+        data: { title: 'Legacy Cashout' },
       },
       {
         path: 'months',
@@ -831,7 +847,19 @@ export const routes: Routes = [
           () =>
             import('./core/guards/legacy.guard').then((m) => m.legacyMemberGuard),
         ],
-        data: { title: 'Legacy History' },
+        data: { title: 'Membership History' },
+      },
+      {
+        path: 'pv/history',
+        loadComponent: () =>
+          import('./pages/legacy-club/legacy-pv-history/legacy-pv-history.component').then(
+            (m) => m.LegacyPvHistoryComponent,
+          ),
+        canActivate: [
+          () =>
+            import('./core/guards/legacy.guard').then((m) => m.legacyMemberGuard),
+        ],
+        data: { title: 'Legacy PV History' },
       },
     ],
   },

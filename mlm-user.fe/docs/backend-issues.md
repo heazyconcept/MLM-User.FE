@@ -331,6 +331,57 @@ See [`BACKEND_BUG_BANK_PROFILE_COMPLETENESS.md`](./BACKEND_BUG_BANK_PROFILE_COMP
 
 ---
 
+## Issue: Legacy cashout transfer to AUTOSHIP credits wrong wallet — **resolved**
+
+Backend aliases `AUTOSHIP` → `LEGACY_VOUCHER` on `POST /legacy/cashout/transfer` and returns ledger rows with **Move to Legacy product voucher**. User FE remaps the target client-side, offers Legacy product voucher in the cashout UI, and humanizes history descriptions.
+
+**Remaining ops:** manually correct past mis-credits (e.g. ₦4,000 to network Autoship) where reported.
+
+### Full write-up
+
+See [`BACKEND_BUG_LEGACY_CASHOUT_AUTOSHIP_TRANSFER.md`](./BACKEND_BUG_LEGACY_CASHOUT_AUTOSHIP_TRANSFER.md).
+
+---
+
+## Issue: Legacy membership history empty / incomplete — **open (FE interim fix shipped)**
+
+`GET /legacy/history` returns `{ events: [...] }` while FE originally expected `{ items: [...] }`, so Membership history appeared empty. Cashout ledger rows (instant commission, transfers, Successline bonuses) were only on `GET /legacy/cashout`.
+
+**Interim FE:** maps `events[]`, merges cashout ledger client-side on `/legacy/history`, cashout page shows 3-row preview + link.
+
+**Backend needed:** unified paginated `GET /legacy/history` with membership + ledger items; fix missing `toWalletType` on transfer ledger copy.
+
+### Full write-up
+
+See [`BACKEND_REQUEST_LEGACY_MEMBERSHIP_HISTORY.md`](./BACKEND_REQUEST_LEGACY_MEMBERSHIP_HISTORY.md).
+
+---
+
+## Issue: Sponsor-paid Legacy Successline registration — **open (FE shipped)**
+
+Active Legacy members can look up a downline on `/legacy/home` (**Register a Successline**) but cannot pay and register them. Product requires sponsor-paid registration from the **sponsor's registration wallet** in one atomic call (like network Create Referral). If payment fails, the target must not be registered or left `PENDING_JOIN`.
+
+**FE shipped:** register modal with package picker + **Register & pay** calling `POST /legacy/successlines/register` (404 until backend ships).
+
+**Backend needed:** new atomic endpoint; optional lookup fields `canRegisterUnderMe` / `blockCode`.
+
+### Full write-up
+
+See [`BACKEND_REQUEST_LEGACY_SPONSOR_REGISTER_SUCCESSLINE.md`](./BACKEND_REQUEST_LEGACY_SPONSOR_REGISTER_SUCCESSLINE.md).
+
+---
+
+## Issue: Legacy marketplace PV not visible on Legacy dashboard — **resolved**
+
+Backend shipped `legacyPv` on `GET /legacy/me` and `GET /legacy/pv/history` (CPV sources `PRODUCT_PURCHASE_PV`, `LEGACY_DIRECT_SUCCESSLINE_PV`). User FE integrated Legacy PV metric card on `/legacy/home` and PV history at `/legacy/pv/history`.
+
+### Full write-up
+
+- [`BACKEND_REQUEST_LEGACY_PV_DASHBOARD.md`](./BACKEND_REQUEST_LEGACY_PV_DASHBOARD.md) — original spec + HerbApi source map
+- [`frontend-integration-legacy-pv-dashboard.md`](./frontend-integration-legacy-pv-dashboard.md) — FE consumption guide
+
+---
+
 ## How to add more issues
 
 For each new issue, add a section with:
