@@ -287,6 +287,31 @@ export const legacyClubMockStore = {
     state.registrationWalletBalance = balance;
   },
 
+  /** Test helper: set direct Successline count without registering. */
+  setDirectSuccesslineCount(count: number): void {
+    const required = state.me.minDirectsToIncreaseMonthly;
+    const isQualified = count >= required;
+    state.me = {
+      ...state.me,
+      directSuccesslineCount: count,
+      monthlyQualify: state.me.monthlyQualify
+        ? {
+            ...state.me.monthlyQualify,
+            directSuccesslineCount: count,
+            isQualified,
+            qualifiedAt: isQualified
+              ? (state.me.monthlyQualify.qualifiedAt ?? new Date().toISOString())
+              : null,
+          }
+        : {
+            directSuccesslineCount: count,
+            required,
+            isQualified,
+            qualifiedAt: isQualified ? new Date().toISOString() : null,
+          },
+    };
+  },
+
   /** Test helper: jump straight to ACTIVE with zero successlines. */
   seedActive(options?: { package?: LegacyPackageCode; cashoutBalance?: number }): void {
     const pkg = packageByCode(options?.package ?? 'VIP');
@@ -861,9 +886,26 @@ export const legacyClubMockStore = {
 
     const directCount = state.me.directSuccesslineCount + 1;
     const required = state.me.minDirectsToIncreaseMonthly;
+    const newlyQualified =
+      directCount >= required && !state.me.monthlyQualify?.isQualified;
+    const cycle = state.me.cycle
+      ? {
+          ...state.me.cycle,
+          ...(newlyQualified
+            ? {
+                nextDueRateTier: 'INCREASED' as const,
+                nextDueAmount: Math.round(
+                  (PACKAGE_DEFS.find((p) => p.code === state.me.membership?.package)
+                    ?.monthlyCommission ?? 120000) / 4,
+                ),
+              }
+            : {}),
+        }
+      : state.me.cycle;
     state.me = {
       ...state.me,
       directSuccesslineCount: directCount,
+      cycle,
       legacyCashout: state.me.legacyCashout
         ? { ...state.me.legacyCashout, balance: state.cashBalance }
         : { balance: state.cashBalance, status: 'ACTIVE' },
@@ -872,10 +914,9 @@ export const legacyClubMockStore = {
             ...state.me.monthlyQualify,
             directSuccesslineCount: directCount,
             isQualified: directCount >= required,
-            qualifiedAt:
-              directCount >= required && !state.me.monthlyQualify.isQualified
-                ? joinedAt
-                : state.me.monthlyQualify.qualifiedAt,
+            qualifiedAt: newlyQualified
+              ? joinedAt
+              : state.me.monthlyQualify.qualifiedAt,
           }
         : state.me.monthlyQualify,
     };

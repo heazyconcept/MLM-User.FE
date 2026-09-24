@@ -2,14 +2,16 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
-import { describe, beforeEach, it, expect, afterEach } from 'vitest';
+import { describe, beforeEach, it, expect, afterEach, vi } from 'vitest';
 import { firstValueFrom } from 'rxjs';
 
 import { LegacyClubService } from './legacy-club.service';
 import { LegacyCartService } from './legacy-cart.service';
 import { UserService, User } from './user.service';
 import { ApiService } from './api.service';
+import { ModalService } from './modal.service';
 import { legacyClubMockStore } from '../core/mocks/legacy-club.mock';
+import { LEGACY_QUALIFY_CELEBRATION_TITLE } from '../core/utils/legacy-qualify-celebration.util';
 import {
   LEGACY_ERROR_CODES,
   humanizeLegacyCashoutLedgerDescription,
@@ -34,13 +36,17 @@ function mockUser(overrides: Partial<User> = {}): User {
 describe('LegacyClubService (mocks)', () => {
   let service: LegacyClubService;
   let cart: LegacyCartService;
+  let modalService: ModalService;
   const userSignal = signal<User | null>(mockUser());
   const isPaidSignal = signal(true);
+  const modalOpenSpy = vi.fn();
 
   beforeEach(() => {
     legacyClubMockStore.reset();
     userSignal.set(mockUser());
     isPaidSignal.set(true);
+    sessionStorage.clear();
+    modalOpenSpy.mockReset();
 
     TestBed.configureTestingModule({
       providers: [
@@ -62,10 +68,16 @@ describe('LegacyClubService (mocks)', () => {
     });
     service = TestBed.inject(LegacyClubService);
     cart = TestBed.inject(LegacyCartService);
+    modalService = TestBed.inject(ModalService);
+    vi.spyOn(modalService, 'open').mockImplementation((...args) => {
+      modalOpenSpy(...args);
+    });
   });
 
   afterEach(() => {
     legacyClubMockStore.reset();
+    sessionStorage.clear();
+    vi.restoreAllMocks();
   });
 
   it('shows menu for paid users in mock mode', () => {
@@ -130,6 +142,41 @@ describe('LegacyClubService (mocks)', () => {
     await expect(legacyClubMockStore.checkoutAndPay('VOUCHER')).rejects.toMatchObject({
       code: LEGACY_ERROR_CODES.LEGACY_VOUCHER_REQUIRED,
     });
+  });
+
+  it('shows qualification celebration when the 3rd Successline qualifies', async () => {
+    legacyClubMockStore.seedActive({ package: 'VIP' });
+    legacyClubMockStore.setDirectSuccesslineCount(2);
+    await firstValueFrom(service.loadMe());
+
+    await firstValueFrom(
+      service.registerSuccessline({
+        username: 'ready_third',
+        package: 'VIP',
+        requestKey: crypto.randomUUID(),
+      }),
+    );
+    await firstValueFrom(service.loadMe());
+
+    expect(modalOpenSpy).toHaveBeenCalledWith(
+      'celebration',
+      LEGACY_QUALIFY_CELEBRATION_TITLE,
+      expect.stringContaining('increased rate'),
+      '/legacy/weeks',
+      'View weekly cycle',
+      '/Share.json',
+    );
+  });
+
+  it('does not repeat qualification celebration on reload', async () => {
+    legacyClubMockStore.seedActive({ package: 'VIP' });
+    legacyClubMockStore.setDirectSuccesslineCount(3);
+    await firstValueFrom(service.loadMe());
+    modalOpenSpy.mockClear();
+
+    await firstValueFrom(service.loadMe());
+
+    expect(modalOpenSpy).not.toHaveBeenCalled();
   });
 
   it('registers a successline from sponsor registration wallet', async () => {
