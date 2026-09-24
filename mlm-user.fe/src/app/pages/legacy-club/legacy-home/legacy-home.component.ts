@@ -20,7 +20,6 @@ import { UserService } from '../../../services/user.service';
 import { RegistrationService } from '../../../services/registration.service';
 import { ModalService } from '../../../services/modal.service';
 import {
-  LegacyMemberLookup,
   LegacyPackage,
   LegacyPackageCode,
   LegacyRateTier,
@@ -29,9 +28,12 @@ import {
   formatLegacyPvAmount,
   legacyPvCardDescription,
 } from '../../../core/models/legacy-club.models';
-import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
+import {
+  interpretLegacyMemberLookup,
+  LegacyMemberLookupUiResult,
+} from '../../../core/utils/legacy-member-lookup.util';
 import { RegistrationFundingComponent } from '../../wallet/registration-funding/registration-funding.component';
 import {
   cyclePeriodCount,
@@ -42,8 +44,6 @@ import { LegacyPageShellComponent } from '../components/legacy-page-shell.compon
 import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
 import { LegacyMetricCardComponent } from '../components/legacy-metric-card.component';
-
-type LookupResultKind = 'ready' | 'already' | 'not-member' | 'blocked' | null;
 
 @Component({
   selector: 'app-legacy-home',
@@ -369,22 +369,16 @@ type LookupResultKind = 'ready' | 'already' | 'not-member' | 'blocked' | null;
                   (onClick)="lookupMember()"
                 />
               </div>
-              @if (lookupKind() === 'ready') {
-                <p class="mt-2 text-sm font-medium text-emerald-800">
-                  Ready — &#64;{{ lookedUpUsername() }} can join under you
+              @if (lookupResult(); as result) {
+                <p class="mt-2 text-sm font-medium" [class]="lookupResultClass(result.kind)">
+                  {{ result.message }}
                 </p>
-              } @else if (lookupKind() === 'blocked') {
-                <p class="mt-2 text-sm font-medium text-red-700">{{ lookupBlockMessage() }}</p>
-              } @else if (lookupKind() === 'already') {
-                <p class="mt-2 text-sm font-medium text-mlm-text">Already in Legacy</p>
-              } @else if (lookupKind() === 'not-member') {
-                <p class="mt-2 text-sm font-medium text-mlm-secondary">Not a Segulah member</p>
               }
               @if (lookupError()) {
                 <p class="mt-2 text-sm text-red-700">{{ lookupError() }}</p>
               }
 
-              @if (lookupKind() === 'ready') {
+              @if (lookupResult()?.kind === 'ready') {
                 <div class="mt-4 space-y-4 rounded-xl border border-gray-100 bg-mlm-background/60 p-4">
                   <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-semibold text-gray-700" for="registerPackage">
@@ -474,8 +468,7 @@ export class LegacyHomeComponent implements OnInit {
   registrationBalance = signal(0);
   registerSubmitting = signal(false);
   registerError = signal<string | null>(null);
-  lookedUpUsername = signal('');
-  lookupBlockMessage = signal('');
+  lookupResult = signal<LegacyMemberLookupUiResult | null>(null);
   username = computed(() => this.userService.currentUser()?.username ?? '');
   registerPackageOptions = computed(() =>
     this.registerPackages()
@@ -520,7 +513,6 @@ export class LegacyHomeComponent implements OnInit {
 
   lookupUsername = '';
   lookupLoading = signal(false);
-  lookupKind = signal<LookupResultKind>(null);
   lookupError = signal<string | null>(null);
 
   ngOnInit(): void {
@@ -589,11 +581,9 @@ export class LegacyHomeComponent implements OnInit {
 
   openRegisterModal(): void {
     this.lookupUsername = '';
-    this.lookupKind.set(null);
+    this.lookupResult.set(null);
     this.lookupError.set(null);
     this.registerError.set(null);
-    this.lookedUpUsername.set('');
-    this.lookupBlockMessage.set('');
     this.selectedRegisterPackage.set(null);
     this.registerModalVisible.set(true);
     this.loadRegisterModalData();
@@ -607,13 +597,30 @@ export class LegacyHomeComponent implements OnInit {
   }
 
   private resetRegisterModalState(): void {
-    this.lookupKind.set(null);
+    this.lookupResult.set(null);
     this.lookupError.set(null);
     this.registerError.set(null);
-    this.lookedUpUsername.set('');
-    this.lookupBlockMessage.set('');
     this.selectedRegisterPackage.set(null);
     this.registerSubmitting.set(false);
+  }
+
+  lookupResultClass(kind: LegacyMemberLookupUiResult['kind']): string {
+    switch (kind) {
+      case 'ready':
+        return 'text-emerald-800';
+      case 'blocked':
+        return 'text-red-700';
+      case 'already':
+      case 'pending':
+        return 'text-mlm-text';
+      case 'not-member':
+      case 'unpaid':
+        return 'text-mlm-secondary';
+      default: {
+        const _exhaustive: never = kind;
+        return _exhaustive;
+      }
+    }
   }
 
   private loadRegisterModalData(): void {
@@ -636,7 +643,7 @@ export class LegacyHomeComponent implements OnInit {
   canRegisterAndPay(): boolean {
     const pkg = this.selectedRegisterPackageDef();
     return (
-      this.lookupKind() === 'ready' &&
+      this.lookupResult()?.kind === 'ready' &&
       !!pkg &&
       !this.registerSubmitting() &&
       this.registrationBalance() >= pkg.purchaseAmount
@@ -663,7 +670,7 @@ export class LegacyHomeComponent implements OnInit {
 
   registerSuccessline(): void {
     if (!this.canRegisterAndPay()) return;
-    const username = this.lookedUpUsername();
+    const username = this.lookupResult()?.username;
     const pkg = this.selectedRegisterPackage();
     if (!username || !pkg) return;
 
@@ -705,38 +712,18 @@ export class LegacyHomeComponent implements OnInit {
 
   lookupMember(): void {
     const username = this.lookupUsername.trim();
-    this.lookupKind.set(null);
+    this.lookupResult.set(null);
     this.lookupError.set(null);
     this.registerError.set(null);
-    this.lookedUpUsername.set('');
-    this.lookupBlockMessage.set('');
     if (!username) {
       this.lookupError.set('Enter a username.');
       return;
     }
     this.lookupLoading.set(true);
     this.legacyClub.lookupMember(username).subscribe({
-      next: (res: LegacyMemberLookup) => {
+      next: (res) => {
         this.lookupLoading.set(false);
-        if (!res.exists || !res.isRegistrationPaid) {
-          this.lookupKind.set('not-member');
-          return;
-        }
-        if (res.legacyStatus === 'ACTIVE' || res.legacyStatus === 'PENDING_JOIN') {
-          this.lookupKind.set('already');
-          return;
-        }
-        if (res.canRegisterUnderMe === false) {
-          this.lookupKind.set('blocked');
-          this.lookupBlockMessage.set(
-            res.blockCode
-              ? legacyErrorMessage(new LegacyClubHttpError(400, res.blockCode, ''))
-              : 'You cannot register this member under you.',
-          );
-          return;
-        }
-        this.lookedUpUsername.set(res.username);
-        this.lookupKind.set('ready');
+        this.lookupResult.set(interpretLegacyMemberLookup(res));
       },
       error: () => {
         this.lookupLoading.set(false);

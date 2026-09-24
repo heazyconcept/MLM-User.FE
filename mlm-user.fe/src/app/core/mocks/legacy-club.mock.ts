@@ -960,12 +960,26 @@ export const legacyClubMockStore = {
         legacyStatus: 'NONE',
       });
     }
-    if (normalized.startsWith('ready')) {
+    if (normalized === 'outside_downline') {
       return delay({
         username: normalized,
         exists: true,
         isRegistrationPaid: true,
         legacyStatus: 'NONE',
+        canRegisterUnderMe: false,
+        blockCode: 'NOT_IN_DOWNLINE',
+      });
+    }
+    if (normalized.startsWith('ready')) {
+      const canRegister = state.me.status === 'ACTIVE';
+      return delay({
+        username: normalized,
+        exists: true,
+        isRegistrationPaid: true,
+        legacyStatus: 'NONE',
+        ...(canRegister
+          ? { canRegisterUnderMe: true, sponsorSourceIfRegistered: 'CHOSEN' as const }
+          : {}),
       });
     }
     return delay({

@@ -49,7 +49,7 @@ export function legacyErrorMessage(err: unknown, fallback = 'Something went wron
       case 'NOT_LEGACY_MEMBER':
         return 'Join Legacy Club first.';
       default:
-        return mapPinValidationMessage(err.message) ?? err.message ?? fallback;
+        return mapPinValidationMessage(err.message) ?? (err.message || fallback);
     }
   }
   const http = err as { error?: { message?: string | string[]; code?: string }; message?: string };

@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal, effect } from '@angular/core';
 import { Observable, from, of, throwError } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { mapLegacyHistoryResponse } from '../core/utils/legacy-history.util';
+import { normalizeLegacyMemberLookup } from '../core/utils/legacy-member-lookup.util';
 import { environment } from '../../environments/environment';
 import {
   LegacyCashoutResponse,
@@ -340,7 +341,7 @@ export class LegacyClubService {
     }
     return this.api
       .get<unknown>('legacy/members/lookup', { username })
-      .pipe(map((raw) => unwrapData<LegacyMemberLookup>(raw)));
+      .pipe(map((raw) => normalizeLegacyMemberLookup(raw)));
   }
 
   registerSuccessline(
