@@ -371,6 +371,18 @@ See [`BACKEND_REQUEST_LEGACY_SPONSOR_REGISTER_SUCCESSLINE.md`](./BACKEND_REQUEST
 
 ---
 
+## Issue: Legacy upgrade wallet payment fails DB constraint — **open**
+
+`POST /legacy/payments/wallet` with `purpose: "UPGRADE"` returns **500**: `LegacyPayment_purpose_check` only allows `JOIN` and `REACTIVATE` in the DB migration, but the app inserts `UPGRADE`. Package upgrade payment is broken in production.
+
+**Fix:** Migration to extend check constraint to include `UPGRADE`.
+
+### Full write-up
+
+See [`BACKEND_BUG_LEGACY_PAYMENT_UPGRADE_PURPOSE_CHECK.md`](./BACKEND_BUG_LEGACY_PAYMENT_UPGRADE_PURPOSE_CHECK.md).
+
+---
+
 ## Issue: Legacy sponsor register blocks indirect downlines — **resolved**
 
 `GET /legacy/members/lookup` and `POST /legacy/successlines/register` previously used **direct referral** (`resolveLegacySponsor`) and returned `SPONSOR_MUST_BE_AUTO` for indirect downlines (e.g. @Dele could not register Kosi11 while @Dele1a could).

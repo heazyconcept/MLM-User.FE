@@ -102,7 +102,7 @@ export function interpretLegacyMemberLookup(
   if (!res.exists) {
     return {
       kind: 'not-member',
-      message: `We could not find @${username}.`,
+      message: 'This is not a registered member in Segulah Global Network.',
       username,
     };
   }
