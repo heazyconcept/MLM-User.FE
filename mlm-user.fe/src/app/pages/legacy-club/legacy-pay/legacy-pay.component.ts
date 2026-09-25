@@ -28,6 +28,10 @@ import {
 import { legacyPaymentPurposeLabel } from '../../../core/utils/legacy-routing.util';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
+import {
+  formatLegacyJoinCancellationMessage,
+  resolveJoinCancellationNotice,
+} from '../../../core/utils/legacy-join-cancellation.util';
 import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
 import {
   EVIDENCE_ACCEPT,
@@ -242,6 +246,7 @@ export class LegacyPayComponent implements OnInit, OnDestroy {
   pendingManual = signal(false);
   rejectionReason = signal<string | null>(null);
   requestKey = signal('');
+  private wasPendingJoin = signal(false);
   private pollSub: Subscription | null = null;
 
   readonly evidenceAccept = EVIDENCE_ACCEPT;
@@ -294,6 +299,10 @@ export class LegacyPayComponent implements OnInit, OnDestroy {
     this.legacyClub.loadMe().subscribe({
       next: (me) => {
         if (!me) return;
+        if (me.status === 'PENDING_JOIN') {
+          this.wasPendingJoin.set(true);
+        }
+        if (this.handleJoinCancelled(me)) return;
         this.rejectionReason.set(me.pendingPayment?.rejectionReason ?? null);
         if (me.pendingPayment && !this.hasWalletMethod()) {
           this.tab.set('manual');
@@ -464,12 +473,41 @@ export class LegacyPayComponent implements OnInit, OnDestroy {
 
   private startPolling(): void {
     this.pollSub?.unsubscribe();
-    this.pollSub = this.paymentService.pollUntilPaymentCleared(() => {
-      const me = this.legacyClub.me();
-      if (me && me.status === 'ACTIVE' && !me.pendingPayment) {
+    this.pollSub = this.paymentService.pollUntilPaymentCleared((me) => {
+      if (!me) return;
+      if (this.handleJoinCancelled(me)) return;
+      if (me.status === 'ACTIVE' && !me.pendingPayment) {
         this.pendingManual.set(false);
         void this.router.navigate(['/legacy/home']);
       }
     });
+  }
+
+  private handleJoinCancelled(me: LegacyMe): boolean {
+    if (this.purpose() !== 'JOIN') return false;
+
+    const notice = resolveJoinCancellationNotice(me);
+    const cancelled =
+      !!notice ||
+      (this.wasPendingJoin() &&
+        me.status === 'NONE' &&
+        !me.pendingJoin &&
+        !me.pendingPayment);
+
+    if (!cancelled) return false;
+
+    this.pollSub?.unsubscribe();
+    this.pendingManual.set(false);
+    this.messages.add({
+      severity: 'warn',
+      summary: 'Registration cancelled',
+      detail: formatLegacyJoinCancellationMessage(notice?.reason),
+      life: 12000,
+    });
+    if (notice) {
+      this.legacyClub.ackJoinCancellation().subscribe();
+    }
+    void this.router.navigate(['/legacy/join']);
+    return true;
   }
 }

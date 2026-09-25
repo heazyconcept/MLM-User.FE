@@ -1,7 +1,9 @@
 import { Component, ChangeDetectionStrategy, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { MessageService } from 'primeng/api';
 import { LegacyClubService } from '../../../services/legacy-club.service';
+import { formatLegacyJoinCancellationMessage } from '../../../core/utils/legacy-join-cancellation.util';
 import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
 
 @Component({
@@ -20,6 +22,7 @@ import { LegacyPageShellComponent } from '../components/legacy-page-shell.compon
 export class LegacyGateComponent implements OnInit {
   private legacyClub = inject(LegacyClubService);
   private router = inject(Router);
+  private messages = inject(MessageService);
 
   ngOnInit(): void {
     this.legacyClub.loadMe().subscribe({
@@ -27,6 +30,16 @@ export class LegacyGateComponent implements OnInit {
         if (!me) {
           void this.router.navigate(['/dashboard']);
           return;
+        }
+        const notice = me.joinCancellationNotice;
+        if (notice) {
+          this.messages.add({
+            severity: 'warn',
+            summary: 'Registration cancelled',
+            detail: formatLegacyJoinCancellationMessage(notice.reason),
+            life: 12000,
+          });
+          this.legacyClub.ackJoinCancellation().subscribe();
         }
         void this.router.navigateByUrl(this.legacyClub.legacyHomePath(), { replaceUrl: true });
       },

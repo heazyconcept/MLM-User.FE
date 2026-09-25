@@ -56,17 +56,14 @@ export class LegacyPaymentService {
     return this.legacyClub.payManual(formData);
   }
 
-  pollUntilPaymentCleared(onTick?: () => void): Subscription {
+  pollUntilPaymentCleared(onTick?: (me: LegacyMe | null) => void): Subscription {
     return interval(POLL_INTERVAL_MS)
       .pipe(
         switchMap(() => this.legacyClub.loadMe()),
         takeWhile((me) => !!me?.pendingPayment || me?.status === 'PENDING_JOIN', true),
       )
       .subscribe((me) => {
-        onTick?.();
-        if (me && !me.pendingPayment && me.status !== 'PENDING_JOIN') {
-          return;
-        }
+        onTick?.(me);
       });
   }
 
