@@ -14,6 +14,7 @@ import { legacyClubMockStore } from '../core/mocks/legacy-club.mock';
 import { LEGACY_QUALIFY_CELEBRATION_TITLE } from '../core/utils/legacy-qualify-celebration.util';
 import {
   LEGACY_ERROR_CODES,
+  formatLegacyCashoutTransferLabel,
   humanizeLegacyCashoutLedgerDescription,
   resolveLegacyCashoutTransferTarget,
 } from '../core/models/legacy-club.models';
@@ -275,13 +276,39 @@ describe('LegacyClubService (mocks)', () => {
     expect(cashout.items[0]?.description).toBe('Move to Legacy product voucher');
     expect(cashout.items[0]?.type).toBe('Debit');
   });
+
+  it('credits registration wallet when transfer target is REGISTRATION', async () => {
+    legacyClubMockStore.seedActive({ cashoutBalance: 20000 });
+    legacyClubMockStore.setRegistrationWalletBalance(1000);
+    await firstValueFrom(service.loadMe());
+    const cashoutBefore = service.me()?.legacyCashout?.balance ?? 0;
+
+    await firstValueFrom(
+      service.transferCashout({
+        toWalletType: 'REGISTRATION',
+        amount: 3500,
+        currency: 'NGN',
+        pin: '1234',
+      }),
+    );
+
+    expect(legacyClubMockStore.getRegistrationWalletBalance()).toBe(4500);
+    const cashout = await firstValueFrom(service.getCashout());
+    expect(cashout.balance).toBe(cashoutBefore - 3500);
+    expect(cashout.items[0]?.description).toBe('Move to Registration wallet');
+  });
 });
 
 describe('resolveLegacyCashoutTransferTarget', () => {
   it('maps AUTOSHIP to LEGACY_VOUCHER', () => {
     expect(resolveLegacyCashoutTransferTarget('AUTOSHIP')).toBe('LEGACY_VOUCHER');
     expect(resolveLegacyCashoutTransferTarget('CASH')).toBe('CASH');
+    expect(resolveLegacyCashoutTransferTarget('REGISTRATION')).toBe('REGISTRATION');
     expect(resolveLegacyCashoutTransferTarget('LEGACY_VOUCHER')).toBe('LEGACY_VOUCHER');
+  });
+
+  it('formats transfer target labels', () => {
+    expect(formatLegacyCashoutTransferLabel('REGISTRATION')).toBe('Registration wallet');
   });
 
   it('humanizes legacy cashout ledger descriptions', () => {
@@ -418,6 +445,25 @@ describe('LegacyClubService (API)', () => {
     expect(req.request.method).toBe('POST');
     expect(req.request.body.toWalletType).toBe('LEGACY_VOUCHER');
     req.flush({ transferId: 'tr-1' });
+
+    const meReq = httpMock.expectOne(`${baseUrl}/legacy/me`);
+    meReq.flush({ status: 'ACTIVE', currency: 'NGN' });
+  });
+
+  it('posts REGISTRATION unchanged when transferCashout target is REGISTRATION', () => {
+    service
+      .transferCashout({
+        toWalletType: 'REGISTRATION',
+        amount: 3500,
+        currency: 'NGN',
+        pin: '1234',
+      })
+      .subscribe();
+
+    const req = httpMock.expectOne(`${baseUrl}/legacy/cashout/transfer`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.toWalletType).toBe('REGISTRATION');
+    req.flush({ transferId: 'tr-reg-1' });
 
     const meReq = httpMock.expectOne(`${baseUrl}/legacy/me`);
     meReq.flush({ status: 'ACTIVE', currency: 'NGN' });

@@ -64,6 +64,7 @@ export interface LegacyPvHistoryResponse {
 
 export type LegacyCashoutTransferTarget =
   | 'CASH'
+  | 'REGISTRATION'
   | 'VOUCHER'
   | 'AUTOSHIP'
   | 'LEGACY_VOUCHER';
@@ -482,6 +483,8 @@ export function formatLegacyCashoutTransferLabel(
       return 'Legacy product voucher';
     case 'VOUCHER':
       return 'Network product voucher';
+    case 'REGISTRATION':
+      return 'Registration wallet';
     case 'CASH':
       return 'Cash wallet';
   }
