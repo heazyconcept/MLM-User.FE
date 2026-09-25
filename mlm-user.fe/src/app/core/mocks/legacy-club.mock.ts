@@ -1116,6 +1116,8 @@ export const legacyClubMockStore = {
       };
     } else if (body.toWalletType === 'CASH') {
       state.cashBalance += body.amount;
+    } else if (body.toWalletType === 'REGISTRATION') {
+      state.registrationWalletBalance += body.amount;
     }
     state.ledger = [
       {

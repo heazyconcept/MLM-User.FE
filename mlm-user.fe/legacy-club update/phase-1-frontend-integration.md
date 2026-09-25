@@ -312,7 +312,9 @@ POST /legacy/cashout/transfer
 }
 ```
 
-`toWalletType`: `CASH` | `VOUCHER` | `AUTOSHIP` | `LEGACY_VOUCHER`
+`toWalletType`: `CASH` | `REGISTRATION` | `VOUCHER` | `AUTOSHIP` | `LEGACY_VOUCHER`
+
+(`AUTOSHIP` is a deprecated alias — credits Legacy product voucher. See [LEGACY_CASHOUT_TO_REGISTRATION.md](./LEGACY_CASHOUT_TO_REGISTRATION.md).)
 
 **200:** `{ "transferId": "uuid" }`
 
