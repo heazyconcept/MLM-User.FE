@@ -182,6 +182,12 @@ export interface LegacyPendingUpgrade {
   paymentRequired: number;
 }
 
+/** Shown once after admin cancels PENDING_JOIN — cleared via POST /legacy/join/cancellation/ack */
+export interface LegacyJoinCancellationNotice {
+  reason: string;
+  cancelledAt: string;
+}
+
 export interface LegacyJoinPreview {
   sponsorResolution: LegacySponsorResolution;
   defaultSponsor: LegacyDefaultSponsor | null;
@@ -228,6 +234,7 @@ export interface LegacyMe {
   pendingJoin: LegacyPendingJoin | null;
   pendingUpgrade?: LegacyPendingUpgrade | null;
   pendingPayment?: LegacyPendingPayment | null;
+  joinCancellationNotice?: LegacyJoinCancellationNotice | null;
   /** Phase 2+ */
   cycle?: LegacyCycle | null;
   monthlyQualify?: LegacyMonthlyQualify | null;

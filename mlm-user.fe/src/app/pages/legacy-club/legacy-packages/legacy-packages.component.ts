@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -6,6 +6,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { LegacyClubService } from '../../../services/legacy-club.service';
 import { LegacyPackage } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
+import { formatLegacyJoinCancellationMessage } from '../../../core/utils/legacy-join-cancellation.util';
 import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
 import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 
@@ -27,6 +28,17 @@ import { LegacyPageHeaderComponent } from '../components/legacy-page-header.comp
         backLink="/legacy"
         backLabel="Legacy Club"
       />
+
+      @if (cancellationMessage()) {
+        <div
+          class="mb-6 rounded-xl border border-amber-200 bg-amber-50/80 px-5 py-4 sm:px-6"
+          role="alert">
+          <p class="font-semibold text-mlm-text">Previous registration cancelled</p>
+          <p class="mt-2 text-sm leading-relaxed text-mlm-secondary">
+            {{ cancellationMessage() }}
+          </p>
+        </div>
+      }
 
       @if (loading()) {
         <div class="grid gap-5 md:grid-cols-3">
@@ -77,6 +89,13 @@ export class LegacyPackagesComponent implements OnInit {
   packages = signal<LegacyPackage[]>([]);
   loading = signal(true);
   currency = signal<'NGN' | 'USD'>('NGN');
+  me = this.legacyClub.me;
+
+  cancellationMessage = computed(() => {
+    const notice = this.me()?.joinCancellationNotice;
+    if (!notice) return null;
+    return formatLegacyJoinCancellationMessage(notice.reason);
+  });
 
   ngOnInit(): void {
     this.legacyClub.loadMe().subscribe();
@@ -95,6 +114,9 @@ export class LegacyPackagesComponent implements OnInit {
   }
 
   select(pkg: LegacyPackage): void {
+    if (this.me()?.joinCancellationNotice) {
+      this.legacyClub.ackJoinCancellation().subscribe();
+    }
     void this.router.navigate(['/legacy/join/sponsor'], { queryParams: { package: pkg.code } });
   }
 }

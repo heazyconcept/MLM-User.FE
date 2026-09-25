@@ -1,9 +1,11 @@
 # Legacy Club — Admin remaining work
 
-**Date:** 2026-09-21  
+**Date:** 2026-09-21 (updated 2026-09-25)  
 **From:** Member app (`mlm-user.fe`)  
 **Audience:** Admin panel + anyone who owns seed / package config  
 **Canonical specs:** this folder’s `phase-*-backend.md`, `phase-*-ui-ux.md`, `phase-*-frontend-integration.md`
+
+> **New (2026-09-25):** [ADMIN_CANCEL_PENDING_JOIN.md](./ADMIN_CANCEL_PENDING_JOIN.md) — admin cancels `PENDING_JOIN` registration; member notification + FE contract.
 
 ---
 

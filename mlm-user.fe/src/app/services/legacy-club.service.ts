@@ -504,6 +504,22 @@ export class LegacyClubService {
     );
   }
 
+  ackJoinCancellation(): Observable<void> {
+    if (this.useMocks) {
+      return of(undefined);
+    }
+    return this.api.post<unknown>('legacy/join/cancellation/ack', {}).pipe(
+      map(() => undefined),
+      tap(() => {
+        const current = this.meState();
+        if (current) {
+          this.meState.set({ ...current, joinCancellationNotice: null });
+        }
+      }),
+      catchError(() => of(undefined)),
+    );
+  }
+
   getHistory(): Observable<LegacyHistoryResponse> {
     const currency = this.meState()?.currency ?? 'NGN';
     if (this.useMocks) {
@@ -542,18 +558,38 @@ export class LegacyClubService {
   }
 
   private normalizeLegacyMe(me: LegacyMe): LegacyMe {
-    const record = me as LegacyMe & { legacy_pv?: Record<string, unknown> };
+    const record = me as LegacyMe & {
+      legacy_pv?: Record<string, unknown>;
+      join_cancellation_notice?: Record<string, unknown>;
+    };
     const legacyPvRaw = me.legacyPv ?? record.legacy_pv;
-    if (!legacyPvRaw || typeof legacyPvRaw !== 'object') {
-      return {
-        ...me,
-        legacyPv: me.legacyPv ?? {
-          totalPv: 0,
-          personalProductPv: 0,
-          directReferralProductPv: 0,
-        },
+    const noticeRaw =
+      me.joinCancellationNotice ??
+      (record.join_cancellation_notice as LegacyMe['joinCancellationNotice']);
+
+    let joinCancellationNotice = me.joinCancellationNotice ?? null;
+    if (noticeRaw && typeof noticeRaw === 'object') {
+      const n = noticeRaw as unknown as Record<string, unknown>;
+      joinCancellationNotice = {
+        reason: String(n['reason'] ?? ''),
+        cancelledAt: String(n['cancelledAt'] ?? n['cancelled_at'] ?? ''),
       };
     }
+
+    const base: LegacyMe = {
+      ...me,
+      joinCancellationNotice,
+      legacyPv: me.legacyPv ?? {
+        totalPv: 0,
+        personalProductPv: 0,
+        directReferralProductPv: 0,
+      },
+    };
+
+    if (!legacyPvRaw || typeof legacyPvRaw !== 'object') {
+      return base;
+    }
+
     const raw = legacyPvRaw as Record<string, unknown>;
     const legacyPv: LegacyPvSummary = {
       totalPv: Number(raw['totalPv'] ?? raw['total_pv'] ?? 0),
@@ -562,7 +598,7 @@ export class LegacyClubService {
         raw['directReferralProductPv'] ?? raw['direct_referral_product_pv'] ?? 0,
       ),
     };
-    return { ...me, legacyPv };
+    return { ...base, legacyPv };
   }
 
   private mapPvHistoryResponse(raw: Record<string, unknown>): LegacyPvHistoryResponse {
