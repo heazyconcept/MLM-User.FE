@@ -385,7 +385,7 @@ export class LegacyCashoutComponent implements OnInit {
   transferTarget: LegacyCashoutTransferTarget = 'CASH';
 
   transferTargets = [
-    { label: 'Cashout', value: 'CASH' as const },
+    { label: 'Network Cashout', value: 'CASH' as const },
     { label: 'Registration wallet', value: 'REGISTRATION' as const },
     { label: 'Network Product Voucher', value: 'VOUCHER' as const },
     { label: 'Legacy product voucher', value: 'LEGACY_VOUCHER' as const },

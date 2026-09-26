@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-25  
 **Audience:** Backend + admin FE  
-**Status:** Admin FE wired; **backend not implemented**
+**Status:** Admin FE wired; **backend route verified live** (2026-09-26 — `POST` returns 401 without token; fake path returns 404)
 
 ---
 

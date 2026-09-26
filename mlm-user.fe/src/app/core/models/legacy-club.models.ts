@@ -489,7 +489,7 @@ export function formatLegacyCashoutTransferLabel(
     case 'REGISTRATION':
       return 'Registration wallet';
     case 'CASH':
-      return 'Cashout';
+      return 'Network Cashout';
     default:
       return 'Legacy product voucher';
   }
