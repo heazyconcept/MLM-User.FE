@@ -309,6 +309,7 @@ describe('resolveLegacyCashoutTransferTarget', () => {
 
   it('formats transfer target labels', () => {
     expect(formatLegacyCashoutTransferLabel('REGISTRATION')).toBe('Registration wallet');
+    expect(formatLegacyCashoutTransferLabel('CASH')).toBe('Cashout');
   });
 
   it('humanizes legacy cashout ledger descriptions', () => {
@@ -316,6 +317,19 @@ describe('resolveLegacyCashoutTransferTarget', () => {
       'Move to Legacy product voucher',
     );
     expect(humanizeLegacyCashoutLedgerDescription('Move to LEGACY_VOUCHER')).toBe(
+      'Move to Legacy product voucher',
+    );
+    expect(humanizeLegacyCashoutLedgerDescription('Move to undefined')).toBe(
+      'Move to Legacy product voucher',
+    );
+    expect(humanizeLegacyCashoutLedgerDescription('Move to REGISTRATION')).toBe(
+      'Move to Registration wallet',
+    );
+    expect(humanizeLegacyCashoutLedgerDescription('Move to CASH')).toBe('Move to Cashout');
+    expect(humanizeLegacyCashoutLedgerDescription('Move to legacy_voucher')).toBe(
+      'Move to Legacy product voucher',
+    );
+    expect(humanizeLegacyCashoutLedgerDescription('Move to UNKNOWN_WALLET')).toBe(
       'Move to Legacy product voucher',
     );
   });
