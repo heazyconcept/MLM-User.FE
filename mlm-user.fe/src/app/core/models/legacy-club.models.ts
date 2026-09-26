@@ -476,17 +476,22 @@ export function resolveLegacyCashoutTransferTarget(
 export function formatLegacyCashoutTransferLabel(
   target: LegacyCashoutTransferTarget | string,
 ): string {
-  const resolved = resolveLegacyCashoutTransferTarget(target as LegacyCashoutTransferTarget);
+  const normalized = String(target ?? '').trim().toUpperCase();
+  if (!normalized || normalized === 'UNDEFINED' || normalized === 'NULL') {
+    return 'Legacy product voucher';
+  }
+  const resolved = resolveLegacyCashoutTransferTarget(normalized as LegacyCashoutTransferTarget);
   switch (resolved) {
     case 'LEGACY_VOUCHER':
-    case 'AUTOSHIP':
       return 'Legacy product voucher';
     case 'VOUCHER':
       return 'Network product voucher';
     case 'REGISTRATION':
       return 'Registration wallet';
     case 'CASH':
-      return 'Cash wallet';
+      return 'Cashout';
+    default:
+      return 'Legacy product voucher';
   }
 }
 
@@ -537,11 +542,8 @@ export function humanizeLegacyCashoutLedgerDescription(description: string): str
   const trimmed = description.trim();
   const moveMatch = /^Move to (.+)$/.exec(trimmed);
   if (!moveMatch) return description;
-  const target = moveMatch[1]?.trim();
-  if (!target || target === 'undefined') {
-    return 'Move to Legacy product voucher';
-  }
-  return `Move to ${formatLegacyCashoutTransferLabel(target)}`;
+  const label = formatLegacyCashoutTransferLabel(moveMatch[1] ?? '');
+  return `Move to ${label || 'Legacy product voucher'}`;
 }
 
 function normalizeShopMode(raw: string | undefined): LegacyShopMode {
