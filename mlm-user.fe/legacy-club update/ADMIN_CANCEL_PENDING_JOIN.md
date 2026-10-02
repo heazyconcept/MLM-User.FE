@@ -96,6 +96,8 @@ When cancel succeeds:
 - Cancel `ACTIVE` members (use suspension/expiry flows in Phase 3).
 - Refund automatically unless a separate wallet reversal flow exists.
 
+**Regression (2026-09-28):** After cancel, `GET /legacy/members/lookup` may show the user as ready while `POST /legacy/successlines/register` still returns `ALREADY_PENDING` / `ALREADY_IN_LEGACY`. Lookup and register must share the same cleared membership state. See [BACKEND_BUG_LEGACY_ADMIN_CANCEL_JOIN_STALE_STATE.md](../docs/BACKEND_BUG_LEGACY_ADMIN_CANCEL_JOIN_STALE_STATE.md).
+
 ---
 
 ## 4. User notification

@@ -7,7 +7,13 @@ import { resolveWalletErrorMessage } from '../core/utils/wallet-error.util';
 
 // API response types (OpenAPI has no schema; infer from API.md)
 export type WalletType = 'CASH' | 'VOUCHER' | 'AUTOSHIP' | 'REGISTRATION';
-export type TransferToWalletType = 'REGISTRATION' | 'VOUCHER' | 'AUTOSHIP' | 'CASH' | 'LEGACY_VOUCHER';
+export type TransferToWalletType =
+  | 'REGISTRATION'
+  | 'VOUCHER'
+  | 'AUTOSHIP'
+  | 'CASH'
+  | 'LEGACY_VOUCHER'
+  | 'LEGACY_CASHOUT';
 
 export interface AutoshipStatus {
   nextAutoshipDate: string | null;
@@ -443,18 +449,36 @@ export class WalletService {
     );
   }
 
+  private transferTargetLabel(target: TransferToWalletType): string {
+    switch (target) {
+      case 'AUTOSHIP':
+        return 'Autoship';
+      case 'VOUCHER':
+        return 'Voucher';
+      case 'REGISTRATION':
+        return 'Registration';
+      case 'LEGACY_VOUCHER':
+        return 'Legacy product voucher';
+      case 'LEGACY_CASHOUT':
+        return 'Legacy cashout';
+      default:
+        return 'Cash';
+    }
+  }
+
   /** POST /wallets/transfer */
   transferBetweenWallets(request: TransferRequest): Observable<TransferResponse> {
     return this.api.post<TransferResponse>('wallets/transfer', request).pipe(
       tap(() => {
         const sym = request.currency === 'NGN' ? '₦' : '$';
         const sourceLabel = request.fromWalletType === 'CASH' ? 'Cash' : 'Registration';
-        const targetLabel = request.toWalletType === 'AUTOSHIP' ? 'Autoship'
-          : request.toWalletType === 'VOUCHER' ? 'Voucher'
-          : request.toWalletType === 'REGISTRATION' ? 'Registration'
-          : request.toWalletType === 'LEGACY_VOUCHER' ? 'Legacy product voucher'
-          : 'Cash';
-        const successPath = request.toWalletType === 'LEGACY_VOUCHER' ? '/legacy/voucher' : '/wallet';
+        const targetLabel = this.transferTargetLabel(request.toWalletType);
+        const successPath =
+          request.toWalletType === 'LEGACY_VOUCHER'
+            ? '/legacy/voucher'
+            : request.toWalletType === 'LEGACY_CASHOUT'
+              ? '/legacy/cashout'
+              : '/wallet';
         this.modalService.open(
           'success',
           'Transfer Successful',

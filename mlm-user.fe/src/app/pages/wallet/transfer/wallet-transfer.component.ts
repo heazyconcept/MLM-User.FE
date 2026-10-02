@@ -10,7 +10,7 @@ import { WalletService, TransferRequest } from '../../../services/wallet.service
 import { UserService } from '../../../services/user.service';
 
 type SourceWallet = 'CASH' | 'REGISTRATION';
-type TargetWallet = 'VOUCHER' | 'REGISTRATION' | 'CASH';
+type TargetWallet = 'VOUCHER' | 'REGISTRATION' | 'CASH' | 'LEGACY_VOUCHER' | 'LEGACY_CASHOUT';
 
 const SOURCE_OPTIONS: { value: SourceWallet; label: string }[] = [
   { value: 'CASH', label: 'Cash Wallet' },
@@ -20,11 +20,15 @@ const SOURCE_OPTIONS: { value: SourceWallet; label: string }[] = [
 const TARGET_OPTIONS_MAP: Record<SourceWallet, { value: TargetWallet; label: string }[]> = {
   CASH: [
     { value: 'VOUCHER', label: 'Product Voucher Wallet' },
-    { value: 'REGISTRATION', label: 'Registration Wallet' }
+    { value: 'REGISTRATION', label: 'Registration Wallet' },
+    { value: 'LEGACY_VOUCHER', label: 'Legacy product voucher' },
+    { value: 'LEGACY_CASHOUT', label: 'Legacy cashout' },
   ],
   REGISTRATION: [
     { value: 'VOUCHER', label: 'Product Voucher Wallet' },
-    { value: 'CASH', label: 'Cash Wallet' }
+    { value: 'CASH', label: 'Cash Wallet' },
+    { value: 'LEGACY_VOUCHER', label: 'Legacy product voucher' },
+    { value: 'LEGACY_CASHOUT', label: 'Legacy cashout' },
   ]
 };
 

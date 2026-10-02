@@ -24,6 +24,7 @@ import { LegacyPageShellComponent } from '../components/legacy-page-shell.compon
 import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
 import { LegacyBalanceBannerComponent } from '../components/legacy-balance-banner.component';
+import { LegacyAddFundsComponent } from '../components/legacy-add-funds.component';
 
 type ActionStep = 'form' | 'pin';
 
@@ -41,6 +42,7 @@ type ActionStep = 'form' | 'pin';
     LegacyPageHeaderComponent,
     LegacyPanelComponent,
     LegacyBalanceBannerComponent,
+    LegacyAddFundsComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -60,6 +62,8 @@ type ActionStep = 'form' | 'pin';
             [hint]="successlineHint()"
           />
         </app-legacy-panel>
+
+        <app-legacy-add-funds destination="LEGACY_CASHOUT" (transferred)="reload()" />
 
         @if (isImpersonating()) {
           <app-legacy-panel>

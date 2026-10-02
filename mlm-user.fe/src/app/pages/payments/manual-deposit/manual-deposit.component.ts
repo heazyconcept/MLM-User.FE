@@ -24,6 +24,7 @@ import {
   hasPendingDeposit,
   depositPurposeLabel,
   formatPackageLabel,
+  manualDepositWalletLabel,
   type ManualDeposit,
   type ManualDepositPurpose,
   type ManualDepositWalletType,
@@ -98,6 +99,8 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
   walletTypeOptions = [
     { label: 'Registration Wallet', value: 'REGISTRATION' as ManualDepositWalletType },
     { label: 'Product Voucher Wallet', value: 'VOUCHER' as ManualDepositWalletType },
+    { label: 'Legacy product voucher', value: 'LEGACY_VOUCHER' as ManualDepositWalletType },
+    { label: 'Legacy cashout', value: 'LEGACY_CASHOUT' as ManualDepositWalletType },
   ];
 
   submitForm = this.fb.group({
@@ -149,7 +152,12 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
         this.submitForm.patchValue({ walletType: 'REGISTRATION' });
       } else {
         const walletType = params.get('walletType');
-        if (walletType === 'REGISTRATION' || walletType === 'VOUCHER') {
+        if (
+          walletType === 'REGISTRATION' ||
+          walletType === 'VOUCHER' ||
+          walletType === 'LEGACY_VOUCHER' ||
+          walletType === 'LEGACY_CASHOUT'
+        ) {
           this.submitForm.patchValue({ walletType });
         }
       }
@@ -350,7 +358,7 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
   }
 
   walletTypeLabel(walletType: ManualDepositWalletType): string {
-    return walletType === 'VOUCHER' ? 'Product Voucher' : 'Registration';
+    return manualDepositWalletLabel(walletType);
   }
 
   purposeBannerLabel(): string | null {
@@ -370,8 +378,12 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
       return;
     }
     const walletType = this.submitForm.get('walletType')?.value;
-    if (walletType === 'VOUCHER') {
-      this.router.navigate(['/payments/fund'], { queryParams: { walletType: 'VOUCHER' } });
+    if (
+      walletType === 'VOUCHER' ||
+      walletType === 'LEGACY_VOUCHER' ||
+      walletType === 'LEGACY_CASHOUT'
+    ) {
+      this.router.navigate(['/payments/fund'], { queryParams: { walletType } });
       return;
     }
     this.router.navigate(['/wallet']);

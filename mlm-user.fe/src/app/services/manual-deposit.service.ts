@@ -3,7 +3,11 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 
-export type ManualDepositWalletType = 'REGISTRATION' | 'VOUCHER';
+export type ManualDepositWalletType =
+  | 'REGISTRATION'
+  | 'VOUCHER'
+  | 'LEGACY_VOUCHER'
+  | 'LEGACY_CASHOUT';
 export type ManualDepositStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type ManualDepositPurpose = 'WALLET_FUNDING' | 'PACKAGE_UPGRADE';
 export type ManualDepositTargetPackage =
@@ -44,6 +48,31 @@ export interface ManualDepositListResponse {
 }
 
 const TARGET_PACKAGES = new Set<string>(['SILVER', 'GOLD', 'PLATINUM', 'RUBY', 'DIAMOND']);
+
+export function normalizeManualDepositWalletType(raw: string): ManualDepositWalletType {
+  switch (raw) {
+    case 'VOUCHER':
+    case 'LEGACY_VOUCHER':
+    case 'LEGACY_CASHOUT':
+    case 'REGISTRATION':
+      return raw;
+    default:
+      return 'REGISTRATION';
+  }
+}
+
+export function manualDepositWalletLabel(walletType: ManualDepositWalletType): string {
+  switch (walletType) {
+    case 'VOUCHER':
+      return 'Product Voucher';
+    case 'LEGACY_VOUCHER':
+      return 'Legacy product voucher';
+    case 'LEGACY_CASHOUT':
+      return 'Legacy cashout';
+    default:
+      return 'Registration';
+  }
+}
 
 export function hasPendingDeposit(
   items: ManualDeposit[],
@@ -123,13 +152,14 @@ export class ManualDepositService {
   }
 
   private mapDeposit(res: Record<string, unknown>): ManualDeposit {
-    const walletType = String(res['walletType'] ?? res['wallet_type'] ?? 'REGISTRATION')
-      .toUpperCase() as ManualDepositWalletType;
+    const walletType = normalizeManualDepositWalletType(
+      String(res['walletType'] ?? res['wallet_type'] ?? 'REGISTRATION').toUpperCase(),
+    );
 
     return {
       id: String(res['id'] ?? ''),
       userId: String(res['userId'] ?? res['user_id'] ?? ''),
-      walletType: walletType === 'VOUCHER' ? 'VOUCHER' : 'REGISTRATION',
+      walletType,
       amount: Number(res['amount'] ?? 0),
       currency: (res['currency'] ?? 'NGN') as 'NGN' | 'USD',
       depositorName: String(res['depositorName'] ?? res['depositor_name'] ?? ''),

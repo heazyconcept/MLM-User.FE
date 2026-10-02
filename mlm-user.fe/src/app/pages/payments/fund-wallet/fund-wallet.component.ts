@@ -14,6 +14,15 @@ import {
   getEnabledGatewayProviderOptions,
   getPaymentCallbackUrl,
 } from '../../../core/utils/payment-config.util';
+import {
+  isWalletFundingTarget,
+  usesFundingMethodPicker,
+  WALLET_FUND_TARGET_KEY,
+  walletFundingReturnPath,
+  walletFundingSubtitle,
+  walletFundingTitle,
+  type WalletFundingTarget,
+} from '../../../core/utils/wallet-funding-target.util';
 import { isUsdtInitiateResponse } from '../../../services/payment-initiate.mapper';
 import { UsdtDepositComponent } from '../../../components/usdt-deposit/usdt-deposit.component';
 
@@ -56,19 +65,22 @@ export class FundWalletComponent implements OnInit {
   fundForm = this.fb.group({
     amount: [null as number | null, [Validators.required, Validators.min(0.01)]],
     provider: [getDefaultGatewayProvider('NGN') as ProviderOption, Validators.required],
-    walletType: ['CASH' as 'CASH' | 'VOUCHER', Validators.required]
+    walletType: ['CASH' as WalletFundingTarget, Validators.required]
   });
 
   isSubmitting = signal(false);
   usdtPayment = signal<InitiatePaymentResponse | null>(null);
   selectedFundingMethod = signal<'online' | null>(null);
+  private walletType = signal<WalletFundingTarget>('CASH');
 
   showMethodPicker = computed(() => {
-    const walletType = this.fundForm.get('walletType')?.value;
-    return walletType === 'VOUCHER' && this.selectedFundingMethod() === null;
+    const walletType = this.walletType();
+    return usesFundingMethodPicker(walletType) && this.selectedFundingMethod() === null;
   });
 
-  isVoucherWallet = computed(() => this.fundForm.get('walletType')?.value === 'VOUCHER');
+  isMethodPickerWallet = computed(() => usesFundingMethodPicker(this.walletType()));
+  fundingTitle = computed(() => walletFundingTitle(this.walletType()));
+  fundingSubtitle = computed(() => walletFundingSubtitle(this.walletType()));
 
   constructor() {
     effect(() => {
@@ -84,13 +96,9 @@ export class FundWalletComponent implements OnInit {
   ngOnInit(): void {
     this.route.queryParamMap.subscribe(params => {
       const type = params.get('walletType');
-      if (type === 'VOUCHER' || type === 'CASH') {
-        this.fundForm.patchValue({ walletType: type });
-      }
-
-      const walletType = (type === 'VOUCHER' || type === 'CASH'
-        ? type
-        : this.fundForm.get('walletType')?.value) ?? 'CASH';
+      const walletType = isWalletFundingTarget(type) ? type : 'CASH';
+      this.walletType.set(walletType);
+      this.fundForm.patchValue({ walletType });
 
       // NGN with no card gateways: send users to manual deposit instead of an empty online form
       if (!this.hasOnlineProviders() && this.displayCurrency() === 'NGN' && walletType === 'CASH') {
@@ -98,14 +106,12 @@ export class FundWalletComponent implements OnInit {
         return;
       }
 
-      if (walletType === 'VOUCHER' && !this.hasOnlineProviders()) {
-        // Skip online/manual picker — only manual is available
+      if (usesFundingMethodPicker(walletType) && !this.hasOnlineProviders()) {
         this.selectedFundingMethod.set(null);
         return;
       }
 
-      const method = walletType === 'CASH' ? 'online' : null;
-      this.selectedFundingMethod.set(method);
+      this.selectedFundingMethod.set(usesFundingMethodPicker(walletType) ? null : 'online');
     });
   }
 
@@ -114,8 +120,9 @@ export class FundWalletComponent implements OnInit {
   }
 
   goToBankTransfer(): void {
+    const walletType = this.walletType();
     this.router.navigate(['/payments/manual-deposit'], {
-      queryParams: { walletType: 'VOUCHER' },
+      queryParams: { walletType },
     });
   }
 
@@ -130,13 +137,14 @@ export class FundWalletComponent implements OnInit {
       return;
     }
 
-    const { amount, provider, walletType } = this.fundForm.value;
+    const { amount, provider } = this.fundForm.value;
+    const walletType = this.walletType();
     if (amount == null || amount < 0.01 || !provider) return;
 
     this.isSubmitting.set(true);
     const callbackUrl = getPaymentCallbackUrl();
 
-    this.paymentService.initiateWalletFunding(amount, provider, callbackUrl, walletType ?? 'CASH').subscribe({
+    this.paymentService.initiateWalletFunding(amount, provider, callbackUrl, walletType).subscribe({
       next: (res) => {
         this.isSubmitting.set(false);
         const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
@@ -144,6 +152,7 @@ export class FundWalletComponent implements OnInit {
         if (gatewayUrl) {
           if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem(PAYMENT_FLOW_KEY, WALLET_FUNDING_FLOW);
+            sessionStorage.setItem(WALLET_FUND_TARGET_KEY, walletType);
           }
           window.location.href = gatewayUrl;
         } else if (isUsdtInitiateResponse(res)) {
@@ -166,16 +175,22 @@ export class FundWalletComponent implements OnInit {
   }
 
   onUsdtVerified(): void {
-    this.router.navigate(['/wallet'], { queryParams: { funded: 'true' } });
+    void this.router.navigate([walletFundingReturnPath(this.walletType())], {
+      queryParams: { funded: 'true' },
+    });
   }
 
   onUsdtBack(): void {
     this.usdtPayment.set(null);
     const opts = this.providerOptions();
-    this.fundForm.reset({ amount: null, provider: opts[0]?.value ?? 'USDT' });
+    this.fundForm.reset({
+      amount: null,
+      provider: opts[0]?.value ?? 'USDT',
+      walletType: this.walletType(),
+    });
   }
 
   cancel(): void {
-    this.router.navigate(['/wallet']);
+    void this.router.navigate([walletFundingReturnPath(this.walletType())]);
   }
 }

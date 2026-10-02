@@ -53,6 +53,11 @@ export function legacyErrorMessage(err: unknown, fallback = 'Something went wron
     }
   }
   const http = err as { error?: { message?: string | string[]; code?: string }; message?: string };
+  const code = http?.error?.code;
+  if (code) {
+    const mapped = legacyErrorMessage(new LegacyClubHttpError(400, code, ''), fallback);
+    if (mapped !== fallback) return mapped;
+  }
   const raw =
     typeof http?.error?.message === 'string'
       ? http.error.message

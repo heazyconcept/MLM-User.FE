@@ -27,6 +27,7 @@ import {
   isLegacyMember,
   formatLegacyPvAmount,
   legacyPvCardDescription,
+  LEGACY_ERROR_CODES,
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
@@ -700,9 +701,33 @@ export class LegacyHomeComponent implements OnInit {
         },
         error: (err) => {
           this.registerSubmitting.set(false);
-          this.registerError.set(legacyErrorMessage(err, 'Registration failed. Try again.'));
+          const code = this.readLegacyErrorCode(err);
+          const wasReady = this.lookupResult()?.kind === 'ready';
+          let message = legacyErrorMessage(err, 'Registration failed. Try again.');
+          if (
+            wasReady &&
+            (code === LEGACY_ERROR_CODES.ALREADY_PENDING ||
+              code === LEGACY_ERROR_CODES.ALREADY_IN_LEGACY)
+          ) {
+            message +=
+              ' Lookup showed this member as eligible, but the server still has an old Legacy record. If an admin cancelled their join, ask support to clear it.';
+            this.refreshLookupAfterRegisterConflict(username);
+          }
+          this.registerError.set(message);
         },
       });
+  }
+
+  private readLegacyErrorCode(err: unknown): string | undefined {
+    const http = err as { error?: { code?: string } };
+    return typeof http?.error?.code === 'string' ? http.error.code : undefined;
+  }
+
+  /** Re-sync lookup when register rejects a user lookup said was ready. */
+  private refreshLookupAfterRegisterConflict(username: string): void {
+    this.legacyClub.lookupMember(username).subscribe({
+      next: (res) => this.lookupResult.set(interpretLegacyMemberLookup(res)),
+    });
   }
 
   copyUsername(): void {

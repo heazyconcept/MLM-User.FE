@@ -354,10 +354,21 @@ export interface LegacyCashoutTransferResponse {
   transferId: string;
 }
 
+export interface LegacyVoucherLedgerItem {
+  id: string;
+  date: string;
+  description: string;
+  type: 'Credit' | 'Debit';
+  amount: number;
+  currency: LegacyCurrency;
+}
+
 export interface LegacyVoucherResponse {
   currency: LegacyCurrency;
   balance: number;
   status: LegacyWalletStatus;
+  items?: LegacyVoucherLedgerItem[];
+  nextCursor?: string | null;
 }
 
 export interface LegacyMonthRow {

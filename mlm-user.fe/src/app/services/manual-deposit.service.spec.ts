@@ -226,5 +226,28 @@ describe('ManualDepositService', () => {
         updatedAt: '2026-07-23T08:00:00.000Z',
       });
     });
+
+    it('should keep Legacy wallet types on submit', () => {
+      const file = new File(['receipt'], 'receipt.png', { type: 'image/png' });
+
+      service.submitDeposit('LEGACY_VOUCHER', 4000, 'Ada Okonkwo', file).subscribe((deposit) => {
+        expect(deposit.walletType).toBe('LEGACY_VOUCHER');
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/payments/manual-deposit`);
+      const formData = req.request.body as FormData;
+      expect(formData.get('walletType')).toBe('LEGACY_VOUCHER');
+      req.flush({
+        id: 'dep-legacy',
+        userId: 'user-1',
+        walletType: 'LEGACY_VOUCHER',
+        amount: 4000,
+        currency: 'NGN',
+        depositorName: 'Ada Okonkwo',
+        status: 'PENDING',
+        createdAt: '2026-10-02T08:00:00.000Z',
+        updatedAt: '2026-10-02T08:00:00.000Z',
+      });
+    });
   });
 });

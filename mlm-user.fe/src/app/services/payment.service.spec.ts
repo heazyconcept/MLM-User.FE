@@ -184,6 +184,7 @@ describe('PaymentService', () => {
       });
 
       const req = httpMock.expectOne(`${baseUrl}/payments/wallet-funding/initiate`);
+      expect(req.request.body['walletType']).toBe('VOUCHER');
       req.flush({
         paymentId: 'pay-1',
         reference: 'ref-usdt',
@@ -200,6 +201,21 @@ describe('PaymentService', () => {
           instructions: 'Include memo',
         },
       });
+    });
+
+    it('sends LEGACY_VOUCHER as the wallet funding target', () => {
+      service
+        .initiateWalletFunding(5000, 'PAYSTACK', 'https://app.example/callback', 'LEGACY_VOUCHER')
+        .subscribe();
+
+      const req = httpMock.expectOne(`${baseUrl}/payments/wallet-funding/initiate`);
+      expect(req.request.body).toEqual({
+        amount: 5000,
+        provider: 'PAYSTACK',
+        walletType: 'LEGACY_VOUCHER',
+        callbackUrl: 'https://app.example/callback',
+      });
+      req.flush({ reference: 'ref-legacy', authorizationUrl: 'https://paystack.test/pay' });
     });
   });
 });

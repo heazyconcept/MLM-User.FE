@@ -5,6 +5,12 @@ import { PaymentService } from '../../services/payment.service';
 import { UserService } from '../../services/user.service';
 import { WalletService } from '../../services/wallet.service';
 import { resolvePaymentReference } from '../../core/utils/payment-reference.util';
+import {
+  isWalletFundingTarget,
+  WALLET_FUND_TARGET_KEY,
+  walletFundingReturnPath,
+  walletFundingSuccessMessage,
+} from '../../core/utils/wallet-funding-target.util';
 
 const PAYMENT_FLOW_KEY = 'mlm_payment_flow';
 const WALLET_FUNDING_FLOW = 'wallet_funding';
@@ -64,8 +70,11 @@ export class PaymentCallbackComponent implements OnInit {
           sessionStorage.removeItem(PAYMENT_FLOW_KEY);
 
           if (paymentFlow === WALLET_FUNDING_FLOW || paymentFlow === REGISTRATION_FUNDING_FLOW) {
+            const storedTarget = sessionStorage.getItem(WALLET_FUND_TARGET_KEY);
+            sessionStorage.removeItem(WALLET_FUND_TARGET_KEY);
+            const fundingTarget = isWalletFundingTarget(storedTarget) ? storedTarget : 'CASH';
             const msg = paymentFlow === WALLET_FUNDING_FLOW
-              ? 'Your wallet has been credited. Redirecting you...'
+              ? walletFundingSuccessMessage(fundingTarget)
               : 'Your registration wallet has been funded. Redirecting you...';
             this.successMessage.set(msg);
             this.cdr.markForCheck();
@@ -81,7 +90,10 @@ export class PaymentCallbackComponent implements OnInit {
                   return;
                 }
               }
-              void this.router.navigate(['/wallet'], { queryParams: { funded: 'true' } });
+              const destination = paymentFlow === WALLET_FUNDING_FLOW
+                ? walletFundingReturnPath(fundingTarget)
+                : '/wallet';
+              void this.router.navigate([destination], { queryParams: { funded: 'true' } });
             }, 1500);
             return;
           }

@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiService } from './api.service';
 import { mapInitiatePaymentResponse } from './payment-initiate.mapper';
+import type { WalletFundingTarget } from '../core/utils/wallet-funding-target.util';
 
 export type PaymentCurrency = 'NGN' | 'USD';
 
@@ -84,7 +85,7 @@ export class PaymentService {
     amount: number,
     provider: PaymentGatewayProvider,
     callbackUrl?: string,
-    walletType: 'CASH' | 'VOUCHER' = 'CASH'
+    walletType: WalletFundingTarget = 'CASH'
   ): Observable<InitiatePaymentResponse> {
     const body: Record<string, unknown> = { amount, provider, walletType };
     const isValidUrl = callbackUrl && /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(callbackUrl);
