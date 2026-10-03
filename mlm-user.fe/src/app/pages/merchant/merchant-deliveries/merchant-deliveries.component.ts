@@ -9,6 +9,10 @@ import {
 } from '../../../services/merchant.service';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import { UiTableComponent } from '../../../components/table/table-component';
+import {
+  marketplaceBadgeClass,
+  marketplaceSourceLabel,
+} from '../../../core/utils/order-marketplace.util';
 
 @Component({
   selector: 'app-merchant-deliveries',
@@ -103,5 +107,14 @@ export class MerchantDeliveriesComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  getSourceLabel(row: DeliveryConfirmation): string | null {
+    if (!row.order) return null;
+    return marketplaceSourceLabel(row.order);
+  }
+
+  getSourceBadgeClass(row: DeliveryConfirmation): string {
+    return marketplaceBadgeClass(row.order?.channel);
   }
 }

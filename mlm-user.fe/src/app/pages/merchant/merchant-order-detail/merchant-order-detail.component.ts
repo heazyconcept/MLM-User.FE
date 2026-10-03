@@ -11,6 +11,11 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MerchantService, type MerchantOrder } from '../../../services/merchant.service';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
+import {
+  marketplaceBadgeClass,
+  marketplacePaidFromLabel,
+  marketplaceSourceLabel,
+} from '../../../core/utils/order-marketplace.util';
 import { ButtonModule } from 'primeng/button';
 
 export function canMarkMerchantOrderPickedUp(order: MerchantOrder | null): boolean {
@@ -161,5 +166,17 @@ export class MerchantOrderDetailComponent implements OnInit {
   getProductSummary(order: MerchantOrder): string {
     if (!order.items.length) return 'Order';
     return order.items.map((item) => `${item.productName} × ${item.quantity}`).join(', ');
+  }
+
+  getSourceLabel(order: MerchantOrder): string {
+    return marketplaceSourceLabel(order);
+  }
+
+  getSourceBadgeClass(order: MerchantOrder): string {
+    return marketplaceBadgeClass(order.channel);
+  }
+
+  getPaidFromLabel(order: MerchantOrder): string {
+    return marketplacePaidFromLabel(order);
   }
 }

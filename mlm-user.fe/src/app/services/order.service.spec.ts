@@ -122,6 +122,51 @@ describe('OrderService checkout contracts', () => {
     });
   });
 
+  it('maps marketplace source fields from order list responses', () => {
+    service.loadOrders();
+
+    httpMock
+      .expectOne((req) => req.url === `${environment.apiUrl}/orders`)
+      .flush({
+        orders: [
+          {
+            id: 'order-legacy',
+            reference: 'ORD-LEG-001',
+            status: 'PAID',
+            totalAmount: 5000,
+            currency: 'NGN',
+            fulfilmentMode: 'PICKUP',
+            channel: 'LEGACY',
+            sourceLabel: 'Legacy Marketplace',
+            paidFromWalletType: 'LEGACY_VOUCHER',
+            paidFromLabel: 'Legacy product voucher',
+            items: [],
+            createdAt: '2026-10-01T10:00:00.000Z',
+          },
+        ],
+      });
+
+    expect(service.list()[0]).toEqual(
+      expect.objectContaining({
+        channel: 'LEGACY',
+        sourceLabel: 'Legacy Marketplace',
+        paidFromWalletType: 'LEGACY_VOUCHER',
+        paidFromLabel: 'Legacy product voucher',
+      }),
+    );
+  });
+
+  it('sends channel query param when loading filtered orders', () => {
+    service.setChannelFilter('LEGACY');
+    service.loadOrders({ channel: 'LEGACY' });
+
+    const req = httpMock.expectOne(
+      `${environment.apiUrl}/orders?channel=LEGACY`,
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({ orders: [] });
+  });
+
   it('only enables pickup handoff actions for picked-up orders without open disputes', () => {
     const order = {
       fulfilmentMethod: 'pickup',

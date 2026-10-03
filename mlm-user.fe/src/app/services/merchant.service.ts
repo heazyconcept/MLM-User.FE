@@ -5,6 +5,7 @@ import { ApiService } from './api.service';
 import { UserService } from './user.service';
 import type { UsdtGatewayData } from './payment.service';
 import { mapInitiatePaymentResponse } from './payment-initiate.mapper';
+import type { PaidFromWalletType, ShopChannel } from './order.service';
 
 /* ── Enums ─────────────────────────────────────────────────────── */
 
@@ -277,6 +278,10 @@ export interface MerchantOrder {
   items: MerchantOrderItem[];
   user: MerchantOrderUser;
   deliveryConfirmation: DeliveryConfirmation | null;
+  channel?: ShopChannel;
+  sourceLabel?: string;
+  paidFromWalletType?: PaidFromWalletType;
+  paidFromLabel?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -290,6 +295,7 @@ export interface MerchantOrdersResponse {
 
 export interface MerchantOrdersQueryParams {
   status?: OrderStatus;
+  channel?: ShopChannel;
   fromDate?: string;
   toDate?: string;
   limit?: number;
@@ -1352,6 +1358,7 @@ export class MerchantService {
 
     const qp: Record<string, string | number> = {};
     if (params.status) qp['status'] = params.status;
+    if (params.channel) qp['channel'] = params.channel;
     if (params.fromDate) qp['fromDate'] = params.fromDate;
     if (params.toDate) qp['toDate'] = params.toDate;
     qp['limit'] = params.limit ?? 20;
@@ -1361,7 +1368,7 @@ export class MerchantService {
       .get<MerchantOrdersResponse>('merchants/orders', qp)
       .pipe(
         tap((res) => {
-          this.ordersSignal.set(res.orders ?? []);
+          this.ordersSignal.set((res.orders ?? []).map((order) => this.mapMerchantOrder(order)));
           this.ordersTotalSignal.set(res.total ?? 0);
         }),
         catchError((err) => {
@@ -1380,7 +1387,7 @@ export class MerchantService {
     this.api
       .get<MerchantOrder>(`merchants/orders/${id}`)
       .pipe(
-        tap((order) => this.orderDetailSignal.set(order)),
+        tap((order) => this.orderDetailSignal.set(this.mapMerchantOrder(order))),
         catchError((err) => {
           console.error('[MerchantService] fetchOrderById failed', err);
           this.errorSignal.set('Failed to load order details.');
@@ -1495,7 +1502,11 @@ export class MerchantService {
       .get<DeliveriesResponse>('merchants/deliveries', qp)
       .pipe(
         tap((res) => {
-          this.deliveriesSignal.set(res.confirmations ?? []);
+          const confirmations = (res.confirmations ?? []).map((row) => ({
+            ...row,
+            order: row.order ? this.mapMerchantOrder(row.order) : undefined,
+          }));
+          this.deliveriesSignal.set(confirmations);
           this.deliveriesTotalSignal.set(res.total ?? 0);
         }),
         catchError((err) => {
@@ -2579,6 +2590,30 @@ export class MerchantService {
       currency: (data['currency'] ?? null) as string | null,
       occurredAt: String(data['occurredAt'] ?? data['occurred_at'] ?? ''),
       metadata: (data['metadata'] ?? undefined) as Record<string, unknown> | undefined,
+    };
+  }
+
+  private mapMerchantOrder(raw: unknown): MerchantOrder {
+    const order = raw as MerchantOrder;
+    const data = raw as Record<string, unknown>;
+    const channel =
+      data['channel'] === 'LEGACY' || data['channel'] === 'NETWORK'
+        ? (data['channel'] as ShopChannel)
+        : undefined;
+    const paidFromWalletTypeRaw = data['paidFromWalletType'];
+    const paidFromWalletType: PaidFromWalletType | undefined =
+      paidFromWalletTypeRaw === 'VOUCHER' || paidFromWalletTypeRaw === 'LEGACY_VOUCHER'
+        ? paidFromWalletTypeRaw
+        : paidFromWalletTypeRaw == null
+          ? null
+          : undefined;
+
+    return {
+      ...order,
+      channel,
+      sourceLabel: data['sourceLabel'] ? String(data['sourceLabel']) : undefined,
+      paidFromWalletType,
+      paidFromLabel: data['paidFromLabel'] ? String(data['paidFromLabel']) : undefined,
     };
   }
 

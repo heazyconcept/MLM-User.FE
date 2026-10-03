@@ -28,6 +28,12 @@
             <p class="text-sm text-mlm-secondary mb-4">{{ formatDate(o.createdAt) }}</p>
             <div class="flex flex-wrap items-center gap-3">
               <app-status-badge [status]="getStatusLabel(o.status)" size="lg"></app-status-badge>
+              <span
+                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                [class]="getSourceBadgeClass(o)"
+              >
+                {{ getSourceLabel(o) }}
+              </span>
               <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-mlm-secondary">{{
                 getFulfilmentLabel(o.fulfilmentMode)
               }}</span>
@@ -111,6 +117,10 @@
               Payment &amp; Fulfilment
             </h2>
             <dl class="space-y-3 text-sm">
+              <div class="flex justify-between">
+                <dt class="text-mlm-secondary">Paid from</dt>
+                <dd class="font-semibold text-mlm-text">{{ getPaidFromLabel(o) }}</dd>
+              </div>
               <div class="flex justify-between">
                 <dt class="text-mlm-secondary">Payment method</dt>
                 <dd class="font-semibold text-mlm-text">{{ o.paymentMethod }}</dd>

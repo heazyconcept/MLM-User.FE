@@ -3,6 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { OrderService, Order, OrderDispute } from '../../../services/order.service';
+import {
+  marketplaceBadgeClass,
+  marketplacePaidFromLabel,
+  marketplaceSourceLabel,
+} from '../../../core/utils/order-marketplace.util';
 import { InvoiceService } from '../../../services/invoice.service';
 import { MessageService } from 'primeng/api';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
@@ -252,6 +257,25 @@ export class OrderDetailComponent implements OnInit {
 
   getFulfilmentLabel(method: Order['fulfilmentMethod']): string {
     return method === 'pickup' ? 'Pickup' : 'Home Delivery';
+  }
+
+  getSourceLabel(order: Order): string {
+    return marketplaceSourceLabel(order);
+  }
+
+  getSourceBadgeClass(order: Order): string {
+    return marketplaceBadgeClass(order.channel);
+  }
+
+  getPaidFromLabel(order: Order): string {
+    return marketplacePaidFromLabel(order);
+  }
+
+  showPaymentMethod(order: Order): boolean {
+    if (!order.paymentMethod?.trim()) return false;
+    const paidFrom = order.paidFromLabel?.trim();
+    if (!paidFrom) return true;
+    return order.paymentMethod.trim().toLowerCase() !== paidFrom.toLowerCase();
   }
 
   onViewReceipt(): void {

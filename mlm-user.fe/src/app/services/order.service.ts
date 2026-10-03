@@ -8,6 +8,17 @@ export type OrderFulfilmentMethod = 'pickup' | 'delivery';
 export type OrderWalletType = 'cash' | 'voucher' | 'autoship' | 'LEGACY_VOUCHER';
 export type ShopChannel = 'NETWORK' | 'LEGACY';
 
+export type PaidFromWalletType = 'VOUCHER' | 'LEGACY_VOUCHER' | null;
+
+export interface OrderLoadFilters {
+  status?: string;
+  channel?: ShopChannel;
+  fromDate?: string;
+  toDate?: string;
+  limit?: number;
+  offset?: number;
+}
+
 export type OrderStatus =
   | 'Pending'
   | 'Processing'
@@ -39,6 +50,10 @@ export interface Order {
   status: OrderStatus;
   rawStatus?: string;
   paymentMethod?: string;
+  channel?: ShopChannel;
+  sourceLabel?: string;
+  paidFromWalletType?: PaidFromWalletType;
+  paidFromLabel?: string;
   deliveryAddress?: string;
   deliveryFee?: number;
   pickupLocationName?: string;
@@ -129,12 +144,14 @@ export class OrderService {
   private fulfilmentOptionState = signal<'pickup' | 'delivery'>('delivery');
   private searchQueryState = signal<string>('');
   private statusFilterState = signal<string>('');
+  private channelFilterState = signal<ShopChannel | ''>('');
 
   readonly list = this.listState.asReadonly();
   readonly selectedOrder = this.selectedOrderState.asReadonly();
   readonly fulfilmentOption = this.fulfilmentOptionState.asReadonly();
   readonly searchQuery = this.searchQueryState.asReadonly();
   readonly statusFilter = this.statusFilterState.asReadonly();
+  readonly channelFilter = this.channelFilterState.asReadonly();
 
   readonly filteredOrders = computed(() => {
     let result = this.listState();
@@ -164,6 +181,10 @@ export class OrderService {
     this.statusFilterState.set(status);
   }
 
+  setChannelFilter(channel: ShopChannel | ''): void {
+    this.channelFilterState.set(channel);
+  }
+
   selectOrder(order: Order | null): void {
     this.selectedOrderState.set(order);
   }
@@ -191,14 +212,16 @@ export class OrderService {
     );
   }
 
-  loadOrders(filters?: any): void {
+  loadOrders(filters?: OrderLoadFilters): void {
     let url = 'orders';
     const params = new URLSearchParams();
+    const channel = filters?.channel ?? this.channelFilterState();
     if (filters?.status) params.append('status', filters.status);
+    if (channel) params.append('channel', channel);
     if (filters?.fromDate) params.append('fromDate', filters.fromDate);
     if (filters?.toDate) params.append('toDate', filters.toDate);
-    if (filters?.limit) params.append('limit', filters.limit);
-    if (filters?.offset) params.append('offset', filters.offset);
+    if (filters?.limit) params.append('limit', String(filters.limit));
+    if (filters?.offset) params.append('offset', String(filters.offset));
     const qs = params.toString();
     if (qs) url += `?${qs}`;
 
@@ -365,6 +388,15 @@ export class OrderService {
       status: this.mapStatus(rawStatus),
       rawStatus,
       paymentMethod: o.paymentMethod || 'Cash',
+      channel: o.channel === 'LEGACY' || o.channel === 'NETWORK' ? o.channel : undefined,
+      sourceLabel: o.sourceLabel ? String(o.sourceLabel) : undefined,
+      paidFromWalletType:
+        o.paidFromWalletType === 'VOUCHER' || o.paidFromWalletType === 'LEGACY_VOUCHER'
+          ? o.paidFromWalletType
+          : o.paidFromWalletType == null
+            ? null
+            : undefined,
+      paidFromLabel: o.paidFromLabel ? String(o.paidFromLabel) : undefined,
       deliveryAddress: o.deliveryAddress || undefined,
       deliveryFee: o.deliveryFee != null ? Number(o.deliveryFee) : undefined,
       pickupLocationName:
@@ -427,5 +459,6 @@ export class OrderService {
   clearFilters(): void {
     this.searchQueryState.set('');
     this.statusFilterState.set('');
+    this.channelFilterState.set('');
   }
 }
