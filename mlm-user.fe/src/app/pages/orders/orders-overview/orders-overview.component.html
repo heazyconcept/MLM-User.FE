@@ -20,7 +20,7 @@
               class="w-full pl-11 pr-4 py-3 bg-mlm-background border-0 rounded-xl text-sm text-mlm-text placeholder:text-mlm-secondary focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 transition-all"
               aria-label="Search orders by ID or item name">
           </div>
-          <div class="flex items-center gap-3">
+          <div class="flex flex-wrap items-center gap-3">
             <label for="order-status-filter" class="text-xs font-semibold text-mlm-secondary uppercase tracking-wide hidden sm:inline">Status</label>
             <select
               id="order-status-filter"
@@ -33,11 +33,22 @@
                 <option [value]="status">{{ status }}</option>
               }
             </select>
+            <label for="order-channel-filter" class="text-xs font-semibold text-mlm-secondary uppercase tracking-wide hidden sm:inline">Source</label>
+            <select
+              id="order-channel-filter"
+              [value]="channelFilter()"
+              (change)="onChannelChange(($any($event.target)).value)"
+              class="px-4 py-3 bg-mlm-background border-0 rounded-xl text-sm text-mlm-text font-medium focus:outline-none focus:ring-2 focus:ring-mlm-primary/20 cursor-pointer"
+              aria-label="Filter orders by marketplace source">
+              @for (option of channelOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
           </div>
         </div>
       </div>
 
-      @if (statusFilter() || searchQuery()) {
+      @if (statusFilter() || channelFilter() || searchQuery()) {
         <div class="flex items-center justify-between mb-4">
           <p class="text-sm text-mlm-secondary">
             <span class="font-semibold text-mlm-text">{{ filteredOrders().length }}</span> order(s)
@@ -56,7 +67,7 @@
           <div class="w-24 h-24 bg-mlm-warm-100 rounded-full flex items-center justify-center mb-6">
             <i class="pi pi-shopping-bag text-4xl text-mlm-warm-400" aria-hidden="true"></i>
           </div>
-          @if (searchQuery() || statusFilter()) {
+          @if (searchQuery() || statusFilter() || channelFilter()) {
             <h2 class="text-xl font-bold text-mlm-text mb-2">No orders match your filters</h2>
             <p class="text-mlm-secondary text-sm mb-6 max-w-md">
               Try adjusting your search or status filter to see more orders.

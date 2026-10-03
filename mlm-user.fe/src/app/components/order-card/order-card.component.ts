@@ -2,6 +2,11 @@ import { Component, input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Order } from '../../services/order.service';
+import {
+  marketplaceBadgeClass,
+  marketplacePaidFromLabel,
+  marketplaceSourceLabel,
+} from '../../core/utils/order-marketplace.util';
 import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 
 @Component({
@@ -36,5 +41,17 @@ export class OrderCardComponent {
 
   getFulfilmentLabel(method: Order['fulfilmentMethod']): string {
     return method === 'pickup' ? 'Pickup' : 'Home Delivery';
+  }
+
+  getSourceLabel(order: Order): string {
+    return marketplaceSourceLabel(order);
+  }
+
+  getSourceBadgeClass(order: Order): string {
+    return marketplaceBadgeClass(order.channel);
+  }
+
+  getPaidFromLabel(order: Order): string {
+    return marketplacePaidFromLabel(order);
   }
 }

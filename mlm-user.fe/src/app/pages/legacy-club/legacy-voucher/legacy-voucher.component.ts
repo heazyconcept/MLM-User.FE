@@ -55,6 +55,13 @@ import { LegacyAddFundsComponent } from '../components/legacy-add-funds.componen
               <a routerLink="/legacy/shop" class="mt-6 block">
                 <p-button label="Legacy marketplace" styleClass="w-full" />
               </a>
+              <a
+                routerLink="/orders"
+                [queryParams]="{ channel: 'LEGACY' }"
+                class="mt-3 block text-center text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80"
+              >
+                View Legacy orders
+              </a>
             </app-legacy-panel>
           }
 

@@ -16,6 +16,10 @@ import {
   type OrderStatus,
 } from '../../../services/merchant.service';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
+import {
+  marketplaceBadgeClass,
+  marketplaceSourceLabel,
+} from '../../../core/utils/order-marketplace.util';
 
 @Component({
   selector: 'app-merchant-orders',
@@ -129,5 +133,13 @@ export class MerchantOrdersComponent implements OnInit {
     return order.items
       .map((item) => `${item.productName} × ${item.quantity}`)
       .join(', ');
+  }
+
+  getSourceLabel(order: MerchantOrder): string {
+    return marketplaceSourceLabel(order);
+  }
+
+  getSourceBadgeClass(order: MerchantOrder): string {
+    return marketplaceBadgeClass(order.channel);
   }
 }

@@ -8,7 +8,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { OrderService, type OrderStatus } from '../../../services/order.service';
+import { OrderService, type OrderStatus, type ShopChannel } from '../../../services/order.service';
 import { OrderCardComponent } from '../../../components/order-card/order-card.component';
 
 @Component({
@@ -26,18 +26,27 @@ export class OrdersOverviewComponent implements OnInit {
   filteredOrders = this.orderService.filteredOrders;
   searchQuery = this.orderService.searchQuery;
   statusFilter = this.orderService.statusFilter;
+  channelFilter = this.orderService.channelFilter;
   orderStatuses = this.orderService.orderStatuses;
 
-  ngOnInit(): void {
-    this.orderService.loadOrders();
+  readonly channelOptions: { label: string; value: ShopChannel | '' }[] = [
+    { label: 'All sources', value: '' },
+    { label: 'Network Marketplace', value: 'NETWORK' },
+    { label: 'Legacy Marketplace', value: 'LEGACY' },
+  ];
 
+  ngOnInit(): void {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const status = params.get('status') ?? '';
-      const normalized =
+      const normalizedStatus =
         status && this.orderStatuses.includes(status as OrderStatus) ? status : '';
-      if (this.orderService.statusFilter() !== normalized) {
-        this.orderService.setStatusFilter(normalized);
-      }
+      this.orderService.setStatusFilter(normalizedStatus);
+
+      const channel = params.get('channel') ?? '';
+      const normalizedChannel: ShopChannel | '' =
+        channel === 'LEGACY' || channel === 'NETWORK' ? channel : '';
+      this.orderService.setChannelFilter(normalizedChannel);
+      this.orderService.loadOrders();
     });
   }
 
@@ -48,18 +57,34 @@ export class OrdersOverviewComponent implements OnInit {
 
   onStatusChange(value: string): void {
     this.orderService.setStatusFilter(value);
-    void this.syncStatusQueryParam(value);
+    void this.syncQueryParams({ status: value });
+  }
+
+  onChannelChange(value: string): void {
+    const channel: ShopChannel | '' =
+      value === 'LEGACY' || value === 'NETWORK' ? value : '';
+    this.orderService.setChannelFilter(channel);
+    void this.syncQueryParams({ channel });
+    this.orderService.loadOrders({ channel: channel || undefined });
   }
 
   onClearFilters(): void {
     this.orderService.clearFilters();
-    void this.syncStatusQueryParam('');
+    void this.syncQueryParams({ status: '', channel: '' });
+    this.orderService.loadOrders();
   }
 
-  private syncStatusQueryParam(status: string): void {
+  private syncQueryParams(updates: { status?: string; channel?: string }): void {
+    const queryParams: Record<string, string | null> = {};
+    if ('status' in updates) {
+      queryParams['status'] = updates.status ? updates.status : null;
+    }
+    if ('channel' in updates) {
+      queryParams['channel'] = updates.channel ? updates.channel : null;
+    }
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: status ? { status } : { status: null },
+      queryParams,
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });

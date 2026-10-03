@@ -40,6 +40,14 @@
                         getProductSummary(row)
                       }}</span>
                       <span class="text-xs text-mlm-secondary">{{ getOrderReference(row) }}</span>
+                      @if (getSourceLabel(row); as sourceLabel) {
+                        <span
+                          class="inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                          [class]="getSourceBadgeClass(row)"
+                        >
+                          {{ sourceLabel }}
+                        </span>
+                      }
                       @if (row.notes) {
                         <span class="text-xs italic text-mlm-secondary">"{{ row.notes }}"</span>
                       }

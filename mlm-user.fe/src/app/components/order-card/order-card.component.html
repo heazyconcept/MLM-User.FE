@@ -7,8 +7,17 @@
       <div class="flex flex-wrap items-center gap-2 mb-1">
         <span class="text-sm font-bold text-mlm-text">{{ order().reference }}</span>
         <app-status-badge [status]="order().status" size="sm"></app-status-badge>
+        <span
+          class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+          [class]="getSourceBadgeClass(order())"
+        >
+          {{ getSourceLabel(order()) }}
+        </span>
       </div>
-      <p class="text-xs text-mlm-secondary mb-1">{{ formatDate(order().date) }}</p>
+      <p class="text-xs text-mlm-secondary mb-1">
+        {{ formatDate(order().date) }}
+        · Paid from {{ getPaidFromLabel(order()) }}
+      </p>
       <p class="text-sm text-mlm-secondary truncate" [title]="getItemsSummary(order().items)">
         {{ getItemsSummary(order().items) }}
       </p>

@@ -61,6 +61,12 @@
                         size="sm"
                       ></app-status-badge>
                       <span
+                        class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                        [class]="getSourceBadgeClass(order)"
+                      >
+                        {{ getSourceLabel(order) }}
+                      </span>
+                      <span
                         class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-mlm-secondary"
                         >{{ getFulfilmentLabel(order.fulfilmentMode) }}</span
                       >
