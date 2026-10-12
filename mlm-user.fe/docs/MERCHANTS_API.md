@@ -27,7 +27,9 @@ This document describes the **merchant** endpoints under `/merchants`: applicati
 | `/merchants/me/allocations` | GET | Merchant | List my allocations |
 | `/merchants/me/allocations/:id/accept` | POST | Merchant | Accept a pending allocation |
 | `/merchants/inventory` | GET | Merchant | Get my inventory (products + stock) |
+| `/merchants/inventory/movements` | GET | Merchant | Stock movement ledger (requested — see [BACKEND_REQUEST_MERCHANT_INVENTORY_MOVEMENTS.md](./BACKEND_REQUEST_MERCHANT_INVENTORY_MOVEMENTS.md)) |
 | `/merchants/inventory/:productId/stock` | PUT | Merchant | Update stock for a product |
+| `/merchants/inventory/:productId/movement-summary` | GET | Merchant | Per-product allocated/fulfilled/balance summary (optional) |
 
 ---
 
@@ -586,6 +588,20 @@ Returns the result of the repository update (e.g. updated merchant product).
 
 ---
 
+### GET /merchants/inventory/movements
+
+**Purpose:** Paginated stock movement ledger for the merchant — allocations in, orders/deliveries out, restocks, adjustments, and pending audit events. **Merchant-only.**
+
+**Status:** Requested — see [BACKEND_REQUEST_MERCHANT_INVENTORY_MOVEMENTS.md](./BACKEND_REQUEST_MERCHANT_INVENTORY_MOVEMENTS.md). User FE Movement Log tab calls this endpoint; returns empty state on 404/501 until shipped.
+
+**Query (optional):** `productId`, `movementType`, `direction` (`IN` \| `OUT` \| `NONE`), `referenceType`, `from`, `to`, `search`, `limit`, `offset`
+
+**Response (200):** `{ items: Movement[], total: number }` — each item includes `quantityDelta`, `balanceAfter`, `referenceType`, `referenceId`, `orderedBy`, `description`, `metadata`.
+
+**Frontend:** Inventory → **Movement Log** tab; dashboard **Recent Stock Movements** card (last 5).
+
+---
+
 ## Guidelines for frontend
 
 1. **Auth and role**
@@ -611,6 +627,7 @@ Returns the result of the repository update (e.g. updated merchant product).
 5. **Allocations and inventory**
    - Show pending allocations with `GET /merchants/me/allocations`; accept with `POST /merchants/me/allocations/:id/accept`.
    - Show inventory with `GET /merchants/inventory`; update stock with `PUT /merchants/inventory/:productId/stock`.
+   - Show movement history with `GET /merchants/inventory/movements` (Inventory → Movement Log tab).
 
 6. **Public discovery**
    - Use `GET /merchants/available` (optional `location`) for pickup/discovery; no auth.

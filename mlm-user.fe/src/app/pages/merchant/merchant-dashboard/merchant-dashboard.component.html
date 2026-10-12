@@ -593,6 +593,62 @@
               <p class="text-sm text-mlm-warm-500 py-8 text-center">No recent activity</p>
             }
           </div>
+
+          <!-- Recent Stock Movements -->
+          <div class="bg-white rounded-2xl p-6 border border-transparent mt-6">
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <p class="font-bold text-mlm-warm-900 text-sm">Recent Stock Movements</p>
+                <p class="text-mlm-warm-500 mt-0.5 text-xs">
+                  Latest inventory in/out events for your products
+                </p>
+              </div>
+              <a
+                routerLink="/merchant/inventory"
+                [queryParams]="{ tab: 'movements' }"
+                class="px-4 py-2 rounded-xl text-mlm-warm-600 font-semibold border border-mlm-warm-200 bg-mlm-background text-xs transition-opacity hover:opacity-80">
+                View all →
+              </a>
+            </div>
+
+            @if (recentMovementsNotAvailable()) {
+              <p class="text-sm text-mlm-warm-500 py-6 text-center">
+                Movement log will appear here once the backend API is available.
+              </p>
+            } @else if (recentMovementsLoading()) {
+              <p class="text-sm text-mlm-warm-500 py-6 text-center">Loading movements…</p>
+            } @else if (recentMovements().length === 0) {
+              <p class="text-sm text-mlm-warm-500 py-6 text-center">No stock movements yet.</p>
+            } @else {
+              <div class="flex flex-col gap-0.5">
+                @for (movement of recentMovements(); track movement.id) {
+                  <div class="flex items-center gap-3.5 px-3 py-3 rounded-xl hover:bg-mlm-warm-50 transition-colors duration-150">
+                    <div class="flex items-center justify-center w-11 h-11 rounded-2xl shrink-0 text-lg border bg-mlm-warm-50 border-mlm-warm-200">
+                      <i class="pi pi-arrows-h text-mlm-warm-700" aria-hidden="true"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="font-semibold text-mlm-warm-900 text-[13px] truncate">
+                        {{ movement.productName }}
+                      </p>
+                      <p class="text-mlm-warm-500 mt-0.5 text-xs truncate">
+                        {{ getMovementTypeLabel(movement.movementType) }} · {{ movement.description }}
+                      </p>
+                    </div>
+                    <div class="text-right shrink-0">
+                      <span
+                        class="inline-block font-extrabold font-mono rounded-full px-2.5 py-0.5 border text-[13px]"
+                        [class]="getMovementDeltaClass(movement)">
+                        {{ formatMovementDelta(movement) }}
+                      </span>
+                      <p class="text-mlm-warm-400 mt-1 text-[11px]">
+                        {{ formatActivityDate(movement.occurredAt) }}
+                      </p>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
         </div>
       }
     </div>

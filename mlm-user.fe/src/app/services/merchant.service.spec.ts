@@ -1071,3 +1071,140 @@ describe('MerchantService — stock top-up requests', () => {
     expect(service.allocations()[0].requestNotes).toBe('Top-up');
   });
 });
+
+describe('MerchantService — inventory movements', () => {
+  let service: MerchantService;
+  let httpMock: HttpTestingController;
+  const baseUrl = environment.apiUrl;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        MerchantService,
+        ApiService,
+        {
+          provide: UserService,
+          useValue: {
+            displayCurrency: () => 'NGN',
+            markAsMerchant: () => undefined,
+          },
+        },
+      ],
+    });
+
+    service = TestBed.inject(MerchantService);
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+  });
+
+  it('maps inventory movement API rows', () => {
+    service
+      .loadInventoryMovements({ productId: 'prod-1', limit: 10, offset: 0 })
+      .subscribe((res) => {
+        expect(res.total).toBe(1);
+        expect(res.items[0]).toMatchObject({
+          id: 'mov-1',
+          productName: 'Red Wine',
+          movementType: 'ORDER_DELIVERY_CONFIRMED',
+          direction: 'OUT',
+          quantityDelta: -2,
+          balanceAfter: 48,
+          referenceType: 'ORDER',
+          referenceId: 'order-1',
+          orderedBy: '@buyer',
+        });
+      });
+
+    const req = httpMock.expectOne(
+      (r) =>
+        r.url === `${baseUrl}/merchants/inventory/movements` &&
+        r.params.get('productId') === 'prod-1' &&
+        r.params.get('limit') === '10',
+    );
+    req.flush({
+      total: 1,
+      items: [
+        {
+          id: 'mov-1',
+          occurredAt: '2026-10-07T09:00:00.000Z',
+          productId: 'prod-1',
+          productName: 'Red Wine',
+          productSku: 'RW-001',
+          movementType: 'ORDER_DELIVERY_CONFIRMED',
+          direction: 'OUT',
+          quantityDelta: -2,
+          balanceAfter: 48,
+          referenceType: 'ORDER',
+          referenceId: 'order-1',
+          referenceLabel: 'ORD-1042',
+          customerUsername: '@buyer',
+          actor: 'SYSTEM',
+          description: '2 units delivered',
+        },
+      ],
+    });
+  });
+
+  it('returns notAvailable when movements endpoint is missing', () => {
+    service.loadInventoryMovements().subscribe((res) => {
+      expect(res.notAvailable).toBe(true);
+      expect(res.items).toEqual([]);
+    });
+
+    const req = httpMock.expectOne(`${baseUrl}/merchants/inventory/movements`);
+    req.flush({ message: 'Not found' }, { status: 404, statusText: 'Not Found' });
+  });
+
+  it('resolves order reference links', () => {
+    const link = MerchantService.resolveMovementReferenceLink({
+      id: 'mov-1',
+      occurredAt: '',
+      productId: 'p1',
+      productName: 'Wine',
+      productSku: 'W',
+      movementType: 'ORDER_DELIVERY_CONFIRMED',
+      direction: 'OUT',
+      quantityDelta: -1,
+      balanceAfter: 1,
+      referenceType: 'ORDER',
+      referenceId: 'order-99',
+      referenceLabel: 'ORD-99',
+      orderedBy: null,
+      actor: 'SYSTEM',
+      description: '',
+    });
+
+    expect(link).toEqual({ route: ['/merchant/orders', 'order-99'] });
+  });
+
+  it('formats movement delta labels', () => {
+    expect(
+      MerchantService.formatInventoryMovementDelta({
+        id: '1',
+        occurredAt: '',
+        productId: 'p',
+        productName: 'P',
+        productSku: 'S',
+        movementType: 'ALLOCATION_RECEIVED',
+        direction: 'IN',
+        quantityDelta: 10,
+        balanceAfter: 10,
+        referenceType: null,
+        referenceId: null,
+        referenceLabel: null,
+        orderedBy: null,
+        actor: 'SYSTEM',
+        description: '',
+      }),
+    ).toBe('+10');
+
+    expect(
+      MerchantService.getInventoryMovementTypeLabel('RESTOCK_APPROVED'),
+    ).toBe('Restock approved');
+  });
+});

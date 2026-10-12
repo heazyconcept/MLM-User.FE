@@ -252,6 +252,8 @@ Deep link metadata: `productId`, `disputeId`, `merchantId`.
 
 ## 5. Stock movement ledger
 
+**Merchant read API:** User FE requests `GET /merchants/inventory/movements` to expose ledger rows to merchants (Movement Log tab). See [BACKEND_REQUEST_MERCHANT_INVENTORY_MOVEMENTS.md](./BACKEND_REQUEST_MERCHANT_INVENTORY_MOVEMENTS.md).
+
 On **admin approve** only:
 
 ```json

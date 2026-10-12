@@ -628,6 +628,98 @@ export interface MerchantProductDeliverySummaryResponse {
   totalUnits: number;
 }
 
+export type MerchantInventoryMovementType =
+  | 'ALLOCATION_RECEIVED'
+  | 'HANDOVER_RECEIVED'
+  | 'RESTOCK_APPROVED'
+  | 'ADJUSTMENT_APPROVED_INCREASE'
+  | 'ORDER_ASSIGNED'
+  | 'ORDER_PICKUP_CONFIRMED'
+  | 'ORDER_DELIVERY_CONFIRMED'
+  | 'ADJUSTMENT_APPROVED_DECREASE'
+  | 'RESTOCK_REQUESTED'
+  | 'ADJUSTMENT_SUBMITTED'
+  | 'ALLOCATION_DISPUTED'
+  | 'HANDOVER_PENDING'
+  | 'HANDOVER_REJECTED';
+
+export type MerchantInventoryMovementDirection = 'IN' | 'OUT' | 'NONE';
+
+export interface MerchantInventoryMovement {
+  id: string;
+  occurredAt: string;
+  productId: string;
+  productName: string;
+  productSku: string;
+  movementType: MerchantInventoryMovementType;
+  direction: MerchantInventoryMovementDirection;
+  quantityDelta: number;
+  balanceAfter: number | null;
+  referenceType: string | null;
+  referenceId: string | null;
+  referenceLabel: string | null;
+  orderedBy: string | null;
+  actor: string;
+  description: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface MerchantInventoryMovementFilters {
+  productId?: string;
+  movementType?: string;
+  direction?: MerchantInventoryMovementDirection;
+  referenceType?: string;
+  from?: string;
+  to?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface MerchantInventoryMovementsResponse {
+  items: MerchantInventoryMovement[];
+  total: number;
+  notAvailable?: boolean;
+}
+
+export interface MerchantInventoryMovementSummary {
+  productId: string;
+  totalAllocated: number;
+  totalFulfilled: number;
+  currentBalance: number;
+  lastMovementAt: string | null;
+}
+
+export const INVENTORY_MOVEMENT_TYPE_FILTER_OPTIONS: {
+  label: string;
+  value: MerchantInventoryMovementType | '';
+}[] = [
+  { label: 'All types', value: '' },
+  { label: 'Allocation received', value: 'ALLOCATION_RECEIVED' },
+  { label: 'Handover received', value: 'HANDOVER_RECEIVED' },
+  { label: 'Restock approved', value: 'RESTOCK_APPROVED' },
+  { label: 'Adjustment increase', value: 'ADJUSTMENT_APPROVED_INCREASE' },
+  { label: 'Order assigned', value: 'ORDER_ASSIGNED' },
+  { label: 'Pickup confirmed', value: 'ORDER_PICKUP_CONFIRMED' },
+  { label: 'Delivery confirmed', value: 'ORDER_DELIVERY_CONFIRMED' },
+  { label: 'Adjustment decrease', value: 'ADJUSTMENT_APPROVED_DECREASE' },
+  { label: 'Restock requested', value: 'RESTOCK_REQUESTED' },
+  { label: 'Adjustment submitted', value: 'ADJUSTMENT_SUBMITTED' },
+  { label: 'Allocation disputed', value: 'ALLOCATION_DISPUTED' },
+  { label: 'Handover pending', value: 'HANDOVER_PENDING' },
+  { label: 'Handover rejected', value: 'HANDOVER_REJECTED' },
+];
+
+export const INVENTORY_MOVEMENT_DIRECTION_FILTER_OPTIONS: {
+  label: string;
+  value: MerchantInventoryMovementDirection | '';
+}[] = [
+  { label: 'All directions', value: '' },
+  { label: 'Stock in', value: 'IN' },
+  { label: 'Stock out', value: 'OUT' },
+  { label: 'Pending / audit', value: 'NONE' },
+];
+
 /* ── Service ───────────────────────────────────────────────────── */
 
 @Injectable({ providedIn: 'root' })
@@ -2046,6 +2138,128 @@ export class MerchantService {
       );
   }
 
+  /** GET /merchants/inventory/movements — stock movement ledger */
+  loadInventoryMovements(
+    filters: MerchantInventoryMovementFilters = {},
+  ): Observable<MerchantInventoryMovementsResponse> {
+    const query: Record<string, string | number> = {};
+    if (filters.productId) query['productId'] = filters.productId;
+    if (filters.movementType) query['movementType'] = filters.movementType;
+    if (filters.direction) query['direction'] = filters.direction;
+    if (filters.referenceType) query['referenceType'] = filters.referenceType;
+    if (filters.from) query['from'] = filters.from;
+    if (filters.to) query['to'] = filters.to;
+    if (filters.search) query['search'] = filters.search;
+    if (filters.limit != null) query['limit'] = filters.limit;
+    if (filters.offset != null) query['offset'] = filters.offset;
+
+    return this.api
+      .get<{ items?: unknown[]; total?: number }>('merchants/inventory/movements', query)
+      .pipe(
+        map((res) => ({
+          items: (res.items ?? []).map((raw) =>
+            MerchantService.mapInventoryMovement(raw as Record<string, unknown>),
+          ),
+          total: res.total ?? res.items?.length ?? 0,
+        })),
+        catchError((err) => {
+          const status = (err as { status?: number })?.status;
+          if (status === 404 || status === 501) {
+            return of({ items: [], total: 0, notAvailable: true });
+          }
+          console.error('[MerchantService] loadInventoryMovements failed', err);
+          return of({ items: [], total: 0 });
+        }),
+      );
+  }
+
+  /** GET /merchants/inventory/:productId/movement-summary */
+  loadInventoryMovementSummary(
+    productId: string,
+  ): Observable<MerchantInventoryMovementSummary | null> {
+    return this.api
+      .get<Record<string, unknown>>(`merchants/inventory/${productId}/movement-summary`)
+      .pipe(
+        map((raw) => ({
+          productId: String(raw['productId'] ?? productId),
+          totalAllocated: Number(raw['totalAllocated'] ?? 0),
+          totalFulfilled: Number(raw['totalFulfilled'] ?? 0),
+          currentBalance: Number(raw['currentBalance'] ?? 0),
+          lastMovementAt: raw['lastMovementAt'] != null ? String(raw['lastMovementAt']) : null,
+        })),
+        catchError(() => of(null)),
+      );
+  }
+
+  static getInventoryMovementTypeLabel(type: MerchantInventoryMovementType | string): string {
+    const labels: Record<string, string> = {
+      ALLOCATION_RECEIVED: 'Allocation received',
+      HANDOVER_RECEIVED: 'Handover received',
+      RESTOCK_APPROVED: 'Restock approved',
+      ADJUSTMENT_APPROVED_INCREASE: 'Adjustment increase',
+      ORDER_ASSIGNED: 'Order assigned',
+      ORDER_PICKUP_CONFIRMED: 'Pickup confirmed',
+      ORDER_DELIVERY_CONFIRMED: 'Delivery confirmed',
+      ADJUSTMENT_APPROVED_DECREASE: 'Adjustment decrease',
+      RESTOCK_REQUESTED: 'Restock requested',
+      ADJUSTMENT_SUBMITTED: 'Adjustment submitted',
+      ALLOCATION_DISPUTED: 'Allocation disputed',
+      HANDOVER_PENDING: 'Handover pending',
+      HANDOVER_REJECTED: 'Handover rejected',
+    };
+    return labels[type] ?? type.replace(/_/g, ' ').toLowerCase();
+  }
+
+  static getInventoryMovementBadgeClass(type: MerchantInventoryMovementType | string): string {
+    if (
+      type === 'ALLOCATION_RECEIVED' ||
+      type === 'HANDOVER_RECEIVED' ||
+      type === 'RESTOCK_APPROVED' ||
+      type === 'ADJUSTMENT_APPROVED_INCREASE'
+    ) {
+      return 'bg-brand-green-light text-brand-green-dark border border-brand-green-primary/20';
+    }
+    if (
+      type === 'ORDER_ASSIGNED' ||
+      type === 'ORDER_PICKUP_CONFIRMED' ||
+      type === 'ORDER_DELIVERY_CONFIRMED' ||
+      type === 'ADJUSTMENT_APPROVED_DECREASE'
+    ) {
+      return 'bg-mlm-red-50 text-mlm-red-700 border border-mlm-red-200';
+    }
+    return 'bg-slate-100 text-slate-600 border border-slate-200';
+  }
+
+  static formatInventoryMovementDelta(movement: MerchantInventoryMovement): string {
+    if (movement.direction === 'NONE' || movement.quantityDelta === 0) return '—';
+    const prefix = movement.quantityDelta > 0 ? '+' : '';
+    return `${prefix}${movement.quantityDelta}`;
+  }
+
+  static resolveMovementReferenceLink(
+    movement: MerchantInventoryMovement,
+  ): { route: string[]; queryParams?: Record<string, string> } | null {
+    if (!movement.referenceId && !movement.referenceLabel) return null;
+
+    switch (movement.referenceType) {
+      case 'ORDER':
+        return movement.referenceId
+          ? { route: ['/merchant/orders', movement.referenceId] }
+          : null;
+      case 'ALLOCATION':
+        return { route: ['/merchant/allocations'] };
+      case 'HANDOVER':
+        return { route: ['/merchant/handovers'] };
+      case 'STOCK_REQUEST':
+        return { route: ['/merchant/inventory'], queryParams: { tab: 'topups' } };
+      case 'INVENTORY_ADJUSTMENT_DISPUTE':
+      case 'DISPUTE':
+        return { route: ['/merchant/inventory'], queryParams: { tab: 'disputes' } };
+      default:
+        return null;
+    }
+  }
+
   /** PUT /merchants/inventory/:productId/stock — status-only or sync-to-authorized quantity */
   updateStock(productId: string, body: UpdateStockBody): Observable<unknown> {
     this.actionLoadingSignal.set(true);
@@ -2061,6 +2275,50 @@ export class MerchantService {
       }),
       finalize(() => this.actionLoadingSignal.set(false)),
     );
+  }
+
+  private static mapInventoryMovement(raw: Record<string, unknown>): MerchantInventoryMovement {
+    const movementType = String(
+      raw['movementType'] ?? raw['type'] ?? 'ALLOCATION_RECEIVED',
+    ) as MerchantInventoryMovementType;
+    const direction = String(raw['direction'] ?? 'NONE') as MerchantInventoryMovementDirection;
+
+    return {
+      id: String(raw['id'] ?? ''),
+      occurredAt: String(raw['occurredAt'] ?? raw['createdAt'] ?? ''),
+      productId: String(raw['productId'] ?? ''),
+      productName: String(raw['productName'] ?? 'Product'),
+      productSku: String(raw['productSku'] ?? raw['sku'] ?? '—'),
+      movementType,
+      direction,
+      quantityDelta: Number(raw['quantityDelta'] ?? raw['quantity'] ?? 0),
+      balanceAfter:
+        raw['balanceAfter'] != null
+          ? Number(raw['balanceAfter'])
+          : raw['balance'] != null
+            ? Number(raw['balance'])
+            : null,
+      referenceType: raw['referenceType'] != null ? String(raw['referenceType']) : null,
+      referenceId: raw['referenceId'] != null ? String(raw['referenceId']) : null,
+      referenceLabel:
+        raw['referenceLabel'] != null
+          ? String(raw['referenceLabel'])
+          : raw['reference'] != null
+            ? String(raw['reference'])
+            : null,
+      orderedBy:
+        raw['orderedBy'] != null
+          ? String(raw['orderedBy'])
+          : raw['customerUsername'] != null
+            ? String(raw['customerUsername'])
+            : null,
+      actor: String(raw['actor'] ?? 'SYSTEM'),
+      description: String(raw['description'] ?? MerchantService.getInventoryMovementTypeLabel(movementType)),
+      metadata:
+        raw['metadata'] != null && typeof raw['metadata'] === 'object'
+          ? (raw['metadata'] as Record<string, unknown>)
+          : undefined,
+    };
   }
 
   /* ── Helpers ─────────────────────────────────────────────────── */

@@ -107,7 +107,7 @@ describe('UserService profile completeness', () => {
     expect(service.currentUser()?.accountNumber).toBe('0123456789');
   });
 
-  it('treats a masked bank account number as present', () => {
+  it('merges full bank account number from users/me/bank', () => {
     service.fetchProfile().subscribe();
     flushProfile(
       {
@@ -116,18 +116,19 @@ describe('UserService profile completeness', () => {
         firstName: 'Ada',
         lastName: 'Okafor',
         registrationPaid: true,
-        isProfileComplete: false,
-        profileMissingFields: ['accountNumber'],
+        isProfileComplete: true,
+        profileMissingFields: [],
       },
       {
         bankName: 'GTBank',
+        accountNumber: '0123456789',
         accountNumberMasked: '******6789',
         accountName: 'Ada Okafor',
       },
     );
 
     expect(service.needsProfileSetup()).toBe(false);
-    expect(service.currentUser()?.accountNumber).toBe('******6789');
+    expect(service.currentUser()?.accountNumber).toBe('0123456789');
   });
 
   it('clears a stale accountNumber gap when bank details are saved locally', () => {

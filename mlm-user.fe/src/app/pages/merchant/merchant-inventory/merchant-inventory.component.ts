@@ -7,13 +7,17 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
   MerchantService,
   INVENTORY_ADJUSTMENT_REASON_MIN_LENGTH,
+  INVENTORY_MOVEMENT_TYPE_FILTER_OPTIONS,
+  INVENTORY_MOVEMENT_DIRECTION_FILTER_OPTIONS,
   type MerchantInventoryItem,
   type MerchantAllocation,
+  type MerchantInventoryMovement,
+  type MerchantInventoryMovementDirection,
   type StockStatus,
   type InventoryAdjustmentType,
   type AllocationStatus,
@@ -23,8 +27,10 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
 import { MessageModule } from 'primeng/message';
 import { TextareaModule } from 'primeng/textarea';
+import { SelectModule } from 'primeng/select';
+import { DatePickerModule } from 'primeng/datepicker';
 
-type InventoryTab = 'stock' | 'topups' | 'disputes';
+type InventoryTab = 'stock' | 'topups' | 'disputes' | 'movements';
 
 @Component({
   selector: 'app-merchant-inventory',
@@ -37,6 +43,8 @@ type InventoryTab = 'stock' | 'topups' | 'disputes';
     ButtonModule,
     MessageModule,
     TextareaModule,
+    SelectModule,
+    DatePickerModule,
   ],
   templateUrl: './merchant-inventory.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -66,9 +74,13 @@ type InventoryTab = 'stock' | 'topups' | 'disputes';
 })
 export class MerchantInventoryComponent implements OnInit {
   private merchantService = inject(MerchantService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   readonly MerchantService = MerchantService;
   readonly reasonMinLength = INVENTORY_ADJUSTMENT_REASON_MIN_LENGTH;
+  readonly movementTypeOptions = INVENTORY_MOVEMENT_TYPE_FILTER_OPTIONS;
+  readonly directionOptions = INVENTORY_MOVEMENT_DIRECTION_FILTER_OPTIONS;
 
   inventory = this.merchantService.inventory;
   inventoryDisputes = this.merchantService.inventoryAdjustmentDisputes;
@@ -94,6 +106,22 @@ export class MerchantInventoryComponent implements OnInit {
   stockRequestNotes = signal('');
   stockRequestFormError = signal<string | null>(null);
 
+  movements = signal<MerchantInventoryMovement[]>([]);
+  movementsLoading = signal(false);
+  movementsError = signal<string | null>(null);
+  movementsNotAvailable = signal(false);
+  movementsTotal = signal(0);
+  movementsOffset = signal(0);
+  movementsLoaded = signal(false);
+  readonly movementsLimit = 50;
+
+  filterProductId = signal('');
+  filterMovementType = signal('');
+  filterDirection = signal<MerchantInventoryMovementDirection | ''>('');
+  filterDateRange = signal<Date[] | null>(null);
+  filterSearch = signal('');
+  expandedMovementIds = signal<Set<string>>(new Set());
+
   readonly sortedDisputes = computed(() =>
     [...this.inventoryDisputes()].sort((a, b) => {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -111,6 +139,18 @@ export class MerchantInventoryComponent implements OnInit {
   );
 
   readonly pendingTopupsCount = computed(() => this.pendingStockRequestProductIds().size);
+
+  readonly productFilterOptions = computed(() => [
+    { label: 'All products', value: '' },
+    ...this.inventory().map((item) => ({
+      label: item.productName,
+      value: item.productId,
+    })),
+  ]);
+
+  readonly movementsHasMore = computed(
+    () => this.movements().length < this.movementsTotal(),
+  );
 
   readonly editAuthorizedQuantity = computed(() => this.editItem()?.authorizedQuantity ?? 0);
 
@@ -156,6 +196,19 @@ export class MerchantInventoryComponent implements OnInit {
     this.merchantService.fetchInventory();
     this.merchantService.fetchInventoryAdjustmentDisputes();
     this.merchantService.fetchStockRequests();
+
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    const productId = this.route.snapshot.queryParamMap.get('productId');
+    if (productId) this.filterProductId.set(productId);
+
+    if (tab === 'movements') {
+      this.activeTab.set('movements');
+      this.loadMovements(true);
+    } else if (tab === 'topups') {
+      this.activeTab.set('topups');
+    } else if (tab === 'disputes') {
+      this.activeTab.set('disputes');
+    }
   }
 
   setTab(tab: InventoryTab): void {
@@ -166,6 +219,174 @@ export class MerchantInventoryComponent implements OnInit {
     if (tab === 'topups') {
       this.merchantService.fetchStockRequests();
     }
+    if (tab === 'movements') {
+      if (!this.movementsLoaded()) {
+        this.loadMovements(true);
+      }
+    }
+
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        tab: tab === 'stock' ? null : tab,
+        productId:
+          tab === 'movements' && this.filterProductId() ? this.filterProductId() : null,
+      },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  viewProductHistory(productId: string): void {
+    this.filterProductId.set(productId);
+    this.activeTab.set('movements');
+    this.loadMovements(true);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: 'movements', productId },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  loadMovements(reset: boolean): void {
+    if (reset) {
+      this.movementsOffset.set(0);
+      this.expandedMovementIds.set(new Set());
+    }
+
+    this.movementsLoading.set(true);
+    this.movementsError.set(null);
+
+    const range = this.filterDateRange();
+    let from: string | undefined;
+    let to: string | undefined;
+    if (range && range.length >= 2 && range[0] && range[1]) {
+      const start = new Date(range[0]);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(range[1]);
+      end.setHours(23, 59, 59, 999);
+      from = start.toISOString();
+      to = end.toISOString();
+    }
+
+    this.merchantService
+      .loadInventoryMovements({
+        productId: this.filterProductId() || undefined,
+        movementType: this.filterMovementType() || undefined,
+        direction: this.filterDirection() || undefined,
+        search: this.filterSearch().trim() || undefined,
+        from,
+        to,
+        limit: this.movementsLimit,
+        offset: this.movementsOffset(),
+      })
+      .subscribe({
+        next: (res) => {
+          this.movementsLoading.set(false);
+          this.movementsNotAvailable.set(res.notAvailable ?? false);
+          if (reset) {
+            this.movements.set(res.items);
+          } else {
+            this.movements.update((prev) => [...prev, ...res.items]);
+          }
+          this.movementsTotal.set(res.total);
+          this.movementsLoaded.set(true);
+        },
+        error: () => {
+          this.movementsLoading.set(false);
+          this.movementsError.set('Failed to load movement log.');
+        },
+      });
+  }
+
+  applyMovementFilters(): void {
+    this.loadMovements(true);
+  }
+
+  clearMovementFilters(): void {
+    this.filterProductId.set('');
+    this.filterMovementType.set('');
+    this.filterDirection.set('');
+    this.filterDateRange.set(null);
+    this.filterSearch.set('');
+    this.loadMovements(true);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: 'movements', productId: null },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  loadMoreMovements(): void {
+    this.movementsOffset.update((offset) => offset + this.movementsLimit);
+    this.loadMovements(false);
+  }
+
+  toggleMovementExpanded(movement: MerchantInventoryMovement): void {
+    if (!movement.id) return;
+    this.expandedMovementIds.update((set) => {
+      const next = new Set(set);
+      if (next.has(movement.id)) next.delete(movement.id);
+      else next.add(movement.id);
+      return next;
+    });
+  }
+
+  isMovementExpanded(movement: MerchantInventoryMovement): boolean {
+    return movement.id ? this.expandedMovementIds().has(movement.id) : false;
+  }
+
+  getMovementTypeLabel(type: string): string {
+    return MerchantService.getInventoryMovementTypeLabel(type);
+  }
+
+  getMovementBadgeClass(type: string): string {
+    return MerchantService.getInventoryMovementBadgeClass(type);
+  }
+
+  formatMovementDelta(movement: MerchantInventoryMovement): string {
+    return MerchantService.formatInventoryMovementDelta(movement);
+  }
+
+  getMovementDeltaClass(movement: MerchantInventoryMovement): string {
+    if (movement.direction === 'IN' || movement.quantityDelta > 0) {
+      return 'text-brand-green-dark';
+    }
+    if (movement.direction === 'OUT' || movement.quantityDelta < 0) {
+      return 'text-mlm-red-700';
+    }
+    return 'text-mlm-secondary';
+  }
+
+  getMovementReferenceLink(movement: MerchantInventoryMovement) {
+    return MerchantService.resolveMovementReferenceLink(movement);
+  }
+
+  getMovementMetadataEntries(
+    movement: MerchantInventoryMovement,
+  ): { label: string; value: string }[] {
+    const meta = movement.metadata;
+    if (!meta) return [];
+
+    const entries: { label: string; value: string }[] = [];
+    const add = (label: string, key: string) => {
+      const value = meta[key];
+      if (value == null || value === '') return;
+      if (typeof value === 'object') {
+        entries.push({ label, value: JSON.stringify(value) });
+      } else {
+        entries.push({ label, value: String(value) });
+      }
+    };
+
+    add('Fulfilment method', 'fulfilmentMethod');
+    add('Dispatched qty', 'dispatchedQuantity');
+    add('Received qty', 'receivedQuantity');
+    add('Reason', 'reason');
+    add('Admin notes', 'adminNotes');
+    add('Sender merchant', 'senderMerchantUsername');
+    add('Line items', 'lineItems');
+
+    return entries;
   }
 
   hasPendingStockRequest(productId: string): boolean {

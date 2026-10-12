@@ -235,20 +235,17 @@ export class WithdrawalComponent implements OnInit {
         const bankName = (data['bankName'] ?? data['bank_name']) as string | undefined;
         const accountNumber = (data['accountNumber'] ?? data['account_number']) as
           string | undefined;
-        const accountNumberMasked = (data['accountNumberMasked'] ??
-          data['account_number_masked']) as string | undefined;
         const accountName = (data['accountName'] ?? data['account_name']) as string | undefined;
-        const displayAccountNumber = accountNumber ?? accountNumberMasked;
 
-        if (bankName || displayAccountNumber || accountName) {
+        if (bankName || accountNumber || accountName) {
           this.bankDetailsFromApi.set({
             bankName,
-            accountNumber: displayAccountNumber,
+            accountNumber,
             accountName,
           });
           this.userService.updateProfile({
             bankName: bankName ?? undefined,
-            accountNumber: displayAccountNumber ?? undefined,
+            accountNumber: accountNumber ?? undefined,
             accountName: accountName ?? undefined,
           });
         }

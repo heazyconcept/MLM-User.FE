@@ -634,13 +634,7 @@ export class LegacyCashoutComponent implements OnInit {
     this.onboarding.getBankDetails().subscribe({
       next: (data: Record<string, unknown>) => {
         const bankName = String(data['bankName'] ?? data['bank_name'] ?? '');
-        const accountNumber = String(
-          data['accountNumber'] ??
-            data['account_number'] ??
-            data['accountNumberMasked'] ??
-            data['account_number_masked'] ??
-            '',
-        );
+        const accountNumber = String(data['accountNumber'] ?? data['account_number'] ?? '');
         const accountName = String(data['accountName'] ?? data['account_name'] ?? '');
         if (bankName && accountNumber && accountName) {
           this.bank.set({ bankName, accountNumber, accountName });

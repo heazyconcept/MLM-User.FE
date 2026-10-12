@@ -24,7 +24,7 @@
 
       <div class="mb-4 sm:mb-6">
         <div
-          class="grid grid-cols-3 gap-2 sm:inline-flex sm:gap-0 rounded-xl border border-gray-200 bg-white p-1 w-full sm:w-auto">
+          class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:inline-flex sm:gap-0 rounded-xl border border-gray-200 bg-white p-1 w-full sm:w-auto">
           <button
             type="button"
             class="min-h-11 px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors"
@@ -75,6 +75,17 @@
                 {{ openDisputesCount() }}
               </span>
             }
+          </button>
+          <button
+            type="button"
+            class="min-h-11 px-3 sm:px-4 py-2.5 text-sm font-semibold rounded-lg transition-colors"
+            [class]="
+              activeTab() === 'movements'
+                ? 'bg-mlm-primary text-white shadow-sm'
+                : 'text-mlm-secondary hover:text-mlm-text hover:bg-gray-50'
+            "
+            (click)="setTab('movements')">
+            <span class="truncate">Movement Log</span>
           </button>
         </div>
       </div>
@@ -200,6 +211,12 @@
                               item.hasOpenAdjustmentDispute ? 'Waiting for review' : 'Update count'
                             }}
                           </button>
+                          <button
+                            type="button"
+                            class="text-sm font-semibold text-mlm-secondary hover:text-mlm-primary transition-colors min-h-10 px-2"
+                            (click)="viewProductHistory(item.productId)">
+                            View history
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -288,6 +305,12 @@
                       [disabled]="item.hasOpenAdjustmentDispute"
                       (click)="onEditStock(item)">
                       {{ item.hasOpenAdjustmentDispute ? 'Waiting for review' : 'Update count' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="w-full min-h-11 text-sm font-semibold py-2.5 rounded-xl border border-gray-200 text-mlm-secondary bg-white hover:bg-gray-50 transition-colors"
+                      (click)="viewProductHistory(item.productId)">
+                      View history
                     </button>
                   </div>
                 </li>
@@ -422,7 +445,7 @@
             </ul>
           }
         </div>
-      } @else {
+      } @else if (activeTab() === 'disputes') {
         <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-4 lg:p-6">
           @if (sortedDisputes().length === 0) {
             <div class="flex flex-col items-center justify-center py-12 sm:py-16 text-center px-2">
@@ -540,6 +563,230 @@
                 </li>
               }
             </ul>
+          }
+        </div>
+      } @else if (activeTab() === 'movements') {
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-3 sm:p-4 lg:p-6 space-y-5">
+          <div>
+            <p class="text-sm font-semibold text-mlm-text">Movement Log</p>
+            <p class="text-xs text-mlm-secondary mt-1">
+              Track how stock moves in and out — allocations, orders, restocks, and adjustments.
+            </p>
+          </div>
+
+          @if (movementsNotAvailable()) {
+            <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Movement log API is not available yet. This view will populate once the backend ships
+              <span class="font-mono text-xs">GET /merchants/inventory/movements</span>.
+            </div>
+          }
+
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-mlm-secondary mb-1.5">Product</label>
+              <p-select
+                [options]="productFilterOptions()"
+                [ngModel]="filterProductId()"
+                (ngModelChange)="filterProductId.set($event)"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+                styleClass="w-full">
+              </p-select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-mlm-secondary mb-1.5">Type</label>
+              <p-select
+                [options]="movementTypeOptions"
+                [ngModel]="filterMovementType()"
+                (ngModelChange)="filterMovementType.set($event)"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+                styleClass="w-full">
+              </p-select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-mlm-secondary mb-1.5">Direction</label>
+              <p-select
+                [options]="directionOptions"
+                [ngModel]="filterDirection()"
+                (ngModelChange)="filterDirection.set($event)"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+                styleClass="w-full">
+              </p-select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-mlm-secondary mb-1.5">
+                Reference search
+              </label>
+              <input
+                type="search"
+                class="w-full h-10 px-3 rounded-lg border border-gray-200 text-sm"
+                placeholder="Order ref, allocation ID…"
+                [ngModel]="filterSearch()"
+                (ngModelChange)="filterSearch.set($event)" />
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-end gap-3">
+            <div>
+              <label class="block text-xs font-medium text-mlm-secondary mb-1.5">
+                Date range <span class="font-normal">(optional)</span>
+              </label>
+              <p-datepicker
+                [ngModel]="filterDateRange()"
+                (ngModelChange)="filterDateRange.set($event)"
+                selectionMode="range"
+                placeholder="From – To"
+                [showIcon]="true"
+                iconDisplay="input"
+                appendTo="body"
+                inputStyleClass="h-10 text-sm border-gray-200 rounded-lg w-full sm:w-56">
+              </p-datepicker>
+            </div>
+            <button
+              type="button"
+              class="h-10 px-4 rounded-lg bg-mlm-primary text-white text-sm font-semibold hover:bg-brand-green-dark transition-colors disabled:opacity-50"
+              [disabled]="movementsLoading()"
+              (click)="applyMovementFilters()">
+              Apply
+            </button>
+            <button
+              type="button"
+              class="h-10 px-4 rounded-lg border border-gray-200 text-sm font-semibold text-mlm-secondary hover:bg-gray-50 transition-colors"
+              [disabled]="movementsLoading()"
+              (click)="clearMovementFilters()">
+              Clear
+            </button>
+          </div>
+
+          @if (movementsError(); as movErr) {
+            <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3">
+              <span>{{ movErr }}</span>
+              <button type="button" class="underline font-medium shrink-0" (click)="loadMovements(true)">
+                Retry
+              </button>
+            </div>
+          }
+
+          @if (movementsLoading() && movements().length === 0) {
+            <div class="flex items-center justify-center py-16">
+              <i class="pi pi-spin pi-spinner text-3xl text-mlm-primary" aria-hidden="true"></i>
+            </div>
+          } @else if (!movementsLoading() && movements().length === 0 && !movementsNotAvailable()) {
+            <p class="text-sm text-mlm-secondary text-center py-12">No movements match your filters.</p>
+          } @else if (movements().length > 0) {
+            <div class="overflow-x-auto -mx-3 sm:mx-0">
+              <table class="w-full text-left min-w-[960px]">
+                <thead>
+                  <tr class="border-b border-gray-200">
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest">Date</th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest">Product</th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest">Type</th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center">Change</th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest text-center">Balance</th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest">Reference</th>
+                    <th class="py-3 px-4 text-xs font-bold text-mlm-secondary uppercase tracking-widest">Ordered by</th>
+                    <th class="py-3 px-4 w-10"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  @for (movement of movements(); track movement.id) {
+                    <tr
+                      class="hover:bg-gray-50/60 cursor-pointer transition-colors"
+                      (click)="toggleMovementExpanded(movement)">
+                      <td class="py-3.5 px-4 text-xs text-mlm-secondary whitespace-nowrap">
+                        {{ formatDate(movement.occurredAt) }}
+                      </td>
+                      <td class="py-3.5 px-4">
+                        <p class="text-sm font-semibold text-mlm-text">{{ movement.productName }}</p>
+                        <p class="text-xs text-mlm-secondary">{{ movement.productSku }}</p>
+                      </td>
+                      <td class="py-3.5 px-4">
+                        <span
+                          class="inline-flex text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full whitespace-nowrap"
+                          [class]="getMovementBadgeClass(movement.movementType)">
+                          {{ getMovementTypeLabel(movement.movementType) }}
+                        </span>
+                      </td>
+                      <td class="py-3.5 px-4 text-center font-bold tabular-nums" [class]="getMovementDeltaClass(movement)">
+                        {{ formatMovementDelta(movement) }}
+                      </td>
+                      <td class="py-3.5 px-4 text-center font-semibold tabular-nums text-mlm-text">
+                        {{ movement.balanceAfter ?? '—' }}
+                      </td>
+                      <td class="py-3.5 px-4" (click)="$event.stopPropagation()">
+                        @if (getMovementReferenceLink(movement); as refLink) {
+                          <a
+                            [routerLink]="refLink.route"
+                            [queryParams]="refLink.queryParams"
+                            class="text-xs font-mono text-mlm-primary hover:underline">
+                            {{ movement.referenceLabel || movement.referenceId }}
+                          </a>
+                        } @else if (movement.referenceLabel || movement.referenceId) {
+                          <span class="text-xs font-mono text-mlm-secondary">
+                            {{ movement.referenceLabel || movement.referenceId }}
+                          </span>
+                        } @else {
+                          <span class="text-xs text-mlm-secondary">—</span>
+                        }
+                      </td>
+                      <td class="py-3.5 px-4 text-sm text-mlm-secondary whitespace-nowrap">
+                        {{ movement.orderedBy || '—' }}
+                      </td>
+                      <td class="py-3.5 px-4 text-center">
+                        <i
+                          class="pi text-[10px] text-mlm-secondary"
+                          [class.pi-chevron-down]="!isMovementExpanded(movement)"
+                          [class.pi-chevron-up]="isMovementExpanded(movement)"
+                          aria-hidden="true"></i>
+                      </td>
+                    </tr>
+                    @if (isMovementExpanded(movement)) {
+                      <tr class="bg-gray-50/60">
+                        <td colspan="8" class="px-4 py-4">
+                          <p class="text-sm text-mlm-text mb-3">{{ movement.description }}</p>
+                          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                            <div>
+                              <p class="font-bold uppercase text-mlm-secondary tracking-wide mb-1">Actor</p>
+                              <p class="text-mlm-text">{{ movement.actor }}</p>
+                            </div>
+                            @for (entry of getMovementMetadataEntries(movement); track entry.label) {
+                              <div>
+                                <p class="font-bold uppercase text-mlm-secondary tracking-wide mb-1">{{ entry.label }}</p>
+                                <p class="text-mlm-text break-words">{{ entry.value }}</p>
+                              </div>
+                            }
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="flex items-center justify-between text-xs text-mlm-secondary pt-2">
+              <span>
+                @if (movementsTotal() > 0) {
+                  {{ movements().length }} of {{ movementsTotal() }} entries
+                } @else {
+                  {{ movements().length }} entries loaded
+                }
+              </span>
+              @if (movementsHasMore()) {
+                <button
+                  type="button"
+                  class="h-9 px-4 rounded-lg border border-gray-200 text-xs font-semibold text-mlm-secondary hover:bg-gray-50 disabled:opacity-50"
+                  [disabled]="movementsLoading()"
+                  (click)="loadMoreMovements()">
+                  Load more
+                </button>
+              }
+            </div>
           }
         </div>
       }

@@ -27,7 +27,16 @@ Auth: `Authorization: Bearer <userAccessToken>` unless marked **Public** or othe
 | `/merchants/me/allocations` | GET | Merchant | List allocations (onboarding/refill stock) |
 | `/merchants/me/allocations/{id}/accept` | POST | Merchant | Accept allocation after receiving stock |
 | `/merchants/inventory` | GET | Merchant | Get my inventory (assigned products + stock) |
+| `/merchants/inventory/movements` | GET | Merchant | Stock movement ledger (backend requested) |
 | `/merchants/inventory/{productId}/stock` | PUT | Merchant | Update stock quantity/status for a product |
+
+---
+
+## Inventory Movement Log
+
+See **[frontend-integration-merchant-inventory-movements.md](./frontend-integration-merchant-inventory-movements.md)** for full UI, service, and test documentation.
+
+Backend API contract: [BACKEND_REQUEST_MERCHANT_INVENTORY_MOVEMENTS.md](./BACKEND_REQUEST_MERCHANT_INVENTORY_MOVEMENTS.md).
 
 ---
 

@@ -147,10 +147,9 @@ export class UserService {
   private mergeBankDetails(user: User, bank: Record<string, unknown>): User {
     const previous = this.user();
     const bankName = (bank['bankName'] ?? bank['bank_name']) as string | undefined;
-    const accountNumber = (bank['accountNumber'] ??
-      bank['account_number'] ??
-      bank['accountNumberMasked'] ??
-      bank['account_number_masked']) as string | undefined;
+    const accountNumber = (bank['accountNumber'] ?? bank['account_number']) as
+      | string
+      | undefined;
     const accountName = (bank['accountName'] ?? bank['account_name']) as string | undefined;
 
     return reconcileProfileCompleteness({

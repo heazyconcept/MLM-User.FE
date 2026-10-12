@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import {
   MerchantDashboardActivityType,
+  MerchantInventoryMovement,
   MerchantProfileResponse,
   MerchantService,
 } from '../../../services/merchant.service';
@@ -44,6 +45,9 @@ export class MerchantDashboardComponent implements OnInit {
 
   barsAnimated = false;
   hasUpgradeOptions = signal(false);
+  recentMovements = signal<MerchantInventoryMovement[]>([]);
+  recentMovementsLoading = signal(false);
+  recentMovementsNotAvailable = signal(false);
 
   showUpgradeBanner = computed(
     () => this.canUpgradeCategory() && this.hasUpgradeOptions(),
@@ -242,6 +246,24 @@ export class MerchantDashboardComponent implements OnInit {
     return activity.type !== 'Stock Dispute';
   }
 
+  getMovementTypeLabel(type: string): string {
+    return MerchantService.getInventoryMovementTypeLabel(type);
+  }
+
+  formatMovementDelta(movement: MerchantInventoryMovement): string {
+    return MerchantService.formatInventoryMovementDelta(movement);
+  }
+
+  getMovementDeltaClass(movement: MerchantInventoryMovement): string {
+    if (movement.direction === 'IN' || movement.quantityDelta > 0) {
+      return 'text-brand-green-dark';
+    }
+    if (movement.direction === 'OUT' || movement.quantityDelta < 0) {
+      return 'text-mlm-red-700';
+    }
+    return 'text-mlm-warm-500';
+  }
+
   formatActivityDate(dateString: string): string {
     const date = new Date(dateString);
     const now = new Date();
@@ -280,6 +302,22 @@ export class MerchantDashboardComponent implements OnInit {
     return map[type] ?? '#e7e5e4';
   }
 
+  private loadRecentMovements(): void {
+    this.recentMovementsLoading.set(true);
+    this.merchantService.loadInventoryMovements({ limit: 5, offset: 0 }).subscribe({
+      next: (res) => {
+        this.recentMovementsLoading.set(false);
+        this.recentMovementsNotAvailable.set(res.notAvailable ?? false);
+        this.recentMovements.set(res.items);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.recentMovementsLoading.set(false);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
   private runEntranceAnimations(): void {
     setTimeout(() => {
       this.barsAnimated = true;
@@ -293,6 +331,7 @@ export class MerchantDashboardComponent implements OnInit {
         this.runEntranceAnimations();
         this.cdr.markForCheck();
       });
+      this.loadRecentMovements();
       this.merchantService.fetchHandoverRequests();
       if (this.canUpgradeCategory()) {
         this.merchantService.fetchUpgradeOptions({ silent: true }).subscribe((opts) => {
