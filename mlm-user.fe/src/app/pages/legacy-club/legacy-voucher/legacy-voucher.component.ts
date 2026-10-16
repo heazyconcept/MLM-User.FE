@@ -10,6 +10,7 @@ import { LegacyPageHeaderComponent } from '../components/legacy-page-header.comp
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
 import { LegacyBalanceBannerComponent } from '../components/legacy-balance-banner.component';
 import { LegacyAddFundsComponent } from '../components/legacy-add-funds.component';
+import { VoucherBridgeTransferComponent } from '../components/voucher-bridge-transfer.component';
 
 @Component({
   selector: 'app-legacy-voucher',
@@ -22,6 +23,7 @@ import { LegacyAddFundsComponent } from '../components/legacy-add-funds.componen
     LegacyPanelComponent,
     LegacyBalanceBannerComponent,
     LegacyAddFundsComponent,
+    VoucherBridgeTransferComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -34,17 +36,22 @@ import { LegacyAddFundsComponent } from '../components/legacy-add-funds.componen
           backLabel="Legacy Club"
         />
 
-        <app-legacy-panel title="Voucher balance">
-          <app-legacy-balance-banner
-            label="Legacy product voucher"
-            [amount]="money(balance())"
-            hint="Use this balance when paying in the Legacy marketplace."
-          />
-        </app-legacy-panel>
+        <app-voucher-bridge-transfer
+          [legacyVoucherBalance]="balance()"
+          (transferred)="refresh()"
+        />
 
         <app-legacy-add-funds destination="LEGACY_VOUCHER" (transferred)="refresh()" />
 
         <div [class]="voucherGridClass()">
+          <app-legacy-panel title="Voucher balance">
+            <app-legacy-balance-banner
+              label="Legacy product voucher"
+              [amount]="money(balance())"
+              hint="Use this balance when paying in the Legacy marketplace."
+            />
+          </app-legacy-panel>
+
           @if (canShop()) {
             <app-legacy-panel title="Legacy marketplace">
               <p class="text-sm leading-relaxed text-mlm-secondary">

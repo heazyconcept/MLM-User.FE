@@ -162,12 +162,21 @@
                             {{ formatAmountOrPlaceholder(wallet.voucherBalance, wallet.currency) }}
                           }
                         </p>
-                        <div class="flex gap-2">
+                        <div class="flex flex-wrap gap-2 justify-end">
                           <button (click)="openTransferDialog('CASH', 'VOUCHER', wallet.currency)"
                             [disabled]="wallet.id === 'placeholder' || wallet.cashBalance <= 0"
                             class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
                             Top Up
                           </button>
+                          @if (isLegacyMember()) {
+                            <button
+                              type="button"
+                              (click)="openVoucherBridgeDialog('to-legacy')"
+                              [disabled]="wallet.id === 'placeholder'"
+                              class="px-3 sm:px-4 py-2 bg-gray-100 text-mlm-text text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
+                              Move Legacy ↔
+                            </button>
+                          }
                           <button (click)="navigateToVoucherFunding(wallet.currency)"
                             class="px-3 sm:px-4 py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg">
                             Fund
