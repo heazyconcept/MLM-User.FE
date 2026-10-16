@@ -18,8 +18,10 @@ export interface AutoshipStatus {
   };
 }
 
+export type TransferFromWalletType = 'CASH' | 'REGISTRATION' | 'VOUCHER' | 'LEGACY_VOUCHER';
+
 export interface TransferRequest {
-  fromWalletType: 'CASH' | 'REGISTRATION';
+  fromWalletType: TransferFromWalletType;
   toWalletType: TransferToWalletType;
   amount: number;
   currency: 'NGN' | 'USD';
@@ -443,30 +445,59 @@ export class WalletService {
     );
   }
 
+  private transferWalletLabel(type: TransferFromWalletType | TransferToWalletType): string {
+    switch (type) {
+      case 'AUTOSHIP':
+        return 'Autoship';
+      case 'VOUCHER':
+        return 'Product Voucher';
+      case 'REGISTRATION':
+        return 'Registration';
+      case 'LEGACY_VOUCHER':
+        return 'Legacy product voucher';
+      case 'CASH':
+        return 'Cash';
+      default:
+        return 'Wallet';
+    }
+  }
+
+  showTransferSuccessModal(request: TransferRequest): void {
+    const sym = request.currency === 'NGN' ? '₦' : '$';
+    const sourceLabel = this.transferWalletLabel(request.fromWalletType);
+    const targetLabel = this.transferWalletLabel(request.toWalletType);
+    const voucherBridge =
+      (request.fromWalletType === 'VOUCHER' && request.toWalletType === 'LEGACY_VOUCHER') ||
+      (request.fromWalletType === 'LEGACY_VOUCHER' && request.toWalletType === 'VOUCHER');
+    const successPath = voucherBridge
+      ? request.toWalletType === 'LEGACY_VOUCHER'
+        ? '/legacy/voucher'
+        : '/wallet'
+      : request.toWalletType === 'LEGACY_VOUCHER'
+        ? '/legacy/voucher'
+        : '/wallet';
+    this.modalService.open(
+      'success',
+      'Transfer Successful',
+      `${sym}${request.amount.toLocaleString()} has been moved from your ${sourceLabel} wallet to your ${targetLabel} wallet.`,
+      successPath,
+    );
+  }
+
   /** POST /wallets/transfer */
-  transferBetweenWallets(request: TransferRequest): Observable<TransferResponse> {
+  transferBetweenWallets(
+    request: TransferRequest,
+    options?: { suppressSuccessModal?: boolean },
+  ): Observable<TransferResponse> {
     return this.api.post<TransferResponse>('wallets/transfer', request).pipe(
       tap(() => {
-        const sym = request.currency === 'NGN' ? '₦' : '$';
-        const sourceLabel = request.fromWalletType === 'CASH' ? 'Cash' : 'Registration';
-        const targetLabel = request.toWalletType === 'AUTOSHIP' ? 'Autoship'
-          : request.toWalletType === 'VOUCHER' ? 'Voucher'
-          : request.toWalletType === 'REGISTRATION' ? 'Registration'
-          : request.toWalletType === 'LEGACY_VOUCHER' ? 'Legacy product voucher'
-          : 'Cash';
-        const successPath = request.toWalletType === 'LEGACY_VOUCHER' ? '/legacy/voucher' : '/wallet';
-        this.modalService.open(
-          'success',
-          'Transfer Successful',
-          `${sym}${request.amount.toLocaleString()} has been moved from your ${sourceLabel} wallet to your ${targetLabel} wallet.`,
-          successPath
-        );
-        // Refresh wallets to show updated balances
         this.fetchWallets().subscribe();
+        if (!options?.suppressSuccessModal) {
+          this.showTransferSuccessModal(request);
+        }
       }),
       catchError(err => {
-        const raw = err?.error?.message;
-        const msg = Array.isArray(raw) ? raw[0] : (raw ?? 'Transfer failed. Please try again or contact support.');
+        const msg = resolveWalletErrorMessage(err?.error?.message, request.currency);
         this.modalService.open('error', 'Transfer Failed', msg);
         throw err;
       })

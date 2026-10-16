@@ -8,6 +8,7 @@ import { LegacyPageShellComponent } from '../components/legacy-page-shell.compon
 import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
 import { LegacyBalanceBannerComponent } from '../components/legacy-balance-banner.component';
+import { VoucherBridgeTransferComponent } from '../components/voucher-bridge-transfer.component';
 
 @Component({
   selector: 'app-legacy-voucher',
@@ -19,6 +20,7 @@ import { LegacyBalanceBannerComponent } from '../components/legacy-balance-banne
     LegacyPageHeaderComponent,
     LegacyPanelComponent,
     LegacyBalanceBannerComponent,
+    VoucherBridgeTransferComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -29,6 +31,11 @@ import { LegacyBalanceBannerComponent } from '../components/legacy-balance-banne
           subtitle="This is not your network Product Voucher. It is only for the Legacy Club marketplace."
           backLink="/legacy"
           backLabel="Legacy Club"
+        />
+
+        <app-voucher-bridge-transfer
+          [legacyVoucherBalance]="balance()"
+          (transferred)="refresh()"
         />
 
         <div [class]="voucherGridClass()">

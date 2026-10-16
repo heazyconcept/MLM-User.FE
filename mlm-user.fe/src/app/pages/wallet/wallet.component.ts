@@ -14,6 +14,11 @@ import { WalletService, Wallet } from '../../services/wallet.service';
 import { SettingsService } from '../../services/settings.service';
 import { WithdrawalComponent } from './withdrawal/withdrawal.component';
 import { WalletTransferComponent } from './transfer/wallet-transfer.component';
+import {
+  VoucherBridgeTransferComponent,
+  VoucherBridgeDirection,
+} from '../legacy-club/components/voucher-bridge-transfer.component';
+import { LegacyClubService } from '../../services/legacy-club.service';
 import { RegistrationFundingComponent } from './registration-funding/registration-funding.component';
 import {
   CASHOUT_SPLIT, AUTOSHIP_SPLIT,
@@ -43,8 +48,10 @@ export class WalletComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private dialogService = inject(DialogService);
+  private legacyClub = inject(LegacyClubService);
 
   isPaid = this.userService.isPaid;
+  isLegacyMember = this.legacyClub.isMember;
   isImpersonating = computed(() => !!this.authService.impersonation());
   wallets = this.walletService.allWallets;
   totalBalance = this.walletService.totalBalance;
@@ -102,6 +109,7 @@ export class WalletComponent implements OnInit {
         error: () => this.isLoading.set(false)
       });
       this.walletService.fetchAutoshipStatus().subscribe();
+      this.legacyClub.loadMe().subscribe({ error: () => undefined });
     }
   }
 
@@ -203,6 +211,19 @@ export class WalletComponent implements OnInit {
   });
 
   /** Open transfer dialog pre-selected to source and target wallets and currency */
+  openVoucherBridgeDialog(direction: VoucherBridgeDirection = 'to-legacy'): void {
+    this.dialogService.open(VoucherBridgeTransferComponent, {
+      header: 'Move between product vouchers',
+      width: 'min(520px, 92vw)',
+      contentStyle: { 'max-height': '720px', overflow: 'auto' },
+      baseZIndex: 10000,
+      data: {
+        initialDirection: direction,
+        showPanel: false,
+      },
+    });
+  }
+
   openTransferDialog(
     fromWalletType?: 'CASH' | 'REGISTRATION',
     toWalletType?: 'VOUCHER' | 'REGISTRATION' | 'CASH',

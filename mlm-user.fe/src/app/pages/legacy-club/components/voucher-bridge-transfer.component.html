@@ -1,0 +1,107 @@
+@if (showPanelEffective()) {
+  <app-legacy-panel
+    title="Move between product vouchers"
+    description="Combine network and Legacy product voucher balances before you shop."
+  >
+    @if (isImpersonating()) {
+      <p class="text-sm text-mlm-secondary">Transfers are disabled during impersonation.</p>
+    } @else if (!isLegacyMember()) {
+      <p class="text-sm leading-relaxed text-mlm-secondary">
+        An active Legacy Club membership is required to move money between product vouchers.
+      </p>
+      <a
+        routerLink="/legacy"
+        class="mt-4 inline-block text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80"
+      >
+        Go to Legacy Club
+      </a>
+    } @else {
+      <ng-container [ngTemplateOutlet]="transferFormTpl" />
+    }
+  </app-legacy-panel>
+} @else {
+  @if (isImpersonating()) {
+    <p class="text-sm text-mlm-secondary">Transfers are disabled during impersonation.</p>
+  } @else if (!isLegacyMember()) {
+    <p class="text-sm leading-relaxed text-mlm-secondary">
+      An active Legacy Club membership is required to move money between product vouchers.
+    </p>
+    <a
+      routerLink="/legacy"
+      class="mt-4 inline-block text-sm font-semibold text-mlm-primary hover:text-mlm-primary/80"
+    >
+      Go to Legacy Club
+    </a>
+  } @else {
+    <ng-container [ngTemplateOutlet]="transferFormTpl" />
+  }
+}
+
+<ng-template #transferFormTpl>
+  <p class="text-sm leading-relaxed text-mlm-secondary">
+    These are two separate wallets. Move funds here to pay for a larger order on the network marketplace or
+    Legacy marketplace.
+  </p>
+
+  <form class="mt-6 space-y-4" [formGroup]="transferForm" (ngSubmit)="transfer()">
+    <div class="flex flex-col gap-1.5">
+      <label class="text-sm font-semibold text-gray-700" for="voucher-bridge-direction">Direction</label>
+      <p-select
+        inputId="voucher-bridge-direction"
+        formControlName="direction"
+        [options]="directionOptions"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="w-full"
+        appendTo="body"
+      />
+    </div>
+
+    <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-mlm-secondary space-y-1">
+      <div class="flex justify-between gap-4">
+        <span>Network Product Voucher</span>
+        <span class="font-semibold tabular-nums text-mlm-text">
+          {{ currencySymbol() }}{{ networkVoucherBalance() | number: '1.2-2' }}
+        </span>
+      </div>
+      <div class="flex justify-between gap-4">
+        <span>Legacy product voucher</span>
+        <span class="font-semibold tabular-nums text-mlm-text">
+          {{ currencySymbol() }}{{ displayLegacyVoucherBalance() | number: '1.2-2' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1.5">
+      <label class="text-sm font-semibold text-gray-700" for="voucher-bridge-amount">Amount</label>
+      <p-inputNumber
+        inputId="voucher-bridge-amount"
+        formControlName="amount"
+        mode="currency"
+        [currency]="currency()"
+        currencyDisplay="symbol"
+        [min]="1"
+        [max]="sourceBalance()"
+        fluid="true"
+        placeholder="0.00"
+      />
+      <p class="text-xs text-mlm-secondary">
+        Available to move: {{ currencySymbol() }}{{ sourceBalance() | number: '1.2-2' }}
+      </p>
+      @if (amountInvalid()) {
+        <p class="text-xs font-medium text-red-600">
+          Enter an amount from {{ currencySymbol() }}1 up to your available balance.
+        </p>
+      }
+    </div>
+
+    <p-button
+      type="submit"
+      label="Transfer"
+      icon="pi pi-arrow-right-arrow-left"
+      styleClass="w-full"
+      [loading]="submitting()"
+      [disabled]="transferForm.invalid || submitting() || sourceBalance() < 1"
+    />
+  </form>
+</ng-template>
