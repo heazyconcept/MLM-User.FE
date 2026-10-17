@@ -349,6 +349,29 @@ export class UserService {
     );
   }
 
+  /** POST /users/transaction-pin/setup-with-temporary — after admin-issued temporary PIN */
+  setupTransactionPinWithTemporary(
+    temporaryPin: string,
+    newPin: string,
+    confirmNewPin: string,
+  ): Observable<{ success?: boolean; message?: string; hasTransactionPin?: boolean }> {
+    return this.api
+      .post<{ success?: boolean; message?: string; hasTransactionPin?: boolean }>(
+        'users/transaction-pin/setup-with-temporary',
+        { temporaryPin, newPin, confirmNewPin },
+      )
+      .pipe(
+        tap(() => {
+          const currentUser = this.user();
+          if (currentUser) {
+            const updatedUser = { ...currentUser, hasTransactionPin: true };
+            this.user.set(updatedUser);
+            this.persistUserData(updatedUser);
+          }
+        }),
+      );
+  }
+
   clearUser(): void {
     this.user.set(null);
     this.displayCurrencySignal.set('NGN');

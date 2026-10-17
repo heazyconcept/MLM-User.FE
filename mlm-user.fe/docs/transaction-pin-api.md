@@ -141,7 +141,34 @@ Performs the reset using the received OTP.
 
 ---
 
-## 4. POST `/users/transaction-pin/verify`
+## 4. POST `/users/transaction-pin/setup-with-temporary`
+
+### Overview
+After support issues a **temporary transaction PIN** (`POST /admin/users/:id/transaction-pin/temporary`), the member sets a new permanent PIN using that credential. **Not valid during impersonation** (`403 IMPERSONATION_ACTION_BLOCKED`).
+
+### Request Body
+```json
+{
+  "temporaryPin": "4829",
+  "newPin": "7391",
+  "confirmNewPin": "7391"
+}
+```
+
+### Response 200 OK
+```json
+{
+  "success": true,
+  "message": "Your transaction PIN has been set successfully.",
+  "hasTransactionPin": true
+}
+```
+
+See [BACKEND_REQUEST_ADMIN_TEMPORARY_TRANSACTION_PIN.md](../../../MLM-admin.FE/BACKEND_REQUEST_ADMIN_TEMPORARY_TRANSACTION_PIN.md) for admin issue/revoke endpoints.
+
+---
+
+## 5. POST `/users/transaction-pin/verify`
 
 ### Overview
 One-off verification of a transaction PIN. Can be used for multi-step modals before performing sensitive tasks.

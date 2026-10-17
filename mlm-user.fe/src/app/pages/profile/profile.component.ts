@@ -63,7 +63,9 @@ export class ProfileComponent implements OnInit {
   isSaving = signal<boolean>(false);
   isChangingPassword = signal<boolean>(false);
   hasPin = computed(() => this.userService.currentUser()?.hasTransactionPin ?? false);
-  pinFormState = signal<'IDLE' | 'CHANGE' | 'RESET_REQUEST' | 'RESET' | 'SETUP'>('IDLE');
+  pinFormState = signal<'IDLE' | 'CHANGE' | 'RESET_REQUEST' | 'RESET' | 'SETUP' | 'TEMP_SETUP'>(
+    'IDLE',
+  );
   isPinSaving = signal(false);
   currentUser = this.userService.currentUser;
   needsProfileSetup = this.userService.needsProfileSetup;
@@ -121,6 +123,15 @@ export class ProfileComponent implements OnInit {
     { validators: this.confirmPinMatchValidator('pin', 'confirmPin') },
   );
 
+  tempSetupPinForm = this.fb.group(
+    {
+      temporaryPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
+      newPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
+      confirmNewPin: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]],
+    },
+    { validators: this.confirmPinMatchValidator('newPin', 'confirmNewPin') },
+  );
+
   constructor() {
     afterNextRender(() => {
       if (!this.shouldScrollToTransactionPin()) return;
@@ -150,6 +161,11 @@ export class ProfileComponent implements OnInit {
 
     if (this.route.snapshot.queryParamMap.get('pinAction') === 'setup' && !this.hasPin()) {
       this.showSetupPin();
+      this.shouldScrollToTransactionPin.set(true);
+    }
+
+    if (this.route.snapshot.queryParamMap.get('pinAction') === 'tempSetup') {
+      this.showTempSetupPin();
       this.shouldScrollToTransactionPin.set(true);
     }
 
@@ -382,8 +398,55 @@ export class ProfileComponent implements OnInit {
     this.pinFormState.set('SETUP');
   }
 
+  showTempSetupPin(): void {
+    this.tempSetupPinForm.reset();
+    this.pinFormState.set('TEMP_SETUP');
+  }
+
   cancelPinAction(): void {
     this.pinFormState.set('IDLE');
+  }
+
+  submitTempSetupPin(): void {
+    if (this.tempSetupPinForm.invalid) return;
+    this.isPinSaving.set(true);
+    const { temporaryPin, newPin, confirmNewPin } = this.tempSetupPinForm.getRawValue();
+    this.userService
+      .setupTransactionPinWithTemporary(
+        temporaryPin ?? '',
+        newPin ?? '',
+        confirmNewPin ?? '',
+      )
+      .subscribe({
+        next: () => {
+          this.isPinSaving.set(false);
+          this.pinFormState.set('IDLE');
+          this.tempSetupPinForm.reset();
+          this.cdr.markForCheck();
+          this.modalService.open(
+            'success',
+            'PIN Set',
+            'Your new transaction PIN is active. Keep it private.',
+          );
+        },
+        error: (err) => {
+          this.isPinSaving.set(false);
+          this.cdr.markForCheck();
+          if (this.isImpersonationBlocked(err)) {
+            this.modalService.open(
+              'error',
+              'Action Disabled',
+              'Set your PIN from your own account, not while support is viewing as you.',
+            );
+            return;
+          }
+          const raw = err?.error?.message;
+          const msg = Array.isArray(raw)
+            ? raw.join(' ')
+            : (raw ?? 'Could not set PIN. Check your temporary PIN and try again.');
+          this.modalService.open('error', 'PIN Setup Failed', msg);
+        },
+      });
   }
 
   submitSetupPin(): void {

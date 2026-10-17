@@ -581,7 +581,7 @@
             <!-- IDLE state -->
             @if (pinFormState() === 'IDLE') {
               @if (hasPin()) {
-                <div class="flex gap-3">
+                <div class="flex flex-wrap gap-3">
                   <p-button label="Change PIN" type="button" (onClick)="showChangePin()">
                   </p-button>
                   <p-button
@@ -589,6 +589,14 @@
                     type="button"
                     [outlined]="true"
                     (onClick)="showResetPin()"
+                  >
+                  </p-button>
+                  <p-button
+                    label="Temporary PIN from support"
+                    type="button"
+                    [outlined]="true"
+                    severity="secondary"
+                    (onClick)="showTempSetupPin()"
                   >
                   </p-button>
                 </div>
@@ -600,11 +608,22 @@
                     <i class="pi pi-info-circle text-amber-500 mt-0.5"></i>
                     <p class="text-xs text-amber-700 leading-relaxed">
                       You haven't set a transaction PIN yet. Set one up to authorize withdrawals and
-                      other secure operations.
+                      other secure operations, or use a temporary PIN from support if you were given
+                      one.
                     </p>
                   </div>
-                  <p-button label="Set Transaction PIN" type="button" (onClick)="showSetupPin()">
-                  </p-button>
+                  <div class="flex flex-wrap gap-3">
+                    <p-button label="Set Transaction PIN" type="button" (onClick)="showSetupPin()">
+                    </p-button>
+                    <p-button
+                      label="Use temporary PIN from support"
+                      type="button"
+                      [outlined]="true"
+                      severity="secondary"
+                      (onClick)="showTempSetupPin()"
+                    >
+                    </p-button>
+                  </div>
                 </div>
               }
             }
@@ -839,6 +858,129 @@
                     type="submit"
                     [loading]="isPinSaving()"
                     [disabled]="resetPinForm.invalid || isPinSaving()"
+                  >
+                  </p-button>
+                  <p-button
+                    label="Cancel"
+                    type="button"
+                    [outlined]="true"
+                    (onClick)="cancelPinAction()"
+                    [disabled]="isPinSaving()"
+                  >
+                  </p-button>
+                </div>
+              </form>
+            }
+
+            <!-- TEMP SETUP (admin-issued temporary PIN) -->
+            @if (pinFormState() === 'TEMP_SETUP') {
+              <form
+                [formGroup]="tempSetupPinForm"
+                (ngSubmit)="submitTempSetupPin()"
+                class="space-y-4"
+              >
+                <div
+                  class="flex items-start gap-3 rounded-xl border border-blue-100/50 bg-blue-50/50 p-4"
+                >
+                  <i class="pi pi-shield mt-0.5 text-blue-500" aria-hidden="true"></i>
+                  <p class="text-xs leading-relaxed text-mlm-secondary">
+                    Enter the temporary PIN support gave you, then choose a new 4-digit transaction
+                    PIN. The temporary PIN expires and cannot be used for withdrawals.
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    for="profile-temp-pin"
+                    class="mb-2 block text-sm font-semibold text-mlm-text"
+                    >Temporary PIN from support</label
+                  >
+                  <input
+                    id="profile-temp-pin"
+                    type="password"
+                    pInputText
+                    formControlName="temporaryPin"
+                    maxlength="4"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    placeholder="••••"
+                    class="w-full text-center font-mono text-lg font-bold tracking-[0.8em]"
+                    [class.ng-invalid]="
+                      tempSetupPinForm.get('temporaryPin')?.invalid &&
+                      tempSetupPinForm.get('temporaryPin')?.touched
+                    "
+                  />
+                  @if (
+                    tempSetupPinForm.get('temporaryPin')?.invalid &&
+                    tempSetupPinForm.get('temporaryPin')?.touched
+                  ) {
+                    <p class="mt-1 text-xs font-medium text-red-500">Must be exactly 4 digits.</p>
+                  }
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label
+                      for="profile-temp-new-pin"
+                      class="mb-2 block text-sm font-semibold text-mlm-text"
+                      >New transaction PIN</label
+                    >
+                    <input
+                      id="profile-temp-new-pin"
+                      type="password"
+                      pInputText
+                      formControlName="newPin"
+                      maxlength="4"
+                      inputmode="numeric"
+                      placeholder="••••"
+                      class="w-full text-center font-mono text-lg font-bold tracking-[0.8em]"
+                      [class.ng-invalid]="
+                        tempSetupPinForm.get('newPin')?.invalid &&
+                        tempSetupPinForm.get('newPin')?.touched
+                      "
+                    />
+                    @if (
+                      tempSetupPinForm.get('newPin')?.invalid &&
+                      tempSetupPinForm.get('newPin')?.touched
+                    ) {
+                      <p class="mt-1 text-xs font-medium text-red-500">Must be 4 digits.</p>
+                    }
+                  </div>
+                  <div>
+                    <label
+                      for="profile-temp-confirm-pin"
+                      class="mb-2 block text-sm font-semibold text-mlm-text"
+                      >Confirm new PIN</label
+                    >
+                    <input
+                      id="profile-temp-confirm-pin"
+                      type="password"
+                      pInputText
+                      formControlName="confirmNewPin"
+                      maxlength="4"
+                      inputmode="numeric"
+                      placeholder="••••"
+                      class="w-full text-center font-mono text-lg font-bold tracking-[0.8em]"
+                      [class.ng-invalid]="
+                        tempSetupPinForm.hasError('pinMismatch') &&
+                        tempSetupPinForm.get('confirmNewPin')?.touched
+                      "
+                    />
+                    @if (
+                      tempSetupPinForm.hasError('pinMismatch') &&
+                      tempSetupPinForm.get('confirmNewPin')?.touched
+                    ) {
+                      <p class="mt-1 text-xs font-medium text-red-500">PINs do not match.</p>
+                    }
+                  </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                  <p-button
+                    label="Set new PIN"
+                    type="submit"
+                    [loading]="isPinSaving()"
+                    [disabled]="tempSetupPinForm.invalid || isPinSaving()"
                   >
                   </p-button>
                   <p-button
