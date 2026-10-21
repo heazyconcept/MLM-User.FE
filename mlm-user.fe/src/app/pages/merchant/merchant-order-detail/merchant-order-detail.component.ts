@@ -9,7 +9,11 @@ import {
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { MerchantService, type MerchantOrder } from '../../../services/merchant.service';
+import {
+  MerchantService,
+  type MerchantOrder,
+  type MerchantOrderItem,
+} from '../../../services/merchant.service';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import {
   marketplaceBadgeClass,
@@ -178,5 +182,13 @@ export class MerchantOrderDetailComponent implements OnInit {
 
   getPaidFromLabel(order: MerchantOrder): string {
     return marketplacePaidFromLabel(order);
+  }
+
+  fulfillmentMerchantPv(item: MerchantOrderItem): number {
+    return (item.merchantPv ?? 0) * item.quantity;
+  }
+
+  totalFulfillmentMerchantPv(order: MerchantOrder): number {
+    return order.items.reduce((sum, item) => sum + this.fulfillmentMerchantPv(item), 0);
   }
 }
