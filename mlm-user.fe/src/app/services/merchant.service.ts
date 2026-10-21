@@ -25,7 +25,11 @@ export type FulfilmentMode = 'PICKUP' | 'OFFLINE_DELIVERY';
 export type StockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 export type AllocationStatus =
   'PENDING' | 'DISPATCHED' | 'IN_TRANSIT' | 'DELIVERED' | 'RECEIVED' | 'ACCEPTED' | 'CANCELLED';
-export type AllocationSource = 'CATEGORY' | 'MERCHANT_REQUEST' | 'DISPUTE_REMAINDER';
+export type AllocationSource =
+  | 'CATEGORY'
+  | 'MERCHANT_REQUEST'
+  | 'DISPUTE_REMAINDER'
+  | 'ADMIN_REFILL';
 export type StockDisputeStatus =
   'OPEN' | 'ADMIN_REJECTED' | 'ADMIN_ACCEPTED' | 'MERCHANT_ACKNOWLEDGED' | 'CLOSED';
 
@@ -225,6 +229,7 @@ export interface MerchantOrderItem {
   pv: number;
   directReferralPv?: number;
   cpv: number;
+  merchantPv?: number;
 }
 
 export interface MerchantOrderUser {
@@ -1829,6 +1834,16 @@ export class MerchantService {
     return labels[status] ?? status;
   }
 
+  static allocationSourceLabel(source: AllocationSource | string): string {
+    const labels: Record<AllocationSource, string> = {
+      CATEGORY: 'Onboarding',
+      MERCHANT_REQUEST: 'Top-up',
+      DISPUTE_REMAINDER: 'Dispute remainder',
+      ADMIN_REFILL: 'Admin refill',
+    };
+    return labels[source as AllocationSource] ?? String(source);
+  }
+
   /* ── Merchant-to-merchant stock handover ─────────────────────── */
 
   /** GET /merchants/me/allocations/:id/eligible-suppliers */
@@ -2311,8 +2326,13 @@ export class MerchantService {
 
   private mapAllocationSource(raw: unknown): AllocationSource {
     const value = String(raw ?? 'CATEGORY').toUpperCase();
-    if (value === 'MERCHANT_REQUEST' || value === 'DISPUTE_REMAINDER' || value === 'CATEGORY') {
-      return value;
+    if (
+      value === 'MERCHANT_REQUEST' ||
+      value === 'DISPUTE_REMAINDER' ||
+      value === 'CATEGORY' ||
+      value === 'ADMIN_REFILL'
+    ) {
+      return value as AllocationSource;
     }
     return 'CATEGORY';
   }
@@ -2608,12 +2628,38 @@ export class MerchantService {
           ? null
           : undefined;
 
+    const itemsRaw = (data['items'] ?? order.items ?? []) as unknown[];
+    const items = itemsRaw.map((item) => this.mapMerchantOrderItem(item));
+
     return {
       ...order,
+      items,
       channel,
       sourceLabel: data['sourceLabel'] ? String(data['sourceLabel']) : undefined,
       paidFromWalletType,
       paidFromLabel: data['paidFromLabel'] ? String(data['paidFromLabel']) : undefined,
+    };
+  }
+
+  private mapMerchantOrderItem(raw: unknown): MerchantOrderItem {
+    const i = raw as Record<string, unknown>;
+    const imageUrl = (i['productImageUrl'] ?? i['product_image_url'] ?? i['imageUrl']) as
+      | string
+      | undefined;
+    return {
+      id: String(i['id'] ?? ''),
+      productId: String(i['productId'] ?? i['product_id'] ?? ''),
+      productName: String(i['productName'] ?? i['product_name'] ?? '—'),
+      productImageUrl: imageUrl,
+      quantity: Number(i['quantity'] ?? 0),
+      unitPrice: Number(i['unitPrice'] ?? i['unit_price'] ?? 0),
+      pv: Number(i['pv'] ?? 0),
+      directReferralPv:
+        i['directReferralPv'] != null || i['direct_referral_pv'] != null
+          ? Number(i['directReferralPv'] ?? i['direct_referral_pv'])
+          : undefined,
+      cpv: Number(i['cpv'] ?? 0),
+      merchantPv: Number(i['merchantPv'] ?? i['merchant_pv'] ?? 0),
     };
   }
 

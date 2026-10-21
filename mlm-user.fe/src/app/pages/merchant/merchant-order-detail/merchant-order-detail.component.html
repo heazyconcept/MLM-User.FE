@@ -96,6 +96,12 @@
                       >Qty: {{ item.quantity }} ×
                       {{ formatCurrency(item.unitPrice, o.currency) }}</span
                     >
+                    @if ((item.merchantPv ?? 0) > 0) {
+                      <span class="text-xs text-teal-700 font-mono mt-1 block">
+                        MPV {{ item.merchantPv }} / unit ·
+                        {{ fulfillmentMerchantPv(item) }} PV on fulfillment
+                      </span>
+                    }
                   </div>
                   <span class="font-semibold text-mlm-text shrink-0">{{
                     formatCurrency(item.unitPrice * item.quantity, o.currency)
@@ -103,6 +109,14 @@
                 </li>
               }
             </ul>
+            @if (totalFulfillmentMerchantPv(o) > 0) {
+              <div class="flex justify-between items-center pt-3 text-sm">
+                <span class="font-medium text-mlm-secondary">Fulfillment PV (when you hand out)</span>
+                <span class="font-mono font-semibold text-teal-700 tabular-nums"
+                  >{{ totalFulfillmentMerchantPv(o) }} PV</span
+                >
+              </div>
+            }
             <div class="flex justify-between items-center pt-4 mt-2 border-t border-gray-200">
               <span class="text-sm font-bold text-mlm-secondary">Total</span>
               <span class="text-lg font-bold text-mlm-primary">{{

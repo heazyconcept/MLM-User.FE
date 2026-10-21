@@ -201,6 +201,7 @@ export class EarningsActivityService {
       PERSONAL_PRODUCT_PURCHASE: 'Personal product purchase commission',
       DIRECT_REFERRAL_PRODUCT_PURCHASE: 'Direct referral product purchase commission',
       COMMUNITY_PRODUCT_PURCHASE: 'Community product purchase commission',
+      MERCHANT_PRODUCT_PV: 'Merchant fulfillment product PV',
     };
     if (labels[normalized]) {
       return labels[normalized];

@@ -107,6 +107,13 @@
                         Top-up
                       </span>
                     }
+                    @if (alloc.source === 'ADMIN_REFILL') {
+                      <span
+                        class="inline-flex w-fit rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-700"
+                      >
+                        Admin refill
+                      </span>
+                    }
                     @if (alloc.handoverStatus && alloc.handoverStatus !== 'NONE') {
                       <span
                         class="inline-flex w-fit rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700"

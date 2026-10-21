@@ -1070,4 +1070,23 @@ describe('MerchantService — stock top-up requests', () => {
     expect(service.allocations()[0].source).toBe('MERCHANT_REQUEST');
     expect(service.allocations()[0].requestNotes).toBe('Top-up');
   });
+
+  it('maps ADMIN_REFILL allocation source from API', () => {
+    service.fetchAllocations();
+
+    const req = httpMock.expectOne(`${baseUrl}/merchants/me/allocations`);
+    req.flush([
+      {
+        id: 'alloc-refill-1',
+        productId: 'prod-1',
+        productName: 'Tea',
+        quantity: 20,
+        status: 'PENDING',
+        source: 'ADMIN_REFILL',
+      },
+    ]);
+
+    expect(service.allocations()[0].source).toBe('ADMIN_REFILL');
+    expect(MerchantService.allocationSourceLabel('ADMIN_REFILL')).toBe('Admin refill');
+  });
 });

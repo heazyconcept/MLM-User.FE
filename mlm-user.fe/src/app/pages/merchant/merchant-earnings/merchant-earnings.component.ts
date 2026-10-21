@@ -34,6 +34,7 @@ export class MerchantEarningsComponent implements OnInit {
       MERCHANT_DIRECT_REFERRAL_PRODUCT: 'Merchant direct referral product commission',
       MERCHANT_COMMUNITY_PRODUCT: 'Merchant community product commission',
       MERCHANT_DELIVERY_BONUS: 'Merchant delivery commission',
+      MERCHANT_PRODUCT_PV: 'Merchant fulfillment product PV',
       PERSONAL_PRODUCT_PURCHASE: 'Personal product purchase commission',
       DIRECT_REFERRAL_PRODUCT_PURCHASE: 'Direct referral product purchase commission',
       COMMUNITY_PRODUCT_PURCHASE: 'Community product purchase commission',

@@ -648,6 +648,7 @@ export class EarningsService {
       case 'MERCHANT_DIRECT_REFERRAL_PRODUCT': return 'Merchant Direct Referral Product';
       case 'MERCHANT_COMMUNITY_PRODUCT': return 'Merchant Community Product';
       case 'MERCHANT_DELIVERY_BONUS': return 'Merchant Delivery Bonus';
+      case 'MERCHANT_PRODUCT_PV': return 'Merchant fulfillment product PV';
       case 'BUSINESS_CONSULTANT_REGISTRATION': return 'Business Consultant Registration Bonus';
       case 'BUSINESS_CONSULTANT_PRODUCT': return 'Business Consultant Product Bonus';
       default: break;
