@@ -1,62 +1,110 @@
-<div class="mx-auto max-w-lg space-y-6 p-4 md:p-8">
-  <a routerLink="/caucus" class="text-sm text-mlm-primary hover:underline">← Caucus Team</a>
-  <h1 class="text-2xl font-bold text-mlm-text">Cash out</h1>
+<app-caucus-page-shell>
+  <app-caucus-page-header
+    title="Cash out"
+    subtitle="Withdraw your Caucus wallet balance to the bank on your profile."
+    backLink="/caucus"
+    backLabel="Caucus Team" />
 
   @if (isImpersonating()) {
-    <p class="text-sm text-mlm-secondary">Cash out is disabled during impersonation.</p>
-  } @else if (!hasBank()) {
-    <app-caucus-section-card>
-      <p class="text-sm text-mlm-secondary mb-4">Add your bank account to cash out.</p>
-      <a routerLink="/profile" class="text-mlm-primary font-medium hover:underline">Open profile</a>
-    </app-caucus-section-card>
-  } @else if (!hasPin()) {
-    <app-caucus-section-card>
-      <p class="text-sm text-mlm-secondary mb-4">Set your transaction PIN before cashing out.</p>
-      <a
-        routerLink="/profile"
-        [queryParams]="{ pinAction: 'setup' }"
-        fragment="transaction-pin"
-        class="text-mlm-primary font-medium hover:underline">
-        Set Transaction PIN
-      </a>
-    </app-caucus-section-card>
-  } @else {
-    <app-caucus-section-card title="Caucus wallet">
-      <p class="text-2xl font-bold tabular-nums">{{ formatMoney(balance()) }}</p>
-      <p class="text-sm text-mlm-secondary mt-4">This is paid to the bank account on your profile.</p>
-      <p class="text-sm mt-1">{{ bank()?.accountName }} · {{ bank()?.accountNumber }} · {{ bank()?.bankName }}</p>
-
-      <div class="mt-6 space-y-4">
-        <div>
-          <label class="block text-sm font-medium mb-1" for="caucus-amount">Amount</label>
-          <p-inputNumber
-            inputId="caucus-amount"
-            class="w-full"
-            [ngModel]="amount()"
-            (ngModelChange)="amount.set($event ?? 0)"
-            mode="decimal"
-            [minFractionDigits]="2"
-            [maxFractionDigits]="2"
-            [min]="0.01"
-            [max]="balance()" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1" for="caucus-pin">Transaction PIN</label>
-          <input
-            id="caucus-pin"
-            pInputText
-            type="password"
-            inputmode="numeric"
-            maxlength="4"
-            class="w-full"
-            [ngModel]="pin()"
-            (ngModelChange)="onPinChange($event)" />
-        </div>
-        @if (error()) {
-          <p class="text-sm text-red-600">{{ error() }}</p>
-        }
-        <button type="button" pButton label="Cash out" [loading]="submitting()" [disabled]="!canSubmit()" (click)="submit()"></button>
+    <app-caucus-panel>
+      <div class="flex items-start gap-3">
+        <i class="pi pi-eye-slash mt-0.5 text-lg text-mlm-secondary" aria-hidden="true"></i>
+        <p class="text-sm text-mlm-secondary">Cash out is disabled during impersonation.</p>
       </div>
-    </app-caucus-section-card>
+    </app-caucus-panel>
+  } @else if (!hasBank()) {
+    <app-caucus-panel>
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div
+          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700"
+          aria-hidden="true">
+          <i class="pi pi-building-columns text-xl"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-semibold text-mlm-text">Add your bank account to cash out</p>
+          <p class="mt-1 text-sm text-mlm-secondary">
+            Payouts are sent to the bank details saved on your profile.
+          </p>
+          <a
+            routerLink="/profile"
+            class="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-mlm-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90">
+            Open profile
+          </a>
+        </div>
+      </div>
+    </app-caucus-panel>
+  } @else if (!hasPin()) {
+    <app-caucus-panel>
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div
+          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700"
+          aria-hidden="true">
+          <i class="pi pi-shield text-xl"></i>
+        </div>
+        <div class="flex-1">
+          <p class="font-semibold text-mlm-text">Set your transaction PIN</p>
+          <p class="mt-1 text-sm text-mlm-secondary">
+            You need a 4-digit PIN before you can cash out from your Caucus wallet.
+          </p>
+          <a
+            routerLink="/profile"
+            [queryParams]="{ pinAction: 'setup' }"
+            fragment="transaction-pin"
+            class="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-mlm-primary px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90">
+            Set Transaction PIN
+          </a>
+        </div>
+      </div>
+    </app-caucus-panel>
+  } @else {
+    <div class="max-w-xl">
+      <app-caucus-panel title="Caucus wallet">
+        <p class="text-3xl font-black tabular-nums text-mlm-text">{{ formatMoney(balance()) }}</p>
+        <p class="mt-4 text-sm text-mlm-secondary">This is paid to the bank account on your profile.</p>
+        <p class="mt-1 text-sm font-medium text-mlm-text">
+          {{ bank()?.accountName }} · {{ bank()?.accountNumber }} · {{ bank()?.bankName }}
+        </p>
+
+        <div class="mt-8 space-y-5 border-t border-gray-100 pt-6">
+          <div>
+            <label class="mb-2 block text-sm font-medium text-mlm-text" for="caucus-amount">Amount</label>
+            <p-inputNumber
+              inputId="caucus-amount"
+              class="w-full"
+              [ngModel]="amount()"
+              (ngModelChange)="amount.set($event ?? 0)"
+              mode="decimal"
+              [minFractionDigits]="2"
+              [maxFractionDigits]="2"
+              [min]="0.01"
+              [max]="balance()" />
+          </div>
+          <div>
+            <label class="mb-2 block text-sm font-medium text-mlm-text" for="caucus-pin">Transaction PIN</label>
+            <input
+              id="caucus-pin"
+              pInputText
+              type="password"
+              inputmode="numeric"
+              maxlength="4"
+              autocomplete="off"
+              class="w-full max-w-xs"
+              [ngModel]="pin()"
+              (ngModelChange)="onPinChange($event)" />
+          </div>
+          @if (error()) {
+            <p class="text-sm text-red-600" role="alert">{{ error() }}</p>
+          }
+          <button
+            type="button"
+            pButton
+            label="Cash out"
+            class="w-full sm:w-auto"
+            [loading]="submitting()"
+            [disabled]="!canSubmit()"
+            (click)="submit()"></button>
+        </div>
+      </app-caucus-panel>
+    </div>
   }
-</div>
+</app-caucus-page-shell>

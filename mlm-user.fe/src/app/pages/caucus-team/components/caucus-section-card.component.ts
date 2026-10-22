@@ -1,18 +1,15 @@
+/** @deprecated Use app-caucus-panel instead. Kept for backward compatibility. */
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { CaucusPanelComponent } from './caucus-panel.component';
 
 @Component({
   selector: 'app-caucus-section-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CaucusPanelComponent],
   template: `
-    <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      @if (title()) {
-        <h2 class="text-base font-semibold text-mlm-text mb-1">{{ title() }}</h2>
-      }
-      @if (description()) {
-        <p class="text-sm text-mlm-secondary mb-4">{{ description() }}</p>
-      }
+    <app-caucus-panel [title]="title()" [description]="description()">
       <ng-content />
-    </section>
+    </app-caucus-panel>
   `,
 })
 export class CaucusSectionCardComponent {
