@@ -4,13 +4,17 @@ import {
   OnInit,
   computed,
   inject,
+  model,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { SkeletonModule } from 'primeng/skeleton';
 import { TextareaModule } from 'primeng/textarea';
+import { UiTableComponent } from '../../../components/table/table-component';
 import {
   CAUCUS_APPEAL_MAX_LENGTH,
   CAUCUS_APPEAL_MIN_LENGTH,
@@ -30,11 +34,17 @@ import {
 import { AuthService } from '../../../services/auth.service';
 import { CaucusService } from '../../../services/caucus.service';
 import { CaucusEmptyStateComponent } from '../components/caucus-empty-state.component';
+import { CaucusMetricCardComponent } from '../components/caucus-metric-card.component';
+import { CaucusPageHeaderComponent } from '../components/caucus-page-header.component';
+import { CaucusPageShellComponent } from '../components/caucus-page-shell.component';
 import { CaucusPagerComponent } from '../components/caucus-pager.component';
+import { CaucusPanelComponent } from '../components/caucus-panel.component';
 import { CaucusProgressComponent } from '../components/caucus-progress.component';
-import { CaucusSectionCardComponent } from '../components/caucus-section-card.component';
+import {
+  CaucusSegmentTab,
+  CaucusSegmentedTabsComponent,
+} from '../components/caucus-segmented-tabs.component';
 import { CaucusStatusPillComponent } from '../components/caucus-status-pill.component';
-import { CaucusWalletCardComponent } from '../components/caucus-wallet-card.component';
 
 @Component({
   selector: 'app-caucus-home',
@@ -45,12 +55,18 @@ import { CaucusWalletCardComponent } from '../components/caucus-wallet-card.comp
     ButtonModule,
     InputTextModule,
     TextareaModule,
-    CaucusSectionCardComponent,
+    SkeletonModule,
+    RouterLink,
+    UiTableComponent,
+    CaucusPageShellComponent,
+    CaucusPageHeaderComponent,
+    CaucusPanelComponent,
+    CaucusMetricCardComponent,
     CaucusStatusPillComponent,
     CaucusProgressComponent,
-    CaucusWalletCardComponent,
     CaucusEmptyStateComponent,
     CaucusPagerComponent,
+    CaucusSegmentedTabsComponent,
   ],
   templateUrl: './caucus-home.component.html',
 })
@@ -68,8 +84,7 @@ export class CaucusHomeComponent implements OnInit {
   walletCursor = signal<string | null>(null);
   pvAwards = signal<CaucusPvAward[]>([]);
 
-  referralPage = signal(1);
-  referralHasNext = signal(false);
+  activeTab = model<CaucusSegmentTab>('people');
   teamPage = signal(1);
   teamHasNext = signal(false);
   teamSearch = signal('');
@@ -96,6 +111,39 @@ export class CaucusHomeComponent implements OnInit {
   isImpersonating = computed(() => !!this.auth.impersonation());
   isDeactivated = computed(() => this.me()?.status === 'DEACTIVATED');
   isActive = computed(() => this.me()?.status === 'ACTIVE');
+
+  headerSubtitle = computed(() => {
+    const activated = this.me()?.membership?.activatedAt;
+    if (!activated || this.isDeactivated()) {
+      return undefined;
+    }
+    return `Member since ${formatLagosDate(activated)}`;
+  });
+
+  statusMetricValue = computed(() => (this.isDeactivated() ? 'Deactivated' : 'Active'));
+
+  statusMetricDescription = computed(() => {
+    const m = this.me()?.membership;
+    if (!m) {
+      return '';
+    }
+    const parts: string[] = [];
+    if (m.activatedAt) {
+      parts.push(`Activated on ${formatLagosDate(m.activatedAt)}`);
+    }
+    if (m.reinstatedAt) {
+      parts.push(`Restored on ${formatLagosDate(m.reinstatedAt)}`);
+    }
+    if (m.deactivatedAt && this.isDeactivated()) {
+      parts.push(`Deactivated on ${formatLagosDate(m.deactivatedAt)}`);
+    }
+    return parts.join(' · ');
+  });
+
+  walletBalance = computed(() => this.me()?.wallet?.balanceNgn ?? 0);
+  showCashOut = computed(
+    () => this.walletBalance() > 0 && !this.isImpersonating(),
+  );
 
   formatMoney = formatCaucusNgn;
   formatDate = formatLagosDate;
@@ -203,7 +251,6 @@ export class CaucusHomeComponent implements OnInit {
     if (monthKey) {
       this.caucus.referrals(monthKey, 1, 20).subscribe((res) => {
         this.referrals.set(res.referrals.filter((r) => !r.voidedAt));
-        this.referralHasNext.set(res.pagination?.hasNextPage ?? false);
       });
     }
     this.caucus.months().subscribe((rows) => this.months.set(rows));

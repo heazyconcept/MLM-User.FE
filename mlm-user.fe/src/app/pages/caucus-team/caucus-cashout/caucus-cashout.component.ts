@@ -18,7 +18,9 @@ import { CaucusService } from '../../../services/caucus.service';
 import { ModalService } from '../../../services/modal.service';
 import { OnboardingService } from '../../../services/onboarding.service';
 import { UserService } from '../../../services/user.service';
-import { CaucusSectionCardComponent } from '../components/caucus-section-card.component';
+import { CaucusPageHeaderComponent } from '../components/caucus-page-header.component';
+import { CaucusPageShellComponent } from '../components/caucus-page-shell.component';
+import { CaucusPanelComponent } from '../components/caucus-panel.component';
 
 @Component({
   selector: 'app-caucus-cashout',
@@ -30,7 +32,9 @@ import { CaucusSectionCardComponent } from '../components/caucus-section-card.co
     ButtonModule,
     InputNumberModule,
     InputTextModule,
-    CaucusSectionCardComponent,
+    CaucusPageShellComponent,
+    CaucusPageHeaderComponent,
+    CaucusPanelComponent,
   ],
   templateUrl: './caucus-cashout.component.html',
 })
