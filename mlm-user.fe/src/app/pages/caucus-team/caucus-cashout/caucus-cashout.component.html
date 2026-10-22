@@ -1,0 +1,62 @@
+<div class="mx-auto max-w-lg space-y-6 p-4 md:p-8">
+  <a routerLink="/caucus" class="text-sm text-mlm-primary hover:underline">← Caucus Team</a>
+  <h1 class="text-2xl font-bold text-mlm-text">Cash out</h1>
+
+  @if (isImpersonating()) {
+    <p class="text-sm text-mlm-secondary">Cash out is disabled during impersonation.</p>
+  } @else if (!hasBank()) {
+    <app-caucus-section-card>
+      <p class="text-sm text-mlm-secondary mb-4">Add your bank account to cash out.</p>
+      <a routerLink="/profile" class="text-mlm-primary font-medium hover:underline">Open profile</a>
+    </app-caucus-section-card>
+  } @else if (!hasPin()) {
+    <app-caucus-section-card>
+      <p class="text-sm text-mlm-secondary mb-4">Set your transaction PIN before cashing out.</p>
+      <a
+        routerLink="/profile"
+        [queryParams]="{ pinAction: 'setup' }"
+        fragment="transaction-pin"
+        class="text-mlm-primary font-medium hover:underline">
+        Set Transaction PIN
+      </a>
+    </app-caucus-section-card>
+  } @else {
+    <app-caucus-section-card title="Caucus wallet">
+      <p class="text-2xl font-bold tabular-nums">{{ formatMoney(balance()) }}</p>
+      <p class="text-sm text-mlm-secondary mt-4">This is paid to the bank account on your profile.</p>
+      <p class="text-sm mt-1">{{ bank()?.accountName }} · {{ bank()?.accountNumber }} · {{ bank()?.bankName }}</p>
+
+      <div class="mt-6 space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1" for="caucus-amount">Amount</label>
+          <p-inputNumber
+            inputId="caucus-amount"
+            class="w-full"
+            [ngModel]="amount()"
+            (ngModelChange)="amount.set($event ?? 0)"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            [min]="0.01"
+            [max]="balance()" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1" for="caucus-pin">Transaction PIN</label>
+          <input
+            id="caucus-pin"
+            pInputText
+            type="password"
+            inputmode="numeric"
+            maxlength="4"
+            class="w-full"
+            [ngModel]="pin()"
+            (ngModelChange)="onPinChange($event)" />
+        </div>
+        @if (error()) {
+          <p class="text-sm text-red-600">{{ error() }}</p>
+        }
+        <button type="button" pButton label="Cash out" [loading]="submitting()" [disabled]="!canSubmit()" (click)="submit()"></button>
+      </div>
+    </app-caucus-section-card>
+  }
+</div>

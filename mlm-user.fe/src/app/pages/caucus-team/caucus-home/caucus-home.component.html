@@ -1,0 +1,169 @@
+<div class="mx-auto max-w-4xl space-y-6 p-4 md:p-8">
+  <header>
+    <h1 class="text-2xl font-bold text-mlm-text">Caucus Team</h1>
+  </header>
+
+  @if (loading()) {
+    <p class="text-sm text-mlm-secondary">Loading…</p>
+  } @else if (me(); as data) {
+    @if (isDeactivated()) {
+      <app-caucus-section-card title="Membership deactivated">
+        <p class="text-sm text-mlm-secondary mb-4">
+          Your Caucus membership is deactivated. You can write an appeal for reactivation.
+        </p>
+        @if (data.membership?.deactivatedAt) {
+          <p class="text-sm">Deactivated on: {{ formatDate(data.membership!.deactivatedAt!) }}</p>
+        }
+        @if (data.appeal?.canSubmit && !isImpersonating()) {
+          <form class="mt-4 space-y-3" (ngSubmit)="submitAppeal()">
+            <textarea
+              pTextarea
+              class="w-full"
+              rows="4"
+              placeholder="Write your appeal"
+              [formControl]="appealControl"
+              [maxlength]="2000"></textarea>
+            @if (appealError()) {
+              <p class="text-sm text-red-600">{{ appealError() }}</p>
+            }
+            <button type="submit" pButton label="Submit" [disabled]="!canSubmitAppeal()" [loading]="appealSubmitting()"></button>
+          </form>
+        } @else if (data.appeal?.message) {
+          <div class="mt-4 rounded-lg bg-slate-50 p-4 text-sm">
+            <p>{{ data.appeal!.message }}</p>
+            <p class="text-mlm-secondary mt-2">Waiting for review</p>
+          </div>
+        }
+      </app-caucus-section-card>
+    } @else {
+      <app-caucus-section-card title="Membership">
+        <div class="flex items-center gap-2 mb-2">
+          <app-caucus-status-pill label="Active" tone="active" />
+        </div>
+        @if (data.membership?.activatedAt) {
+          <p class="text-sm">Activated on: {{ formatDate(data.membership!.activatedAt) }}</p>
+        }
+        @if (data.membership?.reinstatedAt) {
+          <p class="text-sm">Restored on: {{ formatDate(data.membership!.reinstatedAt!) }}</p>
+        }
+      </app-caucus-section-card>
+    }
+
+    @if (data.wallet) {
+      <app-caucus-wallet-card
+        [balance]="data.wallet.balanceNgn"
+        [pvTotal]="data.pv?.totalPoints ?? 0"
+        [showCashOut]="data.wallet.balanceNgn > 0 && !isImpersonating()" />
+      @if (walletItems().length) {
+        <ul class="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 text-sm">
+          @for (item of walletItems(); track item.id) {
+            <li class="flex justify-between px-4 py-3">
+              <span>{{ walletRowLabel(item) }}</span>
+              <span class="tabular-nums">{{ formatMoney(item.amountNgn) }}</span>
+            </li>
+          }
+        </ul>
+        @if (walletCursor()) {
+          <button type="button" pButton label="Load more" class="p-button-text" (click)="loadMoreWallet()"></button>
+        }
+      }
+    }
+
+    @if (data.currentMonth; as cm) {
+      <app-caucus-section-card [title]="monthTitle(cm.monthKey)">
+        @if (cm.monthKey === '2026-10') {
+          <p class="text-xs text-mlm-secondary -mt-2 mb-3">Counted from 16 October</p>
+        }
+        <app-caucus-progress [count]="cm.directCount" [floor]="cm.floor" [target]="cm.target" />
+        <p class="text-xl font-bold tabular-nums mt-4">{{ formatMoney(cm.amountNgn) }}</p>
+        <p class="text-sm text-mlm-secondary mt-2">{{ monthStatusLine() }}</p>
+        @if (cm.keptAsideNgn > 0) {
+          <p class="text-sm text-mlm-secondary mt-2">
+            {{ formatMoney(cm.keptAsideNgn) }} from last month is kept aside. Refer at least 10 people this month for it to be added.
+          </p>
+        }
+        @if (cm.pvPreview && cm.displayStatus === 'OPEN') {
+          <p class="text-sm text-mlm-secondary mt-2">100 PV will be credited on the 1st.</p>
+        }
+        @if (cm.pvPreview && cm.displayStatus === 'PAID') {
+          <p class="text-sm text-mlm-secondary mt-2">100 PV credited.</p>
+        }
+        @if (isActive() && (data.misses?.count ?? 0) > 0) {
+          <p class="text-sm text-amber-800 mt-2">{{ data.misses!.count }} of {{ data.misses!.limit }} months under 10</p>
+        }
+      </app-caucus-section-card>
+    }
+
+    <app-caucus-section-card title="People">
+      @if (referrals().length === 0) {
+        <app-caucus-empty-state message="No new Legacy Club members this month." />
+      } @else {
+        <ul class="divide-y divide-slate-100 text-sm">
+          @for (r of referrals(); track r.id) {
+            <li class="flex justify-between py-2">
+              <span>{{ r.username }} · {{ r.legacyPackage }}</span>
+              <span>{{ formatDate(r.qualifiedAt, true) }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </app-caucus-section-card>
+
+    <app-caucus-section-card title="Months">
+      @if (months().length === 0) {
+        <app-caucus-empty-state message="No allowance history yet." />
+      } @else {
+        <ul class="space-y-3 text-sm">
+          @for (m of months(); track m.monthKey) {
+            <li class="flex justify-between gap-2 border-b border-slate-100 pb-2">
+              <div>
+                <span class="font-medium">{{ monthTitle(m.monthKey) }}</span>
+                <span class="text-mlm-secondary ml-2">{{ monthStatusLabel(m.displayStatus) }}</span>
+                @if (m.addedFromPreviousNgn > 0) {
+                  <p class="text-xs text-mlm-secondary mt-1">
+                    Includes {{ formatMoney(m.addedFromPreviousNgn) }} kept from the previous month.
+                  </p>
+                }
+              </div>
+              <span class="tabular-nums shrink-0">{{ formatMoney(m.amountNgn) }}</span>
+            </li>
+          }
+        </ul>
+      }
+    </app-caucus-section-card>
+
+    <app-caucus-section-card title="Team">
+      <div class="flex gap-2 mb-3">
+        <input pInputText class="flex-1" placeholder="Search username" [value]="teamSearch()" (input)="teamSearch.set($any($event.target).value)" />
+        <button type="button" pButton label="Search" (click)="searchTeam()"></button>
+      </div>
+      @if (team().length === 0) {
+        <app-caucus-empty-state message="No Caucus members in your network yet." />
+      } @else {
+        <ul class="divide-y divide-slate-100 text-sm">
+          @for (t of team(); track t.userId) {
+            <li class="flex justify-between py-2">
+              <span>{{ t.username }} · Level {{ t.depth }}</span>
+              <span>{{ t.status === 'ACTIVE' ? 'Active' : 'Deactivated' }}</span>
+            </li>
+          }
+        </ul>
+        <app-caucus-pager [page]="teamPage()" [hasNext]="teamHasNext()" (pageChange)="loadTeamPage($event)" />
+      }
+    </app-caucus-section-card>
+
+    @if (pvAwards().length) {
+      <app-caucus-section-card title="PV history">
+        <ul class="text-sm space-y-1">
+          @for (p of pvAwards(); track p.monthKey) {
+            <li>{{ monthTitle(p.monthKey) }} · {{ p.points }} points</li>
+          }
+        </ul>
+      </app-caucus-section-card>
+    }
+
+    @if (networkLine()) {
+      <p class="text-sm text-mlm-secondary">{{ networkLine() }}</p>
+    }
+  }
+</div>
