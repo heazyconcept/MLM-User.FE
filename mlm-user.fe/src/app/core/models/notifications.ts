@@ -48,6 +48,9 @@ export type NotificationType =
   | 'BUSINESS_CONSULTANT_REVOKED'
   | 'ADMIN_ACTION_TAKEN'
   | 'LEGACY_JOIN_CANCELLED'
+  | 'CAUCUS_ACTIVATED'
+  | 'CAUCUS_DEACTIVATED'
+  | 'CAUCUS_REINSTATED'
   | 'SYSTEM_ANNOUNCEMENT';
 
 /** API response shape for a single notification (OpenAPI does not define schema; adjust if backend differs). */
@@ -115,6 +118,9 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   BUSINESS_CONSULTANT_REVOKED: 'network',
   ADMIN_ACTION_TAKEN: 'system',
   LEGACY_JOIN_CANCELLED: 'system',
+  CAUCUS_ACTIVATED: 'system',
+  CAUCUS_DEACTIVATED: 'system',
+  CAUCUS_REINSTATED: 'system',
   SYSTEM_ANNOUNCEMENT: 'system',
 };
 
@@ -171,6 +177,9 @@ export const NOTIFICATION_TYPES_BY_CATEGORY: Record<NotificationCategory, Notifi
     'ACCOUNT_DISABLED',
     'ADMIN_ACTION_TAKEN',
     'LEGACY_JOIN_CANCELLED',
+    'CAUCUS_ACTIVATED',
+    'CAUCUS_DEACTIVATED',
+    'CAUCUS_REINSTATED',
     'SYSTEM_ANNOUNCEMENT',
   ],
 };

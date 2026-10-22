@@ -17,6 +17,7 @@ import {
   NOTIFICATION_TYPE_TO_CATEGORY,
 } from '../core/models/notifications';
 import { RankUpgradeInfo } from './modal.service';
+import { CaucusService } from './caucus.service';
 
 /** Max number of catch-up notifications to show as modals (rest go silently to list). */
 const MAX_CATCHUP_MODALS = 3;
@@ -34,6 +35,7 @@ export class RealTimeNotificationService {
   private notificationService = inject(NotificationService);
   private messageService = inject(MessageService);
   private api = inject(ApiService);
+  private caucusService = inject(CaucusService);
 
   private socket: Socket | null = null;
   private notificationQueue: Array<{
@@ -371,6 +373,10 @@ export class RealTimeNotificationService {
   }
 
   private handleLiveNotification(payload: NotificationWirePayload): void {
+    if (this.isCaucusMembershipNotification(payload)) {
+      this.caucusService.loadMe().subscribe({ error: () => undefined });
+    }
+
     if (this.shouldSuppressNotification(payload)) {
       this.markNotificationsAsRead([payload.id]);
       this.notificationService.loadUnreadCount().subscribe();
@@ -583,6 +589,17 @@ export class RealTimeNotificationService {
   ): boolean {
     const type = String(notification.type ?? '').toUpperCase();
     return type.startsWith('BUSINESS_CONSULTANT_');
+  }
+
+  private isCaucusMembershipNotification(
+    notification: Pick<ApiNotificationItem, 'type'>,
+  ): boolean {
+    const type = String(notification.type ?? '').toUpperCase();
+    return (
+      type === 'CAUCUS_ACTIVATED' ||
+      type === 'CAUCUS_DEACTIVATED' ||
+      type === 'CAUCUS_REINSTATED'
+    );
   }
 
   private notificationSearchText(

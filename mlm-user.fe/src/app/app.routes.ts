@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { caucusBootstrapGuard } from './core/guards/caucus.guard';
 // import { LoginComponent } from './auth/login/login.component';
 
 export const routes: Routes = [
@@ -860,6 +861,32 @@ export const routes: Routes = [
             import('./core/guards/legacy.guard').then((m) => m.legacyMemberGuard),
         ],
         data: { title: 'Legacy PV History' },
+      },
+    ],
+  },
+  {
+    path: 'caucus',
+    loadComponent: () =>
+      import('./layouts/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent,
+      ),
+    canActivate: [caucusBootstrapGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./pages/caucus-team/caucus-home/caucus-home.component').then(
+            (m) => m.CaucusHomeComponent,
+          ),
+        data: { title: 'Caucus Team' },
+      },
+      {
+        path: 'cashout',
+        loadComponent: () =>
+          import('./pages/caucus-team/caucus-cashout/caucus-cashout.component').then(
+            (m) => m.CaucusCashoutComponent,
+          ),
+        data: { title: 'Caucus Cashout' },
       },
     ],
   },

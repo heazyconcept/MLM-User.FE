@@ -114,6 +114,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         'legacy/payments/wallet',
         'legacy/cashout/withdraw',
         'legacy/cashout/transfer',
+        'caucus/appeal',
+        'caucus/cashout/withdraw',
         'merchants/inventory',
         'inventory-adjustment-disputes',
       ];

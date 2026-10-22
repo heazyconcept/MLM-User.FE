@@ -19,6 +19,7 @@ import { MerchantService } from '../../services/merchant.service';
 import { ConsultantService } from '../../services/consultant.service';
 import { CartService } from '../../services/cart.service';
 import { LegacyClubService } from '../../services/legacy-club.service';
+import { CaucusService } from '../../services/caucus.service';
 import { formatMerchantUsernameLabel } from '../../core/utils/merchant-display.util';
 
 interface MenuItem {
@@ -87,6 +88,7 @@ export class SideMenuComponent implements OnInit {
   private consultantService = inject(ConsultantService);
   private cartService = inject(CartService);
   private legacyClubService = inject(LegacyClubService);
+  private caucusService = inject(CaucusService);
 
   isPaid = this.userService.isPaid;
   isMerchant = this.userService.isMerchant;
@@ -360,6 +362,16 @@ export class SideMenuComponent implements OnInit {
             requiresPayment: true,
           },
           ...(this.legacyClubService.menuVisible() ? [this.legacyClubMenuItem()] : []),
+          ...(this.caucusService.menuVisible()
+            ? [
+                {
+                  label: 'Caucus Team',
+                  icon: 'pi pi-users',
+                  route: '/caucus',
+                  requiresPayment: true,
+                },
+              ]
+            : []),
           {
             label: 'Cart',
             icon: 'pi pi-shopping-cart',
