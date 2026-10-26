@@ -41,7 +41,9 @@ Authorization: Bearer <token>
 |-------|------|-----------|
 | `id` | uuid | Row key |
 | `username` | string | Primary display name |
-| `firstName`, `lastName`, `email` | string | Full name fallback |
+| `firstName`, `lastName` | string | Full name |
+| `email` | string | Internal / auth; **not shown** on downline list UI |
+| `phone` | string \| null | **Phone column** (tap-to-call); see [BACKEND_REQUEST_DOWNLINES_PHONE.md](./docs/BACKEND_REQUEST_DOWNLINES_PHONE.md) |
 | `level` | number | Tree depth relative to you (`1` = direct downline) |
 | `registrationPackage` | `Package` enum | **Preferred** package badge |
 | `package` | `Package` enum | Legacy alias — same value as `registrationPackage` |

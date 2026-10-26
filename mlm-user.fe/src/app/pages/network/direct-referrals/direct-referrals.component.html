@@ -195,6 +195,19 @@
                   </td>
 
                   <td>
+                    @if (memberPhoneTelHref(row.phone); as tel) {
+                      <a
+                        [href]="tel"
+                        class="whitespace-nowrap text-sm font-medium text-mlm-primary hover:text-mlm-primary/80 tabular-nums"
+                      >
+                        {{ formatMemberPhone(row.phone) }}
+                      </a>
+                    } @else {
+                      <span class="text-sm text-mlm-secondary">{{ formatMemberPhone(row.phone) }}</span>
+                    }
+                  </td>
+
+                  <td>
                     <span
                       [class]="
                         'inline-flex whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium uppercase tracking-wide ' +

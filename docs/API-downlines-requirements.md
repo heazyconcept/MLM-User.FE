@@ -28,7 +28,8 @@ The frontend handles multiple response shapes (array directly, or wrapped in `da
     "username": "string (required — display name in table)",
     "firstName": "string (required — for full name)",
     "lastName": "string (required — for full name)",
-    "email": "string (fallback for username if username is missing)",
+    "email": "string (optional — not displayed in member app network UI)",
+    "phone": "string | null (required for contact column — see BACKEND_REQUEST_DOWNLINES_PHONE.md in mlm-user.fe/docs)",
     "level": 1,
     "package": "SILVER | GOLD | PLATINUM | RUBY | DIAMOND",
     "status": "active | inactive",
@@ -96,6 +97,9 @@ class DownlineItemDto {
 
   @ApiProperty({ example: 'john@example.com' })
   email: string;
+
+  @ApiProperty({ example: '08012345678', nullable: true })
+  phone: string | null;
 
   @ApiProperty({ example: 'John' })
   firstName: string;

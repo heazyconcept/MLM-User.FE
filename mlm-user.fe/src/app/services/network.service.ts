@@ -56,21 +56,6 @@ export interface MatrixNode {
   teamSize?: number;
 }
 
-export interface DownlineMember {
-  id: string;
-  username: string;
-  fullName: string;
-  joinDate: Date;
-  status: string;
-  level: number;
-  package: string;
-  totalDirects: number;
-  teamSize: number;
-  rank?: string;
-  stage?: string;
-  isDirectReferral: boolean;
-}
-
 export interface StageMember {
   id: string;
   username: string;
@@ -137,7 +122,7 @@ export class NetworkService {
   };
 
   readonly matrixTree = signal<MatrixNode>(this._emptyMatrix);
-  readonly downlineList = signal<DownlineMember[]>([]);
+  readonly downlineList = signal<DownlineItem[]>([]);
   readonly sponsorInfo = signal<SponsorInfo | null>(null);
   readonly placementInfo = signal<PlacementInfo | null>(null);
   readonly uplineChain = signal<UplineNode[]>([]);
@@ -195,7 +180,7 @@ export class NetworkService {
           this.placementInfo.set(placement);
           this.uplineChain.set(upline);
 
-          this.downlineList.set(downlines as DownlineMember[]);
+          this.downlineList.set(downlines);
           this.cpvSummary.set({
             personalCpv: cpv.personalCpv,
             teamCpv: cpv.teamCpv,

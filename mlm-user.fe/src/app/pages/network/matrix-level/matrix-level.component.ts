@@ -7,6 +7,7 @@ import { MessageService } from 'primeng/api';
 import { SkeletonModule } from 'primeng/skeleton';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import { ReferralService, type DownlineItem, type MatrixLevelUser } from '../../../services/referral.service';
+import { formatMemberPhone, memberPhoneTelHref } from '../../../utils/member-phone.util';
 import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -43,6 +44,9 @@ export class MatrixLevelComponent implements OnInit {
   errorMessage = signal<string | null>(null);
   searchQuery = signal<string>('');
   private downlineMap = signal<Map<string, DownlineItem>>(new Map());
+
+  readonly formatMemberPhone = formatMemberPhone;
+  readonly memberPhoneTelHref = memberPhoneTelHref;
 
   readonly levelOptions = Array.from({ length: 13 }, (_, index) => index + 1);
   readonly pageSizeOptions = [10, 20, 50];

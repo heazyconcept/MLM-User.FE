@@ -7,6 +7,7 @@ import { NetworkService } from '../../../services/network.service';
 import { ButtonModule } from 'primeng/button';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import { UiTableComponent } from '../../../components/table/table-component';
+import { formatMemberPhone, memberPhoneTelHref } from '../../../utils/member-phone.util';
 
 @Component({
   selector: 'app-downline-list',
@@ -38,7 +39,10 @@ import { UiTableComponent } from '../../../components/table/table-component';
 })
 export class DownlineListComponent implements OnInit {
   @ViewChild('dt') table!: UiTableComponent;
-  
+
+  readonly formatMemberPhone = formatMemberPhone;
+  readonly memberPhoneTelHref = memberPhoneTelHref;
+
   private networkService = inject(NetworkService);
   private messageService = inject(MessageService);
 
@@ -54,7 +58,11 @@ export class DownlineListComponent implements OnInit {
     const level = this.filterLevel();
     const stage = this.filterStage();
     return this.members().filter(m => {
-      const matchesSearch = !query || m.username.toLowerCase().includes(query) || m.fullName.toLowerCase().includes(query);
+      const matchesSearch =
+        !query ||
+        m.username.toLowerCase().includes(query) ||
+        m.fullName.toLowerCase().includes(query) ||
+        (m.phone ?? '').toLowerCase().includes(query);
       const matchesLevel = level === 'all' || m.level === level;
       const matchesStage = stage === 'all' || this.normalizeRank(m.rank) === stage.toLowerCase();
       return matchesSearch && matchesLevel && matchesStage;
