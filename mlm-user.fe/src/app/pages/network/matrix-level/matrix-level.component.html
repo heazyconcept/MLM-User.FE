@@ -38,7 +38,7 @@
                 type="text"
                 [ngModel]="searchQuery()"
                 (input)="onSearchInput($event)"
-                placeholder="Search member…"
+                placeholder="Search username or phone…"
                 class="h-9 w-48 sm:w-56 pl-8 pr-3 text-sm text-mlm-text bg-white border border-mlm-secondary/20 rounded-lg placeholder:text-mlm-secondary/50 focus:outline-none focus:ring-1 focus:ring-mlm-primary/20 focus:border-mlm-primary/40 transition-colors"
               />
             </div>
@@ -68,7 +68,7 @@
               <thead class="bg-mlm-background">
                 <tr>
                   <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Member</th>
-                  <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Contact</th>
+                  <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Phone</th>
                   <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Joined</th>
                   <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Stage</th>
                   <th class="px-5 py-3 text-[11px] uppercase tracking-widest text-mlm-warm-600 font-semibold">Level</th>
@@ -116,8 +116,16 @@
                         </div>
                       </td>
                       <td class="px-5 py-4">
-                        <p class="text-sm text-mlm-warm-900">{{ user.email || '—' }}</p>
-                        <p class="text-xs text-mlm-warm-500 mt-0.5">{{ user.phone || 'No phone' }}</p>
+                        @if (memberPhoneTelHref(user.phone); as tel) {
+                          <a
+                            [href]="tel"
+                            class="text-sm font-medium text-mlm-primary hover:text-mlm-primary/80 tabular-nums"
+                          >
+                            {{ formatMemberPhone(user.phone) }}
+                          </a>
+                        } @else {
+                          <p class="text-sm text-mlm-warm-900">{{ formatMemberPhone(user.phone) }}</p>
+                        }
                       </td>
                       <td class="px-5 py-4">
                         <p class="text-sm text-mlm-warm-900 tabular-nums">{{ user.joinDate | date:'MMM d, yyyy' }}</p>

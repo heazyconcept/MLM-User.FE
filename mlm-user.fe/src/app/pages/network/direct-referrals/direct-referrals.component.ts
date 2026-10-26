@@ -20,6 +20,7 @@ import {
 } from '../../../services/referral.service';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import { UiTableComponent } from '../../../components/table/table-component';
+import { formatMemberPhone, memberPhoneTelHref } from '../../../utils/member-phone.util';
 
 export type DirectReferralStatusFilter = 'ALL' | 'REGISTERED' | 'ACTIVE' | 'INACTIVE';
 
@@ -106,7 +107,9 @@ export class DirectReferralsComponent implements OnInit {
     { value: 'ACTIVE', label: 'Active' },
     { value: 'INACTIVE', label: 'Inactive' },
   ];
-  readonly tableHeaders = ['Member', 'Package', 'Status', 'Their DRs', 'Joined'];
+  readonly tableHeaders = ['Member', 'Phone', 'Package', 'Status', 'Their DRs', 'Joined'];
+  readonly formatMemberPhone = formatMemberPhone;
+  readonly memberPhoneTelHref = memberPhoneTelHref;
 
   readonly displayedRows = computed(() => {
     const filter = this.statusFilter();

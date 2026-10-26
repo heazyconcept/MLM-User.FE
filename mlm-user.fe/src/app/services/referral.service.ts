@@ -64,6 +64,7 @@ export interface DownlineItem {
   username: string;
   fullName: string;
   email?: string;
+  phone: string | null;
   joinDate: Date;
   status: string;
   level: number;
@@ -872,7 +873,7 @@ export class ReferralService {
     const lastName = String(raw['lastName'] ?? raw['last_name'] ?? '');
     const fullName =
       [firstName, lastName].filter(Boolean).join(' ') ||
-      String(raw['fullName'] ?? raw['name'] ?? raw['email'] ?? '—');
+      String(raw['fullName'] ?? raw['name'] ?? raw['username'] ?? '—');
     const joinedAt =
       raw['createdAt'] ?? raw['joinedAt'] ?? raw['registeredAt'] ?? raw['created_at'] ?? Date.now();
     const joinDate = (() => {
@@ -886,6 +887,11 @@ export class ReferralService {
       id: String(raw['id'] ?? raw['userId'] ?? raw['user_id'] ?? ''),
       username: String(raw['username'] ?? raw['email'] ?? '—'),
       email: (raw['email'] as string | undefined) ?? undefined,
+      phone:
+        (raw['phone'] as string | undefined) ??
+        (raw['phoneNumber'] as string | undefined) ??
+        (raw['phone_number'] as string | undefined) ??
+        null,
       fullName,
       joinDate,
       status,
@@ -1266,7 +1272,7 @@ export class ReferralService {
     const filtered = downlines.filter((item) => {
       if (item.level !== level) return false;
       if (!normalizedSearch) return true;
-      return [item.username, item.email ?? '', item.fullName ?? '']
+      return [item.username, item.phone ?? '', item.fullName ?? '']
         .join(' ')
         .toLowerCase()
         .includes(normalizedSearch);
@@ -1332,7 +1338,7 @@ export class ReferralService {
       id: item.id,
       username: item.username,
       email: item.email ?? null,
-      phone: null,
+      phone: item.phone ?? null,
       joinDate: item.joinDate.toISOString(),
       status: item.status,
       isDirectReferral: item.isDirectReferral,

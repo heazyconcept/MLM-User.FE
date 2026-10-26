@@ -11,6 +11,7 @@ import {
 } from '../../../services/referral.service';
 import { StatusBadgeComponent } from '../../../components/status-badge/status-badge.component';
 import { UiTableComponent } from '../../../components/table/table-component';
+import { formatMemberPhone, memberPhoneTelHref } from '../../../utils/member-phone.util';
 
 @Component({
   selector: 'app-pending-leaders',
@@ -53,8 +54,12 @@ export class PendingLeadersComponent implements OnInit {
 
   readonly depthOptions = Array.from({ length: 13 }, (_, index) => index + 1);
   readonly pageSizeOptions = [10, 20, 50];
+  readonly formatMemberPhone = formatMemberPhone;
+  readonly memberPhoneTelHref = memberPhoneTelHref;
+
   readonly tableHeaders = [
     'Member',
+    'Phone',
     'DR Progress',
     'Package',
     'Rank',
