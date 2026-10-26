@@ -9,6 +9,7 @@ import {
   LegacyCashoutTransferRequest,
   LegacyCashoutTransferResponse,
   LegacyCashoutWithdrawRequest,
+  LegacyCashoutWithdrawResult,
   LegacyCompanyBankAccount,
   LegacyCurrency,
   LegacyHistoryResponse,
@@ -390,17 +391,32 @@ export class LegacyClubService {
     );
   }
 
-  withdrawCashout(body: LegacyCashoutWithdrawRequest): Observable<{ withdrawalId: string }> {
+  withdrawCashout(body: LegacyCashoutWithdrawRequest): Observable<LegacyCashoutWithdrawResult> {
     if (this.useMocks) {
       return from(legacyClubMockStore.withdrawCashout(body)).pipe(
+        map((res) => this.mapLegacyWithdrawResult(res, body.amount)),
         tap(() => void this.loadMe().subscribe()),
         catchError((err) => throwError(() => (err instanceof LegacyClubHttpError ? err : mapHttpErrorCatch(err)))),
       );
     }
-    return this.api.post<{ withdrawalId: string }>('legacy/cashout/withdraw', body).pipe(
+    return this.api.post<unknown>('legacy/cashout/withdraw', body).pipe(
+      map((raw) => this.mapLegacyWithdrawResult(raw, body.amount)),
       tap(() => void this.loadMe().subscribe()),
       catchError((err) => throwError(() => mapHttpErrorCatch(err))),
     );
+  }
+
+  private mapLegacyWithdrawResult(raw: unknown, requestedAmount: number): LegacyCashoutWithdrawResult {
+    const obj = (raw as Record<string, unknown>) ?? {};
+    const data = (obj['data'] as Record<string, unknown> | undefined) ?? obj;
+    const feeRaw = data['feeAmount'] ?? data['fee_amount'];
+    const netRaw = data['netAmount'] ?? data['net_amount'];
+    return {
+      withdrawalId: String(data['withdrawalId'] ?? data['withdrawal_id'] ?? data['id'] ?? ''),
+      amount: Number(data['amount'] ?? requestedAmount),
+      feeAmount: feeRaw == null ? null : Number(feeRaw),
+      netAmount: netRaw == null ? null : Number(netRaw),
+    };
   }
 
   transferCashout(body: LegacyCashoutTransferRequest): Observable<LegacyCashoutTransferResponse> {

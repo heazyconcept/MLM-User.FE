@@ -94,6 +94,8 @@ export interface WithdrawalResponseDto {
   userId?: string;
   walletId?: string;
   amount: number;
+  feeAmount?: number | null;
+  netAmount?: number | null;
   baseAmount?: number;
   currency: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PAID';
@@ -116,6 +118,8 @@ export interface WithdrawalRequest {
   date: string;
   currency: 'NGN' | 'USD';
   amount: number;
+  feeAmount: number | null;
+  netAmount: number | null;
   status: 'Pending' | 'Approved' | 'Rejected' | 'Paid';
   bankName: string;
   accountNumber: string;
@@ -320,11 +324,17 @@ export class WalletService {
     else if (status === 'APPROVED') mappedStatus = 'Approved';
     else if (status === 'REJECTED') mappedStatus = 'Rejected';
 
+    const feeRaw = item['feeAmount'] ?? item['fee_amount'];
+    const netRaw = item['netAmount'] ?? item['net_amount'];
+    const amount = Number(item['amount'] ?? 0);
+
     return {
       id: String(item['id'] ?? ''),
       date: String(item['createdAt'] ?? item['date'] ?? new Date().toISOString()),
       currency: (item['currency'] ?? 'NGN') as 'NGN' | 'USD',
-      amount: Number(item['amount'] ?? 0),
+      amount,
+      feeAmount: feeRaw == null ? null : Number(feeRaw),
+      netAmount: netRaw == null ? null : Number(netRaw),
       status: mappedStatus,
       bankName: String(item['bankName'] ?? item['bank_name'] ?? ''),
       accountNumber: String(item['accountNumber'] ?? item['account_number'] ?? ''),
@@ -371,10 +381,15 @@ export class WalletService {
     return this.api.post<Record<string, unknown>>('withdrawals/request', { amount, pin }).pipe(
       map(raw => this.mapApiWithdrawalToWithdrawal(raw as Record<string, unknown>)),
       tap(mapped => {
+        const sym = currency === 'NGN' ? '₦' : '$';
+        const bankLine =
+          mapped.netAmount != null && mapped.feeAmount != null
+            ? ` Expected bank payout ${sym}${mapped.netAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} after ${sym}${mapped.feeAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} charge.`
+            : '';
         this.modalService.open(
           'success',
           'Withdrawal Submitted',
-          `Your withdrawal request of ${currency === 'NGN' ? '₦' : '$'}${amount} has been successfully submitted and is currently pending admin approval.`,
+          `Your withdrawal of ${sym}${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} has been submitted and is pending admin approval.${bankLine}`,
           `/withdrawals/${mapped.id}`
         );
         this.fetchWallets().subscribe();

@@ -24,6 +24,10 @@ import { LegacyPageShellComponent } from '../components/legacy-page-shell.compon
 import { LegacyPageHeaderComponent } from '../components/legacy-page-header.component';
 import { LegacyPanelComponent } from '../components/legacy-panel.component';
 import { LegacyBalanceBannerComponent } from '../components/legacy-balance-banner.component';
+import { CashoutPolicyService } from '../../../services/cashout-policy.service';
+import type { CashoutPolicy } from '../../../core/models/cashout-policy.model';
+import { CashoutChargePreviewComponent } from '../../../components/cashout-charge-preview/cashout-charge-preview.component';
+import { computeCashoutCharge } from '../../../core/utils/cashout-charge.util';
 
 type ActionStep = 'form' | 'pin';
 
@@ -41,6 +45,7 @@ type ActionStep = 'form' | 'pin';
     LegacyPageHeaderComponent,
     LegacyPanelComponent,
     LegacyBalanceBannerComponent,
+    CashoutChargePreviewComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -110,9 +115,10 @@ type ActionStep = 'form' | 'pin';
                     </div>
                     <h3 class="text-base font-bold text-mlm-text">Authorize cash out</h3>
                     <p class="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-mlm-secondary">
-                      Enter your 4-digit Transaction PIN to confirm
+                      Enter your 4-digit Transaction PIN to confirm wallet debit
                       <strong class="text-mlm-text">{{ money(withdrawAmountConfirm()!) }}</strong>
-                      to
+                      (expected bank payout
+                      <strong class="text-mlm-text">{{ money(withdrawNetConfirm()!) }}</strong>) to
                       <strong class="text-mlm-text">{{ bankLabel() }}</strong>.
                     </p>
                     <input
@@ -181,10 +187,25 @@ type ActionStep = 'form' | 'pin';
                   }
                 </div>
 
+                @if (cashoutBlockReason(); as blockReason) {
+                  <p class="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {{ blockReason }}
+                  </p>
+                }
+
+                <app-cashout-charge-preview
+                  class="mt-4 block"
+                  [amount]="withdrawPreviewAmount()"
+                  [feeRate]="feeRate()"
+                  [currency]="legacyCashoutCurrency()"
+                />
+
+                <p class="mt-4 text-xs leading-relaxed text-mlm-secondary">{{ payoutNotice() }}</p>
+
                 <p-button
                   label="Continue"
                   styleClass="mt-6 w-full"
-                  [disabled]="!hasBank()"
+                  [disabled]="!hasBank() || voucherGateBlocked()"
                   (onClick)="beginWithdraw()"
                 />
               }
@@ -353,8 +374,10 @@ export class LegacyCashoutComponent implements OnInit {
   private onboarding = inject(OnboardingService);
   private router = inject(Router);
   private modalService = inject(ModalService);
+  private cashoutPolicyService = inject(CashoutPolicyService);
 
   balance = signal(0);
+  cashoutPolicy = signal<CashoutPolicy | null>(null);
   successlineCount = signal(0);
   canCashout = signal(false);
   items = signal<LegacyCashoutLedgerItem[]>([]);
@@ -380,6 +403,39 @@ export class LegacyCashoutComponent implements OnInit {
     return `${b.bankName} · ${b.accountNumber}`;
   });
 
+  feeRate = computed(() => this.cashoutPolicy()?.feeRate ?? 0.05);
+
+  voucherGateBlocked = computed(() => {
+    const policy = this.cashoutPolicy();
+    return policy != null && !policy.canCashout;
+  });
+
+  cashoutBlockReason = computed(() => {
+    if (!this.voucherGateBlocked()) return null;
+    return (
+      this.cashoutPolicy()?.blockReason ??
+      'Cashout is available when your product voucher is under ₦10,000.'
+    );
+  });
+
+  payoutNotice = computed(
+    () =>
+      this.cashoutPolicy()?.payoutNotice ??
+      'Withdrawals are paid within 24 to 72 hours on working days. We do not pay on weekends.',
+  );
+
+  withdrawPreviewAmount = computed(() => this.withdrawAmount ?? 0);
+
+  withdrawNetConfirm = computed(() => {
+    const amount = this.withdrawAmountConfirm();
+    if (amount == null) return null;
+    return computeCashoutCharge(amount, this.feeRate()).netAmount;
+  });
+
+  legacyCashoutCurrency = computed(
+    () => (this.legacyClub.me()?.currency === 'USD' ? 'USD' : 'NGN') as 'NGN' | 'USD',
+  );
+
   withdrawAmount: number | null = null;
   transferAmount: number | null = null;
   transferTarget: LegacyCashoutTransferTarget = 'CASH';
@@ -393,6 +449,7 @@ export class LegacyCashoutComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadBank();
+    this.cashoutPolicyService.getPolicy().subscribe((policy) => this.cashoutPolicy.set(policy));
     this.legacyClub.loadMe().subscribe({
       next: (me) => {
         if (!isLegacyMember(me)) {
@@ -456,7 +513,9 @@ export class LegacyCashoutComponent implements OnInit {
 
   beginWithdraw(): void {
     this.withdrawAmountError.set('');
-    if (this.isImpersonating() || !this.canCashout() || !this.hasPin()) return;
+    if (this.isImpersonating() || !this.canCashout() || !this.hasPin() || this.voucherGateBlocked()) {
+      return;
+    }
 
     const amount = this.withdrawAmount;
     if (!amount || amount <= 0) {
@@ -491,7 +550,13 @@ export class LegacyCashoutComponent implements OnInit {
 
   confirmWithdraw(): void {
     const amount = this.withdrawAmountConfirm();
-    if (!amount || !this.canConfirmWithdraw() || this.isImpersonating() || !this.canCashout()) {
+    if (
+      !amount ||
+      !this.canConfirmWithdraw() ||
+      this.isImpersonating() ||
+      !this.canCashout() ||
+      this.voucherGateBlocked()
+    ) {
       return;
     }
 
@@ -516,15 +581,19 @@ export class LegacyCashoutComponent implements OnInit {
         pin: this.withdrawPin(),
       })
       .subscribe({
-        next: () => {
+        next: (res) => {
           this.busy.set(false);
           this.withdrawAmount = null;
           this.backFromWithdrawPin();
           this.reload();
+          const net =
+            res.netAmount != null
+              ? this.money(res.netAmount)
+              : this.money(computeCashoutCharge(amount, this.feeRate()).netAmount);
           this.modalService.open(
             'success',
             'Cash out submitted',
-            `Your cash out of ${this.money(amount)} has been submitted. Payout will be processed to ${bank.bankName}.`,
+            `Wallet debit ${this.money(amount)} submitted. Expected bank payout ${net} to ${bank.bankName}.`,
           );
         },
         error: (err) => {
