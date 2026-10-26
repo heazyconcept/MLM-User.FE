@@ -96,7 +96,7 @@ export class WithdrawalComponent implements OnInit {
   private hasShownMissingBankPrompt = signal(false);
 
   /** Latest amount control value for spelled-out line */
-  private amountValue!: Signal<number | null>;
+  readonly amountValue!: Signal<number | null>;
   /** e.g. "ten thousand naira" */
   amountInWords = computed(() =>
     formatWithdrawalAmountInWords(this.amountValue(), this.currency()),
