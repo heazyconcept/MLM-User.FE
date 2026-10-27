@@ -112,19 +112,6 @@ export class WithdrawalHistoryComponent implements OnInit {
   }
 
   /** Bank display for a withdrawal: API data or user profile fallback, or "On file" */
-  formatMoney(w: WithdrawalRequest, value: number): string {
-    const sym = w.currency === 'NGN' ? '₦' : '$';
-    return `${sym}${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  }
-
-  bankPayoutAmount(w: WithdrawalRequest): number {
-    return w.netAmount ?? w.amount;
-  }
-
-  hasCashoutFee(w: WithdrawalRequest): boolean {
-    return w.feeAmount != null;
-  }
-
   getBankDisplay(w: WithdrawalRequest): { line1: string; line2: string } {
     const profile = this.userProfileBank();
     const bankName = w.bankName || profile.bankName;

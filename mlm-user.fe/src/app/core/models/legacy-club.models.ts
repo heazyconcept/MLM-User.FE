@@ -343,13 +343,6 @@ export interface LegacyCashoutWithdrawRequest {
   pin: string;
 }
 
-export interface LegacyCashoutWithdrawResult {
-  withdrawalId: string;
-  amount: number;
-  feeAmount: number | null;
-  netAmount: number | null;
-}
-
 export interface LegacyCashoutTransferRequest {
   toWalletType: LegacyCashoutTransferTarget;
   amount: number;

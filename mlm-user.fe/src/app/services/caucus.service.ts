@@ -153,38 +153,12 @@ export class CaucusService {
     );
   }
 
-  withdraw(amount: number, pin: string): Observable<CaucusCashoutWithdrawResult> {
+  withdraw(amount: number, pin: string): Observable<unknown> {
     return this.api.post<unknown>('caucus/cashout/withdraw', { amount, pin }).pipe(
-      map((raw) => this.mapCaucusWithdrawResult(raw, amount)),
       tap(() => {
         this.loadMe().subscribe({ error: () => undefined });
       }),
       catchError((err) => throwError(() => new Error(caucusErrorMessage(err)))),
     );
   }
-
-  private mapCaucusWithdrawResult(raw: unknown, requestedAmount: number): CaucusCashoutWithdrawResult {
-    const root = (raw as Record<string, unknown>) ?? {};
-    const data = (root['data'] as Record<string, unknown> | undefined) ?? root;
-    const feeRaw = data['feeAmount'] ?? data['fee_amount'];
-    const netRaw = data['netAmount'] ?? data['net_amount'];
-    const amountNgn = Number(data['amountNgn'] ?? data['amount_ngn'] ?? data['amount'] ?? requestedAmount);
-    return {
-      id: String(data['id'] ?? ''),
-      amountNgn,
-      feeAmount: feeRaw == null ? null : Number(feeRaw),
-      netAmount: netRaw == null ? null : Number(netRaw),
-      currency: String(data['currency'] ?? 'NGN'),
-      status: String(data['status'] ?? 'PENDING'),
-    };
-  }
-}
-
-export interface CaucusCashoutWithdrawResult {
-  id: string;
-  amountNgn: number;
-  feeAmount: number | null;
-  netAmount: number | null;
-  currency: string;
-  status: string;
 }

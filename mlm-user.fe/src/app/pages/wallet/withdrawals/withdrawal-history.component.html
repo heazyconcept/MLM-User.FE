@@ -152,9 +152,7 @@
                    pTooltip="Funds will be sent to this bank account"
                    tooltipPosition="top"></i>
               </th>
-              <th class="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-gray-500">Wallet</th>
-              <th class="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-gray-500">Fee</th>
-              <th class="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-gray-500">Bank</th>
+              <th class="px-6 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-gray-500">Amount</th>
               <th class="px-6 py-3 text-center text-[10px] font-bold uppercase tracking-wider text-gray-500">
                 Status
                 <i class="pi pi-info-circle ml-1 text-gray-300 cursor-help" 
@@ -188,21 +186,10 @@
                   </div>
                 </td>
                 
+                <!-- Amount -->
                 <td class="px-6 py-4 text-right">
-                  <span class="text-sm font-semibold text-gray-900 tabular-nums">
-                    {{ formatMoney(w, w.amount) }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 text-right">
-                  @if (hasCashoutFee(w)) {
-                    <span class="text-sm text-gray-700 tabular-nums">{{ formatMoney(w, w.feeAmount!) }}</span>
-                  } @else {
-                    <span class="text-sm text-gray-400">—</span>
-                  }
-                </td>
-                <td class="px-6 py-4 text-right">
-                  <span class="text-sm font-semibold text-gray-900 tabular-nums">
-                    {{ formatMoney(w, bankPayoutAmount(w)) }}
+                  <span class="text-sm font-semibold text-gray-900">
+                    {{ w.currency === 'NGN' ? '₦' : '$' }}{{ w.amount | number:'1.2-2' }}
                   </span>
                 </td>
                 

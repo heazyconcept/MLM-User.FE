@@ -79,21 +79,6 @@
               [min]="0.01"
               [max]="balance()" />
           </div>
-
-          @if (cashoutBlockReason(); as blockReason) {
-            <p class="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
-              {{ blockReason }}
-            </p>
-          }
-
-          <app-cashout-charge-preview
-            [amount]="amount()"
-            [feeRate]="feeRate()"
-            currency="NGN"
-          />
-
-          <p class="text-xs leading-relaxed text-mlm-secondary">{{ payoutNotice() }}</p>
-
           <div>
             <label class="mb-2 block text-sm font-medium text-mlm-text" for="caucus-pin">Transaction PIN</label>
             <input

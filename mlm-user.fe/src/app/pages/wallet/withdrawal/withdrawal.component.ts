@@ -30,10 +30,6 @@ import { OnboardingService } from '../../../services/onboarding.service';
 import { formatWithdrawalAmountInWords } from '../../../core/utils/amount-in-words';
 import { MIN_WITHDRAWAL_AMOUNT } from '../../../core/constants/withdrawal.constants';
 import { ProfileComponent } from '../../profile/profile.component';
-import { CashoutPolicyService } from '../../../services/cashout-policy.service';
-import type { CashoutPolicy } from '../../../core/models/cashout-policy.model';
-import { CashoutChargePreviewComponent } from '../../../components/cashout-charge-preview/cashout-charge-preview.component';
-import { computeCashoutCharge } from '../../../core/utils/cashout-charge.util';
 
 @Component({
   selector: 'app-withdrawal',
@@ -48,7 +44,6 @@ import { computeCashoutCharge } from '../../../core/utils/cashout-charge.util';
     MessageModule,
     DecimalPipe,
     ConfirmDialogModule,
-    CashoutChargePreviewComponent,
   ],
   templateUrl: './withdrawal.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -63,10 +58,8 @@ export class WithdrawalComponent implements OnInit {
   private confirmationService = inject(ConfirmationService);
   private router = inject(Router);
   private dialogService = inject(DialogService);
-  private cashoutPolicyService = inject(CashoutPolicyService);
 
   currency = signal<'NGN' | 'USD' | null>(null);
-  cashoutPolicy = signal<CashoutPolicy | null>(null);
   wallet = computed(() => {
     const curr = this.currency();
     return curr ? this.walletService.getWallet(curr)() : null;
@@ -96,7 +89,7 @@ export class WithdrawalComponent implements OnInit {
   private hasShownMissingBankPrompt = signal(false);
 
   /** Latest amount control value for spelled-out line */
-  readonly amountValue!: Signal<number | null>;
+  private amountValue!: Signal<number | null>;
   /** e.g. "ten thousand naira" */
   amountInWords = computed(() =>
     formatWithdrawalAmountInWords(this.amountValue(), this.currency()),
@@ -112,28 +105,6 @@ export class WithdrawalComponent implements OnInit {
     const amount = this.minWithdrawalAmount();
     const formatted = amount.toLocaleString('en-US');
     return curr === 'USD' ? `$${formatted}` : `₦${formatted}`;
-  });
-
-  feeRate = computed(() => this.cashoutPolicy()?.feeRate ?? 0.05);
-
-  canSubmitCashout = computed(() => this.cashoutPolicy()?.canCashout !== false);
-
-  cashoutBlockReason = computed(() => {
-    const policy = this.cashoutPolicy();
-    if (!policy || policy.canCashout) return null;
-    return policy.blockReason ?? 'Cashout is not available right now.';
-  });
-
-  payoutNotice = computed(
-    () =>
-      this.cashoutPolicy()?.payoutNotice ??
-      'Withdrawals are paid within 24 to 72 hours on working days. We do not pay on weekends.',
-  );
-
-  confirmNetAmount = computed(() => {
-    const amount = this.amountToConfirm();
-    if (amount == null) return null;
-    return computeCashoutCharge(amount, this.feeRate()).netAmount;
   });
 
   constructor() {
@@ -160,7 +131,6 @@ export class WithdrawalComponent implements OnInit {
     }
 
     this.refreshBankDetails(true);
-    this.cashoutPolicyService.getPolicy().subscribe((policy) => this.cashoutPolicy.set(policy));
   }
 
   setFormState(state: 'PIN_REQUIRED' | 'AMOUNT' | 'PIN_VERIFY') {
@@ -193,7 +163,6 @@ export class WithdrawalComponent implements OnInit {
     const state = this.formState();
 
     if (state === 'AMOUNT') {
-      if (!this.canSubmitCashout()) return;
       if (this.hasBankDetails()) {
         const amount = Number(this.withdrawalForm.value.amount);
         const balance = this.wallet()?.cashBalance ?? 0;

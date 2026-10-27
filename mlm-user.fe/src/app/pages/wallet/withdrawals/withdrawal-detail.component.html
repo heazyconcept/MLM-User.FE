@@ -45,18 +45,10 @@
           <!-- Amount & Date -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Wallet debit</span>
-              <p class="text-2xl font-bold text-gray-900 mt-1 tabular-nums">
+              <span class="text-xs font-bold uppercase tracking-wider text-gray-500">Amount</span>
+              <p class="text-2xl font-bold text-gray-900 mt-1">
                 {{ getCurrencySymbol() }}{{ w.amount | number:'1.2-2' }}
               </p>
-              @if (w.feeAmount != null) {
-                <p class="text-sm text-gray-600 mt-2 tabular-nums">
-                  Fee: −{{ getCurrencySymbol() }}{{ w.feeAmount | number:'1.2-2' }}
-                </p>
-                <p class="text-sm font-semibold text-mlm-primary mt-1 tabular-nums">
-                  Bank payout: {{ getCurrencySymbol() }}{{ (w.netAmount ?? w.amount) | number:'1.2-2' }}
-                </p>
-              }
               <p class="text-xs text-gray-500 mt-0.5">{{ w.currency }}</p>
             </div>
             <div>

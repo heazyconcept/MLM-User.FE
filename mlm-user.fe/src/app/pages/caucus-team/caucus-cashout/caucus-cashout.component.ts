@@ -21,10 +21,6 @@ import { UserService } from '../../../services/user.service';
 import { CaucusPageHeaderComponent } from '../components/caucus-page-header.component';
 import { CaucusPageShellComponent } from '../components/caucus-page-shell.component';
 import { CaucusPanelComponent } from '../components/caucus-panel.component';
-import { CashoutPolicyService } from '../../../services/cashout-policy.service';
-import type { CashoutPolicy } from '../../../core/models/cashout-policy.model';
-import { CashoutChargePreviewComponent } from '../../../components/cashout-charge-preview/cashout-charge-preview.component';
-import { computeCashoutCharge } from '../../../core/utils/cashout-charge.util';
 
 @Component({
   selector: 'app-caucus-cashout',
@@ -39,7 +35,6 @@ import { computeCashoutCharge } from '../../../core/utils/cashout-charge.util';
     CaucusPageShellComponent,
     CaucusPageHeaderComponent,
     CaucusPanelComponent,
-    CashoutChargePreviewComponent,
   ],
   templateUrl: './caucus-cashout.component.html',
 })
@@ -50,10 +45,8 @@ export class CaucusCashoutComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly modal = inject(ModalService);
   private readonly router = inject(Router);
-  private readonly cashoutPolicyService = inject(CashoutPolicyService);
 
   amount = signal(0);
-  cashoutPolicy = signal<CashoutPolicy | null>(null);
   pin = signal('');
   submitting = signal(false);
   error = signal<string | null>(null);
@@ -65,22 +58,6 @@ export class CaucusCashoutComponent implements OnInit {
   hasBank = computed(() => !!this.bank());
   balance = computed(() => this.me()?.wallet?.balanceNgn ?? 0);
 
-  feeRate = computed(() => this.cashoutPolicy()?.feeRate ?? 0.05);
-
-  canSubmitPolicy = computed(() => this.cashoutPolicy()?.canCashout !== false);
-
-  cashoutBlockReason = computed(() => {
-    const policy = this.cashoutPolicy();
-    if (!policy || policy.canCashout) return null;
-    return policy.blockReason ?? 'Cashout is available when your product voucher is under ₦10,000.';
-  });
-
-  payoutNotice = computed(
-    () =>
-      this.cashoutPolicy()?.payoutNotice ??
-      'Withdrawals are paid within 24 to 72 hours on working days. We do not pay on weekends.',
-  );
-
   formatMoney = formatCaucusNgn;
 
   ngOnInit(): void {
@@ -88,7 +65,6 @@ export class CaucusCashoutComponent implements OnInit {
       this.amount.set(m?.wallet?.balanceNgn ?? 0);
     });
     this.loadBank();
-    this.cashoutPolicyService.getPolicy().subscribe((policy) => this.cashoutPolicy.set(policy));
   }
 
   onPinChange(value: string): void {
@@ -104,8 +80,7 @@ export class CaucusCashoutComponent implements OnInit {
       this.hasBank() &&
       amt >= 0.01 &&
       amt <= bal &&
-      /^\d{4}$/.test(this.pin()) &&
-      this.canSubmitPolicy()
+      /^\d{4}$/.test(this.pin())
     );
   }
 
@@ -116,17 +91,13 @@ export class CaucusCashoutComponent implements OnInit {
     this.submitting.set(true);
     this.error.set(null);
     this.caucus.withdraw(this.amount(), this.pin()).subscribe({
-      next: (res) => {
+      next: () => {
         this.submitting.set(false);
         const bank = this.bank();
-        const net =
-          res.netAmount != null
-            ? formatCaucusNgn(res.netAmount)
-            : formatCaucusNgn(computeCashoutCharge(this.amount(), this.feeRate()).netAmount);
         this.modal.open(
           'success',
           'Cash out submitted',
-          `Wallet debit ${formatCaucusNgn(this.amount())} submitted. Expected bank payout ${net} to ${bank?.bankName ?? 'your bank'}.`,
+          `Your cash out of ${formatCaucusNgn(this.amount())} has been submitted. Payout will be processed to ${bank?.bankName ?? 'your bank'}.`,
         );
         void this.router.navigate(['/caucus']);
       },
