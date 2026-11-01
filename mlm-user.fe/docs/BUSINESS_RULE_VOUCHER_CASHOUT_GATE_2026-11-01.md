@@ -1,7 +1,7 @@
 # Business Rule — Product Voucher Balance Gate Before Cashout
 
 **Effective date:** 1 November 2026 (00:00 Africa/Lagos, unless leadership specifies otherwise)  
-**Status:** Documented only — **not implemented** in backend or member app as of this writing  
+**Status:** Enforced via `GET /withdrawals/cashout-policy` and cashout submit/approve checks — see [frontend-integration-cashout-charges.md](./frontend-integration-cashout-charges.md).  
 **Source:** Client / leadership discussion (October 2026); final Inaka course meeting expected to confirm edge cases  
 **Area:** Network **Product Voucher** (`WalletType.VOUCHER`) vs member **cashout** (bank withdrawal / cashout wallet outflows)
 
