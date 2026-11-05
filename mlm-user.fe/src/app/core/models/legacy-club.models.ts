@@ -18,6 +18,7 @@ export type LegacyShopModeLegacy = 'AUTOSHIP' | 'UPGRADE' | 'REACTIVATE';
 export type LegacyPaymentPurpose = 'JOIN' | 'UPGRADE' | 'REACTIVATE';
 export type LegacyPaymentMethod = 'REGISTRATION_WALLET' | 'MANUAL_BANK';
 export type LegacyPaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type LegacyCommissionSchedule = 'LEGACY' | 'NOV_2026';
 export type LegacyRateTier = 'BASE' | 'INCREASED';
 export type LegacyMonthStatus = 'SCHEDULED' | 'PENDING' | 'DROPPED';
 export type LegacyIntent = 'NONE' | 'UPGRADE' | 'REACTIVATE';
@@ -79,6 +80,9 @@ export interface LegacyPackage {
   monthlyCommission: number;
   monthlyCommissionBase?: number;
   monthlyCommissionIncreased?: number;
+  /** Caller currency — prefer over monthly ÷ 4 when present. */
+  weeklyCommissionBase?: number;
+  weeklyCommissionIncreased?: number;
   sixMonthTotal: number;
   successlineBonusPercent: number;
   autoshipAmount: number;
@@ -218,6 +222,20 @@ export interface LegacyCompanyBankAccount {
   accountName: string;
 }
 
+export interface LegacyRateUnlock {
+  required: number;
+  sponsored: number;
+  deadline: string;
+  unlocked: boolean;
+  closed: boolean;
+}
+
+/** Optional preview amounts from POST /legacy/reactivate/start */
+export interface LegacyReactivateStartResult {
+  purchaseAmount?: number;
+  instantCommission?: number;
+}
+
 export interface LegacyMe {
   status: LegacyMemberStatus;
   currency: LegacyCurrency;
@@ -232,6 +250,7 @@ export interface LegacyMe {
   minDirectsToIncreaseMonthly: number;
   canCashoutLegacy: boolean;
   cashoutRestrictionReason?: string | null;
+  cashoutUnlocksAt?: string | null;
   pendingJoin: LegacyPendingJoin | null;
   pendingUpgrade?: LegacyPendingUpgrade | null;
   pendingPayment?: LegacyPendingPayment | null;
@@ -249,6 +268,10 @@ export interface LegacyMe {
   priorPending?: LegacyPriorPendingSummary | null;
   /** Legacy marketplace PV summary — from GET /legacy/me */
   legacyPv?: LegacyPvSummary | null;
+  /** null when user has no active membership */
+  commissionSchedule?: LegacyCommissionSchedule | null;
+  /** Deprecated — 9 Nov card has no sponsor challenge */
+  rateUnlock?: LegacyRateUnlock | null;
 }
 
 export interface LegacySponsorValidateRequest {
@@ -332,6 +355,7 @@ export interface LegacyCashoutResponse {
   walletStatus: LegacyWalletStatus;
   canCashoutLegacy: boolean;
   cashoutRestrictionReason?: string | null;
+  cashoutUnlocksAt?: string | null;
   directSuccesslineCount: number;
   items: LegacyCashoutLedgerItem[];
   nextCursor: string | null;
@@ -667,4 +691,63 @@ export function packageWeeklyDisplay(pkg: LegacyPackage): {
 } {
   const { base, increased } = packageMonthlyDisplay(pkg);
   return { base: base / 4, increased: increased / 4 };
+}
+
+export function hasInstantCommission(amount: number | null | undefined): boolean {
+  return typeof amount === 'number' && Number.isFinite(amount) && amount > 0;
+}
+
+/** Prefer API weekly fields; fall back to monthly ÷ 4. */
+export function packageWeeklyAmounts(pkg: LegacyPackage): { base: number; increased: number } {
+  const derived = packageWeeklyDisplay(pkg);
+  return {
+    base: pkg.weeklyCommissionBase ?? derived.base,
+    increased: pkg.weeklyCommissionIncreased ?? derived.increased,
+  };
+}
+
+export function isLegacyCashoutHoldActive(
+  unlocksAt: string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!unlocksAt) return false;
+  const at = new Date(unlocksAt);
+  if (Number.isNaN(at.getTime())) return false;
+  return at.getTime() > now.getTime();
+}
+
+export function legacyCashoutHoldCountdownLabel(
+  unlocksAt: string | null | undefined,
+  now: Date = new Date(),
+): string | null {
+  if (!isLegacyCashoutHoldActive(unlocksAt, now)) return null;
+  const ms = new Date(unlocksAt!).getTime() - now.getTime();
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (days > 0) {
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+  return `${minutes}m ${seconds}s`;
+}
+
+export function commissionScheduleLabel(
+  schedule: LegacyCommissionSchedule | null | undefined,
+): string | null {
+  if (!schedule) return null;
+  switch (schedule) {
+    case 'LEGACY':
+      return 'Current card';
+    case 'NOV_2026':
+      return '9 Nov card';
+    default: {
+      const _exhaustive: never = schedule;
+      return _exhaustive;
+    }
+  }
 }

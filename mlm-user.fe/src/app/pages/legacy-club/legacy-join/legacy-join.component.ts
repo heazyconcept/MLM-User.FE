@@ -13,7 +13,13 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageService } from 'primeng/api';
 import { LegacyClubService } from '../../../services/legacy-club.service';
-import { LEGACY_ERROR_CODES, LegacyPackage, LegacyPackageCode } from '../../../core/models/legacy-club.models';
+import {
+  LEGACY_ERROR_CODES,
+  LegacyPackage,
+  LegacyPackageCode,
+  hasInstantCommission,
+  packageWeeklyAmounts,
+} from '../../../core/models/legacy-club.models';
 import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
@@ -52,8 +58,14 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
                 <p class="mt-1 text-sm text-mlm-secondary">
                   {{ money(pkg.purchaseAmount) }} product purchase
                 </p>
-                <p class="mt-2 text-sm text-emerald-800">
-                  Instant {{ money(pkg.instantCommission) }} into your Legacy account
+                @if (showInstant(pkg.instantCommission)) {
+                  <p class="mt-2 text-sm text-emerald-800">
+                    Instant {{ money(pkg.instantCommission) }} into your Legacy account
+                  </p>
+                }
+                <p class="mt-2 text-sm text-mlm-secondary">
+                  Weekly {{ money(weeklyAmounts(pkg).base) }} base ·
+                  {{ money(weeklyAmounts(pkg).increased) }} after 3 Successlines
                 </p>
               </div>
               <a
@@ -169,6 +181,14 @@ export class LegacyJoinComponent implements OnInit {
 
   money(amount: number): string {
     return formatLegacyMoney(amount, this.me()?.currency ?? 'NGN');
+  }
+
+  showInstant(amount: number): boolean {
+    return hasInstantCommission(amount);
+  }
+
+  weeklyAmounts(pkg: LegacyPackage) {
+    return packageWeeklyAmounts(pkg);
   }
 
   onValidate(): void {

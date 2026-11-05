@@ -4,7 +4,12 @@ import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 import { LegacyClubService } from '../../../services/legacy-club.service';
-import { LegacyPackage } from '../../../core/models/legacy-club.models';
+import {
+  LegacyPackage,
+  hasInstantCommission,
+  packageMonthlyDisplay,
+  packageWeeklyAmounts,
+} from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { formatLegacyJoinCancellationMessage } from '../../../core/utils/legacy-join-cancellation.util';
 import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
@@ -61,13 +66,19 @@ import { LegacyPageHeaderComponent } from '../components/legacy-page-header.comp
               </p>
               <p class="text-sm text-mlm-secondary">Product purchase</p>
               <ul class="mt-5 flex-1 space-y-2 text-sm text-mlm-text">
-                <li>Instant {{ money(pkg.instantCommission) }} → Legacy account</li>
+                @if (showInstant(pkg.instantCommission)) {
+                  <li>Instant {{ money(pkg.instantCommission) }} → Legacy account</li>
+                }
                 <li class="text-mlm-secondary">
-                  Monthly {{ money(pkg.monthlyCommission) }}
-                  ({{ money(pkg.monthlyCommission / 4) }} / week)
+                  Weekly {{ money(weeklyAmounts(pkg).base) }} base
+                  · {{ money(weeklyAmounts(pkg).increased) }} after 3 Successlines
+                </li>
+                <li class="text-mlm-secondary">
+                  Monthly {{ money(monthlyAmounts(pkg).base) }} base ·
+                  {{ money(monthlyAmounts(pkg).increased) }} increased
                 </li>
                 <li>Successline {{ pkg.successlineBonusPercent }}%</li>
-                <li class="font-medium">6-month total {{ money(pkg.sixMonthTotal) }}</li>
+                <li class="font-medium">{{ pkg.cycleMonths }}-month total {{ money(pkg.sixMonthTotal) }}</li>
               </ul>
               <p-button
                 class="mt-6"
@@ -111,6 +122,18 @@ export class LegacyPackagesComponent implements OnInit {
 
   money(amount: number): string {
     return formatLegacyMoney(amount, this.currency());
+  }
+
+  showInstant(amount: number): boolean {
+    return hasInstantCommission(amount);
+  }
+
+  weeklyAmounts(pkg: LegacyPackage) {
+    return packageWeeklyAmounts(pkg);
+  }
+
+  monthlyAmounts(pkg: LegacyPackage) {
+    return packageMonthlyDisplay(pkg);
   }
 
   select(pkg: LegacyPackage): void {

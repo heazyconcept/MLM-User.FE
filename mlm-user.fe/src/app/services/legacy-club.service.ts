@@ -20,8 +20,12 @@ import {
   LegacyMemberLookup,
   LegacyMonthRow,
   LegacyMonthsResponse,
+  LegacyPackage,
   LegacyPackageCode,
   LegacyPackagesResponse,
+  LegacyRateUnlock,
+  LegacyReactivateStartResult,
+  LegacyCommissionSchedule,
   LegacyPaymentRecord,
   LegacyPaymentWalletRequest,
   LegacyPriorPendingMonth,
@@ -297,7 +301,7 @@ export class LegacyClubService {
       return from(legacyClubMockStore.getPackages());
     }
     return this.api.get<unknown>('legacy/packages').pipe(
-      map((raw) => unwrapData<LegacyPackagesResponse>(raw)),
+      map((raw) => this.normalizePackagesResponse(unwrapData<LegacyPackagesResponse>(raw))),
       catchError((err) => throwError(() => mapHttpErrorCatch(err))),
     );
   }
@@ -504,9 +508,17 @@ export class LegacyClubService {
     );
   }
 
-  startReactivate(): Observable<void> {
+  startReactivate(): Observable<LegacyReactivateStartResult> {
+    if (this.useMocks) {
+      return from(legacyClubMockStore.startReactivate()).pipe(
+        tap(() => void this.loadMe().subscribe()),
+        catchError((err) =>
+          throwError(() => (err instanceof LegacyClubHttpError ? err : mapHttpErrorCatch(err))),
+        ),
+      );
+    }
     return this.api.post<unknown>('legacy/reactivate/start', {}).pipe(
-      map(() => undefined),
+      map((raw) => this.normalizeReactivateStart(unwrapData<Record<string, unknown>>(raw))),
       tap(() => void this.loadMe().subscribe()),
       catchError((err) => throwError(() => mapHttpErrorCatch(err))),
     );
@@ -573,10 +585,78 @@ export class LegacyClubService {
     this.meState.set(null);
   }
 
+  private normalizePackagesResponse(res: LegacyPackagesResponse): LegacyPackagesResponse {
+    return {
+      ...res,
+      packages: (res.packages ?? []).map((pkg) => this.normalizeLegacyPackage(pkg)),
+    };
+  }
+
+  private normalizeLegacyPackage(pkg: LegacyPackage): LegacyPackage {
+    const row = pkg as LegacyPackage & Record<string, unknown>;
+    const weeklyBase = row['weeklyCommissionBase'] ?? row['weekly_commission_base'];
+    const weeklyIncreased =
+      row['weeklyCommissionIncreased'] ?? row['weekly_commission_increased'];
+    const monthlyBase = row['monthlyCommissionBase'] ?? row['monthly_commission_base'];
+    const monthlyIncreased =
+      row['monthlyCommissionIncreased'] ?? row['monthly_commission_increased'];
+
+    return {
+      ...pkg,
+      monthlyCommissionBase:
+        monthlyBase != null ? Number(monthlyBase) : pkg.monthlyCommissionBase,
+      monthlyCommissionIncreased:
+        monthlyIncreased != null ? Number(monthlyIncreased) : pkg.monthlyCommissionIncreased,
+      weeklyCommissionBase:
+        weeklyBase != null && weeklyBase !== ''
+          ? Number(weeklyBase)
+          : pkg.weeklyCommissionBase,
+      weeklyCommissionIncreased:
+        weeklyIncreased != null && weeklyIncreased !== ''
+          ? Number(weeklyIncreased)
+          : pkg.weeklyCommissionIncreased,
+    };
+  }
+
+  private normalizeRateUnlock(raw: unknown): LegacyRateUnlock | null {
+    if (!raw || typeof raw !== 'object') return null;
+    const row = raw as Record<string, unknown>;
+    const required = Number(row['required'] ?? 0);
+    const sponsored = Number(row['sponsored'] ?? 0);
+    if (!Number.isFinite(required) && !Number.isFinite(sponsored)) return null;
+    return {
+      required: Number.isFinite(required) ? required : 0,
+      sponsored: Number.isFinite(sponsored) ? sponsored : 0,
+      deadline: String(row['deadline'] ?? ''),
+      unlocked: Boolean(row['unlocked']),
+      closed: Boolean(row['closed']),
+    };
+  }
+
+  private normalizeReactivateStart(raw: Record<string, unknown> | null | undefined): LegacyReactivateStartResult {
+    if (!raw || typeof raw !== 'object') return {};
+    const purchase =
+      raw['purchaseAmount'] ?? raw['purchase_amount'] ?? raw['payAmount'] ?? raw['pay_amount'];
+    const instant = raw['instantCommission'] ?? raw['instant_commission'] ?? raw['instantAmount'];
+    const result: LegacyReactivateStartResult = {};
+    if (purchase != null && purchase !== '') {
+      const n = Number(purchase);
+      if (Number.isFinite(n)) result.purchaseAmount = n;
+    }
+    if (instant != null && instant !== '') {
+      const n = Number(instant);
+      if (Number.isFinite(n)) result.instantCommission = n;
+    }
+    return result;
+  }
+
   private normalizeLegacyMe(me: LegacyMe): LegacyMe {
     const record = me as LegacyMe & {
       legacy_pv?: Record<string, unknown>;
       join_cancellation_notice?: Record<string, unknown>;
+      commission_schedule?: string;
+      rate_unlock?: unknown;
+      cashout_unlocks_at?: string;
     };
     const legacyPvRaw = me.legacyPv ?? record.legacy_pv;
     const noticeRaw =
@@ -592,9 +672,26 @@ export class LegacyClubService {
       };
     }
 
+    const scheduleRaw =
+      me.commissionSchedule ??
+      (record.commission_schedule as LegacyCommissionSchedule | undefined);
+    const commissionSchedule =
+      scheduleRaw === 'LEGACY' || scheduleRaw === 'NOV_2026' ? scheduleRaw : null;
+
+    const rateUnlock = this.normalizeRateUnlock(me.rateUnlock ?? record.rate_unlock);
+    const cashoutUnlocksAtRaw =
+      me.cashoutUnlocksAt ?? record.cashout_unlocks_at ?? record['cashoutUnlocksAt'];
+    const cashoutUnlocksAt =
+      cashoutUnlocksAtRaw != null && String(cashoutUnlocksAtRaw).trim() !== ''
+        ? String(cashoutUnlocksAtRaw)
+        : null;
+
     const base: LegacyMe = {
       ...me,
       joinCancellationNotice,
+      commissionSchedule,
+      rateUnlock,
+      cashoutUnlocksAt,
       legacyPv: me.legacyPv ?? {
         totalPv: 0,
         personalProductPv: 0,

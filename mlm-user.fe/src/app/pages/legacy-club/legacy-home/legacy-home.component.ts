@@ -28,6 +28,10 @@ import {
   formatLegacyPvAmount,
   legacyPvCardDescription,
   LEGACY_ERROR_CODES,
+  packageWeeklyAmounts,
+  commissionScheduleLabel,
+  isLegacyCashoutHoldActive,
+  legacyCashoutHoldCountdownLabel,
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
@@ -122,6 +126,12 @@ import { LegacyMetricCardComponent } from '../components/legacy-metric-card.comp
             Membership history
           </a>
         </app-legacy-page-header>
+
+        @if (scheduleLabel()) {
+          <p class="mb-4 inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+            {{ scheduleLabel() }}
+          </p>
+        }
 
         <div class="flex flex-col gap-6">
         <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -416,6 +426,10 @@ import { LegacyMetricCardComponent } from '../components/legacy-metric-card.comp
                           money(registerSuccesslineBonus(pkg))
                         }}</span>
                       </p>
+                      <p class="mt-1 text-xs text-mlm-secondary">
+                        Weekly {{ money(weeklyAmounts(pkg).base) }} base ·
+                        {{ money(weeklyAmounts(pkg).increased) }} after 3 Successlines
+                      </p>
                     </div>
                   }
                   <p class="text-sm text-mlm-secondary">
@@ -506,6 +520,8 @@ export class LegacyHomeComponent implements OnInit {
   );
   legacyPvDescription = computed(() => legacyPvCardDescription(this.me()?.legacyPv));
 
+  scheduleLabel = computed(() => commissionScheduleLabel(this.me()?.commissionSchedule));
+
   memberSubtitle = computed(() => {
     const m = this.me()?.membership;
     if (!m) return '';
@@ -528,8 +544,18 @@ export class LegacyHomeComponent implements OnInit {
   }
 
   cashoutCardHint(): string {
-    if (this.me()?.canCashoutLegacy === false) {
-      return this.me()?.cashoutRestrictionReason ?? 'Cash out is temporarily locked.';
+    const me = this.me();
+    if (isLegacyCashoutHoldActive(me?.cashoutUnlocksAt)) {
+      const countdown = legacyCashoutHoldCountdownLabel(me?.cashoutUnlocksAt);
+      return (
+        me?.cashoutRestrictionReason ??
+        (countdown
+          ? `Bank cashout opens in ${countdown}. You can still move to registration wallet.`
+          : 'Bank cashout is temporarily locked.')
+      );
+    }
+    if (me?.canCashoutLegacy === false) {
+      return me.cashoutRestrictionReason ?? 'Cash out is temporarily locked.';
     }
     return 'You can cash out or move this money.';
   }
@@ -640,6 +666,10 @@ export class LegacyHomeComponent implements OnInit {
 
   registerSuccesslineBonus(pkg: LegacyPackage): number {
     return Math.round((pkg.instantCommission * pkg.successlineBonusPercent) / 100);
+  }
+
+  weeklyAmounts(pkg: LegacyPackage) {
+    return packageWeeklyAmounts(pkg);
   }
 
   canRegisterAndPay(): boolean {

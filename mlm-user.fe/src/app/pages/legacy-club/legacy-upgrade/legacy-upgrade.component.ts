@@ -14,6 +14,7 @@ import { LegacyClubService } from '../../../services/legacy-club.service';
 import {
   LegacyPackageCode,
   LegacyUpgradeQuote,
+  hasInstantCommission,
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
@@ -37,7 +38,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
     <app-legacy-page-shell>
       <app-legacy-page-header
         title="Upgrade package"
-        subtitle="Pay the difference only. Your weekly cycle starts again from week 1. Instant goes to your Legacy account."
+        subtitle="Pay the difference only. Your weekly cycle starts again from week 1."
         backLink="/legacy/home"
         backLabel="Legacy Club"
       />
@@ -72,10 +73,12 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
                   <span class="font-semibold">You pay</span> {{ money(quote.payAmount) }} (Legacy
                   voucher)
                 </li>
-                <li>
-                  <span class="font-semibold">Instant</span> {{ money(quote.instantCommission) }}
-                  to your Legacy account
-                </li>
+                @if (showInstant(quote.instantCommission)) {
+                  <li>
+                    <span class="font-semibold">Instant</span> {{ money(quote.instantCommission) }}
+                    to your Legacy account
+                  </li>
+                }
                 <li>
                   New monthly: base {{ money(quote.newMonthlyBase) }} · increased
                   {{ money(quote.newMonthlyIncreased) }}
@@ -165,6 +168,10 @@ export class LegacyUpgradeComponent implements OnInit {
 
   money(amount: number): string {
     return formatLegacyMoney(amount, this.legacyClub.me()?.currency ?? 'NGN');
+  }
+
+  showInstant(amount: number): boolean {
+    return hasInstantCommission(amount);
   }
 
   start(quote: LegacyUpgradeQuote): void {
