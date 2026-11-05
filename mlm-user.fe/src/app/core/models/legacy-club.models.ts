@@ -250,6 +250,7 @@ export interface LegacyMe {
   minDirectsToIncreaseMonthly: number;
   canCashoutLegacy: boolean;
   cashoutRestrictionReason?: string | null;
+  /** ISO time while 7-day hold is open; null when no hold or expired. */
   cashoutUnlocksAt?: string | null;
   pendingJoin: LegacyPendingJoin | null;
   pendingUpgrade?: LegacyPendingUpgrade | null;
@@ -270,7 +271,7 @@ export interface LegacyMe {
   legacyPv?: LegacyPvSummary | null;
   /** null when user has no active membership */
   commissionSchedule?: LegacyCommissionSchedule | null;
-  /** Deprecated — 9 Nov card has no sponsor challenge */
+  /** Deprecated — 9 Nov card has no sponsor challenge; ignore in UI. */
   rateUnlock?: LegacyRateUnlock | null;
 }
 

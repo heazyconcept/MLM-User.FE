@@ -1,4 +1,14 @@
-import { Component, ChangeDetectionStrategy, OnInit, inject, signal, computed } from '@angular/core';
+import {
+  Component,
+  ChangeDetectionStrategy,
+  DestroyRef,
+  OnInit,
+  inject,
+  signal,
+  computed,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { interval } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -16,6 +26,8 @@ import {
   LegacyCashoutTransferTarget,
   humanizeLegacyCashoutLedgerDescription,
   isLegacyMember,
+  isLegacyCashoutHoldActive,
+  legacyCashoutHoldCountdownLabel,
   LEGACY_ERROR_CODES,
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
@@ -76,7 +88,7 @@ type ActionStep = 'form' | 'pin';
               Cash out and move are disabled during impersonation.
             </p>
           </app-legacy-panel>
-        } @else if (!canCashout()) {
+        } @else if (!canMoveFunds() && !canWithdrawToBank()) {
           <app-legacy-panel>
             <p class="text-sm text-mlm-secondary">{{ lockMessage() }}</p>
           </app-legacy-panel>
@@ -84,7 +96,23 @@ type ActionStep = 'form' | 'pin';
           <div class="grid gap-8 lg:grid-cols-2">
             <!-- Cash out -->
             <app-legacy-panel title="Cash out">
-              @if (!hasPin()) {
+              @if (cashoutHoldActive()) {
+                <div
+                  class="rounded-xl border border-sky-200 bg-sky-50/80 px-5 py-4 text-sm text-sky-950"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <p class="font-semibold">Bank cashout opens soon</p>
+                  @if (holdCountdownLabel()) {
+                    <p class="mt-2 tabular-nums text-sky-900">{{ holdCountdownLabel() }}</p>
+                  }
+                  <p class="mt-2 text-xs text-sky-800">
+                    {{ holdRestrictionMessage() }}
+                  </p>
+                </div>
+              } @else if (!canWithdrawToBank()) {
+                <p class="text-sm text-mlm-secondary">{{ lockMessage() }}</p>
+              } @else if (!hasPin()) {
                 <div
                   class="rounded-xl border border-amber-100 bg-amber-50/50 p-5"
                   data-testid="legacy-cashout-pin-setup"
@@ -217,6 +245,15 @@ type ActionStep = 'form' | 'pin';
 
             <!-- Move funds -->
             <app-legacy-panel title="Move to another wallet">
+              @if (!canMoveFunds()) {
+                <p class="text-sm text-mlm-secondary">{{ lockMessage() }}</p>
+              } @else if (cashoutHoldActive()) {
+                <p class="mb-4 text-sm text-mlm-secondary">
+                  During the 7-day hold you can move funds only to your registration wallet (for
+                  registration or upgrade).
+                </p>
+              }
+              @if (canMoveFunds()) {
               @if (!hasPin()) {
                 <div
                   class="rounded-xl border border-amber-100 bg-amber-50/50 p-5"
@@ -295,7 +332,7 @@ type ActionStep = 'form' | 'pin';
                   >
                   <p-select
                     inputId="transfer-target"
-                    [options]="transferTargets"
+                    [options]="transferTargetOptions()"
                     [(ngModel)]="transferTarget"
                     optionLabel="label"
                     optionValue="value"
@@ -332,6 +369,7 @@ type ActionStep = 'form' | 'pin';
                   styleClass="mt-6 w-full"
                   (onClick)="beginTransfer()"
                 />
+              }
               }
             </app-legacy-panel>
           </div>
@@ -379,11 +417,14 @@ export class LegacyCashoutComponent implements OnInit {
   private router = inject(Router);
   private modalService = inject(ModalService);
   private cashoutPolicyService = inject(CashoutPolicyService);
+  private destroyRef = inject(DestroyRef);
 
   balance = signal(0);
   cashoutPolicy = signal<CashoutPolicy | null>(null);
   successlineCount = signal(0);
-  canCashout = signal(false);
+  cashoutUnlocksAt = signal<string | null>(null);
+  walletUnlocked = signal(true);
+  private holdClockTick = signal(0);
   items = signal<LegacyCashoutLedgerItem[]>([]);
   previewItems = computed(() => this.items().slice(0, 3));
   busy = signal(false);
@@ -442,16 +483,58 @@ export class LegacyCashoutComponent implements OnInit {
 
   withdrawAmount: number | null = null;
   transferAmount: number | null = null;
-  transferTarget: LegacyCashoutTransferTarget = 'CASH';
 
-  transferTargets = [
+  private readonly allTransferTargets = [
     { label: 'Network Cashout', value: 'CASH' as const },
     { label: 'Registration wallet', value: 'REGISTRATION' as const },
     { label: 'Network Product Voucher', value: 'VOUCHER' as const },
     { label: 'Legacy product voucher', value: 'LEGACY_VOUCHER' as const },
   ];
 
+  transferTarget: LegacyCashoutTransferTarget = 'REGISTRATION';
+
+  cashoutHoldActive = computed(() => {
+    this.holdClockTick();
+    return isLegacyCashoutHoldActive(this.cashoutUnlocksAt());
+  });
+
+  holdCountdownLabel = computed(() => {
+    this.holdClockTick();
+    return legacyCashoutHoldCountdownLabel(this.cashoutUnlocksAt());
+  });
+
+  canWithdrawToBank = computed(() => {
+    const me = this.legacyClub.me();
+    return (
+      !!me?.legacyCashout &&
+      this.walletUnlocked() &&
+      !!me.canCashoutLegacy &&
+      !this.cashoutHoldActive()
+    );
+  });
+
+  canMoveFunds = computed(() => {
+    const me = this.legacyClub.me();
+    if (!me?.legacyCashout || !this.walletUnlocked()) return false;
+    return this.cashoutHoldActive() || !!me.canCashoutLegacy;
+  });
+
+  transferTargetOptions = computed(() => {
+    if (this.cashoutHoldActive()) {
+      return this.allTransferTargets.filter((t) => t.value === 'REGISTRATION');
+    }
+    return this.allTransferTargets;
+  });
+
   ngOnInit(): void {
+    interval(1000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.cashoutHoldActive()) {
+          this.holdClockTick.update((n) => n + 1);
+        }
+      });
+
     this.loadBank();
     this.cashoutPolicyService.getPolicy().subscribe((policy) => this.cashoutPolicy.set(policy));
     this.legacyClub.loadMe().subscribe({
@@ -460,15 +543,29 @@ export class LegacyCashoutComponent implements OnInit {
           void this.router.navigate(['/legacy/home']);
           return;
         }
-        const walletOk = me?.legacyCashout?.status !== 'LOCKED';
-        this.canCashout.set(!!me?.canCashoutLegacy && !!me.legacyCashout && walletOk);
+        this.walletUnlocked.set(me?.legacyCashout?.status !== 'LOCKED');
+        this.cashoutUnlocksAt.set(me?.cashoutUnlocksAt ?? null);
+        if (this.cashoutHoldActive()) {
+          this.transferTarget = 'REGISTRATION';
+        }
         this.reload();
       },
     });
   }
 
+  holdRestrictionMessage(): string {
+    return (
+      this.legacyClub.me()?.cashoutRestrictionReason ??
+      'Withdrawals to your bank open after the 7-day hold.'
+    );
+  }
+
   restrictionHint(): string {
-    if (this.canCashout()) return 'Cash out to your bank or move funds to another wallet.';
+    if (this.cashoutHoldActive()) {
+      return 'Registration transfers are available during the 7-day hold.';
+    }
+    if (this.canWithdrawToBank()) return 'Cash out to your bank or move funds to another wallet.';
+    if (this.canMoveFunds()) return 'Move Legacy funds to another wallet.';
     return 'Legacy cashout ledger';
   }
 
@@ -490,7 +587,7 @@ export class LegacyCashoutComponent implements OnInit {
 
   transferTargetLabel(): string {
     return (
-      this.transferTargets.find((target) => target.value === this.transferTarget)?.label ??
+      this.allTransferTargets.find((target) => target.value === this.transferTarget)?.label ??
       'selected wallet'
     );
   }
@@ -517,7 +614,13 @@ export class LegacyCashoutComponent implements OnInit {
 
   beginWithdraw(): void {
     this.withdrawAmountError.set('');
-    if (this.isImpersonating() || !this.canCashout() || !this.hasPin() || this.voucherGateBlocked()) {
+    if (
+      this.isImpersonating() ||
+      !this.canWithdrawToBank() ||
+      this.cashoutHoldActive() ||
+      !this.hasPin() ||
+      this.voucherGateBlocked()
+    ) {
       return;
     }
 
@@ -558,7 +661,8 @@ export class LegacyCashoutComponent implements OnInit {
       !amount ||
       !this.canConfirmWithdraw() ||
       this.isImpersonating() ||
-      !this.canCashout() ||
+      !this.canWithdrawToBank() ||
+      this.cashoutHoldActive() ||
       this.voucherGateBlocked()
     ) {
       return;
@@ -617,7 +721,14 @@ export class LegacyCashoutComponent implements OnInit {
 
   beginTransfer(): void {
     this.transferAmountError.set('');
-    if (this.isImpersonating() || !this.canCashout() || !this.hasPin()) return;
+    if (this.isImpersonating() || !this.canMoveFunds() || !this.hasPin()) return;
+
+    if (this.cashoutHoldActive() && this.transferTarget !== 'REGISTRATION') {
+      this.transferAmountError.set(
+        'During the hold you can only move to your registration wallet.',
+      );
+      return;
+    }
 
     const amount = this.transferAmount;
     if (!amount || amount <= 0) {
@@ -642,7 +753,10 @@ export class LegacyCashoutComponent implements OnInit {
 
   confirmTransfer(): void {
     const amount = this.transferAmountConfirm();
-    if (!amount || !this.canConfirmTransfer() || this.isImpersonating() || !this.canCashout()) {
+    if (!amount || !this.canConfirmTransfer() || this.isImpersonating() || !this.canMoveFunds()) {
+      return;
+    }
+    if (this.cashoutHoldActive() && this.transferTarget !== 'REGISTRATION') {
       return;
     }
 
@@ -683,9 +797,12 @@ export class LegacyCashoutComponent implements OnInit {
       next: (res) => {
         this.balance.set(res.balance);
         this.successlineCount.set(res.directSuccesslineCount);
-        const me = this.legacyClub.me();
-        const walletOk = res.walletStatus !== 'LOCKED';
-        this.canCashout.set(res.canCashoutLegacy !== false && walletOk && !!me?.canCashoutLegacy);
+        this.walletUnlocked.set(res.walletStatus !== 'LOCKED');
+        this.cashoutUnlocksAt.set(res.cashoutUnlocksAt ?? this.legacyClub.me()?.cashoutUnlocksAt ?? null);
+        this.legacyClub.applyCashoutHoldFromResponse(res);
+        if (this.cashoutHoldActive()) {
+          this.transferTarget = 'REGISTRATION';
+        }
         this.items.set(res.items);
       },
     });

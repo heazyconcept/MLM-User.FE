@@ -390,9 +390,21 @@ export class LegacyClubService {
       params['cursor'] = options.cursor;
     }
     return this.api.get<unknown>('legacy/cashout', params).pipe(
-      map((raw) => unwrapData<LegacyCashoutResponse>(raw)),
+      map((raw) => this.normalizeCashoutResponse(unwrapData<Record<string, unknown>>(raw))),
       catchError((err) => throwError(() => mapHttpErrorCatch(err))),
     );
+  }
+
+  /** Sync hold fields from cashout API into cached me for home/cashout screens. */
+  applyCashoutHoldFromResponse(res: LegacyCashoutResponse): void {
+    const current = this.meState();
+    if (!current) return;
+    this.meState.set({
+      ...current,
+      canCashoutLegacy: res.canCashoutLegacy,
+      cashoutRestrictionReason: res.cashoutRestrictionReason ?? null,
+      cashoutUnlocksAt: res.cashoutUnlocksAt ?? null,
+    });
   }
 
   withdrawCashout(body: LegacyCashoutWithdrawRequest): Observable<LegacyCashoutWithdrawResult> {
@@ -630,6 +642,16 @@ export class LegacyClubService {
       deadline: String(row['deadline'] ?? ''),
       unlocked: Boolean(row['unlocked']),
       closed: Boolean(row['closed']),
+    };
+  }
+
+  private normalizeCashoutResponse(raw: Record<string, unknown>): LegacyCashoutResponse {
+    const unlocks =
+      raw['cashoutUnlocksAt'] ?? raw['cashout_unlocks_at'] ?? null;
+    return {
+      ...(raw as unknown as LegacyCashoutResponse),
+      cashoutUnlocksAt:
+        unlocks != null && String(unlocks).trim() !== '' ? String(unlocks) : null,
     };
   }
 

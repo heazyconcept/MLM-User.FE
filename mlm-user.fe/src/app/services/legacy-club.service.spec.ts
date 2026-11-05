@@ -387,29 +387,19 @@ describe('LegacyClubService (API)', () => {
     });
   });
 
-  it('maps commissionSchedule and rateUnlock from GET /legacy/me', () => {
+  it('maps commissionSchedule and cashoutUnlocksAt from GET /legacy/me', () => {
     service.loadMe().subscribe();
     const req = httpMock.expectOne(`${baseUrl}/legacy/me`);
     req.flush({
       status: 'ACTIVE',
       currency: 'NGN',
-      commissionSchedule: 'LEGACY',
-      rateUnlock: {
-        required: 3,
-        sponsored: 1,
-        deadline: '2026-11-30T22:59:59.999Z',
-        unlocked: false,
-        closed: false,
-      },
+      commissionSchedule: 'NOV_2026',
+      canCashoutLegacy: false,
+      cashoutUnlocksAt: '2026-11-16T12:00:00.000Z',
+      cashoutRestrictionReason: 'Cashout opens at 2026-11-16T12:00:00.000Z.',
     });
-    expect(service.me()?.commissionSchedule).toBe('LEGACY');
-    expect(service.me()?.rateUnlock).toEqual({
-      required: 3,
-      sponsored: 1,
-      deadline: '2026-11-30T22:59:59.999Z',
-      unlocked: false,
-      closed: false,
-    });
+    expect(service.me()?.commissionSchedule).toBe('NOV_2026');
+    expect(service.me()?.cashoutUnlocksAt).toBe('2026-11-16T12:00:00.000Z');
   });
 
   it('maps weeklyCommission fields from GET /legacy/packages', async () => {
