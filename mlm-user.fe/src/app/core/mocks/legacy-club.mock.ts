@@ -18,6 +18,7 @@ import {
   LegacyPaymentWalletRequest,
   LegacyRegisterSuccesslineRequest,
   LegacyRegisterSuccesslineResponse,
+  LegacyReactivateStartResult,
   LegacyPvHistoryItem,
   LegacyPvHistoryResponse,
   LegacyPvSummary,
@@ -73,6 +74,10 @@ const PACKAGE_DEFS: LegacyPackage[] = [
     purchaseAmount: 60000,
     instantCommission: 20000,
     monthlyCommission: 30000,
+    monthlyCommissionBase: 20000,
+    monthlyCommissionIncreased: 30000,
+    weeklyCommissionBase: 5000,
+    weeklyCommissionIncreased: 7500,
     sixMonthTotal: 200000,
     successlineBonusPercent: 10,
     autoshipAmount: 10000,
@@ -86,6 +91,10 @@ const PACKAGE_DEFS: LegacyPackage[] = [
     purchaseAmount: 200000,
     instantCommission: 80000,
     monthlyCommission: 120000,
+    monthlyCommissionBase: 80000,
+    monthlyCommissionIncreased: 120000,
+    weeklyCommissionBase: 20000,
+    weeklyCommissionIncreased: 30000,
     sixMonthTotal: 800000,
     successlineBonusPercent: 20,
     autoshipAmount: 40000,
@@ -99,6 +108,10 @@ const PACKAGE_DEFS: LegacyPackage[] = [
     purchaseAmount: 500000,
     instantCommission: 200000,
     monthlyCommission: 250000,
+    monthlyCommissionBase: 200000,
+    monthlyCommissionIncreased: 250000,
+    weeklyCommissionBase: 50000,
+    weeklyCommissionIncreased: 62500,
     sixMonthTotal: 1700000,
     successlineBonusPercent: 30,
     autoshipAmount: 80000,
@@ -1277,6 +1290,14 @@ export const legacyClubMockStore = {
     };
     state.cart = [];
     return delay({ checkoutId: `checkout-${Date.now()}`, orderId });
+  },
+
+  async startReactivate(): Promise<LegacyReactivateStartResult> {
+    const pkg = PACKAGE_DEFS.find((p) => p.code === state.me.membership?.package) ?? PACKAGE_DEFS[0];
+    return delay({
+      purchaseAmount: pkg.purchaseAmount,
+      instantCommission: pkg.instantCommission,
+    });
   },
 
   async getPvHistory(options?: {

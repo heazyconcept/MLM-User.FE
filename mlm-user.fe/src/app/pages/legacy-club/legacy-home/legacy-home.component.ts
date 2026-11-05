@@ -27,6 +27,10 @@ import {
   isLegacyMember,
   formatLegacyPvAmount,
   legacyPvCardDescription,
+  hasInstantCommission,
+  packageWeeklyAmounts,
+  shouldShowRateUnlockBanner,
+  commissionScheduleLabel,
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { legacyErrorMessage } from '../../../core/utils/legacy-error.util';
@@ -121,6 +125,32 @@ import { LegacyMetricCardComponent } from '../components/legacy-metric-card.comp
             Membership history
           </a>
         </app-legacy-page-header>
+
+        @if (scheduleLabel()) {
+          <p class="mb-4 inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+            {{ scheduleLabel() }}
+          </p>
+        }
+
+        @if (showRateUnlockBanner()) {
+          <div
+            class="mb-5 rounded-xl border border-sky-200 bg-sky-50/80 px-5 py-4 text-sm text-sky-950"
+            role="status"
+          >
+            <p class="font-semibold">
+              Sponsor 3 new members by 30 November to move to the new weekly commission
+            </p>
+            <p class="mt-2 text-sky-900">
+              Progress: {{ me()?.rateUnlock?.sponsored ?? 0 }} /
+              {{ me()?.rateUnlock?.required ?? 3 }} qualifying directs
+            </p>
+            @if (me()?.rateUnlock?.deadline) {
+              <p class="mt-1 text-xs text-sky-800">
+                Deadline {{ me()?.rateUnlock?.deadline | date: 'mediumDate' }}
+              </p>
+            }
+          </div>
+        }
 
         <div class="flex flex-col gap-6">
         <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -402,18 +432,26 @@ import { LegacyMetricCardComponent } from '../components/legacy-metric-card.comp
                         Amount due:
                         <span class="font-semibold text-mlm-text">{{ money(pkg.purchaseAmount) }}</span>
                       </p>
-                      <p class="mt-1">
-                        They receive instant
-                        <span class="font-semibold text-emerald-800">{{
-                          money(pkg.instantCommission)
-                        }}</span>
-                        into their Legacy account.
-                      </p>
-                      <p class="mt-1">
-                        Your Successline bonus:
-                        <span class="font-semibold text-mlm-text">{{
-                          money(registerSuccesslineBonus(pkg))
-                        }}</span>
+                      @if (showInstant(pkg.instantCommission)) {
+                        <p class="mt-1">
+                          They receive instant
+                          <span class="font-semibold text-emerald-800">{{
+                            money(pkg.instantCommission)
+                          }}</span>
+                          into their Legacy account.
+                        </p>
+                      }
+                      @if (registerSuccesslineBonus(pkg) > 0) {
+                        <p class="mt-1">
+                          Your Successline bonus:
+                          <span class="font-semibold text-mlm-text">{{
+                            money(registerSuccesslineBonus(pkg))
+                          }}</span>
+                        </p>
+                      }
+                      <p class="mt-1 text-xs text-mlm-secondary">
+                        Weekly {{ money(weeklyAmounts(pkg).base) }} base ·
+                        {{ money(weeklyAmounts(pkg).increased) }} after 3 Successlines
                       </p>
                     </div>
                   }
@@ -504,6 +542,9 @@ export class LegacyHomeComponent implements OnInit {
     formatLegacyPvAmount(this.me()?.legacyPv?.totalPv ?? 0),
   );
   legacyPvDescription = computed(() => legacyPvCardDescription(this.me()?.legacyPv));
+
+  showRateUnlockBanner = computed(() => shouldShowRateUnlockBanner(this.me()));
+  scheduleLabel = computed(() => commissionScheduleLabel(this.me()?.commissionSchedule));
 
   memberSubtitle = computed(() => {
     const m = this.me()?.membership;
@@ -638,7 +679,16 @@ export class LegacyHomeComponent implements OnInit {
   }
 
   registerSuccesslineBonus(pkg: LegacyPackage): number {
+    if (!hasInstantCommission(pkg.instantCommission)) return 0;
     return Math.round((pkg.instantCommission * pkg.successlineBonusPercent) / 100);
+  }
+
+  showInstant(amount: number): boolean {
+    return hasInstantCommission(amount);
+  }
+
+  weeklyAmounts(pkg: LegacyPackage) {
+    return packageWeeklyAmounts(pkg);
   }
 
   canRegisterAndPay(): boolean {

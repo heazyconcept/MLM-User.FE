@@ -18,6 +18,7 @@ export type LegacyShopModeLegacy = 'AUTOSHIP' | 'UPGRADE' | 'REACTIVATE';
 export type LegacyPaymentPurpose = 'JOIN' | 'UPGRADE' | 'REACTIVATE';
 export type LegacyPaymentMethod = 'REGISTRATION_WALLET' | 'MANUAL_BANK';
 export type LegacyPaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type LegacyCommissionSchedule = 'LEGACY' | 'NOV_2026';
 export type LegacyRateTier = 'BASE' | 'INCREASED';
 export type LegacyMonthStatus = 'SCHEDULED' | 'PENDING' | 'DROPPED';
 export type LegacyIntent = 'NONE' | 'UPGRADE' | 'REACTIVATE';
@@ -79,6 +80,9 @@ export interface LegacyPackage {
   monthlyCommission: number;
   monthlyCommissionBase?: number;
   monthlyCommissionIncreased?: number;
+  /** Caller currency — prefer over monthly ÷ 4 when present. */
+  weeklyCommissionBase?: number;
+  weeklyCommissionIncreased?: number;
   sixMonthTotal: number;
   successlineBonusPercent: number;
   autoshipAmount: number;
@@ -218,6 +222,20 @@ export interface LegacyCompanyBankAccount {
   accountName: string;
 }
 
+export interface LegacyRateUnlock {
+  required: number;
+  sponsored: number;
+  deadline: string;
+  unlocked: boolean;
+  closed: boolean;
+}
+
+/** Optional preview amounts from POST /legacy/reactivate/start */
+export interface LegacyReactivateStartResult {
+  purchaseAmount?: number;
+  instantCommission?: number;
+}
+
 export interface LegacyMe {
   status: LegacyMemberStatus;
   currency: LegacyCurrency;
@@ -249,6 +267,10 @@ export interface LegacyMe {
   priorPending?: LegacyPriorPendingSummary | null;
   /** Legacy marketplace PV summary — from GET /legacy/me */
   legacyPv?: LegacyPvSummary | null;
+  /** null when user has no active membership */
+  commissionSchedule?: LegacyCommissionSchedule | null;
+  /** Present only while commissionSchedule is LEGACY (Nov 2026 promotion window) */
+  rateUnlock?: LegacyRateUnlock | null;
 }
 
 export interface LegacySponsorValidateRequest {
@@ -656,4 +678,39 @@ export function packageWeeklyDisplay(pkg: LegacyPackage): {
 } {
   const { base, increased } = packageMonthlyDisplay(pkg);
   return { base: base / 4, increased: increased / 4 };
+}
+
+export function hasInstantCommission(amount: number | null | undefined): boolean {
+  return typeof amount === 'number' && Number.isFinite(amount) && amount > 0;
+}
+
+/** Prefer API weekly fields; fall back to monthly ÷ 4. */
+export function packageWeeklyAmounts(pkg: LegacyPackage): { base: number; increased: number } {
+  const derived = packageWeeklyDisplay(pkg);
+  return {
+    base: pkg.weeklyCommissionBase ?? derived.base,
+    increased: pkg.weeklyCommissionIncreased ?? derived.increased,
+  };
+}
+
+export function shouldShowRateUnlockBanner(me: LegacyMe | null | undefined): boolean {
+  const unlock = me?.rateUnlock;
+  if (!unlock) return false;
+  return !unlock.unlocked && !unlock.closed;
+}
+
+export function commissionScheduleLabel(
+  schedule: LegacyCommissionSchedule | null | undefined,
+): string | null {
+  if (!schedule) return null;
+  switch (schedule) {
+    case 'LEGACY':
+      return 'Legacy rates';
+    case 'NOV_2026':
+      return 'Nov 2026 rates';
+    default: {
+      const _exhaustive: never = schedule;
+      return _exhaustive;
+    }
+  }
 }

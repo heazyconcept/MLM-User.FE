@@ -385,6 +385,59 @@ describe('LegacyClubService (API)', () => {
     });
   });
 
+  it('maps commissionSchedule and rateUnlock from GET /legacy/me', () => {
+    service.loadMe().subscribe();
+    const req = httpMock.expectOne(`${baseUrl}/legacy/me`);
+    req.flush({
+      status: 'ACTIVE',
+      currency: 'NGN',
+      commissionSchedule: 'LEGACY',
+      rateUnlock: {
+        required: 3,
+        sponsored: 1,
+        deadline: '2026-11-30T22:59:59.999Z',
+        unlocked: false,
+        closed: false,
+      },
+    });
+    expect(service.me()?.commissionSchedule).toBe('LEGACY');
+    expect(service.me()?.rateUnlock).toEqual({
+      required: 3,
+      sponsored: 1,
+      deadline: '2026-11-30T22:59:59.999Z',
+      unlocked: false,
+      closed: false,
+    });
+  });
+
+  it('maps weeklyCommission fields from GET /legacy/packages', async () => {
+    const res = await firstValueFrom(service.getPackages());
+    const req = httpMock.expectOne(`${baseUrl}/legacy/packages`);
+    req.flush({
+      currency: 'NGN',
+      fxRateNgnPerUsd: 1000,
+      packages: [
+        {
+          code: 'VIP',
+          name: 'VIP',
+          isActive: true,
+          purchaseAmount: 60000,
+          instantCommission: 0,
+          monthlyCommission: 30000,
+          weekly_commission_base: 7500,
+          weekly_commission_increased: 10000,
+          sixMonthTotal: 180000,
+          successlineBonusPercent: 10,
+          autoshipAmount: 10000,
+          cycleMonths: 6,
+          minDirectsToIncreaseMonthly: 3,
+        },
+      ],
+    });
+    expect(res.packages[0].weeklyCommissionBase).toBe(7500);
+    expect(res.packages[0].weeklyCommissionIncreased).toBe(10000);
+  });
+
   it('loads GET /legacy/pv/history', () => {
     service.getPvHistory({ limit: 20 }).subscribe((res) => {
       expect(res.items).toHaveLength(1);
