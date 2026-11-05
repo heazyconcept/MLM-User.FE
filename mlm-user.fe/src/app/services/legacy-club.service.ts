@@ -390,9 +390,21 @@ export class LegacyClubService {
       params['cursor'] = options.cursor;
     }
     return this.api.get<unknown>('legacy/cashout', params).pipe(
-      map((raw) => unwrapData<LegacyCashoutResponse>(raw)),
+      map((raw) => this.normalizeCashoutResponse(unwrapData<Record<string, unknown>>(raw))),
       catchError((err) => throwError(() => mapHttpErrorCatch(err))),
     );
+  }
+
+  /** Sync hold fields from cashout API into cached me for home/cashout screens. */
+  applyCashoutHoldFromResponse(res: LegacyCashoutResponse): void {
+    const current = this.meState();
+    if (!current) return;
+    this.meState.set({
+      ...current,
+      canCashoutLegacy: res.canCashoutLegacy,
+      cashoutRestrictionReason: res.cashoutRestrictionReason ?? null,
+      cashoutUnlocksAt: res.cashoutUnlocksAt ?? null,
+    });
   }
 
   withdrawCashout(body: LegacyCashoutWithdrawRequest): Observable<LegacyCashoutWithdrawResult> {
@@ -633,6 +645,16 @@ export class LegacyClubService {
     };
   }
 
+  private normalizeCashoutResponse(raw: Record<string, unknown>): LegacyCashoutResponse {
+    const unlocks =
+      raw['cashoutUnlocksAt'] ?? raw['cashout_unlocks_at'] ?? null;
+    return {
+      ...(raw as unknown as LegacyCashoutResponse),
+      cashoutUnlocksAt:
+        unlocks != null && String(unlocks).trim() !== '' ? String(unlocks) : null,
+    };
+  }
+
   private normalizeReactivateStart(raw: Record<string, unknown> | null | undefined): LegacyReactivateStartResult {
     if (!raw || typeof raw !== 'object') return {};
     const purchase =
@@ -656,6 +678,7 @@ export class LegacyClubService {
       join_cancellation_notice?: Record<string, unknown>;
       commission_schedule?: string;
       rate_unlock?: unknown;
+      cashout_unlocks_at?: string;
     };
     const legacyPvRaw = me.legacyPv ?? record.legacy_pv;
     const noticeRaw =
@@ -678,12 +701,19 @@ export class LegacyClubService {
       scheduleRaw === 'LEGACY' || scheduleRaw === 'NOV_2026' ? scheduleRaw : null;
 
     const rateUnlock = this.normalizeRateUnlock(me.rateUnlock ?? record.rate_unlock);
+    const cashoutUnlocksAtRaw =
+      me.cashoutUnlocksAt ?? record.cashout_unlocks_at ?? record['cashoutUnlocksAt'];
+    const cashoutUnlocksAt =
+      cashoutUnlocksAtRaw != null && String(cashoutUnlocksAtRaw).trim() !== ''
+        ? String(cashoutUnlocksAtRaw)
+        : null;
 
     const base: LegacyMe = {
       ...me,
       joinCancellationNotice,
       commissionSchedule,
       rateUnlock,
+      cashoutUnlocksAt,
       legacyPv: me.legacyPv ?? {
         totalPv: 0,
         personalProductPv: 0,

@@ -14,7 +14,6 @@ import { LegacyClubService } from '../../../services/legacy-club.service';
 import {
   LegacyPackageCode,
   LegacyUpgradeQuote,
-  hasInstantCommission,
 } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
@@ -54,7 +53,7 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
           <div class="py-2 text-center">
             <p class="font-semibold text-mlm-text">You are on the highest package.</p>
             <p class="mt-2 text-sm text-mlm-secondary">
-              Reactivate when your 24-week cycle is complete.
+              Reactivate when your current cycle is complete.
             </p>
             <a routerLink="/legacy" class="mt-4 inline-block">
               <p-button label="Back to Legacy Club" />
@@ -73,12 +72,10 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
                   <span class="font-semibold">You pay</span> {{ money(quote.payAmount) }} (Legacy
                   voucher)
                 </li>
-                @if (showInstant(quote.instantCommission)) {
-                  <li>
-                    <span class="font-semibold">Instant</span> {{ money(quote.instantCommission) }}
-                    to your Legacy account
-                  </li>
-                }
+                <li>
+                  <span class="font-semibold">Instant</span> {{ money(quote.instantCommission) }}
+                  to your Legacy account
+                </li>
                 <li>
                   New monthly: base {{ money(quote.newMonthlyBase) }} · increased
                   {{ money(quote.newMonthlyIncreased) }}
@@ -168,10 +165,6 @@ export class LegacyUpgradeComponent implements OnInit {
 
   money(amount: number): string {
     return formatLegacyMoney(amount, this.legacyClub.me()?.currency ?? 'NGN');
-  }
-
-  showInstant(amount: number): boolean {
-    return hasInstantCommission(amount);
   }
 
   start(quote: LegacyUpgradeQuote): void {

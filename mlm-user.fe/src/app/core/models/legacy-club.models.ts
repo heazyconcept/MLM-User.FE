@@ -250,6 +250,8 @@ export interface LegacyMe {
   minDirectsToIncreaseMonthly: number;
   canCashoutLegacy: boolean;
   cashoutRestrictionReason?: string | null;
+  /** ISO time while 7-day hold is open; null when no hold or expired. */
+  cashoutUnlocksAt?: string | null;
   pendingJoin: LegacyPendingJoin | null;
   pendingUpgrade?: LegacyPendingUpgrade | null;
   pendingPayment?: LegacyPendingPayment | null;
@@ -269,7 +271,7 @@ export interface LegacyMe {
   legacyPv?: LegacyPvSummary | null;
   /** null when user has no active membership */
   commissionSchedule?: LegacyCommissionSchedule | null;
-  /** Present only while commissionSchedule is LEGACY (Nov 2026 promotion window) */
+  /** Deprecated — 9 Nov card has no sponsor challenge; ignore in UI. */
   rateUnlock?: LegacyRateUnlock | null;
 }
 
@@ -354,6 +356,7 @@ export interface LegacyCashoutResponse {
   walletStatus: LegacyWalletStatus;
   canCashoutLegacy: boolean;
   cashoutRestrictionReason?: string | null;
+  cashoutUnlocksAt?: string | null;
   directSuccesslineCount: number;
   items: LegacyCashoutLedgerItem[];
   nextCursor: string | null;
@@ -693,10 +696,34 @@ export function packageWeeklyAmounts(pkg: LegacyPackage): { base: number; increa
   };
 }
 
-export function shouldShowRateUnlockBanner(me: LegacyMe | null | undefined): boolean {
-  const unlock = me?.rateUnlock;
-  if (!unlock) return false;
-  return !unlock.unlocked && !unlock.closed;
+export function isLegacyCashoutHoldActive(
+  unlocksAt: string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!unlocksAt) return false;
+  const at = new Date(unlocksAt);
+  if (Number.isNaN(at.getTime())) return false;
+  return at.getTime() > now.getTime();
+}
+
+export function legacyCashoutHoldCountdownLabel(
+  unlocksAt: string | null | undefined,
+  now: Date = new Date(),
+): string | null {
+  if (!isLegacyCashoutHoldActive(unlocksAt, now)) return null;
+  const ms = new Date(unlocksAt!).getTime() - now.getTime();
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (days > 0) {
+    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+  return `${minutes}m ${seconds}s`;
 }
 
 export function commissionScheduleLabel(
@@ -705,9 +732,9 @@ export function commissionScheduleLabel(
   if (!schedule) return null;
   switch (schedule) {
     case 'LEGACY':
-      return 'Legacy rates';
+      return 'Current card';
     case 'NOV_2026':
-      return 'Nov 2026 rates';
+      return '9 Nov card';
     default: {
       const _exhaustive: never = schedule;
       return _exhaustive;

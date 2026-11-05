@@ -17,7 +17,6 @@ import {
   LEGACY_ERROR_CODES,
   LegacyPackage,
   LegacyPackageCode,
-  hasInstantCommission,
   packageWeeklyAmounts,
 } from '../../../core/models/legacy-club.models';
 import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
@@ -58,14 +57,15 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
                 <p class="mt-1 text-sm text-mlm-secondary">
                   {{ money(pkg.purchaseAmount) }} product purchase
                 </p>
-                @if (showInstant(pkg.instantCommission)) {
-                  <p class="mt-2 text-sm text-emerald-800">
-                    Instant {{ money(pkg.instantCommission) }} into your Legacy account
-                  </p>
-                }
+                <p class="mt-2 text-sm text-emerald-800">
+                  Instant {{ money(pkg.instantCommission) }} into your Legacy account
+                </p>
                 <p class="mt-2 text-sm text-mlm-secondary">
                   Weekly {{ money(weeklyAmounts(pkg).base) }} base ·
                   {{ money(weeklyAmounts(pkg).increased) }} after 3 Successlines
+                </p>
+                <p class="mt-1 text-sm text-mlm-secondary">
+                  {{ pkg.cycleMonths }}-month cycle · Autoship {{ money(pkg.autoshipAmount) }}/month
                 </p>
               </div>
               <a
@@ -181,10 +181,6 @@ export class LegacyJoinComponent implements OnInit {
 
   money(amount: number): string {
     return formatLegacyMoney(amount, this.me()?.currency ?? 'NGN');
-  }
-
-  showInstant(amount: number): boolean {
-    return hasInstantCommission(amount);
   }
 
   weeklyAmounts(pkg: LegacyPackage) {

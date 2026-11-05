@@ -34,6 +34,8 @@ export function legacyErrorMessage(err: unknown, fallback = 'Something went wron
         return err.message || 'Add more products to meet the package amount.';
       case LEGACY_ERROR_CODES.LEGACY_VOUCHER_REQUIRED:
         return 'Pay with Legacy product voucher only.';
+      case LEGACY_ERROR_CODES.LEGACY_CASHOUT_LOCKED:
+        return err.message || 'Legacy cashout is locked until the hold period ends.';
       case LEGACY_ERROR_CODES.IMPERSONATION_ACTION_BLOCKED:
         return 'Action disabled during impersonation.';
       case 'WALLET_LOCKED':

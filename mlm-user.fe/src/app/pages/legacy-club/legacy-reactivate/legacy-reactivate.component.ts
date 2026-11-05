@@ -12,7 +12,6 @@ import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 import { MessageService } from 'primeng/api';
 import { LegacyClubService } from '../../../services/legacy-club.service';
-import { hasInstantCommission } from '../../../core/models/legacy-club.models';
 import { formatLegacyMoney } from '../../../core/utils/legacy-money.util';
 import { LegacyClubHttpError } from '../../../core/mocks/legacy-club.mock';
 import { LegacyPageShellComponent } from '../components/legacy-page-shell.component';
@@ -46,12 +45,9 @@ import { LegacyPanelComponent } from '../components/legacy-panel.component';
           <p class="text-sm leading-relaxed text-mlm-text">
             Pay
             <span class="font-semibold">{{ money(purchaseAmount()) }}</span>
-            to reactivate {{ packageCode() }}.
-            @if (showInstantPreview()) {
-              Full Instant
-              <span class="font-semibold">{{ money(instantAmount()) }}</span>
-              goes to your Legacy account.
-            }
+            to reactivate {{ packageCode() }}. Full Instant
+            <span class="font-semibold">{{ money(instantAmount()) }}</span>
+            goes to your Legacy account.
           </p>
           @if (isQualified()) {
             <p class="text-sm text-emerald-800">
@@ -89,14 +85,11 @@ export class LegacyReactivateComponent implements OnInit {
   loading = signal(true);
   starting = signal(false);
   error = signal<string | null>(null);
-  /** Product purchase (unchanged across commission cards). */
   purchaseAmount = signal(0);
-  /** Member schedule instant — not from new-account packages catalog. */
   instantAmount = signal(0);
 
   packageCode = computed(() => this.legacyClub.me()?.membership?.package ?? 'VIP');
   isQualified = computed(() => !!this.legacyClub.me()?.monthlyQualify?.isQualified);
-  showInstantPreview = computed(() => hasInstantCommission(this.instantAmount()));
 
   ngOnInit(): void {
     this.legacyClub.loadMe().subscribe({
@@ -110,14 +103,12 @@ export class LegacyReactivateComponent implements OnInit {
           void this.router.navigate(['/legacy/home']);
           return;
         }
-        if (me?.commissionSchedule === 'NOV_2026') {
-          this.instantAmount.set(0);
-        }
         this.legacyClub.getPackages().subscribe({
           next: (res) => {
             const pkg = res.packages.find((p) => p.code === me?.membership?.package);
             if (pkg) {
               this.purchaseAmount.set(pkg.purchaseAmount);
+              this.instantAmount.set(pkg.instantCommission);
             }
             this.loading.set(false);
           },
@@ -140,9 +131,7 @@ export class LegacyReactivateComponent implements OnInit {
         if (preview.purchaseAmount != null) {
           this.purchaseAmount.set(preview.purchaseAmount);
         }
-        if (this.legacyClub.me()?.commissionSchedule === 'NOV_2026') {
-          this.instantAmount.set(0);
-        } else if (preview.instantCommission != null) {
+        if (preview.instantCommission != null) {
           this.instantAmount.set(preview.instantCommission);
         }
         this.starting.set(false);
