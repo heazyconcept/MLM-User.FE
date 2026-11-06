@@ -165,7 +165,7 @@
           </p-button>
           <p-button
             type="submit"
-            label="Confirm"
+            label="Continue"
             [disabled]="withdrawalForm.invalid || isSubmitting() || !hasBankDetails() || !canSubmitCashout()"
             [loading]="isSubmitting()"
           >
@@ -199,19 +199,18 @@
           <div class="space-y-2">
             <h3 class="text-base font-bold text-mlm-text">Authorize Payout</h3>
             <p class="text-xs text-mlm-secondary leading-normal max-w-sm mx-auto">
-              Please enter your 4-digit Transaction PIN to confirm a wallet debit of
-              <strong class="text-mlm-text"
-                >{{ currency() === 'NGN' ? '₦' : '$'
-                }}{{ amountToConfirm() | number: '1.2-2' }}</strong
-              >
-              (expected bank payout
-              <strong class="text-mlm-text"
-                >{{ currency() === 'NGN' ? '₦' : '$'
-                }}{{ confirmNetAmount() | number: '1.2-2' }}</strong
-              >) to <strong class="text-mlm-text">{{ bankDetails().bankName }}</strong> ({{
+              Enter your 4-digit Transaction PIN to authorize this withdrawal to
+              <strong class="text-mlm-text">{{ bankDetails().bankName }}</strong> ({{
                 bankDetails().accountNumber
               }}).
             </p>
+            <app-cashout-charge-preview
+              class="mx-auto mt-4 block max-w-sm text-left"
+              [amount]="amountToConfirm()"
+              [feeRate]="feeRate()"
+              [currency]="currency() ?? 'NGN'"
+              variant="confirm"
+            />
           </div>
 
           <div class="flex flex-col gap-2 max-w-xs mx-auto pt-2">
@@ -270,4 +269,5 @@
       </form>
     }
   </div>
+  <p-confirmDialog />
 </div>

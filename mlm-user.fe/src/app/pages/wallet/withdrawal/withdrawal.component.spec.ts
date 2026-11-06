@@ -9,6 +9,7 @@ import { ModalService } from '../../../services/modal.service';
 import { OnboardingService } from '../../../services/onboarding.service';
 import { UserService } from '../../../services/user.service';
 import { WalletService } from '../../../services/wallet.service';
+import { CashoutPolicyService } from '../../../services/cashout-policy.service';
 import { WithdrawalComponent } from './withdrawal.component';
 
 describe('WithdrawalComponent transaction PIN gate', () => {
@@ -63,6 +64,21 @@ describe('WithdrawalComponent transaction PIN gate', () => {
         {
           provide: ModalService,
           useValue: { open: vi.fn() },
+        },
+        {
+          provide: CashoutPolicyService,
+          useValue: {
+            getPolicy: vi.fn().mockReturnValue(
+              of({
+                feeRate: 0.05,
+                voucherLimitNgn: 10000,
+                voucherBalanceNgn: 0,
+                canCashout: true,
+                blockReason: null,
+                payoutNotice: 'Notice',
+              }),
+            ),
+          },
         },
       ],
     });

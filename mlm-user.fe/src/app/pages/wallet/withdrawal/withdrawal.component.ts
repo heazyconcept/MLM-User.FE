@@ -34,6 +34,7 @@ import { CashoutPolicyService } from '../../../services/cashout-policy.service';
 import type { CashoutPolicy } from '../../../core/models/cashout-policy.model';
 import { CashoutChargePreviewComponent } from '../../../components/cashout-charge-preview/cashout-charge-preview.component';
 import { computeCashoutCharge } from '../../../core/utils/cashout-charge.util';
+import { confirmCashoutCharge } from '../../../core/utils/cashout-confirm.util';
 
 @Component({
   selector: 'app-withdrawal',
@@ -121,7 +122,7 @@ export class WithdrawalComponent implements OnInit {
   cashoutBlockReason = computed(() => {
     const policy = this.cashoutPolicy();
     if (!policy || policy.canCashout) return null;
-    return policy.blockReason ?? 'Cashout is not available right now.';
+    return policy.blockReason ?? 'Cashout is available when your product voucher is under ₦10,000.';
   });
 
   payoutNotice = computed(
@@ -201,9 +202,18 @@ export class WithdrawalComponent implements OnInit {
           this.withdrawalForm.get('amount')?.setErrors({ exceedsBalance: true });
           return;
         }
-        this.amountToConfirm.set(amount);
-        this.withdrawalForm.patchValue({ pin: '' });
-        this.setFormState('PIN_VERIFY');
+        const curr = this.currency() ?? 'NGN';
+        confirmCashoutCharge(this.confirmationService, {
+          amount,
+          feeRate: this.feeRate(),
+          currency: curr,
+          header: 'Confirm withdrawal',
+          accept: () => {
+            this.amountToConfirm.set(amount);
+            this.withdrawalForm.patchValue({ pin: '' });
+            this.setFormState('PIN_VERIFY');
+          },
+        });
       }
     } else if (state === 'PIN_VERIFY') {
       this.processWithdrawal();

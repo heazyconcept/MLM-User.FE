@@ -25,6 +25,9 @@ import { CashoutPolicyService } from '../../../services/cashout-policy.service';
 import type { CashoutPolicy } from '../../../core/models/cashout-policy.model';
 import { CashoutChargePreviewComponent } from '../../../components/cashout-charge-preview/cashout-charge-preview.component';
 import { computeCashoutCharge } from '../../../core/utils/cashout-charge.util';
+import { confirmCashoutCharge } from '../../../core/utils/cashout-confirm.util';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-caucus-cashout',
@@ -40,7 +43,9 @@ import { computeCashoutCharge } from '../../../core/utils/cashout-charge.util';
     CaucusPageHeaderComponent,
     CaucusPanelComponent,
     CashoutChargePreviewComponent,
+    ConfirmDialogModule,
   ],
+  providers: [ConfirmationService],
   templateUrl: './caucus-cashout.component.html',
 })
 export class CaucusCashoutComponent implements OnInit {
@@ -51,6 +56,7 @@ export class CaucusCashoutComponent implements OnInit {
   private readonly modal = inject(ModalService);
   private readonly router = inject(Router);
   private readonly cashoutPolicyService = inject(CashoutPolicyService);
+  private readonly confirmationService = inject(ConfirmationService);
 
   amount = signal(0);
   cashoutPolicy = signal<CashoutPolicy | null>(null);
@@ -113,20 +119,30 @@ export class CaucusCashoutComponent implements OnInit {
     if (!this.canSubmit()) {
       return;
     }
+    const amount = this.amount();
+    confirmCashoutCharge(this.confirmationService, {
+      amount,
+      feeRate: this.feeRate(),
+      currency: 'NGN',
+      accept: () => this.executeWithdraw(amount),
+    });
+  }
+
+  private executeWithdraw(amount: number): void {
     this.submitting.set(true);
     this.error.set(null);
-    this.caucus.withdraw(this.amount(), this.pin()).subscribe({
+    this.caucus.withdraw(amount, this.pin()).subscribe({
       next: (res) => {
         this.submitting.set(false);
         const bank = this.bank();
         const net =
           res.netAmount != null
             ? formatCaucusNgn(res.netAmount)
-            : formatCaucusNgn(computeCashoutCharge(this.amount(), this.feeRate()).netAmount);
+            : formatCaucusNgn(computeCashoutCharge(amount, this.feeRate()).netAmount);
         this.modal.open(
           'success',
           'Cash out submitted',
-          `Wallet debit ${formatCaucusNgn(this.amount())} submitted. Expected bank payout ${net} to ${bank?.bankName ?? 'your bank'}.`,
+          `Wallet debit ${formatCaucusNgn(amount)} submitted. Expected bank payout ${net} to ${bank?.bankName ?? 'your bank'}.`,
         );
         void this.router.navigate(['/caucus']);
       },

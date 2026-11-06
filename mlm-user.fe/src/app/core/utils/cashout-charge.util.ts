@@ -26,3 +26,30 @@ export function formatCashoutPercent(feeRate: number): string {
   const rounded = Math.round(pct * 100) / 100;
   return `${rounded}%`;
 }
+
+export function cashoutCurrencySymbol(currency: 'NGN' | 'USD'): string {
+  return currency === 'USD' ? '$' : '₦';
+}
+
+export function formatCashoutMoney(amount: number, currency: 'NGN' | 'USD'): string {
+  const sym = cashoutCurrencySymbol(currency);
+  return `${sym}${amount.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+/** Three-line copy for confirm dialogs (integration doc). */
+export function formatCashoutConfirmMessage(
+  amount: number,
+  feeRate: number,
+  currency: 'NGN' | 'USD',
+): string {
+  const breakdown = computeCashoutCharge(amount, feeRate);
+  const pct = formatCashoutPercent(feeRate);
+  return [
+    `You are requesting: ${formatCashoutMoney(breakdown.amount, currency)}`,
+    `Admin charge (${pct}): ${formatCashoutMoney(breakdown.feeAmount, currency)}`,
+    `Amount that will hit the bank: ${formatCashoutMoney(breakdown.netAmount, currency)}`,
+  ].join('\n');
+}

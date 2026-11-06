@@ -50,18 +50,30 @@ The same check runs again when an admin approves. A member who funds the voucher
 
 ## Charge preview
 
-The member types the amount that leaves the wallet. The bank receives 95%.
+The member types the amount that leaves the wallet. The 5% is deducted from that amount. It is not added on top. The bank transfer is made outside the system, for the amount that is left.
+
+A wallet of ₦20,000 can request ₦20,000. The charge is ₦1,000 and the bank receives ₦19,000. Do not require ₦21,000.
 
 While typing, in the withdrawal currency:
 
 - fee = half-up to 2 decimal places of `amount * feeRate`
 - net = amount − fee
 
-Example: ₦100,000 requested, ₦5,000 charge, **₦95,000** expected in the bank.
-
-Show three figures on the form: requested amount, 5% deduction, expected bank amount.
+Use `feeRate` from `GET /withdrawals/cashout-policy`. Do not hard-code a second rate.
 
 USD members use the same 5% in USD. Caucus cashout is always naira.
+
+## Confirm before submit
+
+On every cashout form (network withdrawal, Legacy cashout, and Caucus cashout), do not call the submit endpoint when the member presses the button. Open a confirmation prompt first. The prompt shows three lines, in the withdrawal currency:
+
+| Line | ₦20,000 request |
+|------|-----------------|
+| You are requesting | ₦20,000 |
+| Admin charge (5%) | ₦1,000 |
+| Amount that will hit the bank | ₦19,000 |
+
+Confirm submits the typed amount (`20000`), not the bank amount. Cancel closes the prompt and does not create a withdrawal. If the wallet cannot cover the typed amount, the API returns `Insufficient balance` and no withdrawal is created. The office later sends the bank amount. The wallet is debited the typed amount only when an admin approves.
 
 ---
 

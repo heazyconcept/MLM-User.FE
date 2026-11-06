@@ -41,6 +41,9 @@ import { CashoutPolicyService } from '../../../services/cashout-policy.service';
 import type { CashoutPolicy } from '../../../core/models/cashout-policy.model';
 import { CashoutChargePreviewComponent } from '../../../components/cashout-charge-preview/cashout-charge-preview.component';
 import { computeCashoutCharge } from '../../../core/utils/cashout-charge.util';
+import { confirmCashoutCharge } from '../../../core/utils/cashout-confirm.util';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 type ActionStep = 'form' | 'pin';
 
@@ -60,7 +63,9 @@ type ActionStep = 'form' | 'pin';
     LegacyBalanceBannerComponent,
     LegacyAddFundsComponent,
     CashoutChargePreviewComponent,
+    ConfirmDialogModule,
   ],
+  providers: [ConfirmationService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-legacy-page-shell>
@@ -147,12 +152,16 @@ type ActionStep = 'form' | 'pin';
                     </div>
                     <h3 class="text-base font-bold text-mlm-text">Authorize cash out</h3>
                     <p class="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-mlm-secondary">
-                      Enter your 4-digit Transaction PIN to confirm wallet debit
-                      <strong class="text-mlm-text">{{ money(withdrawAmountConfirm()!) }}</strong>
-                      (expected bank payout
-                      <strong class="text-mlm-text">{{ money(withdrawNetConfirm()!) }}</strong>) to
+                      Enter your 4-digit Transaction PIN to authorize payout to
                       <strong class="text-mlm-text">{{ bankLabel() }}</strong>.
                     </p>
+                    <app-cashout-charge-preview
+                      class="mx-auto mt-4 block max-w-sm text-left"
+                      [amount]="withdrawAmountConfirm()"
+                      [feeRate]="feeRate()"
+                      [currency]="legacyCashoutCurrency()"
+                      variant="confirm"
+                    />
                     <input
                       id="withdraw-pin"
                       pInputText
@@ -406,6 +415,7 @@ type ActionStep = 'form' | 'pin';
           </div>
         </app-legacy-panel>
       </div>
+      <p-confirmDialog />
     </app-legacy-page-shell>
   `,
 })
@@ -417,6 +427,7 @@ export class LegacyCashoutComponent implements OnInit {
   private router = inject(Router);
   private modalService = inject(ModalService);
   private cashoutPolicyService = inject(CashoutPolicyService);
+  private confirmationService = inject(ConfirmationService);
   private destroyRef = inject(DestroyRef);
 
   balance = signal(0);
@@ -644,9 +655,16 @@ export class LegacyCashoutComponent implements OnInit {
       return;
     }
 
-    this.withdrawAmountConfirm.set(amount);
-    this.withdrawPin.set('');
-    this.withdrawStep.set('pin');
+    confirmCashoutCharge(this.confirmationService, {
+      amount,
+      feeRate: this.feeRate(),
+      currency: this.legacyCashoutCurrency(),
+      accept: () => {
+        this.withdrawAmountConfirm.set(amount);
+        this.withdrawPin.set('');
+        this.withdrawStep.set('pin');
+      },
+    });
   }
 
   backFromWithdrawPin(): void {
