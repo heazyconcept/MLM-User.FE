@@ -45,6 +45,9 @@ import { MerchantService, MerchantStatus, MerchantType } from '../../services/me
 import { getRequiredAmount } from '../../core/constants/registration.constants';
 import { OverlayOptions } from 'primeng/api';
 import { signal } from '@angular/core';
+import { CashoutPolicyService } from '../../services/cashout-policy.service';
+import type { CashoutPolicy } from '../../core/models/cashout-policy.model';
+import { CashoutHoldCountdownComponent } from '../../components/cashout-hold-countdown/cashout-hold-countdown.component';
 
 type DashboardTask = {
   id: 'activation' | 'profile' | 'first-referral' | 'bank-details';
@@ -77,6 +80,7 @@ type QuickAction = {
     SelectModule,
     InputTextModule,
     TooltipModule,
+    CashoutHoldCountdownComponent,
   ],
   templateUrl: './dashboard.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -98,6 +102,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private merchantService = inject(MerchantService);
   private fb = inject(FormBuilder);
   private cdr = inject(ChangeDetectorRef);
+  private cashoutPolicyService = inject(CashoutPolicyService);
+
+  cashoutPolicy = signal<CashoutPolicy | null>(null);
+  cashoutUnlocksAt = computed(() => this.cashoutPolicy()?.cashoutUnlocksAt ?? null);
 
   private statCountUpFrame: number | null = null;
   private lastStatTargets: number[] = [];
@@ -700,6 +708,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     // Fetch wallets and earnings when user is paid (for balance/earnings display)
     if (this.isPaid()) {
+      this.cashoutPolicyService.getPolicy().subscribe({
+        next: (policy) => {
+          this.cashoutPolicy.set(policy);
+          this.cdr.markForCheck();
+        },
+        error: () => undefined,
+      });
+
       this.dashboardService.getOverview().subscribe({
         next: (overview) => {
           this.overview.set(overview ?? this.defaultOverview);
@@ -1262,5 +1278,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (hour < 12) return 'Good morning';
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
+  }
+
+  refreshCashoutPolicy(): void {
+    this.cashoutPolicyService.getPolicy().subscribe({
+      next: (policy) => {
+        this.cashoutPolicy.set(policy);
+        this.cdr.markForCheck();
+      },
+      error: () => undefined,
+    });
   }
 }

@@ -35,6 +35,8 @@ import type { CashoutPolicy } from '../../../core/models/cashout-policy.model';
 import { CashoutChargePreviewComponent } from '../../../components/cashout-charge-preview/cashout-charge-preview.component';
 import { computeCashoutCharge } from '../../../core/utils/cashout-charge.util';
 import { confirmCashoutCharge } from '../../../core/utils/cashout-confirm.util';
+import { CashoutHoldCountdownComponent } from '../../../components/cashout-hold-countdown/cashout-hold-countdown.component';
+import { isCashoutHoldActive } from '../../../core/utils/countdown.util';
 
 @Component({
   selector: 'app-withdrawal',
@@ -50,6 +52,7 @@ import { confirmCashoutCharge } from '../../../core/utils/cashout-confirm.util';
     DecimalPipe,
     ConfirmDialogModule,
     CashoutChargePreviewComponent,
+    CashoutHoldCountdownComponent,
   ],
   templateUrl: './withdrawal.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -119,11 +122,20 @@ export class WithdrawalComponent implements OnInit {
 
   canSubmitCashout = computed(() => this.cashoutPolicy()?.canCashout !== false);
 
+  cashoutUnlocksAt = computed(() => this.cashoutPolicy()?.cashoutUnlocksAt ?? null);
+
+  cashoutHoldActive = computed(() => isCashoutHoldActive(this.cashoutUnlocksAt()));
+
   cashoutBlockReason = computed(() => {
     const policy = this.cashoutPolicy();
     if (!policy || policy.canCashout) return null;
+    if (this.cashoutHoldActive()) return null;
     return policy.blockReason ?? 'Cashout is available when your product voucher is under ₦10,000.';
   });
+
+  refreshCashoutPolicy(): void {
+    this.cashoutPolicyService.getPolicy().subscribe((policy) => this.cashoutPolicy.set(policy));
+  }
 
   payoutNotice = computed(
     () =>

@@ -13,7 +13,9 @@ describe('CashoutPolicyService', () => {
         voucherLimitNgn: 10000,
         voucherBalanceNgn: 4500,
         canCashout: false,
+        voucherBlocked: true,
         blockReason: 'Voucher too high',
+        cashoutUnlocksAt: '2026-12-01T00:00:00.000Z',
         payoutNotice: 'Custom notice',
       }),
     );
@@ -29,6 +31,8 @@ describe('CashoutPolicyService', () => {
     expect(policy.voucherBalanceNgn).toBe(4500);
     expect(policy.canCashout).toBe(false);
     expect(policy.blockReason).toBe('Voucher too high');
+    expect(policy.voucherBlocked).toBe(true);
+    expect(policy.cashoutUnlocksAt).toBe('2026-12-01T00:00:00.000Z');
     expect(policy.payoutNotice).toBe('Custom notice');
   });
 

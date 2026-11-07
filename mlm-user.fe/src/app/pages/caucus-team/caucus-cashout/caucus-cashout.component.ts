@@ -73,7 +73,7 @@ export class CaucusCashoutComponent implements OnInit {
 
   feeRate = computed(() => this.cashoutPolicy()?.feeRate ?? 0.05);
 
-  canSubmitPolicy = computed(() => this.cashoutPolicy()?.canCashout !== false);
+  canSubmitPolicy = computed(() => this.cashoutPolicy()?.voucherBlocked !== true);
 
   cashoutBlockReason = computed(() => {
     const policy = this.cashoutPolicy();

@@ -139,6 +139,13 @@
             </div>
           }
 
+          @if (cashoutUnlocksAt()) {
+            <app-cashout-hold-countdown
+              [unlocksAt]="cashoutUnlocksAt()"
+              (expired)="refreshCashoutPolicy()"
+            />
+          }
+
           <!-- @if (phaseOneDashboardEnabled) {
               <div class="mb-6 xl:mb-8 space-y-4">
                 <div class="rounded-xl border border-mlm-secondary/15 bg-white px-4 py-3">

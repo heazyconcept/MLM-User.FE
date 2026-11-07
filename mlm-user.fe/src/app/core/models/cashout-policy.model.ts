@@ -3,7 +3,9 @@ export interface CashoutPolicy {
   voucherLimitNgn: number;
   voucherBalanceNgn: number;
   canCashout: boolean;
+  voucherBlocked: boolean;
   blockReason: string | null;
+  cashoutUnlocksAt: string | null;
   payoutNotice: string;
 }
 

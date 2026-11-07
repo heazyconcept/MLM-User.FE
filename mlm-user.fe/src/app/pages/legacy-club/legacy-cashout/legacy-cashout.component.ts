@@ -44,6 +44,7 @@ import { computeCashoutCharge } from '../../../core/utils/cashout-charge.util';
 import { confirmCashoutCharge } from '../../../core/utils/cashout-confirm.util';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { CashoutHoldCountdownComponent } from '../../../components/cashout-hold-countdown/cashout-hold-countdown.component';
 
 type ActionStep = 'form' | 'pin';
 
@@ -64,6 +65,7 @@ type ActionStep = 'form' | 'pin';
     LegacyAddFundsComponent,
     CashoutChargePreviewComponent,
     ConfirmDialogModule,
+    CashoutHoldCountdownComponent,
   ],
   providers: [ConfirmationService],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -102,19 +104,11 @@ type ActionStep = 'form' | 'pin';
             <!-- Cash out -->
             <app-legacy-panel title="Cash out">
               @if (cashoutHoldActive()) {
-                <div
-                  class="rounded-xl border border-sky-200 bg-sky-50/80 px-5 py-4 text-sm text-sky-950"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <p class="font-semibold">Bank cashout opens soon</p>
-                  @if (holdCountdownLabel()) {
-                    <p class="mt-2 tabular-nums text-sky-900">{{ holdCountdownLabel() }}</p>
-                  }
-                  <p class="mt-2 text-xs text-sky-800">
-                    {{ holdRestrictionMessage() }}
-                  </p>
-                </div>
+                <app-cashout-hold-countdown
+                  [unlocksAt]="cashoutUnlocksAt()"
+                  title="Bank cashout unlocks in"
+                  (expired)="reloadMe()"
+                />
               } @else if (!canWithdrawToBank()) {
                 <p class="text-sm text-mlm-secondary">{{ lockMessage() }}</p>
               } @else if (!hasPin()) {
@@ -530,12 +524,7 @@ export class LegacyCashoutComponent implements OnInit {
     return this.cashoutHoldActive() || !!me.canCashoutLegacy;
   });
 
-  transferTargetOptions = computed(() => {
-    if (this.cashoutHoldActive()) {
-      return this.allTransferTargets.filter((t) => t.value === 'REGISTRATION');
-    }
-    return this.allTransferTargets;
-  });
+  transferTargetOptions = computed(() => this.allTransferTargets);
 
   ngOnInit(): void {
     interval(1000)
@@ -556,12 +545,19 @@ export class LegacyCashoutComponent implements OnInit {
         }
         this.walletUnlocked.set(me?.legacyCashout?.status !== 'LOCKED');
         this.cashoutUnlocksAt.set(me?.cashoutUnlocksAt ?? null);
-        if (this.cashoutHoldActive()) {
-          this.transferTarget = 'REGISTRATION';
-        }
         this.reload();
       },
     });
+  }
+
+  reloadMe(): void {
+    this.legacyClub.loadMe().subscribe({
+      next: (me) => {
+        this.cashoutUnlocksAt.set(me?.cashoutUnlocksAt ?? null);
+        this.reload();
+      },
+    });
+    this.cashoutPolicyService.getPolicy().subscribe((policy) => this.cashoutPolicy.set(policy));
   }
 
   holdRestrictionMessage(): string {
@@ -573,7 +569,7 @@ export class LegacyCashoutComponent implements OnInit {
 
   restrictionHint(): string {
     if (this.cashoutHoldActive()) {
-      return 'Registration transfers are available during the 7-day hold.';
+      return 'Bank cashout is on hold; wallet transfers stay available.';
     }
     if (this.canWithdrawToBank()) return 'Cash out to your bank or move funds to another wallet.';
     if (this.canMoveFunds()) return 'Move Legacy funds to another wallet.';

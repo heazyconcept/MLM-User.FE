@@ -20,7 +20,9 @@ export class CashoutPolicyService {
           voucherLimitNgn: 10000,
           voucherBalanceNgn: 0,
           canCashout: true,
+          voucherBlocked: false,
           blockReason: null,
+          cashoutUnlocksAt: null,
           payoutNotice: DEFAULT_PAYOUT_NOTICE,
         }),
       ),
@@ -30,6 +32,11 @@ export class CashoutPolicyService {
   private mapPolicy(raw: Record<string, unknown>): CashoutPolicy {
     const data = (raw['data'] as Record<string, unknown> | undefined) ?? raw;
     const blockRaw = data['blockReason'] ?? data['block_reason'];
+    const unlockRaw = data['cashoutUnlocksAt'] ?? data['cashout_unlocks_at'];
+    const voucherBlocked = this.readBoolean(
+      data['voucherBlocked'] ?? data['voucher_blocked'],
+      false,
+    );
     return {
       feeRate: this.readNumber(data['feeRate'] ?? data['fee_rate'], 0.05),
       voucherLimitNgn: this.readNumber(
@@ -41,8 +48,13 @@ export class CashoutPolicyService {
         0,
       ),
       canCashout: this.readBoolean(data['canCashout'] ?? data['can_cashout'], true),
+      voucherBlocked,
       blockReason:
         blockRaw == null || String(blockRaw).trim() === '' ? null : String(blockRaw),
+      cashoutUnlocksAt:
+        unlockRaw == null || String(unlockRaw).trim() === ''
+          ? null
+          : String(unlockRaw),
       payoutNotice: String(data['payoutNotice'] ?? data['payout_notice'] ?? DEFAULT_PAYOUT_NOTICE),
     };
   }

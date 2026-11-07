@@ -1,3 +1,8 @@
+import {
+  cashoutHoldCountdownLabel,
+  isCashoutHoldActive,
+} from '../utils/countdown.util';
+
 export type LegacyPackageCode = 'VIP' | 'EXECUTIVE' | 'SUPREME';
 export type LegacyMemberStatus =
   | 'NONE'
@@ -711,30 +716,14 @@ export function isLegacyCashoutHoldActive(
   unlocksAt: string | null | undefined,
   now: Date = new Date(),
 ): boolean {
-  if (!unlocksAt) return false;
-  const at = new Date(unlocksAt);
-  if (Number.isNaN(at.getTime())) return false;
-  return at.getTime() > now.getTime();
+  return isCashoutHoldActive(unlocksAt, now);
 }
 
 export function legacyCashoutHoldCountdownLabel(
   unlocksAt: string | null | undefined,
   now: Date = new Date(),
 ): string | null {
-  if (!isLegacyCashoutHoldActive(unlocksAt, now)) return null;
-  const ms = new Date(unlocksAt!).getTime() - now.getTime();
-  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  if (days > 0) {
-    return `${days}d ${hours}h ${minutes}m ${seconds}s`;
-  }
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${seconds}s`;
-  }
-  return `${minutes}m ${seconds}s`;
+  return cashoutHoldCountdownLabel(unlocksAt, now);
 }
 
 export function commissionScheduleLabel(

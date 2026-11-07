@@ -19,6 +19,10 @@ import {
   VoucherBridgeDirection,
 } from '../legacy-club/components/voucher-bridge-transfer.component';
 import { LegacyClubService } from '../../services/legacy-club.service';
+import { CashoutPolicyService } from '../../services/cashout-policy.service';
+import type { CashoutPolicy } from '../../core/models/cashout-policy.model';
+import { CashoutHoldCountdownComponent } from '../../components/cashout-hold-countdown/cashout-hold-countdown.component';
+import { isCashoutHoldActive } from '../../core/utils/countdown.util';
 import { RegistrationFundingComponent } from './registration-funding/registration-funding.component';
 import {
   CASHOUT_SPLIT, AUTOSHIP_SPLIT,
@@ -35,7 +39,8 @@ import {
     ButtonModule,
     MessageModule,
     SkeletonModule,
-    TooltipModule
+    TooltipModule,
+    CashoutHoldCountdownComponent,
   ],
   templateUrl: './wallet.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -49,8 +54,12 @@ export class WalletComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private dialogService = inject(DialogService);
   private legacyClub = inject(LegacyClubService);
+  private cashoutPolicyService = inject(CashoutPolicyService);
 
   isPaid = this.userService.isPaid;
+  cashoutPolicy = signal<CashoutPolicy | null>(null);
+  cashoutUnlocksAt = computed(() => this.cashoutPolicy()?.cashoutUnlocksAt ?? null);
+  cashoutHoldActive = computed(() => isCashoutHoldActive(this.cashoutUnlocksAt()));
   isLegacyMember = this.legacyClub.isMember;
   isImpersonating = computed(() => !!this.authService.impersonation());
   wallets = this.walletService.allWallets;
@@ -110,7 +119,18 @@ export class WalletComponent implements OnInit {
       });
       this.walletService.fetchAutoshipStatus().subscribe();
       this.legacyClub.loadMe().subscribe({ error: () => undefined });
+      this.cashoutPolicyService.getPolicy().subscribe((policy) => this.cashoutPolicy.set(policy));
     }
+  }
+
+  refreshCashoutPolicy(): void {
+    this.cashoutPolicyService.getPolicy().subscribe((policy) => this.cashoutPolicy.set(policy));
+  }
+
+  canWithdrawCash(wallet: Wallet): boolean {
+    if (wallet.id === 'placeholder' || wallet.cashBalance <= 0) return false;
+    if (this.cashoutHoldActive()) return false;
+    return true;
   }
 
   navigateToPayment() {

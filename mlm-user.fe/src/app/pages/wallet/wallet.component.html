@@ -67,6 +67,15 @@
               </div>
             </div>
 
+            @if (cashoutHoldActive()) {
+              <div class="mb-5">
+                <app-cashout-hold-countdown
+                  [unlocksAt]="cashoutUnlocksAt()"
+                  (expired)="refreshCashoutPolicy()"
+                />
+              </div>
+            }
+
             <!-- ── MAIN CONTENT ────────────────────────────── -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
@@ -134,7 +143,7 @@
                         </p>
                         <div class="flex gap-2">
                           <button (click)="openWithdrawDialog(wallet)"
-                            [disabled]="wallet.cashBalance <= 0 || wallet.id === 'placeholder'"
+                            [disabled]="!canWithdrawCash(wallet)"
                             class="px-3 sm:px-4 py-2 bg-mlm-primary text-white text-xs font-bold rounded-lg disabled:opacity-40 disabled:cursor-not-allowed">
                             Withdraw
                           </button>
