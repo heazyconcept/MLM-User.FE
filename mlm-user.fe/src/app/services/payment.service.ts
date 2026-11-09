@@ -47,6 +47,8 @@ export interface PaymentRecord {
 
 export type PaymentGatewayProvider = 'PAYSTACK' | 'FLUTTERWAVE' | 'KORAPAY' | 'USDT';
 
+export type UpgradePaymentSource = PaymentGatewayProvider | 'REGISTRATION_WALLET';
+
 export interface UpgradeOption {
   package: string;
   price: number;
@@ -142,16 +144,33 @@ export class PaymentService {
   initiateUpgradePayment(
     targetPackage: string,
     callbackUrl?: string,
-    provider?: PaymentGatewayProvider
+    source?: UpgradePaymentSource,
   ): Observable<InitiatePaymentResponse> {
     const body: Record<string, unknown> = { targetPackage };
-    const isValidUrl = callbackUrl && /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(callbackUrl);
-    if (isValidUrl) {
-      body['callbackUrl'] = callbackUrl;
+    const isValidUrl = Boolean(
+      callbackUrl && /^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(callbackUrl),
+    );
+
+    switch (source) {
+      case undefined:
+        if (isValidUrl) body['callbackUrl'] = callbackUrl;
+        break;
+      case 'REGISTRATION_WALLET':
+        body['source'] = 'REGISTRATION_WALLET';
+        break;
+      case 'PAYSTACK':
+      case 'FLUTTERWAVE':
+      case 'KORAPAY':
+      case 'USDT':
+        if (isValidUrl) body['callbackUrl'] = callbackUrl;
+        body['provider'] = source;
+        break;
+      default: {
+        const unreachable: never = source;
+        throw new Error(`Unsupported upgrade payment source: ${String(unreachable)}`);
+      }
     }
-    if (provider) {
-      body['provider'] = provider;
-    }
+
     return this.api
       .post<Record<string, unknown>>('payments/upgrade/initiate', body)
       .pipe(map((res) => mapInitiatePaymentResponse(res)));

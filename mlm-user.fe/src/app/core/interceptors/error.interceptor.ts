@@ -110,6 +110,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         'auth/reset-password',
         'registration/manual-payment',
         'payments/manual-deposit',
+        'payments/upgrade/initiate',
         'withdrawals/request',
         'legacy/payments/wallet',
         'legacy/cashout/withdraw',

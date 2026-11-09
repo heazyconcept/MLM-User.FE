@@ -153,6 +153,27 @@ describe('PaymentService', () => {
   });
 
   describe('initiateUpgradePayment', () => {
+    it('debits the registration wallet and does not expect a gateway', () => {
+      service.initiateUpgradePayment('SILVER', undefined, 'REGISTRATION_WALLET').subscribe((res) => {
+        expect(res.reference).toBe('ref-wallet');
+        expect(res.amount).toBe(15000);
+        expect(res.gatewayUrl).toBeUndefined();
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/payments/upgrade/initiate`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({
+        targetPackage: 'SILVER',
+        source: 'REGISTRATION_WALLET',
+      });
+      req.flush({
+        paymentId: 'pay-wallet',
+        reference: 'ref-wallet',
+        amount: 15000,
+        currency: 'NGN',
+      });
+    });
+
     it('should send FLUTTERWAVE provider in request body', () => {
       const callbackUrl = 'https://dashboard.example.com/auth/payment/callback';
 

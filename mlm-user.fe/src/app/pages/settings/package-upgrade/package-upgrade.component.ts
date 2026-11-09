@@ -6,7 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { UserService } from '../../../services/user.service';
-import { PaymentService, UpgradeOption, type PaymentGatewayProvider, type InitiatePaymentResponse } from '../../../services/payment.service';
+import { PaymentService, UpgradeOption, type InitiatePaymentResponse, type UpgradePaymentSource } from '../../../services/payment.service';
 import { LoadingService } from '../../../services/loading.service';
 import { ModalService } from '../../../services/modal.service';
 import { getRequiredAmount } from '../../../core/constants/registration.constants';
@@ -73,21 +73,18 @@ export class PackageUpgradeComponent implements OnInit {
 
   showConfirmDialog = signal(false);
   selectedPackage = signal<PackageCard | null>(null);
-  selectedProvider = signal<PaymentGatewayProvider>(
-    getDefaultGatewayProvider('NGN'),
-  );
+  selectedProvider = signal<UpgradePaymentSource>('REGISTRATION_WALLET');
   usdtPayment = signal<InitiatePaymentResponse | null>(null);
 
-  providerOptions = computed(() =>
-    getEnabledGatewayProviderOptions(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD')
-  );
+  providerOptions = computed(() => [
+    { label: 'Registration Wallet', value: 'REGISTRATION_WALLET' as const },
+    ...getEnabledGatewayProviderOptions(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD'),
+  ]);
   /** NGN upgrades can always use manual bank transfer when gateways are off. */
   showManualFunding = computed(() => this.displayCurrency() === 'NGN');
 
   ngOnInit(): void {
-    this.selectedProvider.set(
-      getDefaultGatewayProvider(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD'),
-    );
+    this.useAvailablePaymentSource();
     this.loadUpgradeOptions();
   }
 
@@ -166,6 +163,7 @@ export class PackageUpgradeComponent implements OnInit {
   selectPackage(pkg: PackageCard): void {
     if (pkg.isCurrent || pkg.isDowngrade) return;
     this.selectedPackage.set(pkg);
+    this.useAvailablePaymentSource();
     this.showConfirmDialog.set(true);
   }
 
@@ -173,38 +171,44 @@ export class PackageUpgradeComponent implements OnInit {
     const pkg = this.selectedPackage();
     if (!pkg) return;
 
+    const source = this.selectedProvider();
     this.loadingService.show();
-    const callbackUrl = getPaymentCallbackUrl();
+    const callbackUrl = source === 'REGISTRATION_WALLET' ? undefined : getPaymentCallbackUrl();
 
-    this.paymentService.initiateUpgradePayment(pkg.name, callbackUrl, this.selectedProvider()).subscribe({
+    this.paymentService.initiateUpgradePayment(pkg.name, callbackUrl, source).subscribe({
       next: (res) => {
         this.loadingService.hide();
-        this.showConfirmDialog.set(false);
         this.cdr.markForCheck();
 
         const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
         if (gatewayUrl) {
+          this.showConfirmDialog.set(false);
           window.location.href = gatewayUrl;
-        } else if (isUsdtInitiateResponse(res)) {
+          return;
+        }
+        if (isUsdtInitiateResponse(res)) {
           this.usdtPayment.set(res);
           this.cdr.markForCheck();
-        } else {
-          this.modalService.open(
-            'error',
-            'Upgrade Failed',
-            'No payment link was returned. Please try again or contact support.'
-          );
+          return;
         }
-      },
-      error: () => {
-        this.loadingService.hide();
+        if (source === 'REGISTRATION_WALLET') {
+          this.showConfirmDialog.set(false);
+          this.selectedPackage.set(null);
+          this.finishRegistrationWalletUpgrade();
+          return;
+        }
         this.showConfirmDialog.set(false);
-        this.cdr.markForCheck();
         this.modalService.open(
           'error',
           'Upgrade Failed',
-          'Could not initiate the upgrade payment. Please try again or contact support.'
+          'No payment link was returned. Please try again or contact support.'
         );
+      },
+      error: (error: unknown) => {
+        this.loadingService.hide();
+        this.showConfirmDialog.set(false);
+        this.cdr.markForCheck();
+        this.modalService.open('error', 'Upgrade Failed', upgradeFailureMessage(error));
       }
     });
   }
@@ -212,7 +216,7 @@ export class PackageUpgradeComponent implements OnInit {
   cancelUpgrade(): void {
     this.showConfirmDialog.set(false);
     this.selectedPackage.set(null);
-    this.selectedProvider.set(getDefaultGatewayProvider(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD'));
+    this.useAvailablePaymentSource();
     this.usdtPayment.set(null);
   }
 
@@ -274,9 +278,50 @@ export class PackageUpgradeComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  onProviderChange(provider: PaymentGatewayProvider): void {
+  onProviderChange(provider: UpgradePaymentSource): void {
     this.selectedProvider.set(provider);
     this.cdr.markForCheck();
+  }
+
+  proceedLabel(): string {
+    return this.selectedProvider() === 'REGISTRATION_WALLET'
+      ? 'Pay from Registration Wallet'
+      : 'Proceed to Payment';
+  }
+
+  hasGatewayOption(): boolean {
+    return this.providerOptions().some((option) => option.value !== 'REGISTRATION_WALLET');
+  }
+
+  private useAvailablePaymentSource(): void {
+    const currency = this.displayCurrency() === 'NGN' ? 'NGN' : 'USD';
+    const gateway = getDefaultGatewayProvider(currency);
+    const gateways = getEnabledGatewayProviderOptions(currency);
+    this.selectedProvider.set(
+      gateways.some((option) => option.value === gateway) ? gateway : 'REGISTRATION_WALLET',
+    );
+  }
+
+  private finishRegistrationWalletUpgrade(): void {
+    this.userService.fetchProfile().subscribe({
+      next: () => {
+        this.loadUpgradeOptions();
+        this.modalService.open(
+          'success',
+          'Upgrade Complete',
+          'Your package has been upgraded successfully.',
+        );
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.modalService.open(
+          'success',
+          'Upgrade Complete',
+          'Your registration wallet was charged. Your package will update shortly.',
+        );
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   formatPrice(price: number, currency: string): string {
@@ -287,4 +332,18 @@ export class PackageUpgradeComponent implements OnInit {
   getPackageLabel(name: string): string {
     return name.charAt(0) + name.slice(1).toLowerCase();
   }
+}
+
+function upgradeFailureMessage(error: unknown): string {
+  const fallback = 'Could not initiate the upgrade payment. Please try again or contact support.';
+  if (!error || typeof error !== 'object') return fallback;
+  const message = (error as { error?: { message?: unknown } }).error?.message;
+  if (typeof message === 'string' && message.trim()) return message.trim();
+  if (Array.isArray(message)) {
+    const text = message
+      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      .join(' ');
+    if (text) return text;
+  }
+  return fallback;
 }

@@ -154,9 +154,11 @@
           </p>
         }
         <p class="text-sm text-mlm-secondary mt-2">
-          @if (providerOptions().length > 0 && selectedProvider() === 'USDT') {
+          @if (selectedProvider() === 'REGISTRATION_WALLET') {
+            Your registration wallet is charged and your package updates immediately.
+          } @else if (selectedProvider() === 'USDT') {
             Send USDT on the deposit screen after you proceed.
-          } @else if (providerOptions().length > 0) {
+          } @else if (hasGatewayOption()) {
             You'll be redirected to our payment partner to complete the upgrade.
           } @else {
             Pay via bank transfer. Funds are credited after admin approval, then your package is upgraded.
@@ -184,7 +186,7 @@
       <div class="space-y-2">
         @if (providerOptions().length > 0) {
           <p-button
-            label="Proceed to Payment"
+            [label]="proceedLabel()"
             icon="pi pi-arrow-right"
             (onClick)="confirmUpgrade()"
             [disabled]="isLoading()"
