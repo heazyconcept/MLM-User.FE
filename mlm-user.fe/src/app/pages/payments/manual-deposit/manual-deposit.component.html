@@ -50,8 +50,8 @@
               <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
                 <p class="text-sm font-semibold text-amber-900">{{ purpose }}</p>
                 <p class="mt-0.5 text-xs leading-relaxed text-amber-800">
-                  Transfer this difference and upload your receipt. After admin approval, your
-                  package is upgraded immediately.
+                  Transfer this amount and upload your receipt. After admin approval, your package
+                  is upgraded immediately.
                 </p>
               </div>
             }
@@ -86,9 +86,7 @@
                       {{ bank.bankName }}
                     </dd>
                   </div>
-                  <div
-                    class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
-                  >
+                  <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                     <dt class="shrink-0 text-slate-500">Account number</dt>
                     <dd class="flex min-w-0 flex-wrap items-center gap-2 sm:justify-end">
                       <span class="break-all font-mono font-semibold text-slate-900">{{
@@ -112,9 +110,7 @@
                 </dl>
               </div>
             } @else {
-              <div
-                class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
-              >
+              <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                 Company bank details are not available yet. Please try again later.
               </div>
             }
@@ -150,18 +146,11 @@
                     [currency]="displayCurrency()"
                     [currencyDisplay]="'symbol'"
                     [min]="0.01"
-                    [readonly]="upgradeAmountLocked()"
                     fluid="true"
                     placeholder="0.00"
                   >
                   </p-inputNumber>
-                  @if (upgradeAmountLocked()) {
-                    <p class="text-xs text-gray-500">
-                      This amount is the upgrade difference and stays fixed for this transfer.
-                    </p>
-                  } @else {
-                    <p class="text-xs text-gray-500">Minimum: {{ currencySymbol() }}0.01</p>
-                  }
+                  <p class="text-xs text-gray-500">Minimum: {{ currencySymbol() }}0.01</p>
                   @if (
                     submitForm.get('amount')?.invalid &&
                     (submitForm.get('amount')?.dirty || submitForm.get('amount')?.touched)
@@ -213,9 +202,7 @@
                     />
                   }
                   @if (evidenceFile() && !evidencePreviewUrl()) {
-                    <p class="break-all text-xs text-gray-600">
-                      Selected: {{ evidenceFile()!.name }}
-                    </p>
+                    <p class="break-all text-xs text-gray-600">Selected: {{ evidenceFile()!.name }}</p>
                   }
                 </div>
 
