@@ -1,4 +1,12 @@
-import { Component, inject, signal, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, computed } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  OnInit,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -6,10 +14,14 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { UserService } from '../../../services/user.service';
-import { PaymentService, UpgradeOption, type PaymentGatewayProvider, type InitiatePaymentResponse } from '../../../services/payment.service';
+import {
+  PaymentService,
+  type InitiatePaymentResponse,
+  type UpgradeOptionsResult,
+  type UpgradePaymentSource,
+} from '../../../services/payment.service';
 import { LoadingService } from '../../../services/loading.service';
 import { ModalService } from '../../../services/modal.service';
-import { getRequiredAmount } from '../../../core/constants/registration.constants';
 import {
   getDefaultGatewayProvider,
   getEnabledGatewayProviderOptions,
@@ -17,43 +29,80 @@ import {
 } from '../../../core/utils/payment-config.util';
 import { isUsdtInitiateResponse } from '../../../services/payment-initiate.mapper';
 import { UsdtDepositComponent } from '../../../components/usdt-deposit/usdt-deposit.component';
+import {
+  canPayUpgradeFromRegistrationWallet,
+  formatUpgradeMoney,
+  formatUpgradePaymentError,
+  mergeUpgradeBenefits,
+  upgradeActionLabel,
+} from '../../../core/utils/package-upgrade.util';
 
 interface PackageCard {
   name: string;
   price: number;
+  ipvCredit: number | null;
   currency: string;
   isCurrent: boolean;
   isDowngrade: boolean;
+  canUpgrade: boolean;
   benefits: string[];
   color: string;
   icon: string;
 }
-
-const PACKAGE_ORDER = ['NICKEL', 'SILVER', 'GOLD', 'PLATINUM', 'RUBY', 'DIAMOND'];
 
 interface PackageStaticInfo {
   color: string;
   icon: string;
-  priceUsd: number;
-  priceNgn: number;
   benefits: string[];
 }
 
+const PACKAGE_ORDER = ['NICKEL', 'SILVER', 'GOLD', 'PLATINUM', 'RUBY', 'DIAMOND'];
+
 const STATIC_DETAILS: Record<string, PackageStaticInfo> = {
-  NICKEL:   { color: 'from-gray-400 to-gray-500',     icon: 'pi-circle',    priceUsd: 15,    priceNgn: 15000,     benefits: ['10% Direct Referral', '0.05% PDPA', '5% CDPA'] },
-  SILVER:   { color: 'from-slate-400 to-slate-500',   icon: 'pi-star',      priceUsd: 30,    priceNgn: 30000,     benefits: ['10% Direct Referral', '0.08% PDPA', '10% CDPA'] },
-  GOLD:     { color: 'from-amber-400 to-amber-600',   icon: 'pi-star-fill', priceUsd: 120,   priceNgn: 120000,    benefits: ['12% Direct Referral', '0.1% PDPA', '15% CDPA'] },
-  PLATINUM: { color: 'from-sky-400 to-sky-600',       icon: 'pi-star-fill', priceUsd: 600,   priceNgn: 600000,    benefits: ['15% Direct Referral', '0.15% PDPA', '20% CDPA'] },
-  RUBY:     { color: 'from-rose-400 to-rose-600',     icon: 'pi-gem',       priceUsd: 1800,  priceNgn: 1800000,   benefits: ['18% Direct Referral', '0.18% PDPA', '25% CDPA'] },
-  DIAMOND:  { color: 'from-violet-400 to-violet-600', icon: 'pi-gem',       priceUsd: 6000,  priceNgn: 6000000,   benefits: ['20% Direct Referral', '0.2% PDPA', '30% CDPA'] }
+  NICKEL: {
+    color: 'from-gray-400 to-gray-500',
+    icon: 'pi-circle',
+    benefits: ['10% Direct Referral', '0.05% PDPA', '5% CDPA'],
+  },
+  SILVER: {
+    color: 'from-slate-400 to-slate-500',
+    icon: 'pi-star',
+    benefits: ['10% Direct Referral', '0.08% PDPA', '10% CDPA'],
+  },
+  GOLD: {
+    color: 'from-amber-400 to-amber-600',
+    icon: 'pi-star-fill',
+    benefits: ['12% Direct Referral', '0.1% PDPA', '15% CDPA'],
+  },
+  PLATINUM: {
+    color: 'from-sky-400 to-sky-600',
+    icon: 'pi-star-fill',
+    benefits: ['15% Direct Referral', '0.15% PDPA', '20% CDPA'],
+  },
+  RUBY: {
+    color: 'from-rose-400 to-rose-600',
+    icon: 'pi-gem',
+    benefits: ['18% Direct Referral', '0.18% PDPA', '25% CDPA'],
+  },
+  DIAMOND: {
+    color: 'from-violet-400 to-violet-600',
+    icon: 'pi-gem',
+    benefits: ['20% Direct Referral', '0.2% PDPA', '30% CDPA'],
+  },
 };
 
 @Component({
   selector: 'app-package-upgrade',
-  standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, DialogModule, SelectModule, UsdtDepositComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonModule,
+    DialogModule,
+    SelectModule,
+    UsdtDepositComponent,
+  ],
   templateUrl: './package-upgrade.component.html',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PackageUpgradeComponent implements OnInit {
   private userService = inject(UserService);
@@ -70,24 +119,47 @@ export class PackageUpgradeComponent implements OnInit {
   packages = signal<PackageCard[]>([]);
   isLoadingOptions = signal(true);
   loadError = signal<string | null>(null);
+  pricesAreLive = signal(false);
+  registrationWalletBalance = signal<number | null>(null);
+  optionsCurrency = signal('');
 
   showConfirmDialog = signal(false);
   selectedPackage = signal<PackageCard | null>(null);
-  selectedProvider = signal<PaymentGatewayProvider>(
-    getDefaultGatewayProvider('NGN'),
-  );
+  selectedSource = signal<UpgradePaymentSource>(getDefaultGatewayProvider('NGN'));
+  actionError = signal<string | null>(null);
   usdtPayment = signal<InitiatePaymentResponse | null>(null);
 
-  providerOptions = computed(() =>
-    getEnabledGatewayProviderOptions(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD')
-  );
+  paymentMethodOptions = computed(() => {
+    const pkg = this.selectedPackage();
+    const currency = this.payCurrency(pkg);
+    const options: { label: string; value: UpgradePaymentSource }[] = [];
+    if (pkg && canPayUpgradeFromRegistrationWallet(this.registrationWalletBalance(), pkg.price)) {
+      options.push({
+        label: `Registration Wallet (${this.formatPrice(this.registrationWalletBalance() ?? 0, currency)})`,
+        value: 'REGISTRATION_WALLET',
+      });
+    }
+    return [...options, ...getEnabledGatewayProviderOptions(currency)];
+  });
+
+  walletShortfall = computed(() => {
+    const balance = this.registrationWalletBalance();
+    const pkg = this.selectedPackage();
+    if (balance == null || !pkg || pkg.price <= 0) return null;
+    if (canPayUpgradeFromRegistrationWallet(balance, pkg.price)) return null;
+    const currency = this.payCurrency(pkg);
+    return `Registration wallet balance is ${this.formatPrice(balance, currency)}. This upgrade needs ${this.formatPrice(pkg.price, currency)}.`;
+  });
+
   /** NGN upgrades can always use manual bank transfer when gateways are off. */
-  showManualFunding = computed(() => this.displayCurrency() === 'NGN');
+  showManualFunding = computed(() => this.payCurrency(this.selectedPackage()) === 'NGN');
 
   ngOnInit(): void {
-    this.selectedProvider.set(
-      getDefaultGatewayProvider(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD'),
-    );
+    this.selectedSource.set(getDefaultGatewayProvider(this.accountCurrency()));
+    this.loadUpgradeOptions();
+  }
+
+  retryLoad(): void {
     this.loadUpgradeOptions();
   }
 
@@ -96,67 +168,56 @@ export class PackageUpgradeComponent implements OnInit {
     this.loadError.set(null);
 
     this.paymentService.fetchUpgradeOptions().subscribe({
-      next: (options) => {
-        const currentPkg = this.currentUser()?.package?.toUpperCase() ?? '';
-        const currentIdx = PACKAGE_ORDER.indexOf(currentPkg);
-        const cards = this.buildPackageCards(options, currentPkg, currentIdx);
-        this.packages.set(cards);
+      next: (result) => {
+        this.applyUpgradeOptions(result);
         this.isLoadingOptions.set(false);
         this.cdr.markForCheck();
       },
       error: () => {
-        // Fallback: build cards from static data with currency-aware prices
         const currentPkg = this.currentUser()?.package?.toUpperCase() ?? '';
-        const currentIdx = PACKAGE_ORDER.indexOf(currentPkg);
-        const currency = this.displayCurrency();
-        const fallbackCards = PACKAGE_ORDER.map((name, idx) => {
-          const details = STATIC_DETAILS[name] ?? STATIC_DETAILS['SILVER'];
-          return {
-            name,
-            price: getRequiredAmount(name, currency),
-            currency,
-            isCurrent: name === currentPkg,
-            isDowngrade: idx <= currentIdx && name !== currentPkg,
-            benefits: details.benefits,
-            color: details.color,
-            icon: details.icon
-          };
-        });
-        this.packages.set(fallbackCards);
+        this.packages.set(this.buildPackageCards(null, currentPkg));
+        this.pricesAreLive.set(false);
+        this.registrationWalletBalance.set(null);
         this.isLoadingOptions.set(false);
-        this.loadError.set('Could not load live upgrade prices. Showing plan overview.');
+        this.loadError.set('Could not load upgrade prices. Try again before paying.');
         this.cdr.markForCheck();
-      }
+      },
     });
   }
 
-  private buildPackageCards(options: UpgradeOption[], currentPkg: string, currentIdx: number): PackageCard[] {
-    const currency = this.displayCurrency();
+  private applyUpgradeOptions(result: UpgradeOptionsResult): void {
+    const currentPkg = (result.currentPackage || this.currentUser()?.package || '').toUpperCase();
+    this.optionsCurrency.set(result.currency);
+    this.registrationWalletBalance.set(result.registrationWalletBalance);
+    this.packages.set(this.buildPackageCards(result, currentPkg));
+    this.pricesAreLive.set(true);
+    this.loadError.set(null);
+  }
+
+  private buildPackageCards(
+    result: UpgradeOptionsResult | null,
+    currentPkg: string,
+  ): PackageCard[] {
+    const currentIdx = PACKAGE_ORDER.indexOf(currentPkg);
+    const currency = this.resolveCurrency(result?.currency);
 
     return PACKAGE_ORDER.map((name, idx) => {
       const details = STATIC_DETAILS[name] ?? STATIC_DETAILS['SILVER'];
       const isCurrent = name === currentPkg;
       const isDowngrade = idx <= currentIdx && !isCurrent;
-
-      const liveOpt = options.find((opt) => opt.package.toUpperCase() === name);
-
-      let price = getRequiredAmount(name, currency);
-      let benefits = details.benefits;
-
-      if (liveOpt && liveOpt.currency.toUpperCase() === currency) {
-        price = liveOpt.price;
-        if (liveOpt.benefits && Array.isArray(liveOpt.benefits)) {
-          benefits = liveOpt.benefits;
-        }
-      }
+      const liveOpt = result?.options.find((opt) => opt.package.toUpperCase() === name);
+      const canUpgrade =
+        Boolean(liveOpt) && !isCurrent && !isDowngrade && (liveOpt?.price ?? 0) > 0;
 
       return {
         name,
-        price,
-        currency,
+        price: canUpgrade ? (liveOpt?.price ?? 0) : 0,
+        ipvCredit: canUpgrade ? (liveOpt?.ipvCredit ?? null) : null,
+        currency: liveOpt?.currency || currency,
         isCurrent,
         isDowngrade,
-        benefits,
+        canUpgrade,
+        benefits: mergeUpgradeBenefits(details.benefits, liveOpt),
         color: details.color,
         icon: details.icon,
       };
@@ -164,61 +225,49 @@ export class PackageUpgradeComponent implements OnInit {
   }
 
   selectPackage(pkg: PackageCard): void {
-    if (pkg.isCurrent || pkg.isDowngrade) return;
+    if (!pkg.canUpgrade || !this.pricesAreLive()) return;
+    this.actionError.set(null);
+    this.usdtPayment.set(null);
     this.selectedPackage.set(pkg);
+    this.selectedSource.set(this.defaultSource(pkg));
     this.showConfirmDialog.set(true);
   }
 
   confirmUpgrade(): void {
     const pkg = this.selectedPackage();
-    if (!pkg) return;
+    if (!pkg || !this.pricesAreLive()) return;
 
+    const source = this.selectedSource();
+    this.actionError.set(null);
     this.loadingService.show();
-    const callbackUrl = getPaymentCallbackUrl();
 
-    this.paymentService.initiateUpgradePayment(pkg.name, callbackUrl, this.selectedProvider()).subscribe({
-      next: (res) => {
-        this.loadingService.hide();
-        this.showConfirmDialog.set(false);
-        this.cdr.markForCheck();
-
-        const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
-        if (gatewayUrl) {
-          window.location.href = gatewayUrl;
-        } else if (isUsdtInitiateResponse(res)) {
-          this.usdtPayment.set(res);
+    this.paymentService
+      .initiateUpgradePayment(
+        pkg.name,
+        source === 'REGISTRATION_WALLET' ? undefined : getPaymentCallbackUrl(),
+        source,
+      )
+      .subscribe({
+        next: (res) => this.handleUpgradeStarted(res, source),
+        error: (error: unknown) => {
+          this.loadingService.hide();
+          this.actionError.set(formatUpgradePaymentError(error));
           this.cdr.markForCheck();
-        } else {
-          this.modalService.open(
-            'error',
-            'Upgrade Failed',
-            'No payment link was returned. Please try again or contact support.'
-          );
-        }
-      },
-      error: () => {
-        this.loadingService.hide();
-        this.showConfirmDialog.set(false);
-        this.cdr.markForCheck();
-        this.modalService.open(
-          'error',
-          'Upgrade Failed',
-          'Could not initiate the upgrade payment. Please try again or contact support.'
-        );
-      }
-    });
+        },
+      });
   }
 
   cancelUpgrade(): void {
     this.showConfirmDialog.set(false);
     this.selectedPackage.set(null);
-    this.selectedProvider.set(getDefaultGatewayProvider(this.displayCurrency() === 'NGN' ? 'NGN' : 'USD'));
+    this.actionError.set(null);
+    this.selectedSource.set(getDefaultGatewayProvider(this.accountCurrency()));
     this.usdtPayment.set(null);
   }
 
   goToManualFunding(): void {
     const pkg = this.selectedPackage();
-    if (!pkg) return;
+    if (!pkg || !pkg.canUpgrade) return;
 
     this.showConfirmDialog.set(false);
     this.selectedPackage.set(null);
@@ -228,10 +277,8 @@ export class PackageUpgradeComponent implements OnInit {
       walletType: 'REGISTRATION',
       purpose: 'PACKAGE_UPGRADE',
       targetPackage: pkg.name,
+      amount: pkg.price,
     };
-    if (pkg.price > 0) {
-      queryParams['amount'] = pkg.price;
-    }
     void this.router.navigate(['/payments/manual-deposit'], { queryParams });
   }
 
@@ -248,25 +295,11 @@ export class PackageUpgradeComponent implements OnInit {
     this.usdtPayment.set(null);
     this.showConfirmDialog.set(false);
     this.selectedPackage.set(null);
-    this.userService.fetchProfile().subscribe({
-      next: () => {
-        this.loadUpgradeOptions();
-        this.modalService.open(
-          'success',
-          'Upgrade Complete',
-          'Your package has been upgraded successfully.',
-        );
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.modalService.open(
-          'success',
-          'Payment Verified',
-          'Your payment was verified. Your package will update shortly.',
-        );
-        this.cdr.markForCheck();
-      },
-    });
+    this.refreshAfterUpgrade(
+      'Upgrade Complete',
+      'Your package has been upgraded successfully.',
+      'Your payment was verified. Your package will update shortly.',
+    );
   }
 
   onUsdtBack(): void {
@@ -274,17 +307,116 @@ export class PackageUpgradeComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  onProviderChange(provider: PaymentGatewayProvider): void {
-    this.selectedProvider.set(provider);
+  onPaymentSourceChange(source: UpgradePaymentSource): void {
+    this.selectedSource.set(source);
     this.cdr.markForCheck();
   }
 
+  upgradeLabel(pkg: PackageCard): string {
+    return upgradeActionLabel(
+      this.getPackageLabel(pkg.name),
+      this.formatPrice(pkg.price, pkg.currency),
+    );
+  }
+
   formatPrice(price: number, currency: string): string {
-    const symbol = currency === 'NGN' ? '₦' : '$';
-    return `${symbol}${price.toLocaleString()}`;
+    return formatUpgradeMoney(price, currency);
   }
 
   getPackageLabel(name: string): string {
     return name.charAt(0) + name.slice(1).toLowerCase();
+  }
+
+  walletBalanceLabel(): string | null {
+    const balance = this.registrationWalletBalance();
+    if (balance == null) return null;
+    const currency = this.resolveCurrency(this.optionsCurrency());
+    return `Registration wallet ${this.formatPrice(balance, currency)}`;
+  }
+
+  paymentHint(): string {
+    const source = this.selectedSource();
+    switch (source) {
+      case 'REGISTRATION_WALLET':
+        return 'Your registration wallet is charged this difference and your package updates immediately.';
+      case 'USDT':
+        return 'Send USDT on the deposit screen after you proceed.';
+      case 'PAYSTACK':
+      case 'FLUTTERWAVE':
+      case 'KORAPAY':
+        return "You'll be redirected to our payment partner to complete the upgrade.";
+      default: {
+        const unreachable: never = source;
+        return unreachable;
+      }
+    }
+  }
+
+  proceedLabel(): string {
+    return this.selectedSource() === 'REGISTRATION_WALLET'
+      ? 'Pay from Registration Wallet'
+      : 'Proceed to Payment';
+  }
+
+  private handleUpgradeStarted(res: InitiatePaymentResponse, source: UpgradePaymentSource): void {
+    this.loadingService.hide();
+    const gatewayUrl = res.authorizationUrl ?? res.gatewayUrl;
+    if (gatewayUrl) {
+      this.showConfirmDialog.set(false);
+      window.location.href = gatewayUrl;
+      return;
+    }
+    if (isUsdtInitiateResponse(res)) {
+      this.usdtPayment.set(res);
+      this.cdr.markForCheck();
+      return;
+    }
+    if (source === 'REGISTRATION_WALLET') {
+      this.showConfirmDialog.set(false);
+      this.selectedPackage.set(null);
+      this.refreshAfterUpgrade(
+        'Upgrade Complete',
+        'Your package has been upgraded successfully.',
+        'Your registration wallet was charged. Your package will update shortly.',
+      );
+      return;
+    }
+    this.actionError.set('No payment link was returned. Please try again or contact support.');
+    this.cdr.markForCheck();
+  }
+
+  private refreshAfterUpgrade(title: string, successDetail: string, pendingDetail: string): void {
+    this.userService.fetchProfile().subscribe({
+      next: () => {
+        this.loadUpgradeOptions();
+        this.modalService.open('success', title, successDetail);
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.modalService.open('success', title, pendingDetail);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  private defaultSource(pkg: PackageCard): UpgradePaymentSource {
+    if (canPayUpgradeFromRegistrationWallet(this.registrationWalletBalance(), pkg.price)) {
+      return 'REGISTRATION_WALLET';
+    }
+    return getDefaultGatewayProvider(this.payCurrency(pkg));
+  }
+
+  private payCurrency(pkg?: PackageCard | null): 'NGN' | 'USD' {
+    return this.resolveCurrency(pkg?.currency || this.optionsCurrency());
+  }
+
+  private resolveCurrency(currency?: string): 'NGN' | 'USD' {
+    if (currency === 'USD') return 'USD';
+    if (currency === 'NGN') return 'NGN';
+    return this.accountCurrency();
+  }
+
+  private accountCurrency(): 'NGN' | 'USD' {
+    return this.displayCurrency() === 'USD' ? 'USD' : 'NGN';
   }
 }
