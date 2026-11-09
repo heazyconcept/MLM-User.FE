@@ -7,22 +7,13 @@
 
   <!-- Current Package Badge -->
   @if (currentUser(); as user) {
-    <div
-      class="flex items-center gap-3 bg-mlm-primary/5 border border-mlm-primary/20 rounded-xl px-5 py-4"
-    >
+    <div class="flex items-center gap-3 bg-mlm-primary/5 border border-mlm-primary/20 rounded-xl px-5 py-4">
       <div class="w-10 h-10 rounded-lg bg-mlm-primary/10 flex items-center justify-center">
         <i class="pi pi-box text-mlm-primary"></i>
       </div>
       <div>
         <p class="text-xs text-mlm-secondary font-medium">Current Package</p>
-        <p class="text-lg font-bold text-mlm-primary">
-          {{ getPackageLabel(user.package ?? 'SILVER') }}
-        </p>
-        @if (walletBalanceLabel(); as walletLabel) {
-          <p class="text-sm text-mlm-secondary mt-0.5" data-testid="registration-wallet-balance">
-            {{ walletLabel }}
-          </p>
-        }
+        <p class="text-lg font-bold text-mlm-primary">{{ getPackageLabel(user.package ?? 'SILVER') }}</p>
       </div>
     </div>
   }
@@ -46,20 +37,9 @@
   } @else {
     <!-- Info Banner -->
     @if (loadError()) {
-      <div
-        class="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4"
-      >
-        <div class="flex items-start gap-3">
-          <i class="pi pi-info-circle text-amber-500 mt-0.5"></i>
-          <p class="text-sm text-amber-700">{{ loadError() }}</p>
-        </div>
-        <button
-          type="button"
-          class="shrink-0 text-sm font-semibold text-amber-800 hover:text-amber-950 cursor-pointer"
-          (click)="retryLoad()"
-        >
-          Try again
-        </button>
+      <div class="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4">
+        <i class="pi pi-info-circle text-amber-500 mt-0.5"></i>
+        <p class="text-sm text-amber-700">{{ loadError() }}</p>
       </div>
     }
 
@@ -73,10 +53,10 @@
           [class.shadow-lg]="pkg.isCurrent"
           [class.shadow-sm]="!pkg.isCurrent"
           [class.opacity-50]="pkg.isDowngrade"
-          [class.hover:shadow-md]="pkg.canUpgrade"
-          [class.hover:-translate-y-0.5]="pkg.canUpgrade"
-          [class.cursor-pointer]="pkg.canUpgrade"
-          [class.cursor-default]="!pkg.canUpgrade"
+          [class.hover:shadow-md]="!pkg.isCurrent && !pkg.isDowngrade"
+          [class.hover:-translate-y-0.5]="!pkg.isCurrent && !pkg.isDowngrade"
+          [class.cursor-pointer]="!pkg.isCurrent && !pkg.isDowngrade"
+          [class.cursor-default]="pkg.isCurrent || pkg.isDowngrade"
           (click)="selectPackage(pkg)"
         >
           <!-- Gradient Header -->
@@ -85,9 +65,7 @@
           <!-- Current Badge -->
           @if (pkg.isCurrent) {
             <div class="absolute top-4 right-4">
-              <span
-                class="inline-flex items-center gap-1 bg-mlm-primary/10 text-mlm-primary text-xs font-bold px-3 py-1 rounded-full"
-              >
+              <span class="inline-flex items-center gap-1 bg-mlm-primary/10 text-mlm-primary text-xs font-bold px-3 py-1 rounded-full">
                 <i class="pi pi-check-circle text-[10px]"></i>
                 Current
               </span>
@@ -97,30 +75,17 @@
           <div class="p-6">
             <!-- Icon & Name -->
             <div class="flex items-center gap-3 mb-3">
-              <div
-                class="w-10 h-10 rounded-lg bg-gradient-to-br flex items-center justify-center text-white"
-                [ngClass]="pkg.color"
-              >
+              <div class="w-10 h-10 rounded-lg bg-gradient-to-br flex items-center justify-center text-white" [ngClass]="pkg.color">
                 <i class="pi" [ngClass]="pkg.icon"></i>
               </div>
               <h3 class="text-lg font-bold text-mlm-text">{{ getPackageLabel(pkg.name) }}</h3>
             </div>
 
-            @if (pkg.canUpgrade) {
-              <div class="mb-4">
-                <p
-                  class="text-2xl font-bold text-mlm-text"
-                  [attr.data-testid]="'upgrade-price-' + pkg.name"
-                >
-                  {{ formatPrice(pkg.price, pkg.currency) }}
-                </p>
-                <p class="text-xs text-mlm-secondary mt-1">Difference to pay</p>
-                @if (pkg.ipvCredit) {
-                  <p class="text-sm text-mlm-secondary mt-2">
-                    Product voucher credit {{ formatPrice(pkg.ipvCredit, pkg.currency) }}
-                  </p>
-                }
-              </div>
+            <!-- Price -->
+            @if (pkg.price > 0) {
+              <p class="text-2xl font-bold text-mlm-text mb-4">
+                {{ formatPrice(pkg.price, pkg.currency) }}
+              </p>
             }
 
             <!-- Benefits -->
@@ -135,31 +100,20 @@
 
             <!-- Action Button -->
             @if (pkg.isCurrent) {
-              <div
-                class="w-full py-3 rounded-xl bg-mlm-primary/10 text-mlm-primary text-sm font-semibold text-center"
-              >
+              <div class="w-full py-3 rounded-xl bg-mlm-primary/10 text-mlm-primary text-sm font-semibold text-center">
                 Your Plan
               </div>
             } @else if (pkg.isDowngrade) {
-              <div
-                class="w-full py-3 rounded-xl bg-gray-100 text-gray-400 text-sm font-medium text-center"
-              >
+              <div class="w-full py-3 rounded-xl bg-gray-100 text-gray-400 text-sm font-medium text-center">
                 Included
               </div>
-            } @else if (pkg.canUpgrade) {
+            } @else {
               <button
                 type="button"
-                class="w-full py-3 rounded-xl bg-mlm-primary hover:bg-mlm-primary/90 text-white text-sm font-semibold leading-snug whitespace-normal text-center transition-colors cursor-pointer"
-                [attr.data-testid]="'upgrade-action-' + pkg.name"
+                class="w-full py-3 rounded-xl bg-mlm-primary hover:bg-mlm-primary/90 text-white text-sm font-semibold transition-colors cursor-pointer"
               >
-                {{ upgradeLabel(pkg) }}
+                Upgrade to {{ getPackageLabel(pkg.name) }}
               </button>
-            } @else {
-              <div
-                class="w-full py-3 rounded-xl bg-gray-100 text-gray-400 text-sm font-medium text-center"
-              >
-                Unavailable
-              </div>
             }
           </div>
         </div>
@@ -183,69 +137,54 @@
       [payment]="payment"
       title="Complete your upgrade payment"
       (verified)="onUsdtVerified()"
-      (back)="onUsdtBack()"
-    >
+      (back)="onUsdtBack()">
     </app-usdt-deposit>
   } @else if (selectedPackage(); as pkg) {
-    <div class="space-y-6">
+      <div class="space-y-6">
       <div class="text-center py-2">
-        <div
-          class="w-16 h-16 rounded-2xl bg-gradient-to-br mx-auto flex items-center justify-center text-white mb-4"
-          [ngClass]="pkg.color"
-        >
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br mx-auto flex items-center justify-center text-white mb-4" [ngClass]="pkg.color">
           <i class="pi text-2xl" [ngClass]="pkg.icon"></i>
         </div>
         <h3 class="text-lg font-bold text-mlm-text">
-          {{ upgradeLabel(pkg) }}
+          Upgrade to {{ getPackageLabel(pkg.name) }}
         </h3>
-        <p class="text-sm text-mlm-secondary mt-2">
-          @if (paymentMethodOptions().length > 0) {
-            {{ paymentHint() }}
-          } @else {
-            Pay via bank transfer. Funds are credited after admin approval, then your package is
-            upgraded.
-          }
-        </p>
-        @if (pkg.ipvCredit) {
-          <p class="text-sm text-mlm-secondary mt-2">
-            Product voucher credit {{ formatPrice(pkg.ipvCredit, pkg.currency) }}
+        @if (pkg.price > 0) {
+          <p class="text-2xl font-bold text-mlm-primary mt-2">
+            {{ formatPrice(pkg.price, pkg.currency) }}
           </p>
         }
+        <p class="text-sm text-mlm-secondary mt-2">
+          @if (selectedProvider() === 'REGISTRATION_WALLET') {
+            Your registration wallet is charged and your package updates immediately.
+          } @else if (selectedProvider() === 'USDT') {
+            Send USDT on the deposit screen after you proceed.
+          } @else if (hasGatewayOption()) {
+            You'll be redirected to our payment partner to complete the upgrade.
+          } @else {
+            Pay via bank transfer. Funds are credited after admin approval, then your package is upgraded.
+          }
+        </p>
       </div>
 
-      @if (actionError(); as error) {
-        <div class="bg-red-50 border border-red-200 rounded-xl p-3">
-          <p class="text-red-600 text-sm" data-testid="upgrade-action-error">{{ error }}</p>
-        </div>
-      }
-
-      @if (paymentMethodOptions().length > 0) {
+      @if (providerOptions().length > 0) {
         <div class="flex flex-col gap-1.5">
-          <label for="upgrade-provider" class="text-sm font-medium text-mlm-text"
-            >Payment method</label
-          >
+          <label for="upgrade-provider" class="text-sm font-medium text-mlm-text">Payment method</label>
           <p-select
             inputId="upgrade-provider"
-            [options]="paymentMethodOptions()"
+            [options]="providerOptions()"
             optionLabel="label"
             optionValue="value"
-            [ngModel]="selectedSource()"
-            (ngModelChange)="onPaymentSourceChange($event)"
+            [ngModel]="selectedProvider()"
+            (ngModelChange)="onProviderChange($event)"
             placeholder="Select payment method"
             styleClass="w-full"
-            appendTo="body"
-          >
+            appendTo="body">
           </p-select>
-          @if (walletShortfall(); as shortfall) {
-            <p class="text-xs text-mlm-secondary" data-testid="upgrade-wallet-shortfall">
-              {{ shortfall }}
-            </p>
-          }
         </div>
       }
 
       <div class="space-y-2">
-        @if (paymentMethodOptions().length > 0) {
+        @if (providerOptions().length > 0) {
           <p-button
             [label]="proceedLabel()"
             icon="pi pi-arrow-right"
@@ -259,7 +198,7 @@
           <p-button
             label="Manual funding via admin approval"
             icon="pi pi-building"
-            [outlined]="paymentMethodOptions().length > 0"
+            [outlined]="providerOptions().length > 0"
             (onClick)="goToManualFunding()"
             [disabled]="isLoading()"
             styleClass="w-full !py-3 !rounded-xl !font-semibold !text-sm"

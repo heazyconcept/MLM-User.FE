@@ -34,8 +34,10 @@ import {
 } from '../../../services/registration.service';
 import { UserService } from '../../../services/user.service';
 import { WalletService } from '../../../services/wallet.service';
-import { EVIDENCE_ACCEPT, validateEvidenceFile } from '../../../core/utils/evidence-file.util';
-import { upgradeDepositAmountMatches } from '../../../core/utils/package-upgrade.util';
+import {
+  EVIDENCE_ACCEPT,
+  validateEvidenceFile,
+} from '../../../core/utils/evidence-file.util';
 
 const POLL_INTERVAL_MS = 15_000;
 const PAGE_SIZE = 20;
@@ -104,13 +106,17 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
     depositorName: ['', [Validators.required, Validators.minLength(2)]],
   });
 
-  selectedWalletType = computed(() => this.submitForm.get('walletType')?.value ?? 'REGISTRATION');
+  selectedWalletType = computed(
+    () => this.submitForm.get('walletType')?.value ?? 'REGISTRATION',
+  );
 
   hasPendingForSelectedWallet = computed(() =>
     hasPendingDeposit(this.deposits(), this.selectedWalletType()),
   );
 
-  hasAnyPending = computed(() => this.deposits().some((d) => d.status === 'PENDING'));
+  hasAnyPending = computed(() =>
+    this.deposits().some((d) => d.status === 'PENDING'),
+  );
 
   canSubmit = computed(
     () =>
@@ -120,13 +126,13 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
       !!this.companyBank(),
   );
 
-  canLoadMoreHistory = computed(() => this.deposits().length < this.totalDeposits());
+  canLoadMoreHistory = computed(
+    () => this.deposits().length < this.totalDeposits(),
+  );
 
   /** Upgrade intent from query params (sent on submit). */
   depositPurpose = signal<ManualDepositPurpose>('WALLET_FUNDING');
   targetPackage = signal<string | null>(null);
-  /** Quoted upgrade difference. When set, the transfer amount cannot change. */
-  expectedUpgradeAmount = signal<number | null>(null);
 
   isPackageUpgrade = computed(() => this.depositPurpose() === 'PACKAGE_UPGRADE');
 
@@ -153,12 +159,7 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
         const amount = Number(amountRaw);
         if (Number.isFinite(amount) && amount > 0) {
           this.submitForm.patchValue({ amount });
-          this.expectedUpgradeAmount.set(purpose === 'PACKAGE_UPGRADE' ? amount : null);
-        } else {
-          this.expectedUpgradeAmount.set(null);
         }
-      } else {
-        this.expectedUpgradeAmount.set(null);
       }
 
       this.loadPageData();
@@ -264,15 +265,6 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
     const { walletType, amount, depositorName } = this.submitForm.value;
     if (!walletType || amount == null || amount <= 0) return;
 
-    if (
-      this.isPackageUpgrade() &&
-      !upgradeDepositAmountMatches(this.expectedUpgradeAmount(), amount)
-    ) {
-      this.errorMessage.set('Transfer the upgrade difference shown for this package.');
-      this.cdr.markForCheck();
-      return;
-    }
-
     const resolvedWalletType: ManualDepositWalletType = this.isPackageUpgrade()
       ? 'REGISTRATION'
       : walletType;
@@ -364,15 +356,8 @@ export class ManualDepositComponent implements OnInit, OnDestroy {
   purposeBannerLabel(): string | null {
     if (!this.isPackageUpgrade()) return null;
     const pkg = this.targetPackage();
-    const amount = this.expectedUpgradeAmount();
-    const amountLabel =
-      amount != null ? ` — ${this.formatAmount(amount, this.displayCurrency())}` : '';
-    if (!pkg) return `Package upgrade${amountLabel}`;
-    return `Upgrade to ${formatPackageLabel(pkg)}${amountLabel}`;
-  }
-
-  upgradeAmountLocked(): boolean {
-    return this.isPackageUpgrade() && this.expectedUpgradeAmount() != null;
+    if (!pkg) return 'Package upgrade';
+    return `Package upgrade to ${formatPackageLabel(pkg)}`;
   }
 
   historyPurposeLabel(deposit: ManualDeposit): string | null {
