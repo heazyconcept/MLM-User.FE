@@ -13,12 +13,7 @@ describe('PaymentService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        PaymentService,
-        ApiService,
-      ]
+      providers: [provideHttpClient(), provideHttpClientTesting(), PaymentService, ApiService],
     });
 
     service = TestBed.inject(PaymentService);
@@ -38,37 +33,94 @@ describe('PaymentService', () => {
           {
             package: 'SILVER',
             upgradeAmount: 35000,
-            benefits: { earningsRateIncrease: 0, newEarningsRate: 10 }
+            benefits: { earningsRateIncrease: 0, newEarningsRate: 10 },
           },
           {
             package: 'GOLD',
-            upgradeAmount: 130000
-          }
-        ]
+            upgradeAmount: 130000,
+          },
+        ],
       };
 
-      service.fetchUpgradeOptions().subscribe((options) => {
-        expect(options.length).toBe(2);
-        
-        expect(options[0]).toEqual({
+      service.fetchUpgradeOptions().subscribe((result) => {
+        expect(result.currentPackage).toBe('NICKEL');
+        expect(result.currency).toBe('NGN');
+        expect(result.registrationWalletBalance).toBeNull();
+        expect(result.options).toHaveLength(2);
+
+        expect(result.options[0]).toEqual({
           package: 'SILVER',
           price: 35000,
+          ipvCredit: undefined,
           currency: 'NGN',
           currentPackage: false,
-          benefits: undefined // Object format is mapped to undefined to fall back to static benefits
+          earningsRateIncrease: 0,
+          newEarningsRate: 10,
         });
 
-        expect(options[1]).toEqual({
+        expect(result.options[1]).toEqual({
           package: 'GOLD',
           price: 130000,
+          ipvCredit: undefined,
           currency: 'NGN',
           currentPackage: false,
-          benefits: undefined
         });
       });
 
       const req = httpMock.expectOne(`${baseUrl}/users/me/upgrade-options`);
       expect(req.request.method).toBe('GET');
+      req.flush(mockResponse);
+    });
+
+    it('keeps API difference amounts when the payload has no currency field', () => {
+      const mockResponse = {
+        currentPackage: 'NICKEL',
+        registrationWalletBalance: 20000,
+        eligibleUpgrades: [
+          {
+            package: 'SILVER',
+            upgradeAmount: 15000,
+            ipvCredit: 15000,
+            benefits: { earningsRateIncrease: 0, newEarningsRate: 10 },
+          },
+          {
+            package: 'GOLD',
+            upgradeAmount: 110000,
+            ipvCredit: 105000,
+            benefits: { earningsRateIncrease: 2, newEarningsRate: 12 },
+          },
+        ],
+      };
+
+      service.fetchUpgradeOptions().subscribe((result) => {
+        expect(result.currentPackage).toBe('NICKEL');
+        expect(result.registrationWalletBalance).toBe(20000);
+        expect(result.currency).toBe('');
+        expect(result.options).toEqual([
+          {
+            package: 'SILVER',
+            price: 15000,
+            ipvCredit: 15000,
+            currency: '',
+            currentPackage: false,
+            benefits: undefined,
+            earningsRateIncrease: 0,
+            newEarningsRate: 10,
+          },
+          {
+            package: 'GOLD',
+            price: 110000,
+            ipvCredit: 105000,
+            currency: '',
+            currentPackage: false,
+            benefits: undefined,
+            earningsRateIncrease: 2,
+            newEarningsRate: 12,
+          },
+        ]);
+      });
+
+      const req = httpMock.expectOne(`${baseUrl}/users/me/upgrade-options`);
       req.flush(mockResponse);
     });
 
@@ -80,20 +132,25 @@ describe('PaymentService', () => {
             price: 15000,
             currency: 'USD',
             currentPackage: false,
-            benefits: ['Benefit 1', 'Benefit 2']
-          }
-        ]
+            benefits: ['Benefit 1', 'Benefit 2'],
+          },
+        ],
       };
 
-      service.fetchUpgradeOptions().subscribe((options) => {
-        expect(options.length).toBe(1);
-        expect(options[0]).toEqual({
-          package: 'SILVER',
-          price: 15000,
-          currency: 'USD',
-          currentPackage: false,
-          benefits: ['Benefit 1', 'Benefit 2']
-        });
+      service.fetchUpgradeOptions().subscribe((result) => {
+        expect(result.currentPackage).toBe('');
+        expect(result.registrationWalletBalance).toBeNull();
+        expect(result.currency).toBe('');
+        expect(result.options).toEqual([
+          {
+            package: 'SILVER',
+            price: 15000,
+            ipvCredit: undefined,
+            currency: 'USD',
+            currentPackage: false,
+            benefits: ['Benefit 1', 'Benefit 2'],
+          },
+        ]);
       });
 
       const req = httpMock.expectOne(`${baseUrl}/users/me/upgrade-options`);
@@ -153,6 +210,30 @@ describe('PaymentService', () => {
   });
 
   describe('initiateUpgradePayment', () => {
+    it('debits the registration wallet for the difference and does not expect a gateway', () => {
+      service
+        .initiateUpgradePayment('SILVER', undefined, 'REGISTRATION_WALLET')
+        .subscribe((res) => {
+          expect(res.reference).toBe('ref-wallet');
+          expect(res.amount).toBe(15000);
+          expect(res.currency).toBe('NGN');
+          expect(res.gatewayUrl).toBeUndefined();
+        });
+
+      const req = httpMock.expectOne(`${baseUrl}/payments/upgrade/initiate`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({
+        targetPackage: 'SILVER',
+        source: 'REGISTRATION_WALLET',
+      });
+      req.flush({
+        paymentId: 'pay-wallet',
+        reference: 'ref-wallet',
+        amount: 15000,
+        currency: 'NGN',
+      });
+    });
+
     it('should send FLUTTERWAVE provider in request body', () => {
       const callbackUrl = 'https://dashboard.example.com/auth/payment/callback';
 
